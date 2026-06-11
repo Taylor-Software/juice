@@ -379,7 +379,9 @@ class ToolMruNotifier extends AsyncNotifier<List<String>> {
   }
 
   Future<void> record(String toolId) async {
-    final current = [...(state.valueOrNull ?? const <String>[])];
+    // Await the loaded list: recording before build() completes must not
+    // clobber a previously persisted MRU.
+    final current = [...(state.valueOrNull ?? await future)];
     current.remove(toolId);
     current.insert(0, toolId);
     final capped = current.take(_cap).toList();

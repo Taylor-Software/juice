@@ -87,4 +87,27 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('juice.tools.mru.v1'), contains('other'));
   });
+
+  testWidgets('cold-start record keeps previously persisted MRU',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.tools.mru.v1': '["counter"]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+                body: ToolHost(
+                    tools: tools, child: const Text('journal home'))))));
+    await tester.pumpAndSettle();
+    // First interaction is record() itself — provider not yet read anywhere.
+    ToolHost.openLauncher(tester.element(find.text('journal home')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Other Tool'));
+    await tester.pumpAndSettle();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('juice.tools.mru.v1')!;
+    expect(raw, contains('other'));
+    expect(raw, contains('counter')); // not clobbered
+    expect(raw.indexOf('other'), lessThan(raw.indexOf('counter')));
+  });
 }
