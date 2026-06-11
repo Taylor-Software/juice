@@ -42,6 +42,32 @@ void main() {
     });
   });
 
+  group('Dialog marker persistence hooks', () {
+    test('restore and read back the marker', () {
+      final oracle = Oracle(data);
+      oracle.restoreDialogPos(0, 4);
+      expect(oracle.dialogPos, (row: 0, col: 4));
+    });
+
+    test('marker moves on a non-doubles beat and resets on doubles', () {
+      final oracle = Oracle(data);
+      var sawMove = false;
+      var sawReset = false;
+      for (var i = 0; i < 500; i++) {
+        final before = oracle.dialogPos;
+        final r = oracle.npcDialog();
+        if (r.summary == 'Conversation ends') {
+          expect(oracle.dialogPos, (row: 2, col: 2));
+          sawReset = true;
+        } else if (oracle.dialogPos != before) {
+          sawMove = true;
+        }
+      }
+      expect(sawMove, isTrue);
+      expect(sawReset, isTrue);
+    });
+  });
+
   group('Dungeon linger', () {
     test('linger rolls d6: only first six encounter entries appear', () {
       final oracle = Oracle(data);

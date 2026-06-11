@@ -439,9 +439,17 @@ class Oracle {
   // -- NPC dialog walk ---------------------------------------------------
 
   /// NPC dialog marker (row, col) on the 5x5 grid; starts and resets at
-  /// center "Fact". In-memory only — persisted state arrives with the
-  /// crawl-modes work.
+  /// center "Fact". Persisted via [dialogPos] getter and [restoreDialogPos].
   int _dialogRow = 2, _dialogCol = 2;
+
+  /// Current dialog marker, for persistence.
+  ({int row, int col}) get dialogPos => (row: _dialogRow, col: _dialogCol);
+
+  /// Restore a persisted dialog marker (values clamped to the 5x5 grid).
+  void restoreDialogPos(int row, int col) {
+    _dialogRow = row.clamp(0, 4);
+    _dialogCol = col.clamp(0, 4);
+  }
 
   /// One beat of NPC dialog: move the marker, read the fragment.
   /// Doubles end the conversation and reset the marker (instructions p96).
