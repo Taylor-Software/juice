@@ -110,7 +110,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
           ResultCard(
             result: _rhLast!,
             onLog: () {
-              ref.read(logProvider.notifier).add(_rhLast!.title, _rhLast!.asText);
+              ref.read(journalProvider.notifier).add(_rhLast!.title, _rhLast!.asText);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Logged')),
               );
@@ -178,7 +178,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                 ResultCard(
                   result: _mythicLast!,
                   onLog: () {
-                    ref.read(logProvider.notifier).add(
+                    ref.read(journalProvider.notifier).add(
                         _mythicLast!.title, _mythicLast!.asText);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Logged')),
@@ -263,7 +263,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   }
 
   void _logGen(GenResult g) {
-    ref.read(logProvider.notifier).add(g.title, g.asText);
+    ref.read(journalProvider.notifier).add(g.title, g.asText);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${g.title}: ${g.summary ?? g.rolls.first.value}')),
     );
@@ -306,7 +306,7 @@ class _FateResultCard extends ConsumerWidget {
                   tooltip: 'Log this result',
                   icon: const Icon(Icons.bookmark_add_outlined),
                   onPressed: () {
-                    ref.read(logProvider.notifier).add(
+                    ref.read(journalProvider.notifier).add(
                           'Fate Check (${result.likelihood.label})',
                           '${result.result} — ${result.intensity}  [${result.shorthand}]',
                         );

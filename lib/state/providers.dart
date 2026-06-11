@@ -47,26 +47,66 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   List<T> get _current => state.valueOrNull ?? <T>[];
 }
 
-// -- Log ------------------------------------------------------------------
-class LogNotifier extends _PersistedList<LogEntry> {
+// -- Journal ----------------------------------------------------------------
+class JournalNotifier extends _PersistedList<JournalEntry> {
   @override
-  String get prefsKey => 'juice.log.v1';
+  String get prefsKey => 'juice.journal.v2';
   @override
-  LogEntry fromJson(Map<String, dynamic> json) => LogEntry.fromJson(json);
+  JournalEntry fromJson(Map<String, dynamic> json) =>
+      JournalEntry.fromJson(json);
   @override
-  Map<String, dynamic> toJsonMap(LogEntry item) => item.toJson();
+  Map<String, dynamic> toJsonMap(JournalEntry item) => item.toJson();
 
-  Future<void> add(String title, String body) async {
-    final entry = LogEntry(
-      id: _newId(),
-      timestamp: DateTime.now(),
-      title: title,
-      body: body,
-    );
-    await _persist([entry, ..._current]);
+  static const _legacyKey = 'juice.log.v1';
+
+  @override
+  Future<List<JournalEntry>> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    final prefs = await SharedPreferences.getInstance();
+    final scoped = '$prefsKey.${sessions.active}';
+    // One-shot, non-destructive migration from the legacy log key. Old
+    // entries lack 'kind' and parse as JournalKind.result.
+    if (prefs.getString(scoped) == null) {
+      final legacy = prefs.getString('$_legacyKey.${sessions.active}');
+      if (legacy != null) await prefs.setString(scoped, legacy);
+    }
+    return super.build();
   }
 
-  Future<void> replace(LogEntry entry) async {
+  Future<void> add(String title, String body) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(), timestamp: DateTime.now(), title: title, body: body),
+      ..._current,
+    ]);
+  }
+
+  Future<void> addText(String body) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(),
+          timestamp: DateTime.now(),
+          title: '',
+          body: body,
+          kind: JournalKind.text),
+      ..._current,
+    ]);
+  }
+
+  Future<void> addScene(String title, {int? chaosFactor}) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(),
+          timestamp: DateTime.now(),
+          title: title,
+          body: '',
+          kind: JournalKind.scene,
+          chaosFactor: chaosFactor),
+      ..._current,
+    ]);
+  }
+
+  Future<void> replace(JournalEntry entry) async {
     await _persist([
       for (final e in _current) if (e.id == entry.id) entry else e,
     ]);
@@ -76,11 +116,12 @@ class LogNotifier extends _PersistedList<LogEntry> {
     await _persist(_current.where((e) => e.id != id).toList());
   }
 
-  Future<void> clear() async => _persist(<LogEntry>[]);
+  Future<void> clear() async => _persist(<JournalEntry>[]);
 }
 
-final logProvider =
-    AsyncNotifierProvider<LogNotifier, List<LogEntry>>(LogNotifier.new);
+final journalProvider =
+    AsyncNotifierProvider<JournalNotifier, List<JournalEntry>>(
+        JournalNotifier.new);
 
 // -- Threads --------------------------------------------------------------
 class ThreadNotifier extends _PersistedList<Thread> {
@@ -181,7 +222,8 @@ final crawlProvider =
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
-  'juice.log.v1',
+  'juice.journal.v2',
+  'juice.log.v1', // legacy; kept so v1 campaign imports round-trip
   'juice.threads.v1',
   'juice.characters.v1',
   'juice.crawl.v1',

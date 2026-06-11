@@ -73,7 +73,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                           icon: const Icon(Icons.bookmark_add_outlined),
                           onPressed: () {
                             ref
-                                .read(logProvider.notifier)
+                                .read(journalProvider.notifier)
                                 .add(title, rolled.value);
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Logged')),

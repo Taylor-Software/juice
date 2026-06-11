@@ -208,7 +208,7 @@ class _LogTabState extends ConsumerState<_LogTab> {
 
   @override
   Widget build(BuildContext context) {
-    final async = ref.watch(logProvider);
+    final async = ref.watch(journalProvider);
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
@@ -264,7 +264,7 @@ class _LogTabState extends ConsumerState<_LogTab> {
                 child: TextButton.icon(
                   icon: const Icon(Icons.clear_all),
                   label: const Text('Clear'),
-                  onPressed: () => ref.read(logProvider.notifier).clear(),
+                  onPressed: () => ref.read(journalProvider.notifier).clear(),
                 ),
               ),
             ),
@@ -305,8 +305,8 @@ class _LogTabState extends ConsumerState<_LogTab> {
   }
 
   Future<void> _onAction(
-      String action, LogEntry entry, List<Thread> threads) async {
-    final notifier = ref.read(logProvider.notifier);
+      String action, JournalEntry entry, List<Thread> threads) async {
+    final notifier = ref.read(journalProvider.notifier);
     switch (action) {
       case 'delete':
         await notifier.remove(entry.id);
