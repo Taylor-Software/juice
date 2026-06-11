@@ -7,9 +7,14 @@ import '../engine/models.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 
+String _licenseLabel(String licenseUrl) {
+  if (licenseUrl.contains('by-nc-sa')) return 'CC-BY-NC-SA 4.0';
+  return 'CC-BY 4.0';
+}
+
 class MovesScreen extends ConsumerStatefulWidget {
-  const MovesScreen({super.key, required this.rulesetId});
-  final String rulesetId;
+  const MovesScreen({super.key, required this.rulesetIds});
+  final List<String> rulesetIds;
 
   @override
   ConsumerState<MovesScreen> createState() => _MovesScreenState();
@@ -21,69 +26,103 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final asyncData = ref.watch(rulesetDataProvider(widget.rulesetId));
-    return asyncData.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Error: $e')),
-      data: (data) {
-        final meta = data['meta'] as Map<String, dynamic>;
-        return DefaultTabController(
-          length: 2,
-          child: Column(
-            children: [
-              const Material(
-                child: TabBar(tabs: [Tab(text: 'Moves'), Tab(text: 'Oracles')]),
-              ),
-              if (_last != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                  child: ResultCard(
-                    result: _last!,
-                    onLog: () {
-                      ref
-                          .read(logProvider.notifier)
-                          .add(_last!.title, _last!.asText);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Logged')));
-                    },
-                  ),
-                ),
-              Expanded(
-                child: TabBarView(children: [
-                  _MovesList(
-                      data: data,
-                      onRoll: (g) => setState(() => _last = g),
-                      iron: _iron),
-                  _OraclesList(
-                      data: data,
-                      onRoll: (g) => setState(() => _last = g),
-                      iron: _iron),
-                ]),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(4),
-                child: Text(
-                  '${meta['title']} © ${(meta['authors'] as List).join(', ')} — CC-BY 4.0',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
+    final asyncs = widget.rulesetIds
+        .map((id) => ref.watch(rulesetDataProvider(id)))
+        .toList();
+    if (asyncs.any((a) => a.isLoading)) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final err = asyncs.where((a) => a.hasError).firstOrNull;
+    if (err != null) return Center(child: Text('Error: ${err.error}'));
+    final datas = asyncs.map((a) => a.value!).toList();
+    final categories = <Map<String, dynamic>>[
+      for (var i = 0; i < datas.length; i++)
+        for (final cat
+            in (datas[i]['move_categories'] as List).cast<Map<String, dynamic>>())
+          i == 0
+              ? cat
+              : {
+                  ...cat,
+                  'name':
+                      '${cat['name']} (${(datas[i]['meta'] as Map)['title']})'
+                },
+    ];
+    final collections = <Map<String, dynamic>>[
+      for (var i = 0; i < datas.length; i++)
+        for (final coll in (datas[i]['oracle_collections'] as List)
+            .cast<Map<String, dynamic>>())
+          i == 0
+              ? coll
+              : {
+                  ...coll,
+                  'name':
+                      '${coll['name']} (${(datas[i]['meta'] as Map)['title']})'
+                },
+    ];
+    final attributionLines = datas.map((d) {
+      final meta = d['meta'] as Map<String, dynamic>;
+      final title = meta['title'] as String;
+      final authors = (meta['authors'] as List).join(', ');
+      final license = _licenseLabel(meta['license'] as String);
+      return '$title © $authors — $license';
+    }).join('\n');
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          const Material(
+            child: TabBar(tabs: [Tab(text: 'Moves'), Tab(text: 'Oracles')]),
           ),
-        );
-      },
+          if (_last != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+              child: ResultCard(
+                result: _last!,
+                onLog: () {
+                  ref
+                      .read(logProvider.notifier)
+                      .add(_last!.title, _last!.asText);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Logged')));
+                },
+              ),
+            ),
+          Expanded(
+            child: TabBarView(children: [
+              _MovesList(
+                  categories: categories,
+                  onRoll: (g) => setState(() => _last = g),
+                  iron: _iron),
+              _OraclesList(
+                  collections: collections,
+                  onRoll: (g) => setState(() => _last = g),
+                  iron: _iron),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(4),
+            child: Text(
+              attributionLines,
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _MovesList extends StatelessWidget {
-  const _MovesList({required this.data, required this.onRoll, required this.iron});
-  final Map<String, dynamic> data;
+  const _MovesList(
+      {required this.categories, required this.onRoll, required this.iron});
+  final List<Map<String, dynamic>> categories;
   final void Function(GenResult) onRoll;
   final Ironsworn iron;
 
   @override
   Widget build(BuildContext context) {
-    final cats = (data['move_categories'] as List).cast<Map<String, dynamic>>();
+    final cats = categories;
     return ListView(
       children: [
         for (final cat in cats)
@@ -202,15 +241,15 @@ class _MovesList extends StatelessWidget {
 }
 
 class _OraclesList extends StatelessWidget {
-  const _OraclesList({required this.data, required this.onRoll, required this.iron});
-  final Map<String, dynamic> data;
+  const _OraclesList(
+      {required this.collections, required this.onRoll, required this.iron});
+  final List<Map<String, dynamic>> collections;
   final void Function(GenResult) onRoll;
   final Ironsworn iron;
 
   @override
   Widget build(BuildContext context) {
-    final colls =
-        (data['oracle_collections'] as List).cast<Map<String, dynamic>>();
+    final colls = collections;
     return ListView(
       children: [
         for (final coll in colls)
