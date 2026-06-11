@@ -69,8 +69,8 @@ The journal becomes the home surface; every tool is summoned over it
 | 2 | Shell swap (journal home + activity-grouped tool drawer) | **Done** — PR #15 (2026-06-11) |
 | 3 | Dice roller (notation engine) | **Done** — PR #16 (2026-06-11) |
 | 4 | Character sheets (flexible blocks) | **Done** — PR #17 (2026-06-11) |
-| 5 | Encounter tracker (initiative + tracks) | next |
-| 6 | Maps (dungeon rooms + wilderness hex) | planned |
+| 5 | Encounter tracker (initiative + tracks) | **Done** — PR #18 (2026-06-11) |
+| 6 | Maps (dungeon rooms + wilderness hex) | next |
 
 ## Cloud storage stance (BYO cloud, no server)
 
