@@ -122,17 +122,35 @@ class _ThreadsTab extends ConsumerWidget {
 }
 
 // -- Characters -----------------------------------------------------------
-class _CharactersTab extends ConsumerWidget {
+class _CharactersTab extends ConsumerStatefulWidget {
   const _CharactersTab();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CharactersTab> createState() => _CharactersTabState();
+}
+
+class _CharactersTabState extends ConsumerState<_CharactersTab> {
+  /// Id of the character whose sheet is open, or null for the list view.
+  String? _editingId;
+
+  @override
+  Widget build(BuildContext context) {
     final async = ref.watch(charactersProvider);
     return Scaffold(
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (chars) {
+          if (_editingId != null) {
+            // Resolve fresh each build; if the id vanished (e.g. session
+            // switch), fall back to the list view.
+            final match = chars.where((c) => c.id == _editingId);
+            if (match.isEmpty) {
+              _editingId = null;
+            } else {
+              return _buildSheet(context, match.first);
+            }
+          }
           if (chars.isEmpty) {
             return const _Empty('No characters yet. Track NPCs and PCs.');
           }
@@ -141,55 +159,309 @@ class _CharactersTab extends ConsumerWidget {
             itemCount: chars.length,
             itemBuilder: (context, i) {
               final c = chars[i];
+              final t = c.tracks.isEmpty ? null : c.tracks.first;
               return Card(
                 child: ListTile(
                   title: Text(c.name),
-                  subtitle: c.note.isEmpty ? null : Text(c.note),
+                  subtitle: t != null
+                      ? Text('${t.label} ${t.current}/${t.max}')
+                      : (c.note.isEmpty ? null : Text(c.note)),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () =>
                         ref.read(charactersProvider.notifier).remove(c.id),
                   ),
-                  onTap: () => _editCharacter(context, ref, c),
+                  onTap: () => setState(() => _editingId = c.id),
                 ),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _editCharacter(context, ref, null),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _editingId == null
+          ? FloatingActionButton(
+              onPressed: () => _addCharacter(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
-  Future<void> _editCharacter(
-      BuildContext context, WidgetRef ref, Character? existing) async {
+  Future<void> _addCharacter(BuildContext context) async {
     final result = await showDialog<({String title, String note})>(
       context: context,
-      builder: (_) => _EditDialog(
-        heading: existing == null ? 'New Character' : 'Edit Character',
+      builder: (_) => const _EditDialog(
+        heading: 'New Character',
         labelA: 'Name',
         labelB: 'Note (optional)',
-        initialA: existing?.name ?? '',
-        initialB: existing?.note ?? '',
+        initialA: '',
+        initialB: '',
       ),
     );
     if (result == null || result.title.trim().isEmpty) return;
     final notifier = ref.read(charactersProvider.notifier);
-    if (existing == null) {
-      await notifier.add(result.title.trim());
-      if (result.note.trim().isNotEmpty) {
-        final added = ref.read(charactersProvider).valueOrNull?.first;
-        if (added != null) {
-          await notifier.replace(added.copyWith(note: result.note.trim()));
-        }
-      }
-    } else {
-      await notifier.replace(
-          existing.copyWith(name: result.title.trim(), note: result.note.trim()));
+    await notifier.add(result.title.trim());
+    final added = ref.read(charactersProvider).valueOrNull?.first;
+    if (added == null) return;
+    if (result.note.trim().isNotEmpty) {
+      await notifier.replace(added.copyWith(note: result.note.trim()));
     }
+    if (mounted) setState(() => _editingId = added.id);
+  }
+
+  Future<void> _editNameNote(BuildContext context, Character c) async {
+    final result = await showDialog<({String title, String note})>(
+      context: context,
+      builder: (_) => _EditDialog(
+        heading: 'Edit Character',
+        labelA: 'Name',
+        labelB: 'Note (optional)',
+        initialA: c.name,
+        initialB: c.note,
+      ),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    await ref.read(charactersProvider.notifier).replace(
+        c.copyWith(name: result.title.trim(), note: result.note.trim()));
+  }
+
+  Future<void> _replace(Character updated) =>
+      ref.read(charactersProvider.notifier).replace(updated);
+
+  Widget _buildSheet(BuildContext context, Character c) {
+    final theme = Theme.of(context);
+    Widget section(String title) => Padding(
+          padding: const EdgeInsets.only(top: 16, bottom: 4),
+          child: Text(title, style: theme.textTheme.titleMedium),
+        );
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        Row(
+          children: [
+            IconButton(
+              key: const Key('sheet-back'),
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => setState(() => _editingId = null),
+            ),
+            Expanded(
+              child: Text(c.name,
+                  style: theme.textTheme.titleLarge,
+                  overflow: TextOverflow.ellipsis),
+            ),
+            IconButton(
+              icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Edit name & notes',
+              onPressed: () => _editNameNote(context, c),
+            ),
+          ],
+        ),
+        section('Stats'),
+        for (var i = 0; i < c.stats.length; i++)
+          Row(
+            children: [
+              Expanded(
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(
+                      text: c.stats[i].label,
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  TextSpan(text: '  ${c.stats[i].value}'),
+                ])),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _replace(c.copyWith(
+                    stats: [...c.stats]..removeAt(i))),
+              ),
+            ],
+          ),
+        OutlinedButton.icon(
+          key: const Key('add-stat'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add stat'),
+          onPressed: () => _addStat(context, c),
+        ),
+        section('Tracks'),
+        for (var i = 0; i < c.tracks.length; i++)
+          Row(
+            children: [
+              Expanded(child: Text(c.tracks[i].label)),
+              IconButton(
+                key: Key('track-minus-$i'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: () => _replace(c.copyWith(
+                    tracks: [...c.tracks]..[i] = c.tracks[i].adjusted(-1))),
+              ),
+              Text('${c.tracks[i].current}/${c.tracks[i].max}'),
+              IconButton(
+                key: Key('track-plus-$i'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => _replace(c.copyWith(
+                    tracks: [...c.tracks]..[i] = c.tracks[i].adjusted(1))),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _replace(c.copyWith(
+                    tracks: [...c.tracks]..removeAt(i))),
+              ),
+            ],
+          ),
+        OutlinedButton.icon(
+          key: const Key('add-track'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add track'),
+          onPressed: () => _addTrack(context, c),
+        ),
+        section('Tags'),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            for (final tag in c.tags)
+              InputChip(
+                label: Text(tag),
+                onDeleted: () => _replace(c.copyWith(
+                    tags: c.tags.where((t) => t != tag).toList())),
+              ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        OutlinedButton.icon(
+          key: const Key('add-tag'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add tag'),
+          onPressed: () => _addTag(context, c),
+        ),
+        section('Notes'),
+        Text(c.note.isEmpty ? '—' : c.note),
+      ],
+    );
+  }
+
+  Future<void> _addStat(BuildContext context, Character c) async {
+    final result = await showDialog<({String label, String value})>(
+      context: context,
+      builder: (context) {
+        final label = TextEditingController();
+        final value = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add stat'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('stat-label'),
+                controller: label,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Label'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('stat-value'),
+                controller: value,
+                decoration: const InputDecoration(labelText: 'Value'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(
+                  context, (label: label.text, value: value.text)),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result == null || result.label.trim().isEmpty) return;
+    await _replace(c.copyWith(stats: [
+      ...c.stats,
+      CharStat(label: result.label.trim(), value: result.value.trim()),
+    ]));
+  }
+
+  Future<void> _addTrack(BuildContext context, Character c) async {
+    final result = await showDialog<({String label, String max})>(
+      context: context,
+      builder: (context) {
+        final label = TextEditingController();
+        final max = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add track'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: const Key('track-label'),
+                controller: label,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Label'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                key: const Key('track-max'),
+                controller: max,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Max'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.pop(context, (label: label.text, max: max.text)),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result == null || result.label.trim().isEmpty) return;
+    var max = int.tryParse(result.max.trim()) ?? 1;
+    if (max < 1) max = 1;
+    await _replace(c.copyWith(tracks: [
+      ...c.tracks,
+      CharTrack(label: result.label.trim(), current: max, max: max),
+    ]));
+  }
+
+  Future<void> _addTag(BuildContext context, Character c) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final tag = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add tag'),
+          content: TextField(
+            key: const Key('tag-input'),
+            controller: tag,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Tag'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, tag.text),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+    final tag = result?.trim() ?? '';
+    if (tag.isEmpty || c.tags.contains(tag)) return;
+    await _replace(c.copyWith(tags: [...c.tags, tag]));
   }
 }
 

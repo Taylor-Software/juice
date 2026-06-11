@@ -56,4 +56,16 @@ void main() {
     expect(c.tracks.single.max, 0);
     expect(c.tags, ['ok']);
   });
+
+  test('negative track values are sanitized on parse', () {
+    final c = Character.fromJson({
+      'id': '5',
+      'name': 'Z',
+      'tracks': [
+        {'label': 'HP', 'current': 12, 'max': -3},
+      ],
+    });
+    expect(c.tracks.single.current, 0);
+    expect(c.tracks.single.max, 0);
+  });
 }

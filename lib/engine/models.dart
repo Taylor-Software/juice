@@ -191,12 +191,14 @@ class CharTrack {
       {'label': label, 'current': current, 'max': max};
 
   /// Parses one track entry; returns null for anything that isn't a map.
-  static CharTrack? maybeFromJson(dynamic j) => j is Map
-      ? CharTrack(
-          label: (j['label'] as String?) ?? '',
-          current: (j['current'] as int?) ?? 0,
-          max: (j['max'] as int?) ?? 0)
-      : null;
+  /// Sanitizes values: `max` floored at 0, `current` clamped into 0..max.
+  static CharTrack? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final max = ((j['max'] as int?) ?? 0).clamp(0, 1 << 31);
+    final current = ((j['current'] as int?) ?? 0).clamp(0, max);
+    return CharTrack(
+        label: (j['label'] as String?) ?? '', current: current, max: max);
+  }
 }
 
 /// Persisted character/NPC the player tracks, with an optional sheet
