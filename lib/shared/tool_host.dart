@@ -51,13 +51,18 @@ class ToolHostState extends ConsumerState<ToolHost> {
   void openTool(String id) {
     if (!_instantiated.contains(id)) _instantiated.add(id);
     ref.read(toolMruProvider.notifier).record(id);
+    // Release the search field so the soft keyboard doesn't outlive it.
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _open = true;
       _activeId = id;
     });
   }
 
-  void close() => setState(() => _open = false);
+  void close() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => _open = false);
+  }
 
   @override
   void didUpdateWidget(ToolHost oldWidget) {
