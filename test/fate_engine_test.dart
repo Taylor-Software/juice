@@ -180,6 +180,31 @@ void main() {
     });
   });
 
+  group('NPC dialog walk', () {
+    test('walks the grid, wraps, and ends on doubles', () {
+      final oracle = Oracle(data);
+      var sawEnd = false;
+      var sawPast = false;
+      var sawPresent = false;
+      for (var i = 0; i < 2000; i++) {
+        final r = oracle.npcDialog();
+        if (r.summary == 'Conversation ends') {
+          sawEnd = true;
+          continue;
+        }
+        final labels = r.rolls.map((x) => x.label).toList();
+        expect(labels, containsAll(['Fragment', 'Tone', 'Subject']));
+        final tense =
+            r.rolls.firstWhere((x) => x.label == 'Fragment').detail!;
+        if (tense.contains('past')) sawPast = true;
+        if (tense.contains('present')) sawPresent = true;
+      }
+      expect(sawEnd, isTrue, reason: 'doubles (10%) must end conversations');
+      expect(sawPast && sawPresent, isTrue,
+          reason: 'walk must reach both tense bands over 2000 beats');
+    });
+  });
+
   group('Composite generators produce results', () {
     final o = oracleWith(99);
     test('all generators return non-empty output', () {
