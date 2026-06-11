@@ -333,6 +333,57 @@ EXT_DIALOG_TOPIC = [
     (100, "Why the leadership needs to change"),
 ]
 
+# Mythic GME 2e core (Word Mill Games, CC-BY-NC 4.0; attribution rendered
+# in-app). Fate Chart is diagonal-generated from a 17-entry threshold
+# ladder; cell (odds_index, chaos) = ladder[9 - chaos + odds_index].
+MYTHIC_ODDS = ["Certain", "Nearly Certain", "Very Likely", "Likely",
+               "50/50", "Unlikely", "Very Unlikely", "Nearly Impossible",
+               "Impossible"]
+MYTHIC_LADDER = [99, 99, 99, 95, 90, 85, 75, 65, 50, 35, 25, 15, 10, 5, 1, 1, 1]
+
+def mythic_bands(t):
+    """(exceptional_yes_max, target, exceptional_no_min) for target t."""
+    if t == 1:
+        return (0, 1, 81)
+    if t == 99:
+        return (20, 99, 101)
+    return (t * 20 // 100, t, 100 - ((100 - t) * 20 // 100) + 1)
+
+def mythic_target(odds_index, chaos):
+    return MYTHIC_LADDER[9 - chaos + odds_index]
+
+# (max_roll, label, list_target) — list_target: which tracker list the
+# event points at, or None.
+MYTHIC_EVENT_FOCUS = [
+    (5, "Remote Event", None),
+    (10, "Ambiguous Event", None),
+    (20, "New NPC", None),
+    (40, "NPC Action", "character"),
+    (45, "NPC Negative", "character"),
+    (50, "NPC Positive", "character"),
+    (55, "Move toward a Thread", "thread"),
+    (65, "Move away from a Thread", "thread"),
+    (70, "Close a Thread", "thread"),
+    (80, "PC Negative", None),
+    (85, "PC Positive", None),
+    (100, "Current Context", None),
+]
+
+def mythic_fate(odds_index, chaos):
+    """Roll the 2e Fate Chart. Returns answer + random-event flag."""
+    exc_yes, target, exc_no = mythic_bands(mythic_target(odds_index, chaos))
+    roll = d(100)
+    if roll <= exc_yes:
+        answer = "Exceptional Yes"
+    elif roll <= target:
+        answer = "Yes"
+    elif roll < exc_no:
+        answer = "No"
+    else:
+        answer = "Exceptional No"
+    random_event = roll < 100 and roll % 11 == 0 and roll // 11 <= chaos
+    return {"roll": roll, "answer": answer, "random_event": random_event}
+
 # Wilderness Monster Encounter (pocketfold left extension), verified vs PDF.
 # Quantity prefix per monster: '+' = 1d6-1@adv, '' = 1d6-1, '-' = 1d6-1@dis.
 # Row keys: '1'..'0' (d6+mod result), '*' = Forest special, '**' = doubles/Bandits.
@@ -578,6 +629,46 @@ def verify():
     if DIALOG_DIRECTION[-1][0] != 10 or DIALOG_SUBJECT[-1][0] != 10:
         failures.append("dialog bands must cover 1..10")
 
+    # 8. Mythic 2e fate chart + event focus.
+    if len(MYTHIC_LADDER) != 17 or len(MYTHIC_ODDS) != 9:
+        failures.append("mythic ladder/odds shape wrong")
+    # Published cell triples (excYes, target, excNo).
+    for (oi, chaos, expected) in [
+        (4, 5, (10, 50, 91)),   # 50/50 at chaos 5
+        (0, 1, (10, 50, 91)),   # Certain at chaos 1
+        (1, 1, (7, 35, 88)),    # Nearly Certain at chaos 1
+        (0, 2, (13, 65, 94)),   # Certain at chaos 2
+    ]:
+        got = mythic_bands(mythic_target(oi, chaos))
+        if got != expected:
+            failures.append(f"mythic cell odds={oi} chaos={chaos}: {got} != {expected}")
+    # Monotonicity: more chaos -> target never drops; worse odds -> never rises.
+    for oi in range(9):
+        targets = [mythic_target(oi, c) for c in range(1, 10)]
+        if targets != sorted(targets):
+            failures.append(f"mythic targets not monotonic in chaos for odds {oi}")
+    for c in range(1, 10):
+        col = [mythic_target(oi, c) for oi in range(9)]
+        if col != sorted(col, reverse=True):
+            failures.append(f"mythic targets not monotonic in odds for chaos {c}")
+    # Event focus: increasing thresholds ending at 100.
+    focus_maxes = [m for m, _, _ in MYTHIC_EVENT_FOCUS]
+    if focus_maxes != sorted(focus_maxes) or focus_maxes[-1] != 100 or \
+            len(set(focus_maxes)) != len(focus_maxes):
+        failures.append("mythic event focus ranges malformed")
+    # Simulation: 50/50 at chaos 5 -> ~50% yes-like, ~10% each exceptional,
+    # random event rate ~5% (doubles 11..55).
+    sims = [mythic_fate(4, 5) for _ in range(N)]
+    yes_like = sum(s["answer"].endswith("Yes") for s in sims) / N
+    exc = sum(s["answer"] == "Exceptional Yes" for s in sims) / N
+    re_rate = sum(s["random_event"] for s in sims) / N
+    if abs(yes_like - 0.50) > 0.01:
+        failures.append(f"mythic 50/50 yes-like {yes_like:.3f} != ~0.50")
+    if abs(exc - 0.10) > 0.005:
+        failures.append(f"mythic exceptional-yes {exc:.4f} != ~0.10")
+    if abs(re_rate - 0.05) > 0.005:
+        failures.append(f"mythic random-event rate {re_rate:.4f} != ~0.05")
+
     return failures
 
 
@@ -609,6 +700,11 @@ def emit_json(path):
             "grid": DIALOG_GRID,
             "direction": [list(x) for x in DIALOG_DIRECTION],
             "subject": [list(x) for x in DIALOG_SUBJECT],
+        },
+        "mythic": {
+            "odds": MYTHIC_ODDS,
+            "bands": [list(mythic_bands(t)) for t in MYTHIC_LADDER],
+            "event_focus": [list(e) for e in MYTHIC_EVENT_FOCUS],
         },
     }
     with open(path, "w") as f:
