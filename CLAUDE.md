@@ -23,4 +23,4 @@ Working rules for this repo:
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` + `file_picker` (campaign file export/import) only.
   No dio/repository (no network), no codegen (static data), no router (4-tab
   IndexedStack). Add rails only when a real need appears.
-- Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`).
+- Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`). The journal lives in `juice.journal.v2` (one-shot migration from `juice.log.v1` in `JournalNotifier.build`; the legacy key stays import-only and is excluded from campaign exports). Campaign files are schema v2; v1 still imports.

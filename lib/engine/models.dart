@@ -65,33 +65,44 @@ class GenResult {
   }
 }
 
-/// Persisted log entry.
-class LogEntry {
-  const LogEntry({
+/// Kind of journal entry: player prose, a tool result, or a scene divider.
+enum JournalKind { text, result, scene }
+
+/// Persisted journal entry (formerly LogEntry; old JSON parses as `result`).
+class JournalEntry {
+  const JournalEntry({
     required this.id,
     required this.timestamp,
     required this.title,
     required this.body,
     this.threadId,
+    this.kind = JournalKind.result,
+    this.chaosFactor,
   });
   final String id;
   final DateTime timestamp;
   final String title;
   final String body;
   final String? threadId;
+  final JournalKind kind;
 
-  LogEntry copyWith({
+  /// Chaos factor snapshot for scene dividers (Mythic), else null.
+  final int? chaosFactor;
+
+  JournalEntry copyWith({
     String? title,
     String? body,
     String? threadId,
     bool clearThreadId = false,
   }) =>
-      LogEntry(
+      JournalEntry(
         id: id,
         timestamp: timestamp,
         title: title ?? this.title,
         body: body ?? this.body,
         threadId: clearThreadId ? null : (threadId ?? this.threadId),
+        kind: kind,
+        chaosFactor: chaosFactor,
       );
 
   Map<String, dynamic> toJson() => {
@@ -100,14 +111,18 @@ class LogEntry {
         'title': title,
         'body': body,
         'threadId': threadId,
+        'kind': kind.name,
+        if (chaosFactor != null) 'chaosFactor': chaosFactor,
       };
 
-  factory LogEntry.fromJson(Map<String, dynamic> j) => LogEntry(
+  factory JournalEntry.fromJson(Map<String, dynamic> j) => JournalEntry(
         id: j['id'] as String,
         timestamp: DateTime.parse(j['timestamp'] as String),
         title: j['title'] as String,
         body: j['body'] as String,
         threadId: j['threadId'] as String?,
+        kind: JournalKind.values.asNameMap()[j['kind']] ?? JournalKind.result,
+        chaosFactor: j['chaosFactor'] as int?,
       );
 }
 
@@ -217,7 +232,7 @@ class CrawlState {
       );
 }
 
-/// A campaign/session: an isolated set of threads, characters, log, crawl.
+/// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {
   const SessionMeta({required this.id, required this.name});
   final String id;

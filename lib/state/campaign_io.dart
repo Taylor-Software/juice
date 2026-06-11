@@ -4,7 +4,7 @@ import '../engine/models.dart';
 import 'providers.dart' show sessionScopedKeys;
 
 /// Campaign file format version this build writes and the max it reads.
-const campaignSchemaVersion = 1;
+const campaignSchemaVersion = 2;
 
 const _appMarker = 'juice-oracle';
 
@@ -64,9 +64,13 @@ CampaignImport parseCampaign(String raw) {
     if (!data.containsKey(key)) continue;
     final value = data[key];
     try {
-      if (key == 'juice.log.v1') {
+      if (key == 'juice.journal.v2') {
         (value as List)
-            .map((e) => LogEntry.fromJson(e as Map<String, dynamic>))
+            .map((e) => JournalEntry.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (key == 'juice.log.v1') {
+        (value as List)
+            .map((e) => JournalEntry.fromJson(e as Map<String, dynamic>))
             .toList();
       } else if (key == 'juice.threads.v1') {
         (value as List)

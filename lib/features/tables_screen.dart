@@ -69,14 +69,14 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                     children: [
                       if (rolled != null)
                         IconButton(
-                          tooltip: 'Log',
+                          tooltip: 'Add to journal',
                           icon: const Icon(Icons.bookmark_add_outlined),
                           onPressed: () {
                             ref
-                                .read(logProvider.notifier)
+                                .read(journalProvider.notifier)
                                 .add(title, rolled.value);
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Logged')),
+                              const SnackBar(content: Text('Added to journal')),
                             );
                           },
                         ),

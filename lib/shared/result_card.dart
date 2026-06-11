@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
 
-/// Renders a composite [GenResult] with an optional "Log" action.
+/// Renders a composite [GenResult] with an optional "Add to journal" action.
 class ResultCard extends StatelessWidget {
   const ResultCard({super.key, required this.result, this.onLog});
 
@@ -25,7 +25,7 @@ class ResultCard extends StatelessWidget {
                 ),
                 if (onLog != null)
                   IconButton(
-                    tooltip: 'Log this result',
+                    tooltip: 'Add to journal',
                     icon: const Icon(Icons.bookmark_add_outlined),
                     onPressed: onLog,
                   ),
