@@ -153,11 +153,42 @@ class Oracle {
         Roll(label: 'News', value: _pick('settlement_news')),
       ]);
 
-  GenResult wildernessStep() => GenResult(title: 'Wilderness Step', rolls: [
-        Roll(label: 'Environment', value: _pick('wilderness_environment')),
-        Roll(label: 'Encounter', value: _pick('wilderness_encounter')),
-        Roll(label: 'Weather', value: _pick('wilderness_weather')),
-      ]);
+  /// One stateful wilderness travel step (replaces the stateless
+  /// Wilderness Step). Environment drifts by 2dF from the previous hex
+  /// (header "2dF Env"); Lost/Found cycle per instructions p73:
+  /// encounter 10 while exploring -> Lost (d6 encounters);
+  /// encounter 6 (River/Road) while Lost -> reoriented.
+  ({GenResult result, CrawlState state}) wildernessTravel(CrawlState s) {
+    final env = s.envRow == null
+        ? dice.d10Index()
+        : (s.envRow! + dice.fate() + dice.fate()).clamp(1, 10).toInt();
+    final encIdx = s.lost ? dice.dN(6) : dice.d10Index();
+    final encounter = data.table('wilderness_encounter')[encIdx - 1];
+    var lost = s.lost;
+    String? note;
+    if (!lost && encIdx == 10) {
+      lost = true;
+      note = 'You are now Lost — encounters drop to a d6';
+    } else if (lost && encIdx == 6) {
+      lost = false;
+      note = 'Reoriented — no longer Lost';
+    }
+    final rolls = <Roll>[
+      Roll(
+          label: 'Environment',
+          value: data.table('wilderness_environment')[env - 1],
+          detail: s.envRow == null ? 'd10 ${d10Label(env)}' : '2dF drift'),
+      Roll(
+          label: 'Encounter',
+          value: encounter,
+          detail: s.lost ? 'd6 $encIdx (lost)' : 'd10 ${d10Label(encIdx)}'),
+      Roll(label: 'Weather', value: _pick('wilderness_weather')),
+    ];
+    return (
+      result: GenResult(title: 'Wilderness Travel', summary: note, rolls: rolls),
+      state: s.copyWith(envRow: env, lost: lost),
+    );
+  }
 
   GenResult naturalHazard() => GenResult(title: 'Natural Hazard', rolls: [
         Roll(label: 'Hazard', value: _pick('natural_hazard')),

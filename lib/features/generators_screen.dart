@@ -37,7 +37,6 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     _Gen('NPC Behavior (Passive)', (o) => o.npcBehavior(skew: -1)),
     _Gen('NPC Combat', (o) => o.npcCombat()),
     _Gen('Settlement', (o) => o.settlement()),
-    _Gen('Wilderness Step', (o) => o.wildernessStep()),
     _Gen('Natural Hazard', (o) => o.naturalHazard()),
     _Gen('Monster Encounter', (o) => o.monsterEncounter()),
     _Gen('Creature Tracks', (o) => o.creatureTracks()),
