@@ -66,8 +66,8 @@ The journal becomes the home surface; every tool is summoned over it
 | Phase | Item | Status |
 |---|---|---|
 | 1 | Journal core (entry kinds, migration, journal screen) | **Done** — PR #14 (2026-06-11) |
-| 2 | Shell swap (journal home + activity-grouped tool drawer) | next |
-| 3 | Dice roller (notation engine) | planned |
+| 2 | Shell swap (journal home + activity-grouped tool drawer) | **Done** — PR #15 (2026-06-11) |
+| 3 | Dice roller (notation engine) | next |
 | 4 | Character sheets (flexible blocks) | planned |
 | 5 | Encounter tracker (initiative + tracks) | planned |
 | 6 | Maps (dungeon rooms + wilderness hex) | planned |
