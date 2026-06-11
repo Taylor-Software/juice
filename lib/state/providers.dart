@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_data.dart';
+import 'campaign_io.dart';
 
 /// Loads the data asset and builds the engine once.
 final oracleProvider = FutureProvider<Oracle>((ref) async {
@@ -233,6 +234,36 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final remaining = s.sessions.where((m) => m.id != id).toList();
     final active = s.active == id ? remaining.first.id : s.active;
     await _save(SessionsState(active: active, sessions: remaining));
+  }
+
+  /// Serialize the active session to the campaign file format.
+  Future<String> exportActive() async {
+    final s = state.valueOrNull ?? await future;
+    final prefs = await SharedPreferences.getInstance();
+    final rawByKey = <String, String>{};
+    for (final base in sessionScopedKeys) {
+      final raw = prefs.getString('$base.${s.active}');
+      if (raw != null) rawByKey[base] = raw;
+    }
+    return encodeCampaign(
+      name: s.activeMeta.name,
+      savedAt: DateTime.now(),
+      rawByKey: rawByKey,
+    );
+  }
+
+  /// Import a campaign file as a NEW session and switch to it.
+  /// Throws [FormatException] on invalid files.
+  Future<void> importCampaign(String fileContent) async {
+    final parsed = parseCampaign(fileContent);
+    final s = state.valueOrNull ?? await future;
+    final meta = SessionMeta(id: _newId(), name: parsed.name);
+    final prefs = await SharedPreferences.getInstance();
+    for (final e in parsed.rawByKey.entries) {
+      await prefs.setString('${e.key}.${meta.id}', e.value);
+    }
+    await _save(
+        SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }
 }
 
