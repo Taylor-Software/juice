@@ -150,6 +150,7 @@ class CrawlState {
     this.lost = false,
     this.dialogRow = 2,
     this.dialogCol = 2,
+    this.chaosFactor = 5,
   });
 
   /// Current wilderness environment row 1..10; null until first travel step.
@@ -162,18 +163,23 @@ class CrawlState {
   final int dialogRow;
   final int dialogCol;
 
+  /// Mythic GME 2e Chaos Factor (1..9, default 5).
+  final int chaosFactor;
+
   CrawlState copyWith({
     int? envRow,
     bool clearEnvRow = false,
     bool? lost,
     int? dialogRow,
     int? dialogCol,
+    int? chaosFactor,
   }) =>
       CrawlState(
         envRow: clearEnvRow ? null : (envRow ?? this.envRow),
         lost: lost ?? this.lost,
         dialogRow: dialogRow ?? this.dialogRow,
         dialogCol: dialogCol ?? this.dialogCol,
+        chaosFactor: chaosFactor ?? this.chaosFactor,
       );
 
   Map<String, dynamic> toJson() => {
@@ -181,6 +187,7 @@ class CrawlState {
         'lost': lost,
         'dialogRow': dialogRow,
         'dialogCol': dialogCol,
+        'chaosFactor': chaosFactor,
       };
 
   factory CrawlState.fromJson(Map<String, dynamic> j) => CrawlState(
@@ -188,6 +195,7 @@ class CrawlState {
         lost: (j['lost'] as bool?) ?? false,
         dialogRow: (j['dialogRow'] as int?) ?? 2,
         dialogCol: (j['dialogCol'] as int?) ?? 2,
+        chaosFactor: (j['chaosFactor'] as int?) ?? 5,
       );
 }
 

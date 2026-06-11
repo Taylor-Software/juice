@@ -80,6 +80,23 @@ class OracleData {
   List<List<dynamic>> get dialogSubject =>
       (_dialog['subject'] as List).map((e) => e as List).toList();
 
+  // Mythic GME 2e --------------------------------------------------------
+  Map<String, dynamic> get _mythic => _json['mythic'] as Map<String, dynamic>;
+
+  /// Odds labels, Certain..Impossible.
+  List<String> get mythicOdds =>
+      (_mythic['odds'] as List).cast<String>();
+
+  /// 17-entry threshold ladder of [excYesMax, target, excNoMin]; cell for
+  /// (oddsIndex, chaos) is index `9 - chaos + oddsIndex`.
+  List<List<int>> get mythicBands => (_mythic['bands'] as List)
+      .map((e) => (e as List).cast<int>())
+      .toList();
+
+  /// [maxRoll, label, listTarget|null] event focus ranges.
+  List<List<dynamic>> get mythicEventFocus =>
+      (_mythic['event_focus'] as List).map((e) => e as List).toList();
+
   /// All raw table keys (for the browse screen), sorted.
   List<String> get allTableKeys =>
       _tables.keys.where((k) => k != 'intensity').toList()..sort();
