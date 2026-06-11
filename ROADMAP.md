@@ -70,7 +70,11 @@ The journal becomes the home surface; every tool is summoned over it
 | 3 | Dice roller (notation engine) | **Done** — PR #16 (2026-06-11) |
 | 4 | Character sheets (flexible blocks) | **Done** — PR #17 (2026-06-11) |
 | 5 | Encounter tracker (initiative + tracks) | **Done** — PR #18 (2026-06-11) |
-| 6 | Maps (dungeon rooms + wilderness hex) | next |
+| 6 | Maps (dungeon rooms + wilderness hex) | **Done** — PR #19 (2026-06-11) |
+
+**Cycle 2 complete** (2026-06-11, PRs #14–#19). The journal is the home
+surface; dice, oracles, sheets, encounters, and maps all feed it. Next
+planning cycle starts from a fresh competitive scan and user feedback.
 
 ## Cloud storage stance (BYO cloud, no server)
 
