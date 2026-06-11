@@ -190,3 +190,39 @@ class CrawlState {
         dialogCol: (j['dialogCol'] as int?) ?? 2,
       );
 }
+
+/// A campaign/session: an isolated set of threads, characters, log, crawl.
+class SessionMeta {
+  const SessionMeta({required this.id, required this.name});
+  final String id;
+  final String name;
+
+  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+
+  factory SessionMeta.fromJson(Map<String, dynamic> j) =>
+      SessionMeta(id: j['id'] as String, name: j['name'] as String);
+}
+
+/// Registry of sessions plus the active one.
+class SessionsState {
+  const SessionsState({required this.active, required this.sessions});
+  final String active;
+  final List<SessionMeta> sessions;
+
+  SessionMeta get activeMeta => sessions.firstWhere(
+        (s) => s.id == active,
+        orElse: () => sessions.first,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'active': active,
+        'sessions': sessions.map((s) => s.toJson()).toList(),
+      };
+
+  factory SessionsState.fromJson(Map<String, dynamic> j) => SessionsState(
+        active: j['active'] as String,
+        sessions: (j['sessions'] as List)
+            .map((e) => SessionMeta.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
