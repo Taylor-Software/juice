@@ -42,6 +42,29 @@ void main() {
     });
   });
 
+  group('Dungeon linger', () {
+    test('linger rolls d6: only first six encounter entries appear', () {
+      final oracle = Oracle(data);
+      final firstSix = data.table('dungeon_encounter').take(6).toList();
+      for (var i = 0; i < 3000; i++) {
+        final r = oracle.dungeonLinger();
+        expect(r.title, 'Dungeon Linger');
+        final enc = r.rolls.firstWhere((x) => x.label == 'Encounter');
+        expect(firstSix, contains(enc.value));
+      }
+    });
+
+    test('dungeonRoom still produces area, passage, condition, encounter', () {
+      final oracle = Oracle(data);
+      for (var i = 0; i < 500; i++) {
+        final r = oracle.dungeonRoom();
+        final labels = r.rolls.map((x) => x.label).toList();
+        expect(labels,
+            containsAll(['Next Area', 'Passage', 'Condition', 'Encounter']));
+      }
+    });
+  });
+
   group('Wilderness travel state machine', () {
     test('first step rolls an environment; later steps drift by at most 2', () {
       final oracle = Oracle(data);

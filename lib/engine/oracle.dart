@@ -201,15 +201,18 @@ class Oracle {
         rolls: const [],
       );
 
-  GenResult dungeonRoom() {
-    final enc = _pick('dungeon_encounter');
+  /// Dungeon encounter roll + sub-roll expansion. First entry uses a d10;
+  /// lingering >10 minutes in an unsafe area drops to a d6 (instructions
+  /// p116), which also caps the Natural Hazard sub-roll at d6.
+  List<Roll> _dungeonEncounterRolls({required bool linger}) {
+    final encIdx = linger ? dice.dN(6) : dice.d10Index();
+    final enc = data.table('dungeon_encounter')[encIdx - 1];
     final rolls = <Roll>[
-      Roll(label: 'Next Area', value: _pick('dungeon_next_area')),
-      Roll(label: 'Passage', value: _pick('dungeon_passage')),
-      Roll(label: 'Condition', value: _pick('dungeon_condition')),
-      Roll(label: 'Encounter', value: enc),
+      Roll(
+          label: 'Encounter',
+          value: enc,
+          detail: linger ? 'd6 $encIdx' : 'd10 ${d10Label(encIdx)}'),
     ];
-    // Expand the encounter with its sub-roll where applicable.
     switch (enc) {
       case 'Monster':
         rolls.add(Roll(
@@ -226,14 +229,28 @@ class Oracle {
         rolls.add(Roll(label: 'Feature', value: _pick('dungeon_feature')));
         break;
       case 'Natural Hazard':
-        rolls.add(Roll(label: 'Hazard', value: _pick('natural_hazard')));
+        final hazardIdx = linger ? dice.dN(6) : dice.d10Index();
+        rolls.add(Roll(
+            label: 'Hazard',
+            value: data.table('natural_hazard')[hazardIdx - 1]));
         break;
       case 'Treasure':
         rolls.add(Roll(label: 'Treasure', value: treasure().summary ?? ''));
         break;
     }
-    return GenResult(title: 'Dungeon Room', rolls: rolls);
+    return rolls;
   }
+
+  GenResult dungeonRoom() => GenResult(title: 'Dungeon Room', rolls: [
+        Roll(label: 'Next Area', value: _pick('dungeon_next_area')),
+        Roll(label: 'Passage', value: _pick('dungeon_passage')),
+        Roll(label: 'Condition', value: _pick('dungeon_condition')),
+        ..._dungeonEncounterRolls(linger: false),
+      ]);
+
+  /// Lingering in the current area: encounter-only roll at d6.
+  GenResult dungeonLinger() =>
+      GenResult(title: 'Dungeon Linger', rolls: _dungeonEncounterRolls(linger: true));
 
   GenResult treasure() {
     final cat = data.treasureCategories[dice.dN(6) - 1];
