@@ -9,6 +9,8 @@ characters / roll-log tracker.
 Oracle content: [github.com/jrruethe/juice](https://github.com/jrruethe/juice),
 CC BY-NC-SA. This app is an unofficial implementation of those tables.
 
+**Live app:** https://taylor-software.github.io/juice/
+
 ## Run it
 
 This repo ships the source that matters (`lib/`, `assets/`, `test/`,
