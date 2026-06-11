@@ -111,4 +111,26 @@ void main() {
       expect(sawThreadTarget && sawCharacterTarget, isTrue);
     });
   });
+
+  group('Mythic meaning tables', () {
+    test('47 tables, all d100, pairs where entries2 exists', () {
+      expect(data.mythicMeaning.length, 47);
+      for (final t in data.mythicMeaning) {
+        expect((t['entries'] as List).length, 100);
+      }
+    });
+
+    test('meaning roll yields two non-empty words', () {
+      final oracle = Oracle(data);
+      for (var i = 0; i < 500; i++) {
+        final r = oracle.mythicMeaning('actions');
+        expect(r.title, 'Mythic Meaning');
+        final words = r.rolls.where((x) => x.label.startsWith('Word'));
+        expect(words.length, 2);
+        for (final w in words) {
+          expect(w.value, isNotEmpty);
+        }
+      }
+    });
+  });
 }
