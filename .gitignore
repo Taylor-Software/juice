@@ -45,3 +45,6 @@ app.*.map.json
 /android/app/release
 /oracle_data.json
 ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
+
+# Brainstorm companion sessions
+.superpowers/
