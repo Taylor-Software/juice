@@ -142,3 +142,51 @@ class Character {
         note: (j['note'] as String?) ?? '',
       );
 }
+
+/// Persisted crawl-mode state: wilderness position + NPC dialog marker.
+class CrawlState {
+  const CrawlState({
+    this.envRow,
+    this.lost = false,
+    this.dialogRow = 2,
+    this.dialogCol = 2,
+  });
+
+  /// Current wilderness environment row 1..10; null until first travel step.
+  final int? envRow;
+
+  /// Lost per the Juice Lost/Found cycle (encounter rolls drop to d6).
+  final bool lost;
+
+  /// NPC dialog marker on the 5x5 grid (center "Fact" = 2,2).
+  final int dialogRow;
+  final int dialogCol;
+
+  CrawlState copyWith({
+    int? envRow,
+    bool clearEnvRow = false,
+    bool? lost,
+    int? dialogRow,
+    int? dialogCol,
+  }) =>
+      CrawlState(
+        envRow: clearEnvRow ? null : (envRow ?? this.envRow),
+        lost: lost ?? this.lost,
+        dialogRow: dialogRow ?? this.dialogRow,
+        dialogCol: dialogCol ?? this.dialogCol,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'envRow': envRow,
+        'lost': lost,
+        'dialogRow': dialogRow,
+        'dialogCol': dialogCol,
+      };
+
+  factory CrawlState.fromJson(Map<String, dynamic> j) => CrawlState(
+        envRow: j['envRow'] as int?,
+        lost: (j['lost'] as bool?) ?? false,
+        dialogRow: (j['dialogRow'] as int?) ?? 2,
+        dialogCol: (j['dialogCol'] as int?) ?? 2,
+      );
+}
