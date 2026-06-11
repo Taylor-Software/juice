@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/oracle.dart';
 import '../features/dice_roller_screen.dart';
+import '../features/encounter_screen.dart';
 import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
 import '../features/moves_screen.dart';
@@ -114,6 +115,13 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         badge: 'Juice',
         builder: (o) =>
             GeneratorsScreen(oracle: o!, section: GenSection.encounters),
+      ),
+      ToolDef(
+        id: 'encounter',
+        label: 'Encounter Tracker',
+        icon: Icons.shield_outlined,
+        group: 'Encounters & Combat',
+        builder: (_) => const EncounterScreen(),
       ),
       ToolDef(
         id: 'gen-details',

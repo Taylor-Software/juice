@@ -201,6 +201,107 @@ class CharTrack {
   }
 }
 
+/// One combatant in the encounter. Linked combatants ([characterId] != null)
+/// read/write the character's first track; ad-hoc ones own [track].
+class Combatant {
+  const Combatant({
+    required this.id,
+    required this.name,
+    this.characterId,
+    required this.initiative,
+    this.track,
+    this.tags = const [],
+    this.defeated = false,
+  });
+  final String id;
+  final String name;
+  final String? characterId;
+  final int initiative;
+  final CharTrack? track; // null for linked combatants
+  final List<String> tags;
+  final bool defeated;
+
+  Combatant copyWith({
+    int? initiative,
+    CharTrack? track,
+    List<String>? tags,
+    bool? defeated,
+  }) =>
+      Combatant(
+        id: id,
+        name: name,
+        characterId: characterId,
+        initiative: initiative ?? this.initiative,
+        track: track ?? this.track,
+        tags: tags ?? this.tags,
+        defeated: defeated ?? this.defeated,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'characterId': characterId,
+        'initiative': initiative,
+        'track': track?.toJson(),
+        'tags': tags,
+        'defeated': defeated,
+      };
+
+  /// Tolerant like [Character]: missing tags -> [], missing defeated ->
+  /// false, track via [CharTrack.maybeFromJson].
+  factory Combatant.fromJson(Map<String, dynamic> j) => Combatant(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        characterId: j['characterId'] as String?,
+        initiative: (j['initiative'] as int?) ?? 0,
+        track: CharTrack.maybeFromJson(j['track']),
+        tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
+        defeated: (j['defeated'] as bool?) ?? false,
+      );
+}
+
+/// Turn-ordered encounter. [combatants] order IS the turn order.
+class EncounterState {
+  const EncounterState({
+    this.combatants = const [],
+    this.turnIndex = 0,
+    this.round = 1,
+  });
+  final List<Combatant> combatants;
+  final int turnIndex;
+  final int round;
+
+  EncounterState copyWith(
+          {List<Combatant>? combatants, int? turnIndex, int? round}) =>
+      EncounterState(
+        combatants: combatants ?? this.combatants,
+        turnIndex: turnIndex ?? this.turnIndex,
+        round: round ?? this.round,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'combatants': combatants.map((c) => c.toJson()).toList(),
+        'turnIndex': turnIndex,
+        'round': round,
+      };
+
+  /// Tolerant defaults; turnIndex sanitized into the combatant range
+  /// (mirrors CharTrack.maybeFromJson's value sanitizing).
+  factory EncounterState.fromJson(Map<String, dynamic> j) {
+    final combatants = ((j['combatants'] as List?) ?? const [])
+        .map((e) =>
+            e is Map ? Combatant.fromJson(Map<String, dynamic>.from(e)) : null)
+        .whereType<Combatant>()
+        .toList();
+    final maxTurn = combatants.isEmpty ? 0 : combatants.length - 1;
+    return EncounterState(
+      combatants: combatants,
+      turnIndex: ((j['turnIndex'] as int?) ?? 0).clamp(0, maxTurn),
+      round: (j['round'] as int?) ?? 1,
+    );
+  }
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {

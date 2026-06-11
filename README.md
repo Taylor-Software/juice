@@ -7,7 +7,10 @@ immersion, plot points, extended NPC tables), plus a persistent campaign
 journal (your prose, scene dividers with a chaos-factor snapshot, and every
 roll you choose to keep) with threads tracking and flexible, system-agnostic
 character sheets (free-text stats, current/max tracks with steppers, tags,
-notes — one model covers D&D, Ironsworn, or Mythic NPCs).
+notes — one model covers D&D, Ironsworn, or Mythic NPCs). An encounter tracker runs
+initiative order (drag to override), turns and rounds, status tags, and
+defeated states — combatants pulled from your characters share their sheet's
+HP track live — and drops an end-of-encounter summary into the journal.
 
 The Ask-the-Oracle tools also include a generic **Roll High oracle** — a 7-step
 likelihood ladder (Almost Certain … Almost Impossible) with six graded
