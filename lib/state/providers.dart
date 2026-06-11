@@ -161,3 +161,72 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
 
 final crawlProvider =
     AsyncNotifierProvider<CrawlNotifier, CrawlState>(CrawlNotifier.new);
+
+// -- Sessions ---------------------------------------------------------------
+/// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
+const sessionScopedKeys = [
+  'juice.log.v1',
+  'juice.threads.v1',
+  'juice.characters.v1',
+  'juice.crawl.v1',
+];
+
+class SessionsNotifier extends AsyncNotifier<SessionsState> {
+  static const _key = 'juice.sessions.v1';
+
+  @override
+  Future<SessionsState> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw != null && raw.isNotEmpty) {
+      return SessionsState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    }
+    // First run with sessions: adopt legacy single-campaign data, if any.
+    const def = SessionMeta(id: 'default', name: 'Campaign 1');
+    for (final base in sessionScopedKeys) {
+      final legacy = prefs.getString(base);
+      if (legacy != null) {
+        await prefs.setString('$base.${def.id}', legacy);
+        await prefs.remove(base);
+      }
+    }
+    const initial = SessionsState(active: 'default', sessions: [def]);
+    await prefs.setString(_key, jsonEncode(initial.toJson()));
+    return initial;
+  }
+
+  Future<void> _save(SessionsState s) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(s.toJson()));
+    state = AsyncData(s);
+  }
+
+  Future<void> switchTo(String id) async {
+    final s = state.valueOrNull;
+    if (s == null || s.active == id) return;
+    await _save(SessionsState(active: id, sessions: s.sessions));
+  }
+
+  Future<void> create(String name) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final meta = SessionMeta(id: _newId(), name: name);
+    await _save(
+        SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
+  }
+
+  Future<void> remove(String id) async {
+    final s = state.valueOrNull;
+    if (s == null || s.sessions.length <= 1) return; // keep at least one
+    final prefs = await SharedPreferences.getInstance();
+    for (final base in sessionScopedKeys) {
+      await prefs.remove('$base.$id');
+    }
+    final remaining = s.sessions.where((m) => m.id != id).toList();
+    final active = s.active == id ? remaining.first.id : s.active;
+    await _save(SessionsState(active: active, sessions: remaining));
+  }
+}
+
+final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
+    SessionsNotifier.new);
