@@ -14,7 +14,7 @@
 | 3 | Stateful crawl modes | [2026-06-11-crawl-modes.md](2026-06-11-crawl-modes.md) | shipped (PR #3) |
 | 4 | Sessions (multi-campaign) | [2026-06-11-sessions.md](2026-06-11-sessions.md) | shipped (PR #4) |
 | 5 | Campaign file save/open (BYO cloud) | [2026-06-11-campaign-files.md](2026-06-11-campaign-files.md) | shipped (PR #5) |
-| 6 | Mythic GME core spike | author after #4 (chaos is per-session state) | — |
+| 6 | Mythic GME core spike | [2026-06-11-mythic-spike.md](2026-06-11-mythic-spike.md) | shipped (PR #6) |
 | 7+ | Later items (journal depth, Mythic full, Ironsworn family per `docs/specs/ironsworn-family.md`, icons, PWA) | author when promoted into Next | — |
 
 Constraints that bind every plan:
