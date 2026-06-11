@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/state/campaign_io.dart';
 import 'package:juice_oracle/state/providers.dart';
 
@@ -92,6 +93,28 @@ void main() {
       final decoded = jsonDecode(out) as Map<String, dynamic>;
       expect(decoded['schemaVersion'], 2);
       expect(decoded['data'], contains('juice.journal.v2'));
+    });
+
+    test('character sheets round-trip through campaign files', () {
+      const sheet =
+          '[{"id":"c1","name":"Ash","note":"ranger",'
+          '"stats":[{"label":"Iron","value":"+2"}],'
+          '"tracks":[{"label":"HP","current":7,"max":10}],'
+          '"tags":["wounded"]}]';
+      final out = encodeCampaign(
+        name: 'C1',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {'juice.characters.v1': sheet},
+      );
+      final parsed = parseCampaign(out);
+      final back = (jsonDecode(parsed.rawByKey['juice.characters.v1']!)
+              as List)
+          .cast<Map<String, dynamic>>()
+          .map(Character.fromJson)
+          .single;
+      expect(back.stats.single.value, '+2');
+      expect(back.tracks.single.max, 10);
+      expect(back.tags, ['wounded']);
     });
 
     test('imports a v1 campaign file (log key only)', () {

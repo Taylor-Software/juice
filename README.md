@@ -5,7 +5,9 @@ A cross-platform (iOS / Android / web / desktop) Flutter app implementing the
 scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
 immersion, plot points, extended NPC tables), plus a persistent campaign
 journal (your prose, scene dividers with a chaos-factor snapshot, and every
-roll you choose to keep) with threads / characters tracking.
+roll you choose to keep) with threads tracking and flexible, system-agnostic
+character sheets (free-text stats, current/max tracks with steppers, tags,
+notes — one model covers D&D, Ironsworn, or Mythic NPCs).
 
 The Ask-the-Oracle tools also include a generic **Roll High oracle** — a 7-step
 likelihood ladder (Almost Certain … Almost Impossible) with six graded
