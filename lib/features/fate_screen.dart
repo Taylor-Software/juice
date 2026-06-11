@@ -20,6 +20,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   int _oddsIndex = 4; // 50/50
   GenResult? _mythicLast;
   String _meaningId = 'actions';
+  String _rhDie = 'd100';
+  int _rhOdds = 3; // Unknown
+  GenResult? _rhLast;
 
   void _roll() => setState(() => _last = widget.oracle.fateCheck(_likelihood));
 
@@ -72,6 +75,54 @@ class _FateScreenState extends ConsumerState<FateScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        Text('Roll High Oracle', style: theme.textTheme.headlineSmall),
+        Text(
+          'Roll high = yes. Pick a die and the odds.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'd100', label: Text('d100')),
+            ButtonSegment(value: 'd20', label: Text('d20')),
+            ButtonSegment(value: '2d6', label: Text('2d6')),
+          ],
+          selected: {_rhDie},
+          onSelectionChanged: (s) => setState(() => _rhDie = s.first),
+        ),
+        const SizedBox(height: 12),
+        DropdownMenu<int>(
+          initialSelection: _rhOdds,
+          label: const Text('Odds'),
+          dropdownMenuEntries: [
+            for (var i = 0; i < widget.oracle.data.rollHighOdds.length; i++)
+              DropdownMenuEntry(
+                  value: i, label: widget.oracle.data.rollHighOdds[i]),
+          ],
+          onSelected: (v) => setState(() => _rhOdds = v ?? _rhOdds),
+        ),
+        const SizedBox(height: 12),
+        if (_rhLast != null) ...[
+          ResultCard(
+            result: _rhLast!,
+            onLog: () {
+              ref.read(logProvider.notifier).add(_rhLast!.title, _rhLast!.asText);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        FilledButton.icon(
+          onPressed: () => setState(
+              () => _rhLast = widget.oracle.rollHigh(_rhDie, _rhOdds)),
+          icon: const Icon(Icons.casino_outlined),
+          label: const Text('Roll Oracle'),
         ),
         const SizedBox(height: 24),
         const Divider(),

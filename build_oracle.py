@@ -409,6 +409,60 @@ def mythic_fate(odds_index, chaos):
     random_event = roll < 100 and roll % 11 == 0 and roll // 11 <= chaos
     return {"roll": roll, "answer": answer, "random_event": random_event}
 
+# "Roll High" yes/no oracle (user-supplied table: 7-step likelihood ladder x
+# 6 outcomes, in d100/d20/2d6 variants; pure dice ranges — game mechanics,
+# not copyrightable expression). Higher roll = more yes. Each row is proven
+# below to cover its die range exactly once and to mirror its opposite row
+# (Almost Certain <-> Almost Impossible, etc.; Unknown self-mirrors). Two
+# transcription errors in the source d100 table were corrected via those
+# invariants:
+#   - Almost Certain: source left 6-10 unmapped (YES 21-80 / YES,but 16-20 /
+#     NO,but 11-15); corrected to YES 16-80 / YES,but 11-15 / NO,but 6-10.
+#   - Almost Impossible: source "NO,but 26-90, NO 21-25" (8<->2 digit swap);
+#     corrected to NO,but 86-90, NO 21-85.
+ROLL_HIGH_OUTCOMES = ["Yes, and", "Yes", "Yes, but", "No, but", "No", "No, and"]
+ROLL_HIGH_ODDS = ["Almost Certain", "Very Likely", "Likely", "Unknown",
+                  "Unlikely", "Very Unlikely", "Almost Impossible"]
+ROLL_HIGH_DICE = {"d100": (1, 100), "d20": (1, 20), "2d6": (2, 12)}
+# Per die: 7 odds rows x 6 outcome ranges (min, max), None = outcome absent.
+ROLL_HIGH = {
+    "d100": [
+        [(81, 100), (16, 80), (11, 15), (6, 10),  (1, 5),   None],
+        [(86, 100), (31, 85), (26, 30), (21, 25), (6, 20),  (1, 5)],
+        [(91, 100), (41, 90), (36, 40), (31, 35), (6, 30),  (1, 5)],
+        [(96, 100), (56, 95), (51, 55), (46, 50), (6, 45),  (1, 5)],
+        [(96, 100), (71, 95), (66, 70), (61, 65), (11, 60), (1, 10)],
+        [(96, 100), (81, 95), (76, 80), (71, 75), (16, 70), (1, 15)],
+        [None,      (96, 100), (91, 95), (86, 90), (21, 85), (1, 20)],
+    ],
+    "d20": [
+        [(17, 20), (4, 16),  (3, 3),   (2, 2),   (1, 1),   None],
+        [(18, 20), (7, 17),  (6, 6),   (5, 5),   (2, 4),   (1, 1)],
+        [(19, 20), (9, 18),  (8, 8),   (7, 7),   (2, 6),   (1, 1)],
+        [(20, 20), (12, 19), (11, 11), (10, 10), (2, 9),   (1, 1)],
+        [(20, 20), (15, 19), (14, 14), (13, 13), (3, 12),  (1, 2)],
+        [(20, 20), (17, 19), (16, 16), (15, 15), (4, 14),  (1, 3)],
+        [None,     (20, 20), (19, 19), (18, 18), (5, 17),  (1, 4)],
+    ],
+    "2d6": [
+        [(10, 12), (5, 9),   (4, 4),   (3, 3),   (2, 2),   None],
+        [(11, 12), (6, 10),  (5, 5),   (4, 4),   (3, 3),   (2, 2)],
+        [(11, 12), (7, 10),  (6, 6),   (5, 5),   (3, 4),   (2, 2)],
+        [(12, 12), (8, 11),  (7, 7),   (6, 6),   (3, 5),   (2, 2)],
+        [(12, 12), (9, 11),  (8, 8),   (7, 7),   (4, 6),   (2, 3)],
+        [(12, 12), (10, 11), (9, 9),   (8, 8),   (5, 7),   (2, 4)],
+        [None,     (12, 12), (11, 11), (10, 10), (6, 9),   (2, 5)],
+    ],
+}
+
+def roll_high(die, odds_index):
+    """Roll High oracle: roll the die, map to one of the six outcomes."""
+    roll = d(100) if die == "d100" else d(20) if die == "d20" else d(6) + d(6)
+    for outcome, rng in zip(ROLL_HIGH_OUTCOMES, ROLL_HIGH[die][odds_index]):
+        if rng and rng[0] <= roll <= rng[1]:
+            return {"roll": roll, "outcome": outcome}
+    raise AssertionError(f"roll_high: {die} {odds_index} roll {roll} unmapped")
+
 # Wilderness Monster Encounter (pocketfold left extension), verified vs PDF.
 # Quantity prefix per monster: '+' = 1d6-1@adv, '' = 1d6-1, '-' = 1d6-1@dis.
 # Row keys: '1'..'0' (d6+mod result), '*' = Forest special, '**' = doubles/Bandits.
@@ -694,6 +748,49 @@ def verify():
     if abs(re_rate - 0.05) > 0.005:
         failures.append(f"mythic random-event rate {re_rate:.4f} != ~0.05")
 
+    # 10. Roll High oracle: exact coverage, descending order, mirror symmetry.
+    for die, (lo, hi) in ROLL_HIGH_DICE.items():
+        rows = ROLL_HIGH[die]
+        if len(rows) != 7 or any(len(r) != 6 for r in rows):
+            failures.append(f"roll_high {die}: shape not 7x6")
+            continue
+        for oi, row in enumerate(rows):
+            covered = []
+            for rng in row:
+                if rng is not None:
+                    covered.extend(range(rng[0], rng[1] + 1))
+            if sorted(covered) != list(range(lo, hi + 1)):
+                failures.append(f"roll_high {die} row {oi}: coverage of "
+                                f"{lo}..{hi} broken (gaps or overlaps)")
+            # Outcomes run Yes,and (highest rolls) down to No,and (lowest).
+            present = [r for r in row if r is not None]
+            for a, b in zip(present, present[1:]):
+                if a[0] <= b[1]:
+                    failures.append(f"roll_high {die} row {oi}: ranges not "
+                                    f"strictly descending")
+                    break
+        # Row i mirrors row 6-i with outcomes reversed: x -> lo+hi-x.
+        # Holds for the uniform dice only; the source's 2d6 variant is
+        # deliberately not symmetric (2d6 is bell-curved, e.g. its Unknown
+        # row is ~58% yes-like).
+        if die == "2d6":
+            continue
+        for oi in range(7):
+            mirrored = [None if r is None else (lo + hi - r[1], lo + hi - r[0])
+                        for r in reversed(rows[6 - oi])]
+            if [tuple(r) if r else None for r in rows[oi]] != mirrored:
+                failures.append(f"roll_high {die}: row {oi} does not mirror "
+                                f"row {6 - oi}")
+    # Every present outcome reachable; absent outcomes never produced.
+    for die in ROLL_HIGH:
+        for oi in (0, 3, 6):
+            got = {roll_high(die, oi)["outcome"] for _ in range(5000)}
+            want = {o for o, r in zip(ROLL_HIGH_OUTCOMES, ROLL_HIGH[die][oi])
+                    if r is not None}
+            if not got <= want:
+                failures.append(f"roll_high {die} row {oi}: produced absent "
+                                f"outcome {got - want}")
+
     # 9. Mythic meaning tables: 47 tables, d100 lists.
     if len(MYTHIC_MEANING) != 47:
         failures.append(f"mythic meaning count {len(MYTHIC_MEANING)} != 47")
@@ -741,6 +838,14 @@ def emit_json(path):
             "grid": DIALOG_GRID,
             "direction": [list(x) for x in DIALOG_DIRECTION],
             "subject": [list(x) for x in DIALOG_SUBJECT],
+        },
+        "roll_high": {
+            "outcomes": ROLL_HIGH_OUTCOMES,
+            "odds": ROLL_HIGH_ODDS,
+            "dice": {
+                die: [[list(r) if r else None for r in row] for row in rows]
+                for die, rows in ROLL_HIGH.items()
+            },
         },
         "mythic": {
             "odds": MYTHIC_ODDS,

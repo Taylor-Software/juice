@@ -244,4 +244,61 @@ void main() {
       expect(seen.length, 60); // every icon reachable
     });
   });
+
+  group('Roll High oracle', () {
+    test('data shape: 3 dice, 7 odds rows, 6 outcome slots each', () {
+      expect(data.rollHighOdds.length, 7);
+      expect(data.rollHighOutcomes.length, 6);
+      for (final die in ['d100', 'd20', '2d6']) {
+        final rows = data.rollHighRows(die);
+        expect(rows.length, 7, reason: die);
+        for (final row in rows) {
+          expect(row.length, 6, reason: die);
+        }
+      }
+    });
+
+    test('every roll maps to exactly one outcome (mirrors Python coverage)',
+        () {
+      const bounds = {'d100': (1, 100), 'd20': (1, 20), '2d6': (2, 12)};
+      for (final entry in bounds.entries) {
+        final rows = data.rollHighRows(entry.key);
+        final (lo, hi) = entry.value;
+        for (final row in rows) {
+          for (var v = lo; v <= hi; v++) {
+            final hits = row
+                .where((r) => r != null && v >= r[0] && v <= r[1])
+                .length;
+            expect(hits, 1, reason: '${entry.key} value $v');
+          }
+        }
+      }
+    });
+
+    test('rollHigh produces only outcomes present in the row', () {
+      final o = oracleWith(42);
+      for (final die in ['d100', 'd20', '2d6']) {
+        for (final oddsIndex in [0, 3, 6]) {
+          final row = data.rollHighRows(die)[oddsIndex];
+          final allowed = <String>{
+            for (var i = 0; i < row.length; i++)
+              if (row[i] != null) data.rollHighOutcomes[i],
+          };
+          for (var i = 0; i < 2000; i++) {
+            final r = o.rollHigh(die, oddsIndex);
+            expect(allowed, contains(r.rolls.first.value),
+                reason: '$die odds $oddsIndex');
+          }
+        }
+      }
+    });
+
+    test('extreme rows omit the impossible outcome', () {
+      // Almost Certain has no "No, and"; Almost Impossible no "Yes, and".
+      for (final die in ['d100', 'd20', '2d6']) {
+        expect(data.rollHighRows(die)[0][5], isNull, reason: die);
+        expect(data.rollHighRows(die)[6][0], isNull, reason: die);
+      }
+    });
+  });
 }

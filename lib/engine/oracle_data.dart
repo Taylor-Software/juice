@@ -80,6 +80,27 @@ class OracleData {
   List<List<dynamic>> get dialogSubject =>
       (_dialog['subject'] as List).map((e) => e as List).toList();
 
+  // Roll High oracle -------------------------------------------------------
+  Map<String, dynamic> get _rollHigh =>
+      _json['roll_high'] as Map<String, dynamic>;
+
+  /// Six answer labels, "Yes, and" .. "No, and".
+  List<String> get rollHighOutcomes =>
+      (_rollHigh['outcomes'] as List).cast<String>();
+
+  /// Seven likelihood labels, Almost Certain .. Almost Impossible.
+  List<String> get rollHighOdds =>
+      (_rollHigh['odds'] as List).cast<String>();
+
+  /// Rows for [die] ('d100', 'd20', '2d6'): 7 odds rows x 6 outcome slots,
+  /// each [min, max] or null when the outcome is absent from that row.
+  List<List<List<int>?>> rollHighRows(String die) =>
+      ((_rollHigh['dice'] as Map<String, dynamic>)[die] as List)
+          .map((row) => (row as List)
+              .map((r) => r == null ? null : (r as List).cast<int>())
+              .toList())
+          .toList();
+
   // Mythic GME 2e --------------------------------------------------------
   Map<String, dynamic> get _mythic => _json['mythic'] as Map<String, dynamic>;
 
