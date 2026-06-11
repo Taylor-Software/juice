@@ -279,6 +279,7 @@ class _DungeonTabState extends ConsumerState<_DungeonTab> {
     );
     if (ok != true) return;
     await ref.read(mapProvider.notifier).resetDungeon();
+    if (mounted) setState(() => _last = null);
   }
 }
 
@@ -654,6 +655,7 @@ class _HexTabState extends ConsumerState<_HexTab> {
     );
     if (ok != true) return;
     await ref.read(mapProvider.notifier).resetHexes();
+    if (mounted) setState(() => _last = null);
   }
 }
 

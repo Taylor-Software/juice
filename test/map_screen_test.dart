@@ -160,6 +160,22 @@ void main() {
       }
     });
 
+    test('hexCenterFor matches hand-computed flat-top odd-q literals', () {
+      const pad = 2 * size; // 68
+      // (0,0) with minCol -1, minRow 0: x = (0-(-1))*1.5*34 + 68 = 119;
+      // even col -> no parity shift; y = 0 + 68 = 68.
+      expect(hexCenterFor(0, 0, -1, 0, size), const Offset(119, 68));
+      // (-1,0): x = 68; col -1 is odd -> y = 68 + sqrt(3)/2*34 ≈ 97.444.
+      final odd = hexCenterFor(-1, 0, -1, 0, size);
+      expect(odd.dx, 68);
+      expect(odd.dy, closeTo(97.444, 0.01));
+      // (1,2): x = (1+1)*1.5*34 + 68 = 170; odd col ->
+      // y = 2*sqrt(3)*34 + sqrt(3)/2*34 + 68 ≈ 215.222.
+      final far = hexCenterFor(1, 2, -1, 0, size);
+      expect(far.dx, 170);
+      expect(far.dy, closeTo(215.222, 0.01));
+    });
+
     test('point between two centers snaps to the nearest', () {
       final a = hexCenterFor(-1, 0, -1, 0, size);
       final b = hexCenterFor(0, 0, -1, 0, size);
