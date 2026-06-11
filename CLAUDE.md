@@ -15,7 +15,7 @@ Working rules for this repo:
   copy the output into `assets/`.
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
-- Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` only.
+- Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` + `file_picker` (campaign file export/import) only.
   No dio/repository (no network), no codegen (static data), no router (4-tab
   IndexedStack). Add rails only when a real need appears.
 - Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`).
