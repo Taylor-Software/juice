@@ -79,7 +79,7 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             onLog: () {
               ref.read(journalProvider.notifier).add(last.title, last.asText);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logged')),
+                const SnackBar(content: Text('Added to journal')),
               );
             },
           ),

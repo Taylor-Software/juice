@@ -112,7 +112,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
             onLog: () {
               ref.read(journalProvider.notifier).add(_rhLast!.title, _rhLast!.asText);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logged')),
+                const SnackBar(content: Text('Added to journal')),
               );
             },
           ),
@@ -181,7 +181,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                     ref.read(journalProvider.notifier).add(
                         _mythicLast!.title, _mythicLast!.asText);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged')),
+                      const SnackBar(content: Text('Added to journal')),
                     );
                   },
                 ),
@@ -303,7 +303,7 @@ class _FateResultCard extends ConsumerWidget {
                         color: scheme.onSurfaceVariant,
                         )),
                 IconButton(
-                  tooltip: 'Log this result',
+                  tooltip: 'Add to journal',
                   icon: const Icon(Icons.bookmark_add_outlined),
                   onPressed: () {
                     ref.read(journalProvider.notifier).add(
@@ -311,7 +311,7 @@ class _FateResultCard extends ConsumerWidget {
                           '${result.result} — ${result.intensity}  [${result.shorthand}]',
                         );
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged')),
+                      const SnackBar(content: Text('Added to journal')),
                     );
                   },
                 ),

@@ -83,7 +83,7 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
                       .read(journalProvider.notifier)
                       .add(_last!.title, _last!.asText);
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Logged')));
+                      const SnackBar(content: Text('Added to journal')));
                 },
               ),
             ),
