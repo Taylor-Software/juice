@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../shared/result_card.dart';
@@ -37,7 +38,7 @@ String? roomIdAt(List<DungeonRoom> rooms, Offset local, double cell) {
 }
 
 /// Maps tool: a dungeon map grown room-by-room from the dungeon oracle and
-/// a wilderness hex map (Hex tab lands in the next task).
+/// a wilderness hex map revealed by travel.
 class MapScreen extends StatelessWidget {
   const MapScreen({super.key, required this.oracle});
   final Oracle oracle;
@@ -60,7 +61,7 @@ class MapScreen extends StatelessWidget {
             child: TabBarView(
               children: [
                 _DungeonTab(oracle: oracle),
-                const SizedBox(), // Hex tab: Task 3
+                _HexTab(oracle: oracle),
               ],
             ),
           ),
@@ -353,5 +354,427 @@ class _DungeonPainter extends CustomPainter {
       old.rooms != rooms ||
       old.corridors != corridors ||
       old.currentRoomId != currentRoomId ||
+      old.scheme != scheme;
+}
+
+// -- Hex --------------------------------------------------------------------
+
+/// Flat-top hex radius (center to corner), in logical pixels.
+const _hexSize = 34.0;
+
+/// Pixel center of an odd-q offset cell (flat-top hexes, odd columns
+/// shifted half a hex DOWN). The canvas origin is offset so the minimum
+/// grid coordinates land at pad = 2*size; painter and [hexAt] share this
+/// so they can't drift. NOTE: the half-hex parity shift uses the ABSOLUTE
+/// column ([col].isOdd, true for negative odd cols too), not the shifted
+/// one — the layout must not reflow when the map grows past the origin.
+Offset hexCenterFor(int col, int row, int minCol, int minRow, double size) {
+  final pad = 2 * size;
+  return Offset(
+    (col - minCol) * 1.5 * size + pad,
+    (row - minRow) * math.sqrt(3) * size +
+        (col.isOdd ? math.sqrt(3) / 2 * size : 0) +
+        pad,
+  );
+}
+
+/// Pure inverse of [hexCenterFor]: the candidate cell whose center is
+/// nearest to [local] and within 0.9 * size of it, else null.
+({int col, int row})? hexAt(
+  Offset local,
+  double size,
+  List<({int col, int row})> cells, {
+  required int minCol,
+  required int minRow,
+}) {
+  ({int col, int row})? best;
+  var bestDistance = 0.9 * size;
+  for (final c in cells) {
+    final d =
+        (hexCenterFor(c.col, c.row, minCol, minRow, size) - local).distance;
+    if (d < bestDistance) {
+      bestDistance = d;
+      best = c;
+    }
+  }
+  return best;
+}
+
+/// Fixed base hues for the 10 wilderness environments (index = envRow - 1):
+/// 1 Arctic ice, 2 Mountain grey, 3 Cavern violet, 4 Hills light green,
+/// 5 Grassland lime, 6 Forest green, 7 Swamp murk, 8 Water blue,
+/// 9 Coast sand, 10 Desert orange. Alpha-blended over the theme surface in
+/// the painter so they sit comfortably in light and dark mode.
+const _envHues = [
+  Color(0xFF80DEEA),
+  Color(0xFF90A4AE),
+  Color(0xFF7E57C2),
+  Color(0xFFAED581),
+  Color(0xFFCDDC39),
+  Color(0xFF388E3C),
+  Color(0xFF6D8B3C),
+  Color(0xFF42A5F5),
+  Color(0xFFFFD54F),
+  Color(0xFFFF8A65),
+];
+
+class _HexTab extends ConsumerStatefulWidget {
+  const _HexTab({required this.oracle});
+  final Oracle oracle;
+
+  @override
+  ConsumerState<_HexTab> createState() => _HexTabState();
+}
+
+class _HexTabState extends ConsumerState<_HexTab> {
+  GenResult? _last; // latest travel result
+
+  List<String> get _envNames =>
+      widget.oracle.data.table('wilderness_environment');
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(mapProvider);
+    final crawl = ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
+    return async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (s) {
+        return Column(
+          children: [
+            if (crawl.envRow != null) _envLine(context, crawl),
+            _controls(context, s),
+            Expanded(child: s.hexes.isEmpty ? _empty(context) : _canvas(s)),
+            if (_last != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: ResultCard(
+                  result: _last!,
+                  onLog: () => _log(_last!.title, _last!.asText),
+                ),
+              ),
+            const SizedBox(height: 8),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Current crawl environment + Lost flag, mirroring the Exploration tool.
+  Widget _envLine(BuildContext context, CrawlState crawl) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          '${_envNames[crawl.envRow! - 1]}'
+          '${crawl.lost ? ' — LOST (d6 encounters)' : ''}',
+          style: theme.textTheme.bodySmall,
+        ),
+      ),
+    );
+  }
+
+  Widget _controls(BuildContext context, MapState s) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+      child: Row(
+        children: [
+          FilledButton.tonal(
+            key: const Key('travel'),
+            onPressed: _travel,
+            child: const Text('Travel'),
+          ),
+          const Spacer(),
+          IconButton(
+            key: const Key('hex-journal'),
+            icon: const Icon(Icons.bookmark_add_outlined),
+            tooltip: 'Add map to journal',
+            onPressed: s.hexes.isEmpty
+                ? null
+                : () => _log('Wilderness map', _hexSummary(s)),
+          ),
+          IconButton(
+            key: const Key('hex-reset'),
+            icon: const Icon(Icons.delete_sweep_outlined),
+            tooltip: 'Reset hex map',
+            onPressed: () => _reset(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _empty(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'No hexes yet. Travel reveals the map as you go.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyLarge
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+
+  Widget _canvas(MapState s) {
+    final scheme = Theme.of(context).colorScheme;
+    final revealed = {for (final h in s.hexes) (h.col, h.row)};
+    final ghosts = <({int col, int row})>[];
+    final seen = <(int, int)>{};
+    for (final h in s.hexes) {
+      for (final n in hexNeighbors(h.col, h.row)) {
+        final key = (n.col, n.row);
+        if (!revealed.contains(key) && seen.add(key)) ghosts.add(n);
+      }
+    }
+    final cells = [
+      for (final h in s.hexes) (col: h.col, row: h.row),
+      ...ghosts,
+    ];
+    final minCol = cells.map((c) => c.col).reduce(math.min);
+    final minRow = cells.map((c) => c.row).reduce(math.min);
+    final maxCol = cells.map((c) => c.col).reduce(math.max);
+    final maxRow = cells.map((c) => c.row).reduce(math.max);
+    final width =
+        math.max((maxCol - minCol) * 1.5 * _hexSize + 4 * _hexSize, 360.0);
+    final height = math.max(
+        (maxRow - minRow + 0.5) * math.sqrt(3) * _hexSize + 4 * _hexSize,
+        360.0);
+    return InteractiveViewer(
+      constrained: false,
+      boundaryMargin: const EdgeInsets.all(400),
+      minScale: 0.5,
+      maxScale: 3,
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: GestureDetector(
+          // InteractiveViewer delivers tap positions in child coordinates
+          // (already inverse-transformed) — no manual matrix math.
+          onTapUp: (d) {
+            final hit = hexAt(d.localPosition, _hexSize, cells,
+                minCol: minCol, minRow: minRow);
+            if (hit == null) return;
+            // Revealed cells are inert in v1; faint neighbors reveal.
+            if (revealed.contains((hit.col, hit.row))) return;
+            _manualReveal(hit.col, hit.row);
+          },
+          child: CustomPaint(
+            key: const Key('hex-canvas'),
+            size: Size(width, height),
+            painter: _HexPainter(
+              hexes: s.hexes,
+              ghosts: ghosts,
+              currentCol: s.currentHexCol,
+              currentRow: s.currentHexRow,
+              minCol: minCol,
+              minRow: minRow,
+              envNames: _envNames,
+              scheme: scheme,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _travel() async {
+    final s = await ref.read(crawlProvider.future);
+    final r = widget.oracle.wildernessTravel(s);
+    await ref.read(crawlProvider.notifier).save(r.state);
+    if (r.state.envRow != null) {
+      await ref.read(mapProvider.notifier).revealHex(
+          envRow: r.state.envRow!,
+          lost: r.state.lost,
+          dice: widget.oracle.dice);
+    }
+    setState(() => _last = r.result);
+  }
+
+  Future<void> _manualReveal(int col, int row) async {
+    final names = _envNames;
+    final envRow = await showDialog<int>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Environment'),
+        children: [
+          for (var i = 0; i < names.length; i++)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, i + 1),
+              child: Text(names[i]),
+            ),
+        ],
+      ),
+    );
+    if (envRow == null) return;
+    await ref.read(mapProvider.notifier).revealHexAt(col, row, envRow);
+  }
+
+  String _hexSummary(MapState s) {
+    final base = '${s.hexes.length} hexes revealed';
+    final cur = s.hexes
+        .where((h) => h.col == s.currentHexCol && h.row == s.currentHexRow)
+        .firstOrNull;
+    if (cur == null) return base;
+    return '$base — current: ${_envNames[cur.envRow - 1]}';
+  }
+
+  Future<void> _log(String title, String body) async {
+    await ref.read(journalProvider.notifier).add(title, body);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Added to journal')),
+      );
+    }
+  }
+
+  Future<void> _reset(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset hex map?'),
+        content: const Text('All revealed hexes are removed. '
+            'The dungeon map is kept.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await ref.read(mapProvider.notifier).resetHexes();
+  }
+}
+
+class _HexPainter extends CustomPainter {
+  _HexPainter({
+    required this.hexes,
+    required this.ghosts,
+    required this.currentCol,
+    required this.currentRow,
+    required this.minCol,
+    required this.minRow,
+    required this.envNames,
+    required this.scheme,
+  });
+
+  final List<HexCell> hexes;
+  final List<({int col, int row})> ghosts;
+  final int? currentCol;
+  final int? currentRow;
+  final int minCol;
+  final int minRow;
+  final List<String> envNames;
+  final ColorScheme scheme;
+
+  /// Flat-top hexagon: corners at 0, 60, ... 300 degrees from the center.
+  static Path _hexPath(Offset center, double size) {
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final a = math.pi / 3 * i;
+      final v = center + Offset(size * math.cos(a), size * math.sin(a));
+      i == 0 ? path.moveTo(v.dx, v.dy) : path.lineTo(v.dx, v.dy);
+    }
+    return path..close();
+  }
+
+  static void _dashPath(Canvas canvas, Path path, Paint paint) {
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(
+            metric.extractPath(d, math.min(d + 6, metric.length)), paint);
+        d += 10;
+      }
+    }
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Faint dashed outlines for unrevealed-but-tappable neighbors.
+    final ghostPaint = Paint()
+      ..color = scheme.outlineVariant
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final g in ghosts) {
+      final c = hexCenterFor(g.col, g.row, minCol, minRow, _hexSize);
+      _dashPath(canvas, _hexPath(c, _hexSize - 2), ghostPaint);
+    }
+
+    for (final h in hexes) {
+      final c = hexCenterFor(h.col, h.row, minCol, minRow, _hexSize);
+      final path = _hexPath(c, _hexSize - 1);
+      final fill = Color.alphaBlend(
+          _envHues[h.envRow - 1].withValues(alpha: 0.5),
+          scheme.surfaceContainerHighest);
+      canvas.drawPath(path, Paint()..color = fill);
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = scheme.outlineVariant
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1);
+      final isCurrent = h.col == currentCol && h.row == currentRow;
+      if (isCurrent) {
+        canvas.drawPath(
+            path,
+            Paint()
+              ..color = scheme.primary
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 3);
+      }
+      final name = envNames[h.envRow - 1];
+      final tp = TextPainter(
+        text: TextSpan(
+          text: name.isEmpty ? '?' : name[0].toUpperCase(),
+          style: TextStyle(
+            color: scheme.onSurface,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
+      if (h.lost) {
+        final badge = TextPainter(
+          text: TextSpan(
+            text: '!',
+            style: TextStyle(
+              color: scheme.error,
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        badge.paint(
+            canvas,
+            c +
+                Offset(_hexSize * 0.35 - badge.width / 2,
+                    -_hexSize * 0.6 - badge.height / 2));
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HexPainter old) =>
+      old.hexes != hexes ||
+      old.ghosts != ghosts ||
+      old.currentCol != currentCol ||
+      old.currentRow != currentRow ||
+      old.minCol != minCol ||
+      old.minRow != minRow ||
       old.scheme != scheme;
 }

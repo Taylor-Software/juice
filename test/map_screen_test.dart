@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:juice_oracle/engine/map_builder.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
@@ -134,5 +135,131 @@ void main() {
     expect(s.corridors, isEmpty);
     expect(s.currentRoomId, isNull);
     expect(s.hexes.length, 1);
+  });
+
+  // -- Hex tab ---------------------------------------------------------------
+
+  Future<void> toHexTab(WidgetTester tester) async {
+    await tester.tap(find.text('Hex'));
+    await tester.pumpAndSettle();
+  }
+
+  group('hexAt', () {
+    const size = 34.0;
+    const cells = [
+      (col: -1, row: 0),
+      (col: 0, row: 0),
+      (col: 1, row: 2),
+    ];
+
+    test('cell centers map back to their cell (incl. odd/negative cols)',
+        () {
+      for (final c in cells) {
+        final p = hexCenterFor(c.col, c.row, -1, 0, size);
+        expect(hexAt(p, size, cells, minCol: -1, minRow: 0), c);
+      }
+    });
+
+    test('point between two centers snaps to the nearest', () {
+      final a = hexCenterFor(-1, 0, -1, 0, size);
+      final b = hexCenterFor(0, 0, -1, 0, size);
+      final nearA = Offset.lerp(a, b, 0.3)!;
+      final nearB = Offset.lerp(a, b, 0.7)!;
+      expect(hexAt(nearA, size, cells, minCol: -1, minRow: 0),
+          (col: -1, row: 0));
+      expect(hexAt(nearB, size, cells, minCol: -1, minRow: 0),
+          (col: 0, row: 0));
+    });
+
+    test('point outside the 0.9*size radius of every center is null', () {
+      expect(hexAt(Offset.zero, size, cells, minCol: -1, minRow: 0), isNull);
+      expect(hexAt(const Offset(5000, 5000), size, cells,
+          minCol: -1, minRow: 0), isNull);
+    });
+  });
+
+  testWidgets('Travel advances crawl and reveals adjacent hexes',
+      (tester) async {
+    final container = await pump(tester);
+    await toHexTab(tester);
+    expect(find.text('No hexes yet. Travel reveals the map as you go.'),
+        findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('travel')));
+    await tester.pumpAndSettle();
+    final crawl = container.read(crawlProvider).valueOrNull!;
+    expect(crawl.envRow, isNotNull);
+    var s = container.read(mapProvider).valueOrNull!;
+    expect(s.hexes.length, 1);
+    expect((s.hexes.first.col, s.hexes.first.row), (0, 0));
+    expect(s.hexes.first.envRow, crawl.envRow);
+    expect(s.hexes.first.lost, crawl.lost);
+    expect((s.currentHexCol, s.currentHexRow), (0, 0));
+    expect(find.text('Wilderness Travel'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('travel')));
+    await tester.pumpAndSettle();
+    s = container.read(mapProvider).valueOrNull!;
+    // From a single revealed hex all 6 neighbors are free: always a new cell.
+    expect(s.hexes.length, 2);
+    final adjacent =
+        hexNeighbors(0, 0).map((n) => (n.col, n.row)).toList();
+    expect(adjacent, contains((s.currentHexCol, s.currentHexRow)));
+    final crawl2 = container.read(crawlProvider).valueOrNull!;
+    final cur = s.hexes.firstWhere(
+        (h) => h.col == s.currentHexCol && h.row == s.currentHexRow);
+    expect(cur.envRow, crawl2.envRow);
+  });
+
+  testWidgets('tap on a faint neighbor opens env picker; manual reveal '
+      'persists without moving current', (tester) async {
+    final container = await pump(tester,
+        mapJson: jsonEncode({
+          'hexes': [
+            {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+          ],
+          'currentHexCol': 0,
+          'currentHexRow': 0,
+        }));
+    await toHexTab(tester);
+
+    // Cells = (0,0) + its 6 unrevealed neighbors -> minCol = minRow = -1.
+    final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
+    await tester.tapAt(origin + hexCenterFor(1, 0, -1, -1, 34.0));
+    await tester.pumpAndSettle();
+    final envNames = data.table('wilderness_environment');
+    for (final name in envNames) {
+      expect(find.text(name), findsOneWidget);
+    }
+    await tester.tap(find.text(envNames[6])); // envRow 7
+    await tester.pumpAndSettle();
+
+    final s = container.read(mapProvider).valueOrNull!;
+    expect(s.hexes.length, 2);
+    final h = s.hexes.firstWhere((h) => h.col == 1 && h.row == 0);
+    expect(h.envRow, 7);
+    expect((s.currentHexCol, s.currentHexRow), (0, 0));
+  });
+
+  testWidgets('hex journal snapshot logs count and current env',
+      (tester) async {
+    final container = await pump(tester,
+        mapJson: jsonEncode({
+          'hexes': [
+            {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+            {'col': 1, 'row': 0, 'envRow': 7, 'lost': false},
+          ],
+          'currentHexCol': 1,
+          'currentHexRow': 0,
+        }));
+    await toHexTab(tester);
+    await tester.tap(find.byKey(const Key('hex-journal')));
+    await tester.pumpAndSettle();
+    final entries = container.read(journalProvider).valueOrNull!;
+    expect(entries.first.title, 'Wilderness map');
+    expect(entries.first.body, contains('2 hexes revealed'));
+    expect(entries.first.body,
+        contains('current: ${data.table('wilderness_environment')[6]}'));
+    expect(find.text('Added to journal'), findsOneWidget);
   });
 }
