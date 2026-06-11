@@ -120,6 +120,21 @@ void main() {
       expect(prefs.getString('juice.log.v1.default'), isNotNull);
     });
 
+    test('migration never clobbers existing journal data', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.journal.v2.default':
+            '[{"id":"new","timestamp":"2026-06-11T10:00:00.000","title":"Kept","body":"x","kind":"text"}]',
+        'juice.log.v1.default':
+            '[{"id":"old","timestamp":"2026-06-11T09:00:00.000","title":"Legacy","body":"y"}]',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final entries = await container.read(journalProvider.future);
+      expect(entries.single.title, 'Kept');
+    });
+
     test('addText and addScene append typed entries', () async {
       SharedPreferences.setMockInitialValues({
         'juice.sessions.v1':

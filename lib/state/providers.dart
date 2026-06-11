@@ -291,6 +291,8 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await SharedPreferences.getInstance();
     final rawByKey = <String, String>{};
     for (final base in sessionScopedKeys) {
+      // Exports carry journal v2 only; log v1 is import-only.
+      if (base == 'juice.log.v1') continue;
       final raw = prefs.getString('$base.${s.active}');
       if (raw != null) rawByKey[base] = raw;
     }

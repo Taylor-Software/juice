@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,7 +36,7 @@ void main() {
       );
       expect(
         () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":2,"name":"x","data":{}}'),
+            '{"app":"juice-oracle","schemaVersion":3,"name":"x","data":{}}'),
         throwsFormatException,
       );
       expect(
@@ -76,6 +78,56 @@ void main() {
             '"data":{"juice.crawl.v1":[1,2,3]}}'),
         throwsFormatException,
       );
+    });
+
+    test('writes schemaVersion 2 and journal data', () {
+      final out = encodeCampaign(
+        name: 'C1',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {
+          'juice.journal.v2':
+              '[{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"T","body":"B","kind":"text"}]',
+        },
+      );
+      final decoded = jsonDecode(out) as Map<String, dynamic>;
+      expect(decoded['schemaVersion'], 2);
+      expect(decoded['data'], contains('juice.journal.v2'));
+    });
+
+    test('imports a v1 campaign file (log key only)', () {
+      final v1 = jsonEncode({
+        'app': 'juice-oracle',
+        'schemaVersion': 1,
+        'savedAt': '2026-06-11T00:00:00.000',
+        'name': 'Old campaign',
+        'data': {
+          'juice.log.v1': [
+            {
+              'id': 'a',
+              'timestamp': '2026-06-11T09:00:00.000',
+              'title': 'T',
+              'body': 'B'
+            }
+          ],
+        },
+      });
+      final parsed = parseCampaign(v1);
+      expect(parsed.rawByKey, contains('juice.log.v1'));
+    });
+
+    test('rejects malformed journal payloads', () {
+      final bad = jsonEncode({
+        'app': 'juice-oracle',
+        'schemaVersion': 2,
+        'savedAt': '2026-06-11T00:00:00.000',
+        'name': 'X',
+        'data': {
+          'juice.journal.v2': [
+            {'id': 42}
+          ],
+        },
+      });
+      expect(() => parseCampaign(bad), throwsFormatException);
     });
   });
 

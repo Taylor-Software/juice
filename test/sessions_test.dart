@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -80,6 +82,27 @@ void main() {
       expect(s.sessions.length, 1);
       expect(s.active, 'default');
       expect(prefs.getString('juice.log.v1.$newId'), isNull);
+    });
+
+    test('exportActive carries journal v2 but never the legacy log key',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.journal.v2.default':
+            '[{"id":"n","timestamp":"2026-06-11T10:00:00.000","title":"New","body":"x","kind":"text"}]',
+        'juice.log.v1.default':
+            '[{"id":"o","timestamp":"2026-06-11T09:00:00.000","title":"Old","body":"y"}]',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      final file =
+          await container.read(sessionsProvider.notifier).exportActive();
+      final data = (jsonDecode(file) as Map<String, dynamic>)['data']
+          as Map<String, dynamic>;
+      expect(data, contains('juice.journal.v2'));
+      expect(data, isNot(contains('juice.log.v1')));
     });
 
     test('cannot remove the last session', () async {
