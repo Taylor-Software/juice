@@ -5,6 +5,7 @@ import '../features/dice_roller_screen.dart';
 import '../features/encounter_screen.dart';
 import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
+import '../features/map_screen.dart';
 import '../features/moves_screen.dart';
 import '../features/tables_screen.dart';
 import '../features/tracker_screen.dart';
@@ -106,6 +107,14 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         badge: 'Juice',
         builder: (o) =>
             GeneratorsScreen(oracle: o!, section: GenSection.exploration),
+      ),
+      ToolDef(
+        id: 'maps',
+        label: 'Maps',
+        icon: Icons.map_outlined,
+        group: 'Exploration',
+        badge: 'Juice',
+        builder: (o) => MapScreen(oracle: o!),
       ),
       ToolDef(
         id: 'gen-encounters',

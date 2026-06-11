@@ -161,7 +161,7 @@ void main() {
     });
 
     test('hexCenterFor matches hand-computed flat-top odd-q literals', () {
-      const pad = 2 * size; // 68
+      // pad = 2 * size = 68 throughout.
       // (0,0) with minCol -1, minRow 0: x = (0-(-1))*1.5*34 + 68 = 119;
       // even col -> no parity shift; y = 0 + 68 = 68.
       expect(hexCenterFor(0, 0, -1, 0, size), const Offset(119, 68));
