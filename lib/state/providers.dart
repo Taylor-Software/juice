@@ -365,6 +365,33 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
 final rulesetsProvider =
     AsyncNotifierProvider<RulesetsNotifier, Set<String>>(RulesetsNotifier.new);
 
+// -- Tool MRU (global, not session-scoped) ----------------------------------
+class ToolMruNotifier extends AsyncNotifier<List<String>> {
+  static const _key = 'juice.tools.mru.v1';
+  static const _cap = 6;
+
+  @override
+  Future<List<String>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return (jsonDecode(raw) as List).cast<String>();
+  }
+
+  Future<void> record(String toolId) async {
+    final current = [...(state.valueOrNull ?? const <String>[])];
+    current.remove(toolId);
+    current.insert(0, toolId);
+    final capped = current.take(_cap).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(capped));
+    state = AsyncData(capped);
+  }
+}
+
+final toolMruProvider =
+    AsyncNotifierProvider<ToolMruNotifier, List<String>>(ToolMruNotifier.new);
+
 /// Lazy per-ruleset asset, loaded only when its toggle is on.
 final rulesetDataProvider =
     FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
