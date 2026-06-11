@@ -13,7 +13,7 @@
 | 2 | Re-verify BEST-EFFORT tables (monster grid, dialog grid) | [2026-06-11-table-verification.md](2026-06-11-table-verification.md) | shipped (PR #2) |
 | 3 | Stateful crawl modes | [2026-06-11-crawl-modes.md](2026-06-11-crawl-modes.md) | shipped (PR #3) |
 | 4 | Sessions (multi-campaign) | [2026-06-11-sessions.md](2026-06-11-sessions.md) | shipped (PR #4) |
-| 5 | Campaign file save/open (BYO cloud) | author after #4 (shared JSON schema) | — |
+| 5 | Campaign file save/open (BYO cloud) | [2026-06-11-campaign-files.md](2026-06-11-campaign-files.md) | shipped (PR #5) |
 | 6 | Mythic GME core spike | author after #4 (chaos is per-session state) | — |
 | 7+ | Later items (journal depth, Mythic full, Ironsworn family per `docs/specs/ironsworn-family.md`, icons, PWA) | author when promoted into Next | — |
 

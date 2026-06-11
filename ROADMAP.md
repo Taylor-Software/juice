@@ -25,7 +25,7 @@ breadth that compounds our differentiator instead of diluting it).
 |---|---|---|
 | ~~Stateful crawl modes~~ — **shipped 2026-06-11**: wilderness env drift + Lost/Found, dungeon linger (d6), crawl + dialog state persisted | Best Juice-specific play-feel idea in the competitor | M |
 | ~~Sessions (multi-campaign)~~ — **shipped 2026-06-11**: per-session key namespace + legacy migration, app-bar switcher (create/switch/delete) | Table stakes for a journal app | M |
-| Campaign save/open as JSON files via system document picker (BYO cloud — see below) | Data portability + user-owned cloud sync with zero server; users won't journal into an app they can't back up | M |
+| ~~Campaign save/open as JSON files~~ — **shipped 2026-06-11**: export/import via system picker, schemaVersion 1, import-as-new-session (BYO cloud — see below) | Data portability + user-owned cloud sync with zero server | M |
 | Mythic GME core spike — Chaos Factor, Fate Chart (odds × chaos d100), scene test (altered/interrupted), Event Focus rolling against our existing Threads/Characters lists | Expands audience to the largest solo-RPG oracle community; tracker becomes Mythic's lists for free. License: Mythic text is CC-BY-NC (text only) — app must stay free, attribute Word Mill Games + link | L |
 
 Dependencies:
