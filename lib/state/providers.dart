@@ -137,3 +137,27 @@ class CharacterNotifier extends _PersistedList<Character> {
 final charactersProvider =
     AsyncNotifierProvider<CharacterNotifier, List<Character>>(
         CharacterNotifier.new);
+
+// -- Crawl state (wilderness + dialog marker) -------------------------------
+class CrawlNotifier extends AsyncNotifier<CrawlState> {
+  static const _key = 'juice.crawl.v1';
+
+  @override
+  Future<CrawlState> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return const CrawlState();
+    return CrawlState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> save(CrawlState s) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(s.toJson()));
+    state = AsyncData(s);
+  }
+
+  Future<void> reset() => save(const CrawlState());
+}
+
+final crawlProvider =
+    AsyncNotifierProvider<CrawlNotifier, CrawlState>(CrawlNotifier.new);

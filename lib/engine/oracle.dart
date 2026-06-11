@@ -153,11 +153,42 @@ class Oracle {
         Roll(label: 'News', value: _pick('settlement_news')),
       ]);
 
-  GenResult wildernessStep() => GenResult(title: 'Wilderness Step', rolls: [
-        Roll(label: 'Environment', value: _pick('wilderness_environment')),
-        Roll(label: 'Encounter', value: _pick('wilderness_encounter')),
-        Roll(label: 'Weather', value: _pick('wilderness_weather')),
-      ]);
+  /// One stateful wilderness travel step (replaces the stateless
+  /// Wilderness Step). Environment drifts by 2dF from the previous hex
+  /// (header "2dF Env"); Lost/Found cycle per instructions p73:
+  /// encounter 10 while exploring -> Lost (d6 encounters);
+  /// encounter 6 (River/Road) while Lost -> reoriented.
+  ({GenResult result, CrawlState state}) wildernessTravel(CrawlState s) {
+    final env = s.envRow == null
+        ? dice.d10Index()
+        : (s.envRow! + dice.fate() + dice.fate()).clamp(1, 10).toInt();
+    final encIdx = s.lost ? dice.dN(6) : dice.d10Index();
+    final encounter = data.table('wilderness_encounter')[encIdx - 1];
+    var lost = s.lost;
+    String? note;
+    if (!lost && encIdx == 10) {
+      lost = true;
+      note = 'You are now Lost — encounters drop to a d6';
+    } else if (lost && encIdx == 6) {
+      lost = false;
+      note = 'Reoriented — no longer Lost';
+    }
+    final rolls = <Roll>[
+      Roll(
+          label: 'Environment',
+          value: data.table('wilderness_environment')[env - 1],
+          detail: s.envRow == null ? 'd10 ${d10Label(env)}' : '2dF drift'),
+      Roll(
+          label: 'Encounter',
+          value: encounter,
+          detail: s.lost ? 'd6 $encIdx (lost)' : 'd10 ${d10Label(encIdx)}'),
+      Roll(label: 'Weather', value: _pick('wilderness_weather')),
+    ];
+    return (
+      result: GenResult(title: 'Wilderness Travel', summary: note, rolls: rolls),
+      state: s.copyWith(envRow: env, lost: lost),
+    );
+  }
 
   GenResult naturalHazard() => GenResult(title: 'Natural Hazard', rolls: [
         Roll(label: 'Hazard', value: _pick('natural_hazard')),
@@ -170,15 +201,18 @@ class Oracle {
         rolls: const [],
       );
 
-  GenResult dungeonRoom() {
-    final enc = _pick('dungeon_encounter');
+  /// Dungeon encounter roll + sub-roll expansion. First entry uses a d10;
+  /// lingering >10 minutes in an unsafe area drops to a d6 (instructions
+  /// p116), which also caps the Natural Hazard sub-roll at d6.
+  List<Roll> _dungeonEncounterRolls({required bool linger}) {
+    final encIdx = linger ? dice.dN(6) : dice.d10Index();
+    final enc = data.table('dungeon_encounter')[encIdx - 1];
     final rolls = <Roll>[
-      Roll(label: 'Next Area', value: _pick('dungeon_next_area')),
-      Roll(label: 'Passage', value: _pick('dungeon_passage')),
-      Roll(label: 'Condition', value: _pick('dungeon_condition')),
-      Roll(label: 'Encounter', value: enc),
+      Roll(
+          label: 'Encounter',
+          value: enc,
+          detail: linger ? 'd6 $encIdx' : 'd10 ${d10Label(encIdx)}'),
     ];
-    // Expand the encounter with its sub-roll where applicable.
     switch (enc) {
       case 'Monster':
         rolls.add(Roll(
@@ -195,14 +229,28 @@ class Oracle {
         rolls.add(Roll(label: 'Feature', value: _pick('dungeon_feature')));
         break;
       case 'Natural Hazard':
-        rolls.add(Roll(label: 'Hazard', value: _pick('natural_hazard')));
+        final hazardIdx = linger ? dice.dN(6) : dice.d10Index();
+        rolls.add(Roll(
+            label: 'Hazard',
+            value: data.table('natural_hazard')[hazardIdx - 1]));
         break;
       case 'Treasure':
         rolls.add(Roll(label: 'Treasure', value: treasure().summary ?? ''));
         break;
     }
-    return GenResult(title: 'Dungeon Room', rolls: rolls);
+    return rolls;
   }
+
+  GenResult dungeonRoom() => GenResult(title: 'Dungeon Room', rolls: [
+        Roll(label: 'Next Area', value: _pick('dungeon_next_area')),
+        Roll(label: 'Passage', value: _pick('dungeon_passage')),
+        Roll(label: 'Condition', value: _pick('dungeon_condition')),
+        ..._dungeonEncounterRolls(linger: false),
+      ]);
+
+  /// Lingering in the current area: encounter-only roll at d6.
+  GenResult dungeonLinger() =>
+      GenResult(title: 'Dungeon Linger', rolls: _dungeonEncounterRolls(linger: true));
 
   GenResult treasure() {
     final cat = data.treasureCategories[dice.dN(6) - 1];
@@ -391,9 +439,17 @@ class Oracle {
   // -- NPC dialog walk ---------------------------------------------------
 
   /// NPC dialog marker (row, col) on the 5x5 grid; starts and resets at
-  /// center "Fact". In-memory only — persisted state arrives with the
-  /// crawl-modes work.
+  /// center "Fact". Persisted via [dialogPos] getter and [restoreDialogPos].
   int _dialogRow = 2, _dialogCol = 2;
+
+  /// Current dialog marker, for persistence.
+  ({int row, int col}) get dialogPos => (row: _dialogRow, col: _dialogCol);
+
+  /// Restore a persisted dialog marker (values clamped to the 5x5 grid).
+  void restoreDialogPos(int row, int col) {
+    _dialogRow = row.clamp(0, 4);
+    _dialogCol = col.clamp(0, 4);
+  }
 
   /// One beat of NPC dialog: move the marker, read the fragment.
   /// Doubles end the conversation and reset the marker (instructions p96).

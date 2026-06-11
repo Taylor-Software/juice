@@ -213,7 +213,7 @@ void main() {
         o.newScene(),
         o.npc(),
         o.settlement(),
-        o.wildernessStep(),
+        o.wildernessTravel(const CrawlState()).result,
         o.dungeonRoom(),
         o.treasure(),
         o.generateName(),
