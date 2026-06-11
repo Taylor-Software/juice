@@ -333,6 +333,32 @@ EXT_DIALOG_TOPIC = [
     (100, "Why the leadership needs to change"),
 ]
 
+# Wilderness Monster Encounter (pocketfold left extension), verified vs PDF.
+# Quantity prefix per monster: '+' = 1d6-1@adv, '' = 1d6-1, '-' = 1d6-1@dis.
+# Row keys: '1'..'0' (d6+mod result), '*' = Forest special, '**' = doubles/Bandits.
+MONSTER_GRID = {
+    "1":  ["+ Wolf", "- Ice Mephit", "- Winter Wolf", "Yeti", "Werebear"],
+    "2":  ["+ Skeleton", "- Warhorse Skeleton", "- Wight", "- Nightmare", "Wraith"],
+    "3":  ["+ Drow", "- Giant Spider", "Quaggoth", "- Phase Spider", "Drider"],
+    "4":  ["+ Goblin", "- Worg", "+ Hobgoblin", "+ Bugbear", "Hobgoblin Captain"],
+    "5":  ["Orc", "- Orog", "Orc Eye of Gruumsh", "- Troll", "Orc War Chief"],
+    "6":  ["+ Kobold", "+ Giant Weasel", "+ Winged Kobold", "+ Stirge", "Young Dragon"],
+    "7":  ["Lizardfolk", "Giant Lizard", "Lizardfolk Shaman", "- Giant Crocodile", "Lizard King"],
+    "8":  ["+ Zombie", "Ghoul", "- Mummy", "Ogre Zombie", "Vampire Spawn"],
+    "9":  ["Yuan-ti Pureblood", "- Cockatrice", "- Yuan-ti Malison", "Basilisk", "Medusa"],
+    "0":  ["Gnoll", "- Giant Hyena", "Gnoll Pack Lord", "+ Jackalwere", "Lamia"],
+    "*":  ["+ Twig Blight", "+ Needle Blight", "+ Vine Blight", "- Shambling Mound", "Green Hag"],
+    "**": ["+ Bandit", "Thug", "Scout", "- Veteran", "Bandit Captain"],
+}
+
+# Wilderness env row (1..10) -> (modifier, skew) for the 1d6 monster-row roll.
+# PDF Monster column: 1 Arctic +0@-, 2 Mountains +0@0, 3 Cavern +1@-, 4 Hills +1@0,
+# 5 Grassland +3@-, 6 Forest +2@0, 7 Swamp +3@+, 8 Water +3@-, 9 Coast +4@-, 0 Desert +4@+.
+MONSTER_ENV_FORMULA = {
+    1: (0, -1), 2: (0, 0), 3: (1, -1), 4: (1, 0), 5: (3, -1),
+    6: (2, 0), 7: (3, 1), 8: (3, -1), 9: (4, -1), 10: (4, 1),
+}
+
 # ---------------------------------------------------------------------------
 # ENGINE
 # ---------------------------------------------------------------------------
@@ -387,6 +413,38 @@ def roll_table(name, skew=0):
         idx = d(10)
     label = D10[idx - 1]
     return {"roll": label, "value": TABLES[name][idx - 1]}
+
+def monster_encounter(env_row):
+    """Roll a monster encounter for wilderness environment row 1..10."""
+    mod, skew = MONSTER_ENV_FORMULA[env_row]
+    a, b = d(6), d(6)
+    if skew > 0:
+        pick = max(a, b)
+    elif skew < 0:
+        pick = min(a, b)
+    else:
+        pick = a
+    if skew != 0 and a == b:
+        row_key = "**"
+    else:
+        row = min(pick + mod, 10)
+        row_key = "0" if row == 10 else str(row)
+        if env_row == 6 and row == 6:
+            row_key = "*"  # Forest special: Blights
+    d1, d2 = d(10), d(10)
+    band = 2 if d1 <= 4 else (3 if d1 <= 8 else 4)  # columns 1..band
+    boss = d1 == d2
+    monsters = []
+    for cell in MONSTER_GRID[row_key][:band]:
+        prefix, name = (cell[0], cell[2:]) if cell[:2] in ("+ ", "- ") else ("", cell)
+        q1, q2 = d(6), d(6)
+        qty = (max(q1, q2) if prefix == "+" else min(q1, q2) if prefix == "-" else q1) - 1
+        if qty > 0:
+            monsters.append((name, qty))
+    if boss:
+        monsters.append((MONSTER_GRID[row_key][4], 1))
+    return {"row": row_key, "difficulty": {2: "Easy", 3: "Medium", 4: "Hard"}[band],
+            "boss": boss, "monsters": monsters}
 
 def d100_table(rows):
     """Roll 1d100 on a (max,text) range table."""
@@ -474,6 +532,27 @@ def verify():
                 failures.append(f"{name} len {len(vals)} != 6")
         elif len(vals) != 10:
             failures.append(f"{name} len {len(vals)} != 10")
+
+    # 6. Monster grid shape + mechanics.
+    if set(MONSTER_GRID) != {"1","2","3","4","5","6","7","8","9","0","*","**"}:
+        failures.append("monster grid keys wrong")
+    for k, row in MONSTER_GRID.items():
+        if len(row) != 5:
+            failures.append(f"monster row {k} len {len(row)} != 5")
+        for cell in row:
+            if cell[:2] not in ("+ ", "- ") and cell[0] in "+-":
+                failures.append(f"monster cell malformed: {cell!r}")
+    if len(MONSTER_ENV_FORMULA) != 10:
+        failures.append("env formula must cover rows 1..10")
+    encs = [monster_encounter(d(10)) for _ in range(N)]
+    boss_rate = sum(e["boss"] for e in encs) / N
+    if abs(boss_rate - 0.10) > 0.005:
+        failures.append(f"boss rate {boss_rate:.4f} != ~0.10")
+    diff = Counter(e["difficulty"] for e in encs)
+    if abs(diff["Easy"]/N - 0.4) > 0.01 or abs(diff["Hard"]/N - 0.2) > 0.01:
+        failures.append("difficulty bands off (want 40/40/20)")
+    if not any(e["row"] == "*" for e in (monster_encounter(6) for _ in range(5000))):
+        failures.append("forest special row never reached from env 6")
 
     return failures
 
