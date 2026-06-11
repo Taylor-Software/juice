@@ -601,6 +601,15 @@ def emit_json(path):
             "companion": EXT_COMPANION,
             "dialog_topic": EXT_DIALOG_TOPIC,
         },
+        "monster_encounter": {
+            "grid": MONSTER_GRID,
+            "env_formula": {str(k): list(v) for k, v in MONSTER_ENV_FORMULA.items()},
+        },
+        "dialog": {
+            "grid": DIALOG_GRID,
+            "direction": [list(x) for x in DIALOG_DIRECTION],
+            "subject": [list(x) for x in DIALOG_SUBJECT],
+        },
     }
     with open(path, "w") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
