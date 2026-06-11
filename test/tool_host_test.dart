@@ -129,6 +129,20 @@ void main() {
     expect(find.text('count 0'), findsOneWidget); // tool opened
   });
 
+  testWidgets('system back closes the panel instead of popping the route',
+      (tester) async {
+    await pump(tester);
+    ToolHost.openLauncher(tester.element(find.text('journal home')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('tool-search')), findsOneWidget);
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    await navigator.maybePop();
+    await tester.pumpAndSettle();
+    // Panel closed (search field offstage), app still on its only route.
+    expect(find.byKey(const Key('tool-search')), findsNothing);
+    expect(find.text('journal home'), findsOneWidget);
+  });
+
   testWidgets('corrupt persisted MRU JSON is discarded, not fatal',
       (tester) async {
     SharedPreferences.setMockInitialValues({

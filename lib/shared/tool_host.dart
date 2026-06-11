@@ -82,6 +82,18 @@ class ToolHostState extends ConsumerState<ToolHost> {
 
   @override
   Widget build(BuildContext context) {
+    // The panel is a Stack overlay, not a route — intercept system back
+    // (Android) so it closes the panel instead of leaving the app.
+    return PopScope(
+      canPop: !_open,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) close();
+      },
+      child: _body(context),
+    );
+  }
+
+  Widget _body(BuildContext context) {
     return Stack(
       fit: StackFit.expand,
       children: [
