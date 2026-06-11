@@ -1,9 +1,13 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/ironsworn.dart';
+import 'package:juice_oracle/state/providers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('Action roll', () {
     test('outcome ladder and match flag behave statistically', () {
       final iron = Ironsworn(Dice());
@@ -54,6 +58,22 @@ void main() {
         final r = iron.oracleRoll(rows);
         expect(r.text, r.roll <= 50 ? 'low' : 'high');
       }
+    });
+  });
+
+  group('Rulesets provider', () {
+    test('defaults empty, toggle persists globally (key juice.rulesets.v1)',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(await container.read(rulesetsProvider.future), isEmpty);
+      await container.read(rulesetsProvider.notifier).toggle('starforged');
+      expect(await container.read(rulesetsProvider.future), {'starforged'});
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('juice.rulesets.v1'), contains('starforged'));
+      await container.read(rulesetsProvider.notifier).toggle('starforged');
+      expect(await container.read(rulesetsProvider.future), isEmpty);
     });
   });
 }
