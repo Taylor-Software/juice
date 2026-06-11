@@ -289,9 +289,29 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
     return (jsonDecode(raw) as List).cast<String>().toSet();
   }
 
-  Future<void> toggle(String id) async {
+  static const _bases = {'classic', 'starforged'};
+  static const _expansionOf = {
+    'delve': 'classic',
+    'sundered_isles': 'starforged'
+  };
+
+  /// Apply the family rules: expansions require their base; the two base
+  /// games are mutually exclusive (enabling one drops the other family).
+  Future<void> setRuleset(String id, bool on) async {
     final current = {...(state.valueOrNull ?? await future)};
-    if (!current.remove(id)) current.add(id);
+    if (on) {
+      final base = _expansionOf[id] ?? id;
+      if (_bases.contains(base)) {
+        final otherBase = base == 'classic' ? 'starforged' : 'classic';
+        current.remove(otherBase);
+        current.removeWhere((r) => _expansionOf[r] == otherBase);
+      }
+      current.add(base);
+      if (_expansionOf.containsKey(id)) current.add(id);
+    } else {
+      current.remove(id);
+      current.removeWhere((r) => _expansionOf[r] == id);
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, jsonEncode(current.toList()));
     state = AsyncData(current);

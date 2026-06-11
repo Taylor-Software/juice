@@ -206,12 +206,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final sessionName =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.name;
     final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
-    final hasStarforged = rulesets.contains('starforged');
+    final family = [
+      if (rulesets.contains('classic')) 'classic',
+      if (rulesets.contains('delve')) 'delve',
+      if (rulesets.contains('starforged')) 'starforged',
+      if (rulesets.contains('sundered_isles')) 'sundered_isles',
+    ];
+    final hasMoves = family.isNotEmpty;
     final pages = [
       FateScreen(oracle: widget.oracle),
       GeneratorsScreen(oracle: widget.oracle),
       TablesScreen(oracle: widget.oracle),
-      if (hasStarforged) const MovesScreen(rulesetId: 'starforged'),
+      if (hasMoves) MovesScreen(rulesetIds: family),
       const TrackerScreen(),
     ];
     final index = _index.clamp(0, pages.length - 1);
@@ -235,20 +241,60 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             onPressed: () => showDialog<void>(
               context: context,
               builder: (_) => Consumer(builder: (context, ref, _) {
+                const rulesetNames = {
+                  'classic': 'Ironsworn',
+                  'delve': 'Ironsworn: Delve',
+                  'starforged': 'Ironsworn: Starforged',
+                  'sundered_isles': 'Starforged: Sundered Isles',
+                };
                 final enabled =
                     ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
                 return SimpleDialog(
                   title: const Text('Rulesets'),
                   children: [
-                    SwitchListTile(
-                      title: const Text('Ironsworn: Starforged'),
-                      subtitle: const Text(
-                          'Moves + oracles © Shawn Tomkin, CC-BY 4.0'),
-                      value: enabled.contains('starforged'),
-                      onChanged: (_) => ref
-                          .read(rulesetsProvider.notifier)
-                          .toggle('starforged'),
-                    ),
+                    for (final id in const [
+                      'classic',
+                      'delve',
+                      'starforged',
+                      'sundered_isles'
+                    ])
+                      SwitchListTile(
+                        title: Text(rulesetNames[id]!),
+                        subtitle: id == 'classic'
+                            ? const Text('Rules © Shawn Tomkin, CC-BY 4.0')
+                            : null,
+                        value: enabled.contains(id),
+                        onChanged: (on) async {
+                          final otherFamily =
+                              (id == 'classic' || id == 'delve')
+                                  ? const {'starforged', 'sundered_isles'}
+                                  : const {'classic', 'delve'};
+                          if (on && enabled.any(otherFamily.contains)) {
+                            final ok = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Switch family?'),
+                                content: const Text(
+                                    'Ironsworn and Starforged are separate games — enabling this turns the other family off.'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(false),
+                                      child: const Text('Cancel')),
+                                  FilledButton(
+                                      onPressed: () =>
+                                          Navigator.of(context).pop(true),
+                                      child: const Text('Switch')),
+                                ],
+                              ),
+                            );
+                            if (ok != true) return;
+                          }
+                          await ref
+                              .read(rulesetsProvider.notifier)
+                              .setRuleset(id, on);
+                        },
+                      ),
                   ],
                 );
               }),
@@ -274,7 +320,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               icon: Icon(Icons.auto_awesome_outlined), label: 'Generators'),
           const NavigationDestination(
               icon: Icon(Icons.grid_view_outlined), label: 'Tables'),
-          if (hasStarforged)
+          if (hasMoves)
             const NavigationDestination(
                 icon: Icon(Icons.flash_on_outlined), label: 'Moves'),
           const NavigationDestination(
