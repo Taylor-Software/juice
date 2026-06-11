@@ -12,11 +12,18 @@ all 47 Meaning Tables).
 Mythic Game Master Emulator © Word Mill Games, content used under CC-BY-NC 4.0
 — this app is free and non-commercial.
 
-Optional **Ironsworn: Starforged** ruleset (toggle in the app-bar tune icon):
+Optional **Ironsworn family** rulesets (toggle in the app-bar tune icon):
 moves browser with action/progress rolls, and all oracle tables drawn from
-official Datasworn data (CC-BY 4.0, © Shawn Tomkin). Other Ironsworn family
-rulesets (Ironsworn, Delve, Sundered Isles) are in the pipeline for a later
-phase.
+official Datasworn data (© Shawn Tomkin). All four titles are supported:
+
+- **Ironsworn** (CC-BY 4.0)
+- **Ironsworn: Delve** — expansion; folds into Ironsworn's Moves tab (CC-BY 4.0)
+- **Ironsworn: Starforged** (CC-BY 4.0)
+- **Starforged: Sundered Isles** — expansion; folds into Starforged's Moves tab (CC-BY-NC-SA 4.0)
+
+Ironsworn and Starforged are separate game families and are mutually exclusive;
+enabling one family turns the other off. Expansions require their base game and
+are disabled automatically when their base is turned off.
 
 Oracle content: [github.com/jrruethe/juice](https://github.com/jrruethe/juice),
 CC BY-NC-SA. This app is an unofficial implementation of those tables.
