@@ -331,6 +331,19 @@ class Oracle {
         Roll(label: 'Idea', value: _pick('idea_idea')),
       ]);
 
+  /// Abstract icon pick (pocketfold right extension, instructions p125):
+  /// 1d10 row + 1d6 column on the 10x6 icon grid. Icon art © the Juice
+  /// author, CC BY-NC-SA 4.0.
+  ({String asset, int d10, int d6}) abstractIcon() {
+    final r10 = dice.d10Index();
+    final r6 = dice.dN(6);
+    return (
+      asset: 'assets/abstract_icons/${d10Label(r10)}_$r6.png',
+      d10: r10,
+      d6: r6,
+    );
+  }
+
   GenResult detail({int skew = 0}) => GenResult(title: 'Detail', rolls: [
         Roll(label: 'Detail', value: _pick('detail', skew: skew)),
       ]);
