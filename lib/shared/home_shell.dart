@@ -1,3 +1,7 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,6 +64,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: const Text('New campaign'),
                 onTap: () => _createSession(dialogContext),
               ),
+              ListTile(
+                leading: const Icon(Icons.file_upload_outlined),
+                title: const Text('Export campaign'),
+                onTap: () => _exportCampaign(dialogContext),
+              ),
+              ListTile(
+                leading: const Icon(Icons.file_download_outlined),
+                title: const Text('Import campaign'),
+                onTap: () => _importCampaign(dialogContext),
+              ),
             ],
           );
         },
@@ -95,6 +109,50 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (name == null || name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(name.trim());
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+  }
+
+  Future<void> _exportCampaign(BuildContext dialogContext) async {
+    final content =
+        await ref.read(sessionsProvider.notifier).exportActive();
+    final name = ref.read(sessionsProvider).valueOrNull?.activeMeta.name ??
+        'campaign';
+    final fileName =
+        '${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}.juice.json';
+    await FilePicker.saveFile(
+      dialogTitle: 'Export campaign',
+      fileName: fileName,
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      bytes: Uint8List.fromList(utf8.encode(content)),
+    );
+    if (dialogContext.mounted) {
+      Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _importCampaign(BuildContext dialogContext) async {
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Import campaign',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+      withData: true,
+    );
+    final bytes = result?.files.single.bytes;
+    if (bytes == null) return; // user cancelled
+    try {
+      await ref
+          .read(sessionsProvider.notifier)
+          .importCampaign(utf8.decode(bytes));
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+        Navigator.of(dialogContext).pop();
+      }
+    }
   }
 
   Future<void> _confirmDelete(
