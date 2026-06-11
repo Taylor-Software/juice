@@ -72,4 +72,18 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('HP 7/10'), findsOneWidget);
   });
+
+  testWidgets('sheet falls back to list when the character disappears',
+      (tester) async {
+    final container = await pump(tester);
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sheet-back')), findsOneWidget);
+    // Character removed underneath the open sheet (session switch, import…).
+    await container.read(charactersProvider.notifier).remove('c1');
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('sheet-back')), findsNothing);
+    expect(find.textContaining('No characters yet'), findsOneWidget);
+  });
 }
