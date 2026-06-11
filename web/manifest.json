@@ -1,11 +1,11 @@
 {
-    "name": "juice",
-    "short_name": "juice",
+    "name": "Juice Oracle",
+    "short_name": "Juice",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FDF6F0",
+    "theme_color": "#B8540E",
+    "description": "Solo-RPG oracle and campaign journal: Juice fate checks, generators and tables, Mythic GME, multi-campaign tracker. Offline-first.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
