@@ -45,10 +45,11 @@ Dependencies:
   four rulesets from official Datasworn data, family exclusivity, merged
   Moves tab, per-asset license attribution (Sundered Isles is
   CC-BY-NC-SA; the rest CC-BY).
-- **Abstract Icons oracle** — **closed as won't-ship 2026-06-11**: the
-  60 icons are the Juice author's art; no license grants redistribution
-  (the competitor's CC claim isn't theirs to give). Re-open only if the
-  author publishes the art under an open license.
+- ~~**Abstract Icons oracle**~~ — **shipped 2026-06-11** (PR #12).
+  Initially closed as license-blocked; reopened after the official itch
+  page (thunder9861.itch.io/juice-oracle) confirmed assets including
+  icons are CC BY-NC-SA 4.0. All 60 icons vendored, 1d10+1d6 grid pick
+  per the instructions, rendered in Generators.
 - ~~**PWA polish**~~ — **shipped 2026-06-11** (PR #7): proper manifest
   identity/colors/description; offline cache via Flutter's service
   worker; install prompt is the browser's native flow.

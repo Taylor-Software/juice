@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../shared/result_card.dart';
@@ -55,7 +56,12 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     _Gen('NPC Dialog Topic', (o) => o.dialogTopic()),
   ];
 
-  void _run(_Gen g) => setState(() => _last = g.run(widget.oracle));
+  ({String asset, int d10, int d6})? _lastIcon;
+
+  void _run(_Gen g) => setState(() {
+        _last = g.run(widget.oracle);
+        _lastIcon = null;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +82,24 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
                 const SnackBar(content: Text('Logged')),
               );
             },
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (_lastIcon != null) ...[
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Image.asset(_lastIcon!.asset, width: 160, height: 160),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Abstract Icon (d10 ${d10Label(_lastIcon!.d10)}, d6 ${_lastIcon!.d6})',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 16),
         ],
@@ -123,6 +147,13 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             ActionChip(
               label: const Text('Reset Crawl'),
               onPressed: () => ref.read(crawlProvider.notifier).reset(),
+            ),
+            ActionChip(
+              label: const Text('Abstract Icon'),
+              onPressed: () => setState(() {
+                _lastIcon = widget.oracle.abstractIcon();
+                _last = null;
+              }),
             ),
           ],
         ),
