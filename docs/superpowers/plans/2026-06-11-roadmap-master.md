@@ -9,8 +9,8 @@
 
 | # | Roadmap item | Plan | Status |
 |---|---|---|---|
-| 1 | Web deploy + CI | [2026-06-11-web-deploy-ci.md](2026-06-11-web-deploy-ci.md) | ready |
-| 2 | Re-verify BEST-EFFORT tables (monster grid, dialog grid) | [2026-06-11-table-verification.md](2026-06-11-table-verification.md) | ready |
+| 1 | Web deploy + CI | [2026-06-11-web-deploy-ci.md](2026-06-11-web-deploy-ci.md) | shipped (PR #1) |
+| 2 | Re-verify BEST-EFFORT tables (monster grid, dialog grid) | [2026-06-11-table-verification.md](2026-06-11-table-verification.md) | shipped (PR #2) |
 | 3 | Stateful crawl modes | author after #2 — reuse the DialogState pattern #2 introduces | — |
 | 4 | Sessions (multi-campaign) | author after #3 | — |
 | 5 | Campaign file save/open (BYO cloud) | author after #4 (shared JSON schema) | — |

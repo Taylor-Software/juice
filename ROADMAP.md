@@ -16,8 +16,8 @@ breadth that compounds our differentiator instead of diluting it).
 
 | Item | Why | Effort | Status |
 |---|---|---|---|
-| Web deploy + CI (GitHub Pages or similar, `flutter build web`, analyze+test gate) | Biggest competitive delta is reach, not features — juice-roll lives at a URL, we require a local build | S | Not started |
-| Re-verify BEST-EFFORT tables (wilderness monster grid, NPC dialog grid) against the Juice PDF; encode in `build_oracle.py`, regenerate `oracle_data.json` | Known correctness gaps; protects the "verified engine" claim. juice-roll's `reference/` markdown transcriptions are a useful cross-check, but the PDF is the source of truth | M | Not started |
+| Web deploy + CI (GitHub Pages, `flutter build web`, analyze+test gate) | Biggest competitive delta is reach, not features — juice-roll lives at a URL, we require a local build | S | **Done** — live at https://taylor-software.github.io/juice/ (2026-06-11) |
+| Re-verify BEST-EFFORT tables (wilderness monster grid, NPC dialog grid) against the Juice PDF; encode in `build_oracle.py`, regenerate `oracle_data.json` | Known correctness gaps; protects the "verified engine" claim. juice-roll's `reference/` markdown transcriptions are a useful cross-check, but the PDF is the source of truth | M | **Done** — 3 OCR corrections found, 3 new generators (2026-06-11) |
 
 ## Next (1–3 months, scoped not started)
 
