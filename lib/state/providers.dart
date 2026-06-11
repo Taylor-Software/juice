@@ -224,6 +224,115 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
 final crawlProvider =
     AsyncNotifierProvider<CrawlNotifier, CrawlState>(CrawlNotifier.new);
 
+// -- Encounter tracker (initiative order, turns, rounds) ---------------------
+class EncounterNotifier extends AsyncNotifier<EncounterState> {
+  static const _baseKey = 'juice.encounter.v1';
+
+  late String _scopedKey;
+
+  @override
+  Future<EncounterState> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const EncounterState();
+    return EncounterState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> save(EncounterState s) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
+    state = AsyncData(s);
+  }
+
+  /// Awaited state: mutating before build() completes must not throw on
+  /// [_scopedKey] or clobber previously persisted data.
+  Future<EncounterState> get _ready async => state.valueOrNull ?? await future;
+
+  /// Insert keeping initiative order (descending); on ties the new combatant
+  /// goes AFTER existing equals. turnIndex adjusts so the current turn's
+  /// combatant stays current.
+  Future<void> addCombatant(Combatant c) async {
+    final s = await _ready;
+    final list = [...s.combatants];
+    var insertIndex = list.indexWhere((e) => e.initiative < c.initiative);
+    if (insertIndex == -1) insertIndex = list.length;
+    list.insert(insertIndex, c);
+    final turnIndex = (s.combatants.isNotEmpty && insertIndex <= s.turnIndex)
+        ? s.turnIndex + 1
+        : s.turnIndex;
+    await save(s.copyWith(combatants: list, turnIndex: turnIndex));
+  }
+
+  /// Manual order override from drag: move [oldIndex] -> [newIndex]
+  /// (raw ReorderableListView indices); turnIndex follows the combatant
+  /// it pointed at.
+  Future<void> reorder(int oldIndex, int newIndex) async {
+    final s = await _ready;
+    if (s.combatants.isEmpty) return;
+    if (newIndex > oldIndex) newIndex--;
+    final pointedId = s.combatants[s.turnIndex].id;
+    final list = [...s.combatants];
+    list.insert(newIndex, list.removeAt(oldIndex));
+    final turnIndex = list.indexWhere((c) => c.id == pointedId);
+    await save(s.copyWith(combatants: list, turnIndex: turnIndex));
+  }
+
+  /// Replace the combatant with the same id.
+  Future<void> updateCombatant(Combatant c) async {
+    final s = await _ready;
+    await save(s.copyWith(combatants: [
+      for (final e in s.combatants) if (e.id == c.id) c else e,
+    ]));
+  }
+
+  /// Remove by id; turnIndex follows the pointed-at combatant, or clamps
+  /// into range when the pointed combatant itself is removed.
+  Future<void> removeCombatant(String id) async {
+    final s = await _ready;
+    final idx = s.combatants.indexWhere((c) => c.id == id);
+    if (idx == -1) return;
+    final list = [...s.combatants]..removeAt(idx);
+    int turnIndex;
+    if (idx == s.turnIndex) {
+      turnIndex = list.isEmpty ? 0 : s.turnIndex.clamp(0, list.length - 1);
+    } else {
+      final pointedId = s.combatants[s.turnIndex].id;
+      final followed = list.indexWhere((c) => c.id == pointedId);
+      turnIndex = followed == -1 ? 0 : followed;
+    }
+    await save(s.copyWith(combatants: list, turnIndex: turnIndex));
+  }
+
+  /// Advance to the next non-defeated combatant. Wrapping past the end
+  /// increments round. If all combatants are defeated (or list empty): no-op.
+  Future<void> nextTurn() async {
+    final s = await _ready;
+    final n = s.combatants.length;
+    if (n == 0 || s.combatants.every((c) => c.defeated)) return;
+    var i = s.turnIndex;
+    var round = s.round;
+    do {
+      i++;
+      if (i >= n) {
+        i = 0;
+        round++;
+      }
+    } while (s.combatants[i].defeated);
+    await save(s.copyWith(turnIndex: i, round: round));
+  }
+
+  Future<void> reset() async {
+    await _ready;
+    await save(const EncounterState());
+  }
+}
+
+final encounterProvider =
+    AsyncNotifierProvider<EncounterNotifier, EncounterState>(
+        EncounterNotifier.new);
+
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
@@ -232,6 +341,7 @@ const sessionScopedKeys = [
   'juice.threads.v1',
   'juice.characters.v1',
   'juice.crawl.v1',
+  'juice.encounter.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
