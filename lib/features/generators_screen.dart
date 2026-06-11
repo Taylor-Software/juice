@@ -53,7 +53,6 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     _Gen('NPC Plot Knowledge', (o) => o.extendedInfo()),
     _Gen('Companion Response', (o) => o.companionResponse()),
     _Gen('NPC Dialog Topic', (o) => o.dialogTopic()),
-    _Gen('NPC Dialog', (o) => o.npcDialog()),
   ];
 
   void _run(_Gen g) => setState(() => _last = g.run(widget.oracle));
@@ -62,6 +61,7 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final last = _last;
+    final crawl = ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -79,6 +79,53 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
           ),
           const SizedBox(height: 16),
         ],
+        Text('Crawl', style: theme.textTheme.titleMedium),
+        if (crawl.envRow != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${widget.oracle.data.table('wilderness_environment')[crawl.envRow! - 1]}'
+              '${crawl.lost ? ' — LOST (d6 encounters)' : ''}',
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ActionChip(
+              label: const Text('Wilderness Travel'),
+              onPressed: () {
+                final r = widget.oracle.wildernessTravel(crawl);
+                ref.read(crawlProvider.notifier).save(r.state);
+                setState(() => _last = r.result);
+              },
+            ),
+            ActionChip(
+              label: const Text('Dungeon Linger'),
+              onPressed: () =>
+                  setState(() => _last = widget.oracle.dungeonLinger()),
+            ),
+            ActionChip(
+              label: const Text('NPC Dialog'),
+              onPressed: () {
+                widget.oracle
+                    .restoreDialogPos(crawl.dialogRow, crawl.dialogCol);
+                final r = widget.oracle.npcDialog();
+                final pos = widget.oracle.dialogPos;
+                ref.read(crawlProvider.notifier).save(
+                    crawl.copyWith(dialogRow: pos.row, dialogCol: pos.col));
+                setState(() => _last = r);
+              },
+            ),
+            ActionChip(
+              label: const Text('Reset Crawl'),
+              onPressed: () => ref.read(crawlProvider.notifier).reset(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
         Wrap(
           spacing: 8,
           runSpacing: 8,
