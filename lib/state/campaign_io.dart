@@ -84,9 +84,10 @@ CampaignImport parseCampaign(String raw) {
     }
     rawByKey[key] = jsonEncode(value);
   }
+  final rawName = decoded['name'];
   return CampaignImport(
-    name: (decoded['name'] as String?)?.trim().isNotEmpty == true
-        ? (decoded['name'] as String).trim()
+    name: rawName is String && rawName.trim().isNotEmpty
+        ? rawName.trim()
         : 'Imported campaign',
     rawByKey: rawByKey,
   );

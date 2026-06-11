@@ -51,6 +51,12 @@ void main() {
       expect(parsed.rawByKey.keys, ['juice.threads.v1']);
     });
 
+    test('non-string name falls back instead of throwing', () {
+      final parsed = parseCampaign(
+          '{"app":"juice-oracle","schemaVersion":1,"name":42,"data":{}}');
+      expect(parsed.name, 'Imported campaign');
+    });
+
     test('rejects data payloads of the wrong shape', () {
       expect(
         () => parseCampaign(
