@@ -99,7 +99,9 @@ best-effort and should be checked against the original before you rely on them:
 - **Name generator skew pattern** — the source uses a per-row skew pattern over
   the syllable columns; here each column is rolled independently (d20) and
   concatenated. Names are plausible but not the exact weighted distribution.
-- **Abstract Icons** (10×6) — purely pictographic in the source; not reproduced.
+- ~~Abstract Icons~~ — implemented: all 60 icons (CC BY-NC-SA 4.0 per the
+  official itch.io release) vendored under `assets/abstract_icons/`, rolled
+  as 1d10 row + 1d6 column from the Generators tab.
 - **Location compass grid** (5×5 d100) — not yet encoded; low priority.
 
 If you want any of these brought to full fidelity, point me at the relevant PDF

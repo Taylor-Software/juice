@@ -228,4 +228,20 @@ void main() {
       }
     });
   });
+
+  group('Abstract icon roll', () {
+    test('maps rolls onto the 10x6 icon grid assets', () {
+      final oracle = Oracle(data);
+      final seen = <String>{};
+      for (var i = 0; i < 3000; i++) {
+        final r = oracle.abstractIcon();
+        expect(r.asset,
+            matches(RegExp(r'^assets/abstract_icons/[0-9]_[1-6]\.png$')));
+        expect(r.d10, inInclusiveRange(1, 10));
+        expect(r.d6, inInclusiveRange(1, 6));
+        seen.add(r.asset);
+      }
+      expect(seen.length, 60); // every icon reachable
+    });
+  });
 }

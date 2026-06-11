@@ -27,3 +27,4 @@ flutter:
     - assets/ruleset_classic.json
     - assets/ruleset_delve.json
     - assets/ruleset_sundered_isles.json
+    - assets/abstract_icons/
