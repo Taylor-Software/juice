@@ -6,9 +6,15 @@ import '../engine/oracle.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 
+/// A scroll target within the Fate screen, for launcher deep links.
+enum FateSection { fateCheck, rollHigh, mythic }
+
 class FateScreen extends ConsumerStatefulWidget {
-  const FateScreen({super.key, required this.oracle});
+  const FateScreen({super.key, required this.oracle, this.initialSection});
   final Oracle oracle;
+
+  /// When non-null, scroll to this section on first frame.
+  final FateSection? initialSection;
 
   @override
   ConsumerState<FateScreen> createState() => _FateScreenState();
@@ -24,6 +30,28 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   int _rhOdds = 3; // Unknown
   GenResult? _rhLast;
 
+  final _fateCheckKey = GlobalKey();
+  final _rollHighKey = GlobalKey();
+  final _mythicKey = GlobalKey();
+
+  GlobalKey _keyFor(FateSection s) => switch (s) {
+        FateSection.fateCheck => _fateCheckKey,
+        FateSection.rollHigh => _rollHighKey,
+        FateSection.mythic => _mythicKey,
+      };
+
+  @override
+  void initState() {
+    super.initState();
+    final section = widget.initialSection;
+    if (section != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = _keyFor(section).currentContext;
+        if (ctx != null) Scrollable.ensureVisible(ctx);
+      });
+    }
+  }
+
   void _roll() => setState(() => _last = widget.oracle.fateCheck(_likelihood));
 
   String _glyph(int v) => v > 0 ? '+' : (v < 0 ? '−' : '0');
@@ -35,7 +63,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Fate Check', style: theme.textTheme.headlineSmall),
+        Text('Fate Check',
+            key: _fateCheckKey, style: theme.textTheme.headlineSmall),
         const SizedBox(height: 4),
         Text('Ask a yes/no question, then roll 2dF + 1d6.',
             style: theme.textTheme.bodyMedium
@@ -78,7 +107,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
         ),
         const SizedBox(height: 24),
         const Divider(),
-        Text('Roll High Oracle', style: theme.textTheme.headlineSmall),
+        Text('Roll High Oracle',
+            key: _rollHighKey, style: theme.textTheme.headlineSmall),
         Text(
           'Roll high = yes. Pick a die and the odds.',
           style: theme.textTheme.bodySmall
@@ -126,7 +156,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
         ),
         const SizedBox(height: 24),
         const Divider(),
-        Text('Mythic GME', style: theme.textTheme.headlineSmall),
+        Text('Mythic GME',
+            key: _mythicKey, style: theme.textTheme.headlineSmall),
         Text(
           'Mythic Game Master Emulator © Word Mill Games (wordmillgames.com), '
           'used under CC-BY-NC 4.0.',
