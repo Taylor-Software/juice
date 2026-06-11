@@ -54,8 +54,23 @@ Dependencies:
   identity/colors/description; offline cache via Flutter's service
   worker; install prompt is the browser's native flow.
 
-**Roadmap complete** (one item closed as license-blocked). Next planning
-cycle starts from a fresh competitive scan.
+**First cycle complete** (2026-06-11, PRs #1–#13, incl. the Roll High
+oracle added on request).
+
+## Cycle 2: journal-first redesign (started 2026-06-11)
+
+Spec: `docs/superpowers/specs/2026-06-11-journal-redesign-design.md`.
+The journal becomes the home surface; every tool is summoned over it
+(drawer/bottom sheet) and feeds results back into it.
+
+| Phase | Item | Status |
+|---|---|---|
+| 1 | Journal core (entry kinds, migration, journal screen) | **Done** — PR #14 (2026-06-11) |
+| 2 | Shell swap (journal home + activity-grouped tool drawer) | next |
+| 3 | Dice roller (notation engine) | planned |
+| 4 | Character sheets (flexible blocks) | planned |
+| 5 | Encounter tracker (initiative + tracks) | planned |
+| 6 | Maps (dungeon rooms + wilderness hex) | planned |
 
 ## Cloud storage stance (BYO cloud, no server)
 
