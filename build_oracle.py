@@ -359,6 +359,22 @@ MONSTER_ENV_FORMULA = {
     6: (2, 0), 7: (3, 1), 8: (3, -1), 9: (4, -1), 10: (4, 1),
 }
 
+# NPC Dialog 5x5 grid walk, verified vs PDF. Marker starts center (2,2).
+# Rows 0-1 are past tense; rows 2-4 present (instructions p96).
+DIALOG_GRID = [
+    ["Fact", "Denial", "Query", "Denial", "Action"],
+    ["Want", "Query", "Need", "Query", "Fact"],
+    ["Action", "Need", "Fact", "Action", "Denial"],
+    ["Need", "Query", "Denial", "Query", "Want"],
+    ["Query", "Support", "Query", "Support", "Need"],
+]
+# d10 die 1 -> (tone, drow, dcol); die 2 -> subject.
+DIALOG_DIRECTION = [  # (max_roll, tone, drow, dcol)
+    (2, "Neutral", -1, 0), (5, "Defensive", 0, -1),
+    (8, "Aggressive", 0, 1), (10, "Helpful", 1, 0),
+]
+DIALOG_SUBJECT = [(2, "Them"), (5, "Me"), (8, "You"), (10, "Us")]
+
 # ---------------------------------------------------------------------------
 # ENGINE
 # ---------------------------------------------------------------------------
@@ -553,6 +569,14 @@ def verify():
         failures.append("difficulty bands off (want 40/40/20)")
     if not any(e["row"] == "*" for e in (monster_encounter(6) for _ in range(5000))):
         failures.append("forest special row never reached from env 6")
+
+    # 7. Dialog grid shape and anchor.
+    if len(DIALOG_GRID) != 5 or any(len(r) != 5 for r in DIALOG_GRID):
+        failures.append("dialog grid not 5x5")
+    if DIALOG_GRID[2][2] != "Fact":
+        failures.append("dialog grid center must be Fact")
+    if DIALOG_DIRECTION[-1][0] != 10 or DIALOG_SUBJECT[-1][0] != 10:
+        failures.append("dialog bands must cover 1..10")
 
     return failures
 
