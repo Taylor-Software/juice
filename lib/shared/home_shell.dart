@@ -183,7 +183,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       builder: (context) => AlertDialog(
         title: Text('Delete "${session.name}"?'),
         content: const Text(
-            'Its threads, characters, log, and crawl state are removed permanently.'),
+            'Its journal, threads, characters, and crawl state are removed permanently.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),

@@ -232,7 +232,7 @@ class CrawlState {
       );
 }
 
-/// A campaign/session: an isolated set of threads, characters, log, crawl.
+/// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {
   const SessionMeta({required this.id, required this.name});
   final String id;

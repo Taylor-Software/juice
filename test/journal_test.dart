@@ -152,5 +152,27 @@ void main() {
       expect(entries[1].kind, JournalKind.text);
       expect(entries[1].body, 'We slip inside.');
     });
+
+    test('importing a v1 campaign file surfaces its log in the journal',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      const v1File = '''
+      {"app":"juice-oracle","schemaVersion":1,
+       "savedAt":"2026-06-11T00:00:00.000","name":"Old campaign",
+       "data":{"juice.log.v1":[{"id":"a",
+         "timestamp":"2026-06-11T09:00:00.000","title":"Legacy roll",
+         "body":"Yes"}]}}''';
+      await container.read(sessionsProvider.notifier).importCampaign(v1File);
+      // Import switches to the new session; the journal migrates its log.
+      final entries = await container.read(journalProvider.future);
+      expect(entries.single.title, 'Legacy roll');
+      expect(entries.single.kind, JournalKind.result);
+    });
   });
 }
