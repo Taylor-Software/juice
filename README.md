@@ -10,7 +10,12 @@ character sheets (free-text stats, current/max tracks with steppers, tags,
 notes — one model covers D&D, Ironsworn, or Mythic NPCs). An encounter tracker runs
 initiative order (drag to override), turns and rounds, status tags, and
 defeated states — combatants pulled from your characters share their sheet's
-HP track live — and drops an end-of-encounter summary into the journal.
+HP track live — and drops an end-of-encounter summary into the journal. A Maps tool draws
+your dungeon room-by-room as you roll it (pan/zoom, tap a room for its
+detail, linger rolls) and reveals a wilderness hex map as you travel
+(env-colored hexes from the same verified drift tables, Lost markers,
+manual reveal for prep); both persist per campaign and snapshot into the
+journal.
 
 The Ask-the-Oracle tools also include a generic **Roll High oracle** — a 7-step
 likelihood ladder (Almost Certain … Almost Impossible) with six graded

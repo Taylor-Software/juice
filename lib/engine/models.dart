@@ -302,6 +302,155 @@ class EncounterState {
   }
 }
 
+/// A mapped dungeon room on the integer grid (one cell per room).
+class DungeonRoom {
+  const DungeonRoom({
+    required this.id,
+    required this.x,
+    required this.y,
+    required this.title,
+    this.detail = '',
+  });
+  final String id;
+  final int x;
+  final int y;
+  final String title; // e.g. the room's oracle headline
+  final String detail; // full GenResult.asText (+ appended linger lines)
+
+  DungeonRoom copyWith({String? title, String? detail}) => DungeonRoom(
+        id: id,
+        x: x,
+        y: y,
+        title: title ?? this.title,
+        detail: detail ?? this.detail,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'id': id, 'x': x, 'y': y, 'title': title, 'detail': detail};
+
+  /// Parses one room entry; null for anything without a map shape and id
+  /// (mirrors CharStat.maybeFromJson tolerance).
+  static DungeonRoom? maybeFromJson(dynamic j) {
+    if (j is! Map || j['id'] is! String) return null;
+    return DungeonRoom(
+      id: j['id'] as String,
+      x: (j['x'] as int?) ?? 0,
+      y: (j['y'] as int?) ?? 0,
+      title: (j['title'] as String?) ?? '',
+      detail: (j['detail'] as String?) ?? '',
+    );
+  }
+}
+
+/// A revealed wilderness hex (flat-top, odd-q offset coordinates: odd
+/// columns are shifted half a hex down).
+class HexCell {
+  const HexCell({
+    required this.col,
+    required this.row,
+    required this.envRow,
+    this.lost = false,
+  });
+  final int col;
+  final int row;
+  final int envRow; // 1..10 -> wilderness_environment table
+  final bool lost;
+
+  HexCell copyWith({int? envRow, bool? lost}) => HexCell(
+        col: col,
+        row: row,
+        envRow: envRow ?? this.envRow,
+        lost: lost ?? this.lost,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'col': col, 'row': row, 'envRow': envRow, 'lost': lost};
+
+  /// Parses one hex entry; null for anything without a map shape and int
+  /// coordinates. envRow clamps into the table range 1..10.
+  static HexCell? maybeFromJson(dynamic j) {
+    if (j is! Map || j['col'] is! int || j['row'] is! int) return null;
+    return HexCell(
+      col: j['col'] as int,
+      row: j['row'] as int,
+      envRow: ((j['envRow'] as int?) ?? 1).clamp(1, 10),
+      lost: (j['lost'] as bool?) ?? false,
+    );
+  }
+}
+
+/// Persisted map state: dungeon graph + revealed hex field.
+class MapState {
+  const MapState({
+    this.rooms = const [],
+    this.corridors = const [],
+    this.currentRoomId,
+    this.hexes = const [],
+    this.currentHexCol,
+    this.currentHexRow,
+  });
+  final List<DungeonRoom> rooms;
+  final List<List<String>> corridors; // [idA, idB] pairs
+  final String? currentRoomId;
+  final List<HexCell> hexes;
+  final int? currentHexCol;
+  final int? currentHexRow;
+
+  /// [clearCurrentRoomId] / [clearCurrentHex] null out the nullable trio
+  /// (the hex current is one position, so its col/row clear together).
+  MapState copyWith({
+    List<DungeonRoom>? rooms,
+    List<List<String>>? corridors,
+    String? currentRoomId,
+    bool clearCurrentRoomId = false,
+    List<HexCell>? hexes,
+    int? currentHexCol,
+    int? currentHexRow,
+    bool clearCurrentHex = false,
+  }) =>
+      MapState(
+        rooms: rooms ?? this.rooms,
+        corridors: corridors ?? this.corridors,
+        currentRoomId:
+            clearCurrentRoomId ? null : (currentRoomId ?? this.currentRoomId),
+        hexes: hexes ?? this.hexes,
+        currentHexCol:
+            clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
+        currentHexRow:
+            clearCurrentHex ? null : (currentHexRow ?? this.currentHexRow),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'rooms': rooms.map((r) => r.toJson()).toList(),
+        'corridors': corridors,
+        'currentRoomId': currentRoomId,
+        'hexes': hexes.map((h) => h.toJson()).toList(),
+        'currentHexCol': currentHexCol,
+        'currentHexRow': currentHexRow,
+      };
+
+  /// Tolerant: malformed room/hex entries are skipped; corridor entries
+  /// must be 2-string lists, else skipped.
+  factory MapState.fromJson(Map<String, dynamic> j) => MapState(
+        rooms: ((j['rooms'] as List?) ?? const [])
+            .map(DungeonRoom.maybeFromJson)
+            .whereType<DungeonRoom>()
+            .toList(),
+        corridors: [
+          for (final e in (j['corridors'] as List?) ?? const [])
+            if (e is List && e.length == 2 && e.every((id) => id is String))
+              List<String>.from(e),
+        ],
+        currentRoomId: j['currentRoomId'] as String?,
+        hexes: ((j['hexes'] as List?) ?? const [])
+            .map(HexCell.maybeFromJson)
+            .whereType<HexCell>()
+            .toList(),
+        currentHexCol: j['currentHexCol'] as int?,
+        currentHexRow: j['currentHexRow'] as int?,
+      );
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {

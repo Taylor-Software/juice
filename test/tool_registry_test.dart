@@ -20,12 +20,12 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(12));
-    expect(buildToolRegistry(family: ['classic']), hasLength(13));
+    expect(tools, hasLength(13));
+    expect(buildToolRegistry(family: ['classic']), hasLength(14));
     expect(tools.map((t) => t.id), containsAll([
       'fate-check', 'roll-high', 'mythic', 'dice',
       'gen-story', 'gen-npcs', 'gen-exploration', 'gen-encounters',
-      'gen-details', 'threads-characters', 'tables', 'encounter',
+      'gen-details', 'threads-characters', 'tables', 'encounter', 'maps',
     ]));
   });
 }

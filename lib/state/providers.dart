@@ -3,6 +3,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../engine/dice.dart';
+import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_data.dart';
@@ -333,6 +335,124 @@ final encounterProvider =
     AsyncNotifierProvider<EncounterNotifier, EncounterState>(
         EncounterNotifier.new);
 
+// -- Map (dungeon graph + revealed hex field) --------------------------------
+class MapNotifier extends AsyncNotifier<MapState> {
+  static const _baseKey = 'juice.map.v1';
+
+  late String _scopedKey;
+
+  @override
+  Future<MapState> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const MapState();
+    return MapState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> save(MapState s) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
+    state = AsyncData(s);
+  }
+
+  /// Awaited state: mutating before build() completes must not throw on
+  /// [_scopedKey] or clobber previously persisted data.
+  Future<MapState> get _ready async => state.valueOrNull ?? await future;
+
+  /// Place a new room next to the current one (engine picks the cell),
+  /// connect it with a corridor, and make it current.
+  Future<DungeonRoom> addRoom(
+      {required String title,
+      required String detail,
+      required Dice dice}) async {
+    final s = await _ready;
+    final pos = nextRoomPosition(s.rooms, s.currentRoomId, dice);
+    final room = DungeonRoom(
+        id: _newId(), x: pos.x, y: pos.y, title: title, detail: detail);
+    await save(s.copyWith(
+      rooms: [...s.rooms, room],
+      corridors: pos.attachTo == null
+          ? s.corridors
+          : [
+              ...s.corridors,
+              [pos.attachTo!, room.id],
+            ],
+      currentRoomId: room.id,
+    ));
+    return room;
+  }
+
+  /// Make [id] the current room; no-op for unknown ids.
+  Future<void> selectRoom(String id) async {
+    final s = await _ready;
+    if (!s.rooms.any((r) => r.id == id)) return;
+    await save(s.copyWith(currentRoomId: id));
+  }
+
+  /// Append a linger result line to a room's detail.
+  Future<void> appendRoomDetail(String id, String extra) async {
+    final s = await _ready;
+    await save(s.copyWith(rooms: [
+      for (final r in s.rooms)
+        if (r.id == id) r.copyWith(detail: '${r.detail}\n$extra') else r,
+    ]));
+  }
+
+  /// Reveal the next hex from travel (engine picks the cell) and move
+  /// current onto it. Re-entering a revealed cell keeps its environment
+  /// but updates its lost flag.
+  Future<HexCell> revealHex(
+      {required int envRow, required bool lost, required Dice dice}) async {
+    final s = await _ready;
+    final pos =
+        nextHexPosition(s.hexes, s.currentHexCol, s.currentHexRow, dice);
+    if (pos.alreadyRevealed) {
+      final hexes = [
+        for (final h in s.hexes)
+          if (h.col == pos.col && h.row == pos.row) h.copyWith(lost: lost)
+          else h,
+      ];
+      await save(s.copyWith(
+          hexes: hexes, currentHexCol: pos.col, currentHexRow: pos.row));
+      return hexes.firstWhere((h) => h.col == pos.col && h.row == pos.row);
+    }
+    final cell = HexCell(col: pos.col, row: pos.row, envRow: envRow, lost: lost);
+    await save(s.copyWith(
+      hexes: [...s.hexes, cell],
+      currentHexCol: pos.col,
+      currentHexRow: pos.row,
+    ));
+    return cell;
+  }
+
+  /// Manual reveal at explicit coords (does not move current); no-op if the
+  /// cell is already revealed.
+  Future<void> revealHexAt(int col, int row, int envRow) async {
+    final s = await _ready;
+    if (s.hexes.any((h) => h.col == col && h.row == row)) return;
+    await save(s.copyWith(
+        hexes: [...s.hexes, HexCell(col: col, row: row, envRow: envRow)]));
+  }
+
+  /// Clear the dungeon graph, keeping the hex field.
+  Future<void> resetDungeon() async {
+    final s = await _ready;
+    await save(s.copyWith(
+        rooms: const [], corridors: const [], clearCurrentRoomId: true));
+  }
+
+  /// Clear the hex field, keeping the dungeon graph.
+  Future<void> resetHexes() async {
+    final s = await _ready;
+    await save(s.copyWith(hexes: const [], clearCurrentHex: true));
+  }
+}
+
+final mapProvider =
+    AsyncNotifierProvider<MapNotifier, MapState>(MapNotifier.new);
+
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
@@ -342,6 +462,7 @@ const sessionScopedKeys = [
   'juice.characters.v1',
   'juice.crawl.v1',
   'juice.encounter.v1',
+  'juice.map.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
