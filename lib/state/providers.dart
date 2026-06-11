@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -275,3 +276,34 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
 
 final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
     SessionsNotifier.new);
+
+// -- Enabled rulesets (global, not session-scoped) ---------------------------
+class RulesetsNotifier extends AsyncNotifier<Set<String>> {
+  static const _key = 'juice.rulesets.v1';
+
+  @override
+  Future<Set<String>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return <String>{};
+    return (jsonDecode(raw) as List).cast<String>().toSet();
+  }
+
+  Future<void> toggle(String id) async {
+    final current = {...(state.valueOrNull ?? await future)};
+    if (!current.remove(id)) current.add(id);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, jsonEncode(current.toList()));
+    state = AsyncData(current);
+  }
+}
+
+final rulesetsProvider =
+    AsyncNotifierProvider<RulesetsNotifier, Set<String>>(RulesetsNotifier.new);
+
+/// Lazy per-ruleset asset, loaded only when its toggle is on.
+final rulesetDataProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
+  final raw = await rootBundle.loadString('assets/ruleset_$id.json');
+  return jsonDecode(raw) as Map<String, dynamic>;
+});
