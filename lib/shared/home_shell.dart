@@ -9,6 +9,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
+import '../features/moves_screen.dart';
 import '../features/tables_screen.dart';
 import '../features/tracker_screen.dart';
 import '../state/providers.dart';
@@ -204,12 +205,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final sessionName =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.name;
+    final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+    final hasStarforged = rulesets.contains('starforged');
     final pages = [
       FateScreen(oracle: widget.oracle),
       GeneratorsScreen(oracle: widget.oracle),
       TablesScreen(oracle: widget.oracle),
+      if (hasStarforged) const MovesScreen(rulesetId: 'starforged'),
       const TrackerScreen(),
     ];
+    final index = _index.clamp(0, pages.length - 1);
     return Scaffold(
       appBar: AppBar(
         title: sessionName == null
@@ -225,6 +230,31 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Rulesets',
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (_) => Consumer(builder: (context, ref, _) {
+                final enabled =
+                    ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+                return SimpleDialog(
+                  title: const Text('Rulesets'),
+                  children: [
+                    SwitchListTile(
+                      title: const Text('Ironsworn: Starforged'),
+                      subtitle: const Text(
+                          'Moves + oracles © Shawn Tomkin, CC-BY 4.0'),
+                      value: enabled.contains('starforged'),
+                      onChanged: (_) => ref
+                          .read(rulesetsProvider.notifier)
+                          .toggle('starforged'),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',
             onPressed: () => _showSessions(context),
@@ -232,19 +262,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ],
       ),
       body: SafeArea(
-        child: IndexedStack(index: _index, children: pages),
+        child: IndexedStack(index: index, children: pages),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
+        selectedIndex: index,
         onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
               icon: Icon(Icons.help_outline), label: 'Fate'),
-          NavigationDestination(
+          const NavigationDestination(
               icon: Icon(Icons.auto_awesome_outlined), label: 'Generators'),
-          NavigationDestination(
+          const NavigationDestination(
               icon: Icon(Icons.grid_view_outlined), label: 'Tables'),
-          NavigationDestination(
+          if (hasStarforged)
+            const NavigationDestination(
+                icon: Icon(Icons.flash_on_outlined), label: 'Moves'),
+          const NavigationDestination(
               icon: Icon(Icons.bookmarks_outlined), label: 'Tracker'),
         ],
       ),
