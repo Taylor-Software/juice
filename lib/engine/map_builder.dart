@@ -17,9 +17,12 @@ const _roomDirs = [(0, -1), (1, 0), (0, 1), (-1, 0)];
 /// chosen position AND the room it attaches to. First room (empty list) goes
 /// to (0,0) attached to nothing.
 ///
-/// The walk uses grid 4-adjacency, which equals corridor connectivity by
-/// construction: every corridor joins a room to the 4-neighbor cell it
-/// spawned from (callers add corridor `[attachTo, newId]` per new room).
+/// The walk uses grid 4-adjacency — a SUPERGRAPH of corridor connectivity
+/// (branches that double back can touch without a corridor), so the chosen
+/// attach room may differ from a corridor-only walk. Chosen because this
+/// function carries no corridor data; every output invariant still holds:
+/// no overlap, deterministic under seeded dice, and the resulting map stays
+/// connected because callers add corridor `[attachTo, newId]` per new room.
 ({int x, int y, String? attachTo}) nextRoomPosition(
     List<DungeonRoom> rooms, String? currentId, Dice dice) {
   if (rooms.isEmpty) return (x: 0, y: 0, attachTo: null);
