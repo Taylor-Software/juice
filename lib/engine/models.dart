@@ -157,22 +157,105 @@ class Thread {
       );
 }
 
-/// Persisted character/NPC the player tracks.
+/// One labeled stat on a character sheet; value is free text ('17', '+2', 'd8').
+class CharStat {
+  const CharStat({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  Map<String, dynamic> toJson() => {'label': label, 'value': value};
+
+  /// Parses one stat entry; returns null for anything that isn't a map.
+  /// `is Map` (not `is Map<String, dynamic>`) so Dart literal maps
+  /// (e.g. Map<String, String>) parse the same as jsonDecode output.
+  static CharStat? maybeFromJson(dynamic j) => j is Map
+      ? CharStat(
+          label: (j['label'] as String?) ?? '',
+          value: (j['value'] as String?) ?? '')
+      : null;
+}
+
+/// A current/max track (HP, momentum, supply…).
+class CharTrack {
+  const CharTrack(
+      {required this.label, required this.current, required this.max});
+  final String label;
+  final int current;
+  final int max;
+
+  /// New track with [delta] applied to current, clamped to 0..max.
+  CharTrack adjusted(int delta) => CharTrack(
+      label: label, current: (current + delta).clamp(0, max), max: max);
+
+  Map<String, dynamic> toJson() =>
+      {'label': label, 'current': current, 'max': max};
+
+  /// Parses one track entry; returns null for anything that isn't a map.
+  static CharTrack? maybeFromJson(dynamic j) => j is Map
+      ? CharTrack(
+          label: (j['label'] as String?) ?? '',
+          current: (j['current'] as int?) ?? 0,
+          max: (j['max'] as int?) ?? 0)
+      : null;
+}
+
+/// Persisted character/NPC the player tracks, with an optional sheet
+/// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
-  const Character({required this.id, required this.name, this.note = ''});
+  const Character({
+    required this.id,
+    required this.name,
+    this.note = '',
+    this.stats = const [],
+    this.tracks = const [],
+    this.tags = const [],
+  });
   final String id;
   final String name;
   final String note;
+  final List<CharStat> stats;
+  final List<CharTrack> tracks;
+  final List<String> tags;
 
-  Character copyWith({String? name, String? note}) =>
-      Character(id: id, name: name ?? this.name, note: note ?? this.note);
+  /// Lists are replaced wholesale when provided; null keeps the current list.
+  Character copyWith({
+    String? name,
+    String? note,
+    List<CharStat>? stats,
+    List<CharTrack>? tracks,
+    List<String>? tags,
+  }) =>
+      Character(
+        id: id,
+        name: name ?? this.name,
+        note: note ?? this.note,
+        stats: stats ?? this.stats,
+        tracks: tracks ?? this.tracks,
+        tags: tags ?? this.tags,
+      );
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name, 'note': note};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'note': note,
+        'stats': stats.map((s) => s.toJson()).toList(),
+        'tracks': tracks.map((t) => t.toJson()).toList(),
+        'tags': tags,
+      };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
         id: j['id'] as String,
         name: j['name'] as String,
         note: (j['note'] as String?) ?? '',
+        stats: ((j['stats'] as List?) ?? const [])
+            .map(CharStat.maybeFromJson)
+            .whereType<CharStat>()
+            .toList(),
+        tracks: ((j['tracks'] as List?) ?? const [])
+            .map(CharTrack.maybeFromJson)
+            .whereType<CharTrack>()
+            .toList(),
+        tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
       );
 }
 
