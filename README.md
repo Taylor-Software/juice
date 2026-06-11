@@ -68,7 +68,7 @@ correcting a table is data entry, not new widgets.
 | 1 | Runs iOS/Android/web/desktop, one codebase | structured for it; **needs your `flutter run`** to confirm on each target |
 | 2 | Every table data-driven (one asset + generic roller) | done |
 | 3 | Engine correct + unit-tested (dice, skew, Fate Check) | **logic verified** in Python + Dart tests |
-| 4 | Tracker persists threads + characters + log locally, per campaign (multi-session switcher in the app bar); campaigns can be exported to / imported from `.juice.json` files via the system picker — save into any cloud-synced folder for BYO sync | done (shared_preferences + file_picker) |
+| 4 | Tracker persists threads + characters + log locally, per campaign (multi-session switcher in the app bar); campaigns can be exported to / imported from `.juice.json` files via the system picker — save into any cloud-synced folder for BYO sync; log entries link to threads, filter by thread, and support in-place edits | done (shared_preferences + file_picker) |
 | 5 | Working rules in CLAUDE.md | done |
 
 I can't compile Flutter in my build environment (no SDK / no pub.dev access),

@@ -72,17 +72,34 @@ class LogEntry {
     required this.timestamp,
     required this.title,
     required this.body,
+    this.threadId,
   });
   final String id;
   final DateTime timestamp;
   final String title;
   final String body;
+  final String? threadId;
+
+  LogEntry copyWith({
+    String? title,
+    String? body,
+    String? threadId,
+    bool clearThreadId = false,
+  }) =>
+      LogEntry(
+        id: id,
+        timestamp: timestamp,
+        title: title ?? this.title,
+        body: body ?? this.body,
+        threadId: clearThreadId ? null : (threadId ?? this.threadId),
+      );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'timestamp': timestamp.toIso8601String(),
         'title': title,
         'body': body,
+        'threadId': threadId,
       };
 
   factory LogEntry.fromJson(Map<String, dynamic> j) => LogEntry(
@@ -90,6 +107,7 @@ class LogEntry {
         timestamp: DateTime.parse(j['timestamp'] as String),
         title: j['title'] as String,
         body: j['body'] as String,
+        threadId: j['threadId'] as String?,
       );
 }
 

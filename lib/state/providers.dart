@@ -65,6 +65,12 @@ class LogNotifier extends _PersistedList<LogEntry> {
     await _persist([entry, ..._current]);
   }
 
+  Future<void> replace(LogEntry entry) async {
+    await _persist([
+      for (final e in _current) if (e.id == entry.id) entry else e,
+    ]);
+  }
+
   Future<void> remove(String id) async {
     await _persist(_current.where((e) => e.id != id).toList());
   }
