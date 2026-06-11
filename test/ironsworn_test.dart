@@ -62,18 +62,49 @@ void main() {
   });
 
   group('Rulesets provider', () {
-    test('defaults empty, toggle persists globally (key juice.rulesets.v1)',
+    test('defaults empty, setRuleset persists globally (key juice.rulesets.v1)',
         () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
       expect(await container.read(rulesetsProvider.future), isEmpty);
-      await container.read(rulesetsProvider.notifier).toggle('starforged');
+      await container.read(rulesetsProvider.notifier).setRuleset('starforged', true);
       expect(await container.read(rulesetsProvider.future), {'starforged'});
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('juice.rulesets.v1'), contains('starforged'));
-      await container.read(rulesetsProvider.notifier).toggle('starforged');
+      await container.read(rulesetsProvider.notifier).setRuleset('starforged', false);
       expect(await container.read(rulesetsProvider.future), isEmpty);
+    });
+  });
+
+  group('Ruleset exclusivity rules', () {
+    Future<RulesetsNotifier> boot(ProviderContainer c) async {
+      await c.read(rulesetsProvider.future);
+      return c.read(rulesetsProvider.notifier);
+    }
+
+    test('enabling an expansion brings its base; disabling base drops expansion',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final n = await boot(c);
+      await n.setRuleset('delve', true);
+      expect(await c.read(rulesetsProvider.future), {'classic', 'delve'});
+      await n.setRuleset('classic', false);
+      expect(await c.read(rulesetsProvider.future), isEmpty);
+    });
+
+    test('base games are mutually exclusive (family swap)', () async {
+      SharedPreferences.setMockInitialValues({});
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final n = await boot(c);
+      await n.setRuleset('sundered_isles', true);
+      expect(await c.read(rulesetsProvider.future),
+          {'starforged', 'sundered_isles'});
+      await n.setRuleset('classic', true);
+      expect(await c.read(rulesetsProvider.future), {'classic'});
     });
   });
 }
