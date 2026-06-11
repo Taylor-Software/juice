@@ -48,4 +48,54 @@ void main() {
     final secondY = tester.getTopLeft(find.text('Second')).dy;
     expect(firstY, lessThan(secondY));
   });
+
+  testWidgets('whitespace-only send adds no entry', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    await tester.pumpWidget(const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: JournalScreen()))));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('journal-composer')), '   ');
+    await tester.tap(find.byKey(const Key('journal-send')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Card), findsNothing);
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(JournalScreen)));
+    expect(container.read(journalProvider).valueOrNull, isEmpty);
+  });
+
+  testWidgets('editing a text entry body persists', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    await tester.pumpWidget(const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: JournalScreen()))));
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(JournalScreen)));
+    await container.read(journalProvider.notifier).addText('Original note');
+    await tester.pumpAndSettle();
+    expect(find.text('Original note'), findsOneWidget);
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit note…'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Note'), 'Edited note');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Edited note'), findsOneWidget);
+    expect(find.text('Original note'), findsNothing);
+    expect(container.read(journalProvider).valueOrNull?.single.body,
+        'Edited note');
+  });
 }

@@ -44,11 +44,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 return const _Empty(
                     'Your journal is empty. Write below, or roll something and add it.');
               }
-              // Storage is newest-first; the journal reads forward.
-              final ordered = entries.reversed.toList();
+              // Storage is newest-first; a reversed ListView reads forward
+              // (oldest at top) while anchoring the viewport at the newest
+              // entry, chat-style.
               final visible = _filterThreadId == null
-                  ? ordered
-                  : ordered
+                  ? entries
+                  : entries
                       .where((e) => e.threadId == _filterThreadId)
                       .toList();
               return Column(
@@ -89,13 +90,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       child: TextButton.icon(
                         icon: const Icon(Icons.clear_all),
                         label: const Text('Clear'),
-                        onPressed: () =>
-                            ref.read(journalProvider.notifier).clear(),
+                        onPressed: _confirmClear,
                       ),
                     ),
                   ),
                   Expanded(
                     child: ListView.builder(
+                      reverse: true,
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       itemCount: visible.length,
                       itemBuilder: (context, i) =>
@@ -217,8 +218,36 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _send() async {
     final text = _composer.text.trim();
     if (text.isEmpty) return;
-    await ref.read(journalProvider.notifier).addText(text);
+    // Clear before the await so a second tap can't re-send the same text.
     _composer.clear();
+    await ref.read(journalProvider.notifier).addText(text);
+  }
+
+  Future<void> _confirmClear() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear journal?'),
+        content:
+            const Text("This deletes every entry in this campaign's journal."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await ref.read(journalProvider.notifier).clear();
   }
 
   Future<void> _newScene() async {
@@ -226,6 +255,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       context: context,
       builder: (context) => const _SceneDialog(),
     );
+    if (!mounted) return;
     if (title == null || title.trim().isEmpty) return;
     await ref.read(journalProvider.notifier).addScene(
           title.trim(),
@@ -267,16 +297,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         final result = await showDialog<({String title, String note})>(
           context: context,
           builder: (_) => _EditDialog(
-            heading: 'Edit log entry',
+            heading: 'Edit journal entry',
             labelA: 'Title',
             labelB: 'Note',
             initialA: entry.title,
             initialB: entry.body,
           ),
         );
-        if (result == null || result.title.trim().isEmpty) return;
-        await notifier.replace(entry.copyWith(
-            title: result.title.trim(), body: result.note));
+        if (result == null) return;
+        // Text entries have no title; scenes have no body. Require only the
+        // field that actually carries the entry's content.
+        final relevant = entry.kind == JournalKind.text
+            ? result.note
+            : result.title;
+        if (relevant.trim().isEmpty) return;
+        await notifier.replace(entry.kind == JournalKind.text
+            ? entry.copyWith(body: result.note)
+            : entry.copyWith(title: result.title.trim(), body: result.note));
     }
   }
 }
