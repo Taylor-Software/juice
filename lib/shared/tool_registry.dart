@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../engine/oracle.dart';
+import '../features/dice_roller_screen.dart';
 import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
 import '../features/moves_screen.dart';
@@ -33,6 +34,7 @@ class ToolDef {
 /// Launcher group order (activity-based; see redesign spec phase 2).
 const toolGroups = [
   'Ask the Oracle',
+  'Dice',
   'Story & Scenes',
   'NPCs & Dialog',
   'Exploration',
@@ -70,6 +72,13 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         badge: 'Mythic',
         builder: (o) =>
             FateScreen(oracle: o!, initialSection: FateSection.mythic),
+      ),
+      ToolDef(
+        id: 'dice',
+        label: 'Dice Roller',
+        icon: Icons.casino_outlined,
+        group: 'Dice',
+        builder: (o) => DiceRollerScreen(dice: o!.dice),
       ),
       ToolDef(
         id: 'gen-story',

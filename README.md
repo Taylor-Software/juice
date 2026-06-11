@@ -12,6 +12,12 @@ likelihood ladder (Almost Certain … Almost Impossible) with six graded
 answers (Yes, and → No, and), in d100, d20, and 2d6 variants. Each table row
 is machine-verified for exact dice-range coverage in `build_oracle.py`.
 
+A general **dice roller** tool parses full dice notation — `NdX`, `d%`, `dF`
+(Fate), modifiers, multi-group sums like `2d6+1d8+3`, keep/drop
+(`4d6kh3`/`kl`/`dh`/`dl`), and `d20adv`/`d20dis` — with a per-die breakdown
+(dropped dice struck through), quick-tap dice chips, session history, and
+one-tap add-to-journal.
+
 Also includes **Mythic GME** support (Fate Chart with Chaos Factor dial, Scene
 Test, Event Focus rolling against your tracked Threads/Characters lists, and
 all 47 Meaning Tables).
