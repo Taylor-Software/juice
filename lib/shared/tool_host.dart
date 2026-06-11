@@ -94,10 +94,11 @@ class ToolHostState extends ConsumerState<ToolHost> {
             return Stack(
               fit: StackFit.expand,
               children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: close,
-                  child: const ColoredBox(color: Colors.black54),
+                ModalBarrier(
+                  color: Colors.black54,
+                  dismissible: true,
+                  onDismiss: close,
+                  semanticsLabel: 'Dismiss tools',
                 ),
                 Align(
                   alignment:
@@ -205,6 +206,10 @@ class ToolHostState extends ConsumerState<ToolHost> {
         q.isEmpty ||
         t.label.toLowerCase().contains(q) ||
         t.group.toLowerCase().contains(q);
+    final ids = widget.tools.map((t) => t.id).toSet();
+    final recent = (ref.watch(toolMruProvider).valueOrNull ?? const [])
+        .where(ids.contains)
+        .toList();
     return Column(
       children: [
         Padding(
@@ -221,9 +226,39 @@ class ToolHostState extends ConsumerState<ToolHost> {
         ),
         Expanded(
           child: ListView(
+            key: const Key('launcher-list'),
             children: [
-              // TODO: 'Recent' MRU row rendered in Task 4 (HomeShell wiring);
-              // MRU is already recorded via toolMruProvider.
+              if (q.isEmpty && recent.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Text(
+                    'Recent',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.primary),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      for (final tool in [
+                        for (final id in recent)
+                          widget.tools.firstWhere((t) => t.id == id)
+                      ])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ActionChip(
+                            key: Key('mru-${tool.id}'),
+                            avatar: Icon(tool.icon, size: 18),
+                            label: Text(tool.label),
+                            onPressed: () => openTool(tool.id),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               for (final group in toolGroups)
                 if (widget.tools
                     .any((t) => t.group == group && matches(t))) ...[

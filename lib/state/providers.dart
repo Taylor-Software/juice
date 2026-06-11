@@ -375,7 +375,11 @@ class ToolMruNotifier extends AsyncNotifier<List<String>> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return const [];
-    return (jsonDecode(raw) as List).cast<String>();
+    try {
+      return (jsonDecode(raw) as List).cast<String>();
+    } catch (_) {
+      return const []; // corrupt persisted MRU: start fresh
+    }
   }
 
   Future<void> record(String toolId) async {

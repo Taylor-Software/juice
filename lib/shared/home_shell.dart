@@ -7,12 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
-import '../features/fate_screen.dart';
-import '../features/generators_screen.dart';
-import '../features/moves_screen.dart';
-import '../features/tables_screen.dart';
-import '../features/tracker_screen.dart';
+import '../features/journal_screen.dart';
 import '../state/providers.dart';
+import 'tool_host.dart';
+import 'tool_registry.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.oracle});
@@ -23,7 +21,7 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  int _index = 0;
+  final _hostKey = GlobalKey<ToolHostState>();
 
   Future<void> _showSessions(BuildContext context) async {
     await showDialog<void>(
@@ -212,15 +210,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       if (rulesets.contains('starforged')) 'starforged',
       if (rulesets.contains('sundered_isles')) 'sundered_isles',
     ];
-    final hasMoves = family.isNotEmpty;
-    final pages = [
-      FateScreen(oracle: widget.oracle),
-      GeneratorsScreen(oracle: widget.oracle),
-      TablesScreen(oracle: widget.oracle),
-      if (hasMoves) MovesScreen(rulesetIds: family),
-      const TrackerScreen(),
-    ];
-    final index = _index.clamp(0, pages.length - 1);
     return Scaffold(
       appBar: AppBar(
         title: sessionName == null
@@ -235,6 +224,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 ],
               ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.handyman_outlined),
+            tooltip: 'Tools',
+            onPressed: () => _hostKey.currentState?.openLauncher(),
+          ),
           IconButton(
             icon: const Icon(Icons.tune),
             tooltip: 'Rulesets',
@@ -308,24 +302,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ],
       ),
       body: SafeArea(
-        child: IndexedStack(index: index, children: pages),
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: index,
-        onDestinationSelected: (i) => setState(() => _index = i),
-        destinations: [
-          const NavigationDestination(
-              icon: Icon(Icons.help_outline), label: 'Fate'),
-          const NavigationDestination(
-              icon: Icon(Icons.auto_awesome_outlined), label: 'Generators'),
-          const NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined), label: 'Tables'),
-          if (hasMoves)
-            const NavigationDestination(
-                icon: Icon(Icons.flash_on_outlined), label: 'Moves'),
-          const NavigationDestination(
-              icon: Icon(Icons.bookmarks_outlined), label: 'Tracker'),
-        ],
+        child: ToolHost(
+          key: _hostKey,
+          tools: buildToolRegistry(family: family),
+          oracle: widget.oracle,
+          child: const JournalScreen(),
+        ),
       ),
     );
   }

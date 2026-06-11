@@ -53,7 +53,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('tool-search')), 'other');
     await tester.pumpAndSettle();
     expect(find.text('Counter'), findsNothing);
-    await tester.tap(find.text('Other Tool'));
+    await tester.tap(find.widgetWithText(ListTile, 'Other Tool'));
     await tester.pumpAndSettle();
     expect(find.text('other tool body'), findsOneWidget);
   });
@@ -62,7 +62,7 @@ void main() {
     await pump(tester);
     ToolHost.openLauncher(tester.element(find.text('journal home')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Counter'));
+    await tester.tap(find.widgetWithText(ListTile, 'Counter'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('count 0'));
     await tester.pump();
@@ -72,7 +72,7 @@ void main() {
     expect(find.text('journal home'), findsOneWidget);
     ToolHost.openLauncher(tester.element(find.text('journal home')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Counter'));
+    await tester.tap(find.widgetWithText(ListTile, 'Counter'));
     await tester.pumpAndSettle();
     expect(find.text('count 1'), findsOneWidget); // state kept
   });
@@ -82,7 +82,7 @@ void main() {
     await pump(tester);
     ToolHost.openLauncher(tester.element(find.text('journal home')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Other Tool'));
+    await tester.tap(find.widgetWithText(ListTile, 'Other Tool'));
     await tester.pumpAndSettle();
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('juice.tools.mru.v1'), contains('other'));
@@ -102,12 +102,50 @@ void main() {
     // First interaction is record() itself — provider not yet read anywhere.
     ToolHost.openLauncher(tester.element(find.text('journal home')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Other Tool'));
+    await tester.tap(find.widgetWithText(ListTile, 'Other Tool'));
     await tester.pumpAndSettle();
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString('juice.tools.mru.v1')!;
     expect(raw, contains('other'));
     expect(raw, contains('counter')); // not clobbered
     expect(raw.indexOf('other'), lessThan(raw.indexOf('counter')));
+  });
+
+  testWidgets('recent row shows MRU chips; tapping one opens the tool',
+      (tester) async {
+    await pump(tester);
+    ToolHost.openLauncher(tester.element(find.text('journal home')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mru-counter')), findsNothing); // no MRU yet
+    await tester.tap(find.widgetWithText(ListTile, 'Counter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('tool-close')));
+    await tester.pumpAndSettle();
+    ToolHost.openLauncher(tester.element(find.text('journal home')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mru-counter')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mru-counter')));
+    await tester.pumpAndSettle();
+    expect(find.text('count 0'), findsOneWidget); // tool opened
+  });
+
+  testWidgets('corrupt persisted MRU JSON is discarded, not fatal',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.tools.mru.v1': 'not json',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+                body: ToolHost(
+                    tools: tools, child: const Text('journal home'))))));
+    await tester.pumpAndSettle();
+    ToolHost.openLauncher(tester.element(find.text('journal home')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'Counter'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('juice.tools.mru.v1'), '["counter"]');
   });
 }
