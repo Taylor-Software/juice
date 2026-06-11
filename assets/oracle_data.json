@@ -1,0 +1,1741 @@
+{
+  "meta": {
+    "source": "github.com/jrruethe/juice",
+    "license": "CC BY-NC-SA",
+    "version": "7/10/25"
+  },
+  "tables": {
+    "intensity": [
+      "Minimal",
+      "Minor",
+      "Mundane",
+      "Average",
+      "Major",
+      "Maximum"
+    ],
+    "quest_objective": [
+      "Attain",
+      "Create",
+      "Deliver",
+      "Destroy",
+      "Fetch",
+      "Infiltrate",
+      "Investigate",
+      "Negotiate",
+      "Protect",
+      "Survive"
+    ],
+    "quest_description": [
+      "Abandoned",
+      "Cold",
+      "Colorful",
+      "Connected",
+      "Dark",
+      "Friendly",
+      "Hidden",
+      "Mystical",
+      "Remote",
+      "Wounded"
+    ],
+    "quest_focus": [
+      "Enemy",
+      "Monster",
+      "Event",
+      "Environment",
+      "Community",
+      "Person",
+      "Information",
+      "Location",
+      "Object",
+      "Ally"
+    ],
+    "quest_preposition": [
+      "Around",
+      "Behind",
+      "In Front Of",
+      "Near",
+      "On Top Of",
+      "At",
+      "From",
+      "Inside Of",
+      "Outside Of",
+      "Under"
+    ],
+    "quest_location": [
+      "Community",
+      "Dungeon Feature",
+      "Dungeon",
+      "Environment",
+      "Event",
+      "Natural Hazard",
+      "Outpost",
+      "Settlement",
+      "Transportation",
+      "Wilderness Feature"
+    ],
+    "random_event": [
+      "Advance Time",
+      "Close Thread",
+      "Converge Thread",
+      "Diverge Thread",
+      "Immersion",
+      "Keyed Event",
+      "New Character",
+      "NPC Action",
+      "Plot Armor",
+      "Remote Event"
+    ],
+    "challenge_physical": [
+      "Medicine",
+      "Survival",
+      "Animal Handling",
+      "Performance",
+      "Intimidation",
+      "Perception",
+      "Sleight of Hand",
+      "Stealth",
+      "Acrobatics",
+      "Athletics"
+    ],
+    "challenge_mental": [
+      "Tool",
+      "Nature",
+      "Investigate",
+      "Persuasion",
+      "Deception",
+      "Language",
+      "Religion",
+      "Arcana",
+      "History",
+      "Insight"
+    ],
+    "dc": [
+      "17",
+      "16",
+      "15",
+      "14",
+      "13",
+      "12",
+      "11",
+      "10",
+      "9",
+      "8"
+    ],
+    "pay_the_price": [
+      "Action has Unintended Effect",
+      "Current Situation Worsens",
+      "Delayed / Disadvantaged",
+      "Forced to Act Against Intentions",
+      "New Danger/Foe Revealed",
+      "Person/Community Exposed to Danger",
+      "Separated From Person/Thing",
+      "Something of Value Lost/Destroyed",
+      "Surprise Complication",
+      "Trusted Person Betrays You"
+    ],
+    "major_plot_twist": [
+      "Actions Benefit Enemy",
+      "Assumption Is False",
+      "Dark Secret Revealed",
+      "Enemy Gains New Allies",
+      "Enemy Shares A Common Goal",
+      "It Was All A Diversion",
+      "Secret Alliance Revealed",
+      "Someone Returns Unexpectedly",
+      "Unrelated Situations Connected",
+      "You Are Too Late"
+    ],
+    "color": [
+      "Shade Black",
+      "Leather Brown",
+      "Highlight Yellow",
+      "Forest Green",
+      "Cobalt Blue",
+      "Crimson Red",
+      "Royal Violet",
+      "Metallic Silver",
+      "Midas Gold",
+      "Holy White"
+    ],
+    "property": [
+      "Age",
+      "Durability",
+      "Familiarity",
+      "Power",
+      "Quality",
+      "Rarity",
+      "Size",
+      "Style",
+      "Value",
+      "Weight"
+    ],
+    "detail": [
+      "Negative Emotion",
+      "Disfavors PC",
+      "Disfavors Thread",
+      "Disfavors NPC",
+      "History",
+      "Property",
+      "Favors NPC",
+      "Favors Thread",
+      "Favors PC",
+      "Positive Emotion"
+    ],
+    "history": [
+      "Backstory",
+      "Past Thread",
+      "Previous Thread",
+      "Past Scene",
+      "Previous Scene",
+      "Current Thread",
+      "Past Action",
+      "Current Scene",
+      "Previous Action",
+      "Current Action"
+    ],
+    "immersion_see": [
+      "Broken",
+      "Colorful",
+      "Discarded",
+      "Edible",
+      "Liquid",
+      "Natural",
+      "Odd",
+      "Round",
+      "Shiny",
+      "Written"
+    ],
+    "immersion_hear": [
+      "Dripping",
+      "Fire",
+      "Footsteps",
+      "Growling",
+      "Laughter",
+      "Music",
+      "Scratching",
+      "Silence",
+      "Talking",
+      "Wind"
+    ],
+    "immersion_smell": [
+      "Alcohol",
+      "Blood",
+      "Smoke",
+      "Cooking",
+      "Decay",
+      "Dust",
+      "Flowers",
+      "Leather",
+      "Oil",
+      "Soil"
+    ],
+    "immersion_feel": [
+      "Cold",
+      "Damp",
+      "Flexible",
+      "Furry",
+      "Rough",
+      "Sharp",
+      "Slippery",
+      "Smooth",
+      "Sticky",
+      "Warm"
+    ],
+    "immersion_where": [
+      "Above",
+      "Behind",
+      "In Front",
+      "In The Air",
+      "In The Distance",
+      "In The Next Room",
+      "In The Shadows",
+      "Next To You",
+      "On The Ground",
+      "Under"
+    ],
+    "emotion_negative": [
+      "Despair",
+      "Panic",
+      "Fear",
+      "Disgust",
+      "Anger",
+      "Sadness",
+      "Arrogance",
+      "Confusion",
+      "Apathy",
+      "Deja Vu"
+    ],
+    "emotion_positive": [
+      "Hope",
+      "Relief",
+      "Courage",
+      "Desire",
+      "Calm",
+      "Joy",
+      "Selflessness",
+      "Clarity",
+      "Nostalgia",
+      "Awe"
+    ],
+    "because": [
+      "help is on the way",
+      "it is getting closer",
+      "it may be valuable",
+      "of a childhood event",
+      "of a recent memory",
+      "the source is unknown",
+      "then it is suddenly gone",
+      "you recognize it",
+      "you were warned about it",
+      "you weren't expecting it"
+    ],
+    "interrupt_action": [
+      "Abduction",
+      "Barrier",
+      "Battle",
+      "Chase",
+      "Collateral",
+      "Crash",
+      "Culmination",
+      "Distraction",
+      "Harm",
+      "Intensify"
+    ],
+    "interrupt_tension": [
+      "Choice",
+      "Depletion",
+      "Enemy",
+      "Intimidation",
+      "Night",
+      "Public",
+      "Recurrence",
+      "Remote",
+      "Shady",
+      "Trapped"
+    ],
+    "interrupt_mystery": [
+      "Alternate",
+      "Behavior",
+      "Connected",
+      "Information",
+      "Intercept",
+      "Lucky",
+      "Reappearance",
+      "Revelation",
+      "Secret",
+      "Source"
+    ],
+    "interrupt_social": [
+      "Agreement",
+      "Gathering",
+      "Government",
+      "Inadequate",
+      "Injustice",
+      "Misbehave",
+      "Outcast",
+      "Outside",
+      "Reinforcements",
+      "Savior"
+    ],
+    "interrupt_personal": [
+      "Animosity",
+      "Connection",
+      "Dependent",
+      "Ethical",
+      "Flee",
+      "Friend",
+      "Help",
+      "Home",
+      "Humiliation",
+      "Offer"
+    ],
+    "idea_modifier": [
+      "Change",
+      "Continue",
+      "Decrease",
+      "Extra",
+      "Increase",
+      "Mundane",
+      "Mysterious",
+      "Start",
+      "Stop",
+      "Strange"
+    ],
+    "idea_idea": [
+      "Attention",
+      "Communication",
+      "Danger",
+      "Element",
+      "Food",
+      "Home",
+      "Resource",
+      "Rumor",
+      "Secret",
+      "Vow"
+    ],
+    "idea_event": [
+      "Ambush",
+      "Anomaly",
+      "Blessing",
+      "Caravan",
+      "Curse",
+      "Discovery",
+      "Escape",
+      "Journey",
+      "Prophecy",
+      "Ritual"
+    ],
+    "idea_person": [
+      "Criminal",
+      "Entertainer",
+      "Expert",
+      "Mage",
+      "Mercenary",
+      "Noble",
+      "Priest",
+      "Ranger",
+      "Soldier",
+      "Transporter"
+    ],
+    "idea_object": [
+      "Arrow",
+      "Candle",
+      "Cauldron",
+      "Chain",
+      "Claw",
+      "Hook",
+      "Hourglass",
+      "Quill",
+      "Rose",
+      "Skull"
+    ],
+    "npc_personality": [
+      "Cautious",
+      "Curious",
+      "Careless",
+      "Organized",
+      "Reserved",
+      "Outgoing",
+      "Critical",
+      "Compassionate",
+      "Confident",
+      "Sensitive"
+    ],
+    "npc_need": [
+      "Sustenance",
+      "Shelter",
+      "Recovery",
+      "Security",
+      "Stability",
+      "Friendship",
+      "Acceptance",
+      "Status",
+      "Recognition",
+      "Fulfillment"
+    ],
+    "npc_motive": [
+      "History",
+      "Family",
+      "Experience",
+      "Flaws",
+      "Reputation",
+      "Superiors",
+      "Wealth",
+      "Equipment",
+      "Treasure",
+      "Focus"
+    ],
+    "npc_behavior": [
+      "Ambiguous Action",
+      "Talks",
+      "Continues",
+      "Act: PC Interest",
+      "Next Most Logical",
+      "Gives Something",
+      "End Encounter",
+      "Act: Self Interest",
+      "Takes Something",
+      "Enters Combat"
+    ],
+    "npc_combat": [
+      "Defend",
+      "Shift Focus",
+      "Seize",
+      "Intimidate",
+      "Advantage",
+      "Coordinate",
+      "Lure",
+      "Destroy",
+      "Precision",
+      "Power"
+    ],
+    "settlement_name": [
+      "Frost Barrow",
+      "High Brook",
+      "Long Fall",
+      "Lost Haven",
+      "Raven Ridge",
+      "Shield River",
+      "Storm Rock",
+      "Sword Stead",
+      "Thorn Stone",
+      "Wolf Wood"
+    ],
+    "settlement_establishment": [
+      "Stable",
+      "Tavern",
+      "Inn",
+      "Entertainment",
+      "General Store",
+      "Artisan",
+      "Courier",
+      "Temple",
+      "Guild Hall",
+      "Magic Shop"
+    ],
+    "settlement_artisan": [
+      "Artist",
+      "Baker",
+      "Tailor",
+      "Tanner",
+      "Archer",
+      "Blacksmith",
+      "Carpenter",
+      "Apothecary",
+      "Jeweler",
+      "Scribe"
+    ],
+    "settlement_news": [
+      "War",
+      "Sickness",
+      "Natural Disaster",
+      "Crime",
+      "Succession",
+      "Remote Event",
+      "Arrival",
+      "Mail",
+      "Sale",
+      "Celebration"
+    ],
+    "wilderness_environment": [
+      "Snowy - Arctic",
+      "Rocky - Mountains",
+      "Expansive 0 Cavern",
+      "Windy - Hills",
+      "Scrub 0 Grassland",
+      "Tropical 0 Forest*",
+      "Dark + Swamp",
+      "Exotic + Water",
+      "Sandy 0 Coast",
+      "Arid + Desert"
+    ],
+    "wilderness_encounter": [
+      "Natural Hazard",
+      "Monster",
+      "Weather",
+      "Challenge",
+      "Dungeon",
+      "River/Road",
+      "Feature",
+      "Settlement/Camp",
+      "Advance Plot",
+      "Destination/Lost"
+    ],
+    "wilderness_weather": [
+      "Blizzard",
+      "Snow Flurries",
+      "Freezing Cold",
+      "Thunder Storm",
+      "Heavy Rain",
+      "Light Rain",
+      "Heavy Clouds",
+      "High Winds",
+      "Clear Skies",
+      "Scorching Heat"
+    ],
+    "natural_hazard": [
+      "Creature Tracks",
+      "Dust Storm",
+      "Flood",
+      "Fog",
+      "Rockslide",
+      "Unstable Ground",
+      "Crevice",
+      "Escarpment",
+      "River Crossing",
+      "Thick Plants"
+    ],
+    "wilderness_feature": [
+      "Bones",
+      "Cairn",
+      "Chasm",
+      "Circle",
+      "Spring",
+      "Grave",
+      "Monument",
+      "Tower",
+      "Tree",
+      "Well"
+    ],
+    "dungeon_name": [
+      "Catacombs",
+      "Cavern",
+      "Crypt",
+      "Fortress",
+      "Hideout",
+      "Lair",
+      "Mine",
+      "Ruins",
+      "Sanctuary",
+      "Temple"
+    ],
+    "dungeon_description": [
+      "Bloodstained",
+      "Chaotic",
+      "Endless",
+      "Fallen",
+      "Forbidden",
+      "Forgotten",
+      "Shattered",
+      "Shrouded",
+      "Silent",
+      "Unknown"
+    ],
+    "dungeon_subject": [
+      "Blades",
+      "Blight",
+      "Darkness",
+      "Fury",
+      "Lies",
+      "Madness",
+      "Mist",
+      "Prophecy",
+      "Runes",
+      "Terror"
+    ],
+    "dungeon_next_area": [
+      "Passage",
+      "Small Chamber: 3 Doors",
+      "Large Chamber: 3 Doors",
+      "Small Chamber: 2 Doors",
+      "Small Chamber: 1 Door*",
+      "Locked Door",
+      "Known / Expected",
+      "Exit / Stairs",
+      "Connect to Previous Area",
+      "Passage"
+    ],
+    "dungeon_passage": [
+      "Dead End",
+      "Narrow Crawlspace",
+      "Bridge",
+      "Long",
+      "Wide",
+      "Expected",
+      "Right Angle Turn",
+      "Side Passage",
+      "3-Way Intersection",
+      "4-Way Intersection"
+    ],
+    "dungeon_condition": [
+      "Partially Collapsed",
+      "Holes in Floor",
+      "Flooded",
+      "Ashes / Burned",
+      "Damaged",
+      "Expected",
+      "Stripped Bare",
+      "Used as Campsite",
+      "Converted to Other Use",
+      "Pristine"
+    ],
+    "dungeon_encounter": [
+      "Monster",
+      "Natural Hazard",
+      "Challenge",
+      "Immersion",
+      "Safety",
+      "Known / None",
+      "Trap",
+      "Feature",
+      "Key",
+      "Treasure"
+    ],
+    "monster_description": [
+      "Agile",
+      "Beast",
+      "Clothed",
+      "Composite",
+      "Decayed",
+      "Elemental",
+      "Inscribed",
+      "Intimidating",
+      "Levitating",
+      "Nightmarish"
+    ],
+    "monster_ability": [
+      "Climb",
+      "Detect",
+      "Drain",
+      "Entangle",
+      "Illusion",
+      "Immune",
+      "Magic",
+      "Paralyze",
+      "Pierce",
+      "Ranged"
+    ],
+    "trap_action": [
+      "Ambush",
+      "Collapse",
+      "Divert",
+      "Imitate",
+      "Lure",
+      "Obscure",
+      "Summon",
+      "Surprise",
+      "Surround",
+      "Trigger"
+    ],
+    "trap_subject": [
+      "Alarm",
+      "Barrier",
+      "Decay",
+      "Denizen",
+      "Fall",
+      "Fire",
+      "Light",
+      "Path",
+      "Poison",
+      "Projectile"
+    ],
+    "dungeon_feature": [
+      "Library",
+      "Mural",
+      "Mushrooms",
+      "Prison",
+      "Runes",
+      "Shrine",
+      "Storage",
+      "Vault",
+      "Well",
+      "Workshop"
+    ]
+  },
+  "treasure": {
+    "categories": [
+      "Trinket",
+      "Treasure",
+      "Document",
+      "Accessory",
+      "Weapon",
+      "Armor"
+    ],
+    "sub": {
+      "Trinket": {
+        "Quality": [
+          "Broken",
+          "Damaged",
+          "Worn",
+          "Simple",
+          "Exceptional",
+          "Magic"
+        ],
+        "Material": [
+          "Wood",
+          "Bone",
+          "Leather",
+          "Silver",
+          "Gold",
+          "Gem"
+        ],
+        "Type": [
+          "Toy/Game",
+          "Bottle",
+          "Instrument",
+          "Charm",
+          "Tool",
+          "Key"
+        ]
+      },
+      "Treasure": {
+        "Quality": [
+          "Dusty",
+          "Worn",
+          "Sturdy",
+          "Fine",
+          "New",
+          "Ornate"
+        ],
+        "Container": [
+          "None",
+          "Pouch",
+          "Box",
+          "Satchel",
+          "Crate",
+          "Chest"
+        ],
+        "Contents": [
+          "Food",
+          "Art",
+          "Deed",
+          "Silver Coins",
+          "Gold Coins",
+          "Gems"
+        ]
+      },
+      "Document": {
+        "Type": [
+          "Song",
+          "Picture",
+          "Letter/Note",
+          "Scroll",
+          "Journal",
+          "Book"
+        ],
+        "Content": [
+          "Lewd",
+          "Common",
+          "Map",
+          "Prophecy",
+          "Arcane",
+          "Forbidden"
+        ],
+        "Subject": [
+          "Religion",
+          "Art",
+          "Science",
+          "Creatures",
+          "History",
+          "Magic"
+        ]
+      },
+      "Accessory": {
+        "Quality": [
+          "Ruined",
+          "Crude",
+          "Simple",
+          "Fine",
+          "Crafted",
+          "Magic"
+        ],
+        "Material": [
+          "Wood",
+          "Bone",
+          "Leather",
+          "Silver",
+          "Gold",
+          "Gem"
+        ],
+        "Type": [
+          "Headpiece",
+          "Emblem",
+          "Earring",
+          "Bracelet",
+          "Necklace",
+          "Ring"
+        ]
+      },
+      "Weapon": {
+        "Quality": [
+          "Broken",
+          "Improvised",
+          "Rough",
+          "Simple",
+          "Martial",
+          "Masterwork"
+        ],
+        "Material": [
+          "Wood",
+          "Bone",
+          "Steel",
+          "Silver",
+          "Mithral",
+          "Adamantine"
+        ],
+        "Type": [
+          "Axe/Hammer",
+          "Halberd/Spear",
+          "Sword/Dagger",
+          "Staff/Wand",
+          "Bow",
+          "Exotic"
+        ]
+      },
+      "Armor": {
+        "Quality": [
+          "Broken",
+          "Improvised",
+          "Tattered",
+          "Simple",
+          "Fine",
+          "Masterwork"
+        ],
+        "Material": [
+          "Cloth",
+          "Leather",
+          "Bone/Fur",
+          "Steel",
+          "Mithral",
+          "Adamantine"
+        ],
+        "Type": [
+          "Headpiece",
+          "Bottom",
+          "Gloves",
+          "Boots",
+          "Top",
+          "Shield"
+        ]
+      }
+    }
+  },
+  "discover": {
+    "verb": [
+      "Ancient",
+      "Betray",
+      "Conceal",
+      "Dangerous",
+      "Helpful",
+      "Loud",
+      "Powerful",
+      "Reveal",
+      "Transform",
+      "Unexpected",
+      "Artificial",
+      "Burning",
+      "Communicate",
+      "Deceive",
+      "Dirty",
+      "Disagreeable",
+      "Oppose",
+      "Peaceful",
+      "Reassuring",
+      "Specialized"
+    ],
+    "subject": [
+      "Burden",
+      "Complexity",
+      "Conflict",
+      "Control",
+      "Direction",
+      "Happiness",
+      "Memory",
+      "Move",
+      "Shadow",
+      "Trust",
+      "Assist",
+      "Break",
+      "Command",
+      "Delay",
+      "Duration",
+      "Failure",
+      "Fight",
+      "Leave",
+      "Sacrifice",
+      "Threshold"
+    ]
+  },
+  "name": {
+    "start": [
+      "fa",
+      "pe",
+      "vi",
+      "no",
+      "su",
+      "de",
+      "ka",
+      "li",
+      "ma",
+      "ro",
+      "be",
+      "da",
+      "ki",
+      "le",
+      "mi",
+      "ne",
+      "ru",
+      "si",
+      "ta",
+      "to"
+    ],
+    "mid": [
+      "hal",
+      "ris",
+      "del",
+      "mor",
+      "bar",
+      "net",
+      "kel",
+      "lim",
+      "tur",
+      "pen",
+      "rond",
+      "kay",
+      "jam",
+      "vash",
+      "zab",
+      "yos",
+      "gran",
+      "ched",
+      "sark",
+      "kic"
+    ],
+    "end": [
+      "an",
+      "ar",
+      "er",
+      "ian",
+      "ic",
+      "in",
+      "o",
+      "on",
+      "or",
+      "us",
+      "a",
+      "aea",
+      "aya",
+      "elle",
+      "ene",
+      "ess",
+      "ette",
+      "ice",
+      "id",
+      "osa"
+    ]
+  },
+  "fate_map": {
+    "1|1": {
+      "normal": "Yes And",
+      "likely": "Yes And",
+      "unlikely": "Yes And"
+    },
+    "1|0": {
+      "normal": "Yes",
+      "likely": "Yes",
+      "unlikely": "Yes"
+    },
+    "1|-1": {
+      "normal": "Yes But",
+      "likely": "Yes But",
+      "unlikely": "No But"
+    },
+    "0|1": {
+      "normal": "Favorable",
+      "likely": "Yes",
+      "unlikely": "Yes"
+    },
+    "0|0|left": {
+      "normal": "Yes But + Random Event",
+      "likely": "Yes + Random Event",
+      "unlikely": "No + Random Event"
+    },
+    "0|0|right": {
+      "normal": "Invalid Assumption",
+      "likely": "Yes",
+      "unlikely": "No"
+    },
+    "0|-1": {
+      "normal": "Unfavorable",
+      "likely": "No",
+      "unlikely": "No"
+    },
+    "-1|1": {
+      "normal": "No But",
+      "likely": "Yes But",
+      "unlikely": "No But"
+    },
+    "-1|0": {
+      "normal": "No",
+      "likely": "No",
+      "unlikely": "No"
+    },
+    "-1|-1": {
+      "normal": "No And",
+      "likely": "No And",
+      "unlikely": "No And"
+    }
+  },
+  "ext": {
+    "info_type": [
+      [
+        3,
+        "A connection between a PC and"
+      ],
+      [
+        6,
+        "A connection between an antagonist and"
+      ],
+      [
+        9,
+        "A connection between an NPC and"
+      ],
+      [
+        12,
+        "A financial boon involving"
+      ],
+      [
+        15,
+        "A financial loss involving"
+      ],
+      [
+        18,
+        "A gain in influence involving"
+      ],
+      [
+        21,
+        "A loss of influence involving"
+      ],
+      [
+        24,
+        "A loss of opportunity involving"
+      ],
+      [
+        27,
+        "A material boon involving"
+      ],
+      [
+        30,
+        "A material loss involving"
+      ],
+      [
+        33,
+        "A mental boon involving"
+      ],
+      [
+        36,
+        "A mental loss involving"
+      ],
+      [
+        39,
+        "A negative change in"
+      ],
+      [
+        42,
+        "A physical boon involving"
+      ],
+      [
+        45,
+        "A physical loss involving"
+      ],
+      [
+        48,
+        "A positive change in"
+      ],
+      [
+        51,
+        "A significant insight related to"
+      ],
+      [
+        54,
+        "A spiritual boon involving"
+      ],
+      [
+        57,
+        "A spiritual loss involving"
+      ],
+      [
+        60,
+        "An additional opportunity involving"
+      ],
+      [
+        63,
+        "An alteration of"
+      ],
+      [
+        66,
+        "An ambush concerning"
+      ],
+      [
+        69,
+        "An emotional boon involving"
+      ],
+      [
+        72,
+        "An emotional loss involving"
+      ],
+      [
+        75,
+        "Historical/background knowledge about"
+      ],
+      [
+        78,
+        "Negative news about"
+      ],
+      [
+        81,
+        "Positive news about"
+      ],
+      [
+        84,
+        "The acquisition of an ability involving"
+      ],
+      [
+        87,
+        "The acquisition of authority involving"
+      ],
+      [
+        90,
+        "The identity of"
+      ],
+      [
+        93,
+        "The location of"
+      ],
+      [
+        96,
+        "The loss of an ability involving"
+      ],
+      [
+        99,
+        "The loss of authority involving"
+      ],
+      [
+        100,
+        "The truth is the exact opposite of what the PCs thought about"
+      ]
+    ],
+    "info_topic": [
+      [
+        3,
+        "a beloved NPC"
+      ],
+      [
+        6,
+        "a benefactor for the PCs"
+      ],
+      [
+        9,
+        "a combative NPC"
+      ],
+      [
+        12,
+        "a dangerous location for the PCs"
+      ],
+      [
+        15,
+        "a despised NPC"
+      ],
+      [
+        18,
+        "a distant location"
+      ],
+      [
+        21,
+        "a group supportive to the PCs"
+      ],
+      [
+        24,
+        "a main antagonist"
+      ],
+      [
+        27,
+        "a necessary artifact for fulfilling a vow"
+      ],
+      [
+        30,
+        "a necessary object to complete a vow"
+      ],
+      [
+        33,
+        "a person with important information about a side quest"
+      ],
+      [
+        36,
+        "a person with important information about an important thread"
+      ],
+      [
+        39,
+        "a previously unknown character connected to the plot"
+      ],
+      [
+        42,
+        "a safe location for the PCs"
+      ],
+      [
+        45,
+        "a secret enemy hideout"
+      ],
+      [
+        48,
+        "a single PC"
+      ],
+      [
+        51,
+        "a special status for a main antagonist"
+      ],
+      [
+        54,
+        "a special status for a PC"
+      ],
+      [
+        57,
+        "a special status for an NPC"
+      ],
+      [
+        60,
+        "a traitor to the PCs"
+      ],
+      [
+        63,
+        "an enemy leader"
+      ],
+      [
+        66,
+        "an enemy servant"
+      ],
+      [
+        69,
+        "an enemy spy"
+      ],
+      [
+        72,
+        "an enemy stronghold"
+      ],
+      [
+        75,
+        "an enemy who is now an ally"
+      ],
+      [
+        78,
+        "an enemy's current plan"
+      ],
+      [
+        81,
+        "an enemy's future plan"
+      ],
+      [
+        84,
+        "an important thread"
+      ],
+      [
+        87,
+        "an oppositional group that is not a main antagonist"
+      ],
+      [
+        90,
+        "the current setting"
+      ],
+      [
+        93,
+        "the current short-term goal"
+      ],
+      [
+        96,
+        "the PCs as a whole"
+      ],
+      [
+        99,
+        "the road or passage to the next location"
+      ],
+      [
+        100,
+        "a foundational truth of the world"
+      ]
+    ],
+    "companion": [
+      [
+        2,
+        "You must be joking if you think I'll do that."
+      ],
+      [
+        4,
+        "I refuse to go along with that plan."
+      ],
+      [
+        6,
+        "That would never work because... There must be a better way."
+      ],
+      [
+        8,
+        "No way, that's too..."
+      ],
+      [
+        10,
+        "What benefit could... possibly bring us?"
+      ],
+      [
+        12,
+        "I'm not comfortable with that idea."
+      ],
+      [
+        14,
+        "We need to spend more time here doing..."
+      ],
+      [
+        16,
+        "Don't you think there's the risk of...?"
+      ],
+      [
+        18,
+        "Do we have enough... to do that?"
+      ],
+      [
+        20,
+        "It's one option, but I would prefer to..."
+      ],
+      [
+        22,
+        "You go ahead. I'll join you later."
+      ],
+      [
+        24,
+        "I have my doubts, but maybe if we tweak it a bit..."
+      ],
+      [
+        26,
+        "I don't think that is right..."
+      ],
+      [
+        28,
+        "Yes, but first we have to..."
+      ],
+      [
+        30,
+        "There are other priorities to take care of first."
+      ],
+      [
+        32,
+        "I'm willing to give it a shot, but we need a backup plan."
+      ],
+      [
+        34,
+        "Okay, I'll go along with it, but only if we take precautions."
+      ],
+      [
+        36,
+        "I'm in, but let's be careful not to overlook the consequences."
+      ],
+      [
+        38,
+        "I don't see this ending well."
+      ],
+      [
+        40,
+        "Can we also...?"
+      ],
+      [
+        42,
+        "Wait, what if we do the exact opposite?"
+      ],
+      [
+        44,
+        "What if we take a completely unexpected route to get to...?"
+      ],
+      [
+        46,
+        "I've got a wild plan that just might work..."
+      ],
+      [
+        48,
+        "Yes, but how about we surprise them with..."
+      ],
+      [
+        50,
+        "We can do that, but we have to tone down the..."
+      ],
+      [
+        52,
+        "Who would that benefit?"
+      ],
+      [
+        54,
+        "What is the next step?"
+      ],
+      [
+        56,
+        "When should we...?"
+      ],
+      [
+        58,
+        "Where should we...?"
+      ],
+      [
+        60,
+        "How do you plan on...?"
+      ],
+      [
+        62,
+        "What do you want?"
+      ],
+      [
+        64,
+        "You just figured this out?"
+      ],
+      [
+        66,
+        "Did you consider...?"
+      ],
+      [
+        68,
+        "Ha!"
+      ],
+      [
+        70,
+        "That's a bit unfair."
+      ],
+      [
+        72,
+        "That is a really bad idea!"
+      ],
+      [
+        74,
+        "There is something I need to tell you..."
+      ],
+      [
+        76,
+        "Why is this happening?"
+      ],
+      [
+        78,
+        "This is all very overwhelming!"
+      ],
+      [
+        80,
+        "Help!"
+      ],
+      [
+        82,
+        "Watch out!"
+      ],
+      [
+        84,
+        "Lets go!"
+      ],
+      [
+        86,
+        "I want to go home!"
+      ],
+      [
+        88,
+        "Now is not a good time!"
+      ],
+      [
+        90,
+        "Sure, I'm on board with that."
+      ],
+      [
+        92,
+        "Sounds good, I'm in."
+      ],
+      [
+        94,
+        "I'm willing to give it a try."
+      ],
+      [
+        96,
+        "Let's do it, no objections here."
+      ],
+      [
+        98,
+        "Okay, I'm with you on this one."
+      ],
+      [
+        100,
+        "I'm ready, let's go for it."
+      ]
+    ],
+    "dialog_topic": [
+      [
+        2,
+        "A PC secret that has been made known"
+      ],
+      [
+        4,
+        "A personal injury"
+      ],
+      [
+        6,
+        "A recent change in the family of an NPC"
+      ],
+      [
+        8,
+        "A recent change in their own family"
+      ],
+      [
+        10,
+        "A recent inaction and the consequences"
+      ],
+      [
+        12,
+        "A significant death"
+      ],
+      [
+        14,
+        "A source of wealth"
+      ],
+      [
+        16,
+        "A specific location"
+      ],
+      [
+        18,
+        "An enemy secret that has been made known"
+      ],
+      [
+        20,
+        "Common knowledge about an enemy"
+      ],
+      [
+        22,
+        "Current events"
+      ],
+      [
+        24,
+        "Famous people"
+      ],
+      [
+        26,
+        "Famous places"
+      ],
+      [
+        28,
+        "General knowledge of a region"
+      ],
+      [
+        30,
+        "Important political connections"
+      ],
+      [
+        32,
+        "Important social connections"
+      ],
+      [
+        34,
+        "Information that has recently been discovered"
+      ],
+      [
+        36,
+        "Ingenious or outlandish ideas"
+      ],
+      [
+        38,
+        "Items of importance"
+      ],
+      [
+        40,
+        "Legends of heroic deeds"
+      ],
+      [
+        42,
+        "Legends of relics"
+      ],
+      [
+        44,
+        "Local warbands"
+      ],
+      [
+        46,
+        "Particular equipment of a trade, craft, or occupation"
+      ],
+      [
+        48,
+        "Particular skills of a trade, craft, or occupation"
+      ],
+      [
+        50,
+        "Powerful people"
+      ],
+      [
+        52,
+        "Recent political changes"
+      ],
+      [
+        54,
+        "Reported sightings of the First Born"
+      ],
+      [
+        56,
+        "Rumors of a PC's past"
+      ],
+      [
+        58,
+        "Rumors of an NPC's past"
+      ],
+      [
+        60,
+        "Shifting political alliances"
+      ],
+      [
+        62,
+        "Small jobs or side quests that need to be done"
+      ],
+      [
+        64,
+        "The acquisition of knowledge"
+      ],
+      [
+        66,
+        "The background of a PC"
+      ],
+      [
+        68,
+        "The background of an NPC"
+      ],
+      [
+        70,
+        "The background of the community"
+      ],
+      [
+        72,
+        "The culture of the community"
+      ],
+      [
+        74,
+        "The current leadership"
+      ],
+      [
+        76,
+        "The distribution of wealth"
+      ],
+      [
+        78,
+        "The failures of a PC"
+      ],
+      [
+        80,
+        "The failures of an NPC"
+      ],
+      [
+        82,
+        "The future of the community"
+      ],
+      [
+        84,
+        "The most valuable experiences"
+      ],
+      [
+        86,
+        "The quickest way to fame"
+      ],
+      [
+        88,
+        "The value of experience"
+      ],
+      [
+        90,
+        "Their own background"
+      ],
+      [
+        92,
+        "Their own failures"
+      ],
+      [
+        94,
+        "Upcoming events"
+      ],
+      [
+        96,
+        "Useful contacts"
+      ],
+      [
+        98,
+        "Where the power lies"
+      ],
+      [
+        100,
+        "Why the leadership needs to change"
+      ]
+    ]
+  }
+}

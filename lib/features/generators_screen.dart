@@ -1,0 +1,94 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../engine/models.dart';
+import '../engine/oracle.dart';
+import '../shared/result_card.dart';
+import '../state/providers.dart';
+
+/// A named generator the user can tap to run.
+class _Gen {
+  const _Gen(this.label, this.run);
+  final String label;
+  final GenResult Function(Oracle o) run;
+}
+
+class GeneratorsScreen extends ConsumerStatefulWidget {
+  const GeneratorsScreen({super.key, required this.oracle});
+  final Oracle oracle;
+
+  @override
+  ConsumerState<GeneratorsScreen> createState() => _GeneratorsScreenState();
+}
+
+class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
+  GenResult? _last;
+
+  static final List<_Gen> _gens = [
+    _Gen('New Quest', (o) => o.newQuest()),
+    _Gen('New Scene', (o) => o.newScene()),
+    _Gen('Random Event', (o) => o.randomEvent()),
+    _Gen('Challenge', (o) => o.challenge()),
+    _Gen('Pay the Price', (o) => o.payThePrice()),
+    _Gen('Major Plot Twist', (o) => o.payThePrice(critical: true)),
+    _Gen('NPC', (o) => o.npc()),
+    _Gen('NPC Behavior', (o) => o.npcBehavior()),
+    _Gen('NPC Behavior (Active)', (o) => o.npcBehavior(skew: 1)),
+    _Gen('NPC Behavior (Passive)', (o) => o.npcBehavior(skew: -1)),
+    _Gen('NPC Combat', (o) => o.npcCombat()),
+    _Gen('Settlement', (o) => o.settlement()),
+    _Gen('Wilderness Step', (o) => o.wildernessStep()),
+    _Gen('Natural Hazard', (o) => o.naturalHazard()),
+    _Gen('Dungeon Name', (o) => o.dungeonName()),
+    _Gen('Dungeon Room', (o) => o.dungeonRoom()),
+    _Gen('Treasure', (o) => o.treasure()),
+    _Gen('Name', (o) => o.generateName()),
+    _Gen('Discover Meaning', (o) => o.discoverMeaning()),
+    _Gen('Immersion', (o) => o.immersion()),
+    _Gen('Plot Point', (o) => o.plotPoint()),
+    _Gen('Random Idea', (o) => o.randomIdea()),
+    _Gen('Detail', (o) => o.detail()),
+    _Gen('Property', (o) => o.property()),
+    _Gen('NPC Plot Knowledge', (o) => o.extendedInfo()),
+    _Gen('Companion Response', (o) => o.companionResponse()),
+    _Gen('NPC Dialog Topic', (o) => o.dialogTopic()),
+  ];
+
+  void _run(_Gen g) => setState(() => _last = g.run(widget.oracle));
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final last = _last;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('Generators', style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        if (last != null) ...[
+          ResultCard(
+            result: last,
+            onLog: () {
+              ref.read(logProvider.notifier).add(last.title, last.asText);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged')),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final g in _gens)
+              ActionChip(
+                label: Text(g.label),
+                onPressed: () => _run(g),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
