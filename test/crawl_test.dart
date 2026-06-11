@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/state/providers.dart';
 
 OracleData _loadData() {
   final raw = File('assets/oracle_data.json').readAsStringSync();
@@ -13,6 +16,7 @@ OracleData _loadData() {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final data = _loadData();
 
   group('CrawlState model', () {
@@ -130,6 +134,41 @@ void main() {
       }
       expect(sawLost, isTrue);
       expect(sawFound, isTrue);
+    });
+  });
+
+  group('Crawl provider persistence', () {
+    test('loads persisted state and saves updates', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.crawl.v1':
+            '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final loaded = await container.read(crawlProvider.future);
+      expect(loaded.envRow, 4);
+      expect(loaded.lost, isTrue);
+      expect(loaded.dialogRow, 1);
+
+      await container
+          .read(crawlProvider.notifier)
+          .save(const CrawlState(envRow: 9, lost: false));
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('juice.crawl.v1'), contains('"envRow":9'));
+    });
+
+    test('reset returns to defaults and persists them', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.crawl.v1': '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(crawlProvider.future);
+      await container.read(crawlProvider.notifier).reset();
+      final state = await container.read(crawlProvider.future);
+      expect(state.envRow, isNull);
+      expect(state.lost, isFalse);
+      expect(state.dialogRow, 2);
     });
   });
 }
