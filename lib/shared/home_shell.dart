@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
@@ -116,28 +116,48 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         await ref.read(sessionsProvider.notifier).exportActive();
     final name = ref.read(sessionsProvider).valueOrNull?.activeMeta.name ??
         'campaign';
-    final fileName =
-        '${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-')}.juice.json';
-    await FilePicker.saveFile(
-      dialogTitle: 'Export campaign',
-      fileName: fileName,
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      bytes: Uint8List.fromList(utf8.encode(content)),
-    );
-    if (dialogContext.mounted) {
-      Navigator.of(dialogContext).pop();
+    var slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    slug = slug.replaceAll(RegExp(r'^-+|-+$'), '');
+    final fileName = '${slug.isEmpty ? 'campaign' : slug}.juice.json';
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export campaign',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(content)),
+      );
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     }
   }
 
   Future<void> _importCampaign(BuildContext dialogContext) async {
-    final result = await FilePicker.pickFiles(
-      dialogTitle: 'Import campaign',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      withData: true,
-    );
-    final bytes = result?.files.single.bytes;
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import campaign',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final bytes =
+        (result == null || result.files.isEmpty) ? null : result.files.first.bytes;
     if (bytes == null) return; // user cancelled
     try {
       await ref
