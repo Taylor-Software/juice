@@ -18,3 +18,4 @@ Working rules for this repo:
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` only.
   No dio/repository (no network), no codegen (static data), no router (4-tab
   IndexedStack). Add rails only when a real need appears.
+- Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`).
