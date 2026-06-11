@@ -6,9 +6,9 @@ Solo-dev capacity: one or two items in flight at a time.
 
 Strategy in one line: **own "roll + remember your campaign"** — journal
 depth and verified correctness — while closing the distribution gap.
-Expansion direction: Mythic GME support (its Threads/Characters lists
-map directly onto our tracker — breadth that compounds our
-differentiator instead of diluting it).
+Expansion direction: multi-system journal home base — Mythic GME and
+the Ironsworn family (both map onto our Threads/Characters tracker —
+breadth that compounds our differentiator instead of diluting it).
 
 ---
 
@@ -42,6 +42,11 @@ Dependencies:
 - **Mythic GME full support** — Meaning Tables (47 in 2e, CC-BY-NC text,
   embeddable with attribution), Behavior/Statistic/Detail checks, chaos
   adjustment at scene end. Scope after the core spike proves fit.
+- **Ironsworn family (Ironsworn / Delve / Starforged / Sundered Isles)**
+  — optional per-ruleset toggles (expansions require base, base games
+  mutually exclusive), moves + oracle tables ingested from official
+  Datasworn JSON. Spec: `docs/specs/ironsworn-family.md`. Phased
+  (pipeline → Starforged slice → rest); pull phases forward as desired.
 - **Abstract Icons oracle** — only missing Juice oracle after the table
   fixes. Blocked on licensing check: icons are the PDF author's art, the
   competitor's CC BY-NC-SA grant is not theirs to give.
