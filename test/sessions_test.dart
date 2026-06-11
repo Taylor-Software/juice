@@ -92,4 +92,46 @@ void main() {
       expect(s.sessions.length, 1);
     });
   });
+
+  group('Session-scoped stores', () {
+    test('threads are isolated per session and survive switching back', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+
+      await container.read(threadsProvider.future);
+      await container.read(threadsProvider.notifier).add('Slay the wyrm');
+      expect((await container.read(threadsProvider.future)).length, 1);
+
+      await container.read(sessionsProvider.notifier).create('Second');
+      expect(await container.read(threadsProvider.future), isEmpty);
+
+      await container.read(sessionsProvider.notifier).switchTo('default');
+      final back = await container.read(threadsProvider.future);
+      expect(back.single.title, 'Slay the wyrm');
+    });
+
+    test('crawl state is isolated per session', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+
+      await container.read(crawlProvider.future);
+      await container
+          .read(crawlProvider.notifier)
+          .save(const CrawlState(envRow: 7, lost: true));
+
+      await container.read(sessionsProvider.notifier).create('Second');
+      final fresh = await container.read(crawlProvider.future);
+      expect(fresh.envRow, isNull);
+      expect(fresh.lost, isFalse);
+
+      await container.read(sessionsProvider.notifier).switchTo('default');
+      final restored = await container.read(crawlProvider.future);
+      expect(restored.envRow, 7);
+      expect(restored.lost, isTrue);
+    });
+  });
 }

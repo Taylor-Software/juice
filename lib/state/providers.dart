@@ -20,10 +20,14 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   T fromJson(Map<String, dynamic> json);
   Map<String, dynamic> toJsonMap(T item);
 
+  late String _scopedKey;
+
   @override
   Future<List<T>> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$prefsKey.${sessions.active}';
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(prefsKey);
+    final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return <T>[];
     final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
     return list.map(fromJson).toList();
@@ -32,7 +36,7 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   Future<void> _persist(List<T> items) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
-      prefsKey,
+      _scopedKey,
       jsonEncode(items.map(toJsonMap).toList()),
     );
     state = AsyncData(items);
@@ -140,19 +144,23 @@ final charactersProvider =
 
 // -- Crawl state (wilderness + dialog marker) -------------------------------
 class CrawlNotifier extends AsyncNotifier<CrawlState> {
-  static const _key = 'juice.crawl.v1';
+  static const _baseKey = 'juice.crawl.v1';
+
+  late String _scopedKey;
 
   @override
   Future<CrawlState> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
+    final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const CrawlState();
     return CrawlState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
   }
 
   Future<void> save(CrawlState s) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(s.toJson()));
+    await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
 
