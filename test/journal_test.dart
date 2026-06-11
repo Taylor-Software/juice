@@ -102,6 +102,27 @@ void main() {
     });
   });
 
+  group('JournalNotifier cold-start mutation', () {
+    test('add before any read keeps previously persisted entries', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.journal.v2.default':
+            '[{"id":"old","timestamp":"2026-06-11T09:00:00.000","title":"Old","body":"kept"}]',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      // First interaction is add() itself — provider never read or watched.
+      await container.read(journalProvider.notifier).add('New', 'fresh');
+      final entries = await container.read(journalProvider.future);
+      expect(entries.map((e) => e.title), ['New', 'Old']);
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('juice.journal.v2.default')!;
+      expect(raw, contains('Old')); // not clobbered
+      expect(raw, contains('New'));
+    });
+  });
+
   group('JournalNotifier migration and typed adds', () {
     test('migrates juice.log.v1 data into juice.journal.v2 once', () async {
       SharedPreferences.setMockInitialValues({

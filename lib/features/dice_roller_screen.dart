@@ -146,12 +146,9 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
                         tooltip: 'Add to journal',
                         icon: const Icon(Icons.bookmark_add_outlined),
                         onPressed: () {
-                          // Unlike journal-adjacent screens, this panel never
-                          // watches journalProvider, so wait for the notifier
-                          // to finish building before mutating it.
-                          final notifier = ref.read(journalProvider.notifier);
-                          ref.read(journalProvider.future).then(
-                              (_) => notifier.add('Dice Roll', last.asText));
+                          ref
+                              .read(journalProvider.notifier)
+                              .add('Dice Roll', last.asText);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Added to journal')),
                           );

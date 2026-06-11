@@ -44,7 +44,9 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
     state = AsyncData(items);
   }
 
-  List<T> get _current => state.valueOrNull ?? <T>[];
+  /// Await the loaded list: mutating before build() completes must not
+  /// throw on [_scopedKey] or clobber previously persisted data.
+  Future<List<T>> get _ready async => state.valueOrNull ?? await future;
 }
 
 // -- Journal ----------------------------------------------------------------
@@ -77,7 +79,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     await _persist([
       JournalEntry(
           id: _newId(), timestamp: DateTime.now(), title: title, body: body),
-      ..._current,
+      ...await _ready,
     ]);
   }
 
@@ -89,7 +91,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           title: '',
           body: body,
           kind: JournalKind.text),
-      ..._current,
+      ...await _ready,
     ]);
   }
 
@@ -102,21 +104,24 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           body: '',
           kind: JournalKind.scene,
           chaosFactor: chaosFactor),
-      ..._current,
+      ...await _ready,
     ]);
   }
 
   Future<void> replace(JournalEntry entry) async {
     await _persist([
-      for (final e in _current) if (e.id == entry.id) entry else e,
+      for (final e in await _ready) if (e.id == entry.id) entry else e,
     ]);
   }
 
   Future<void> remove(String id) async {
-    await _persist(_current.where((e) => e.id != id).toList());
+    await _persist((await _ready).where((e) => e.id != id).toList());
   }
 
-  Future<void> clear() async => _persist(<JournalEntry>[]);
+  Future<void> clear() async {
+    await _ready;
+    await _persist(<JournalEntry>[]);
+  }
 }
 
 final journalProvider =
@@ -135,25 +140,25 @@ class ThreadNotifier extends _PersistedList<Thread> {
   Future<void> add(String title) async {
     await _persist([
       Thread(id: _newId(), title: title),
-      ..._current,
+      ...await _ready,
     ]);
   }
 
   Future<void> replace(Thread thread) async {
     await _persist([
-      for (final t in _current) if (t.id == thread.id) thread else t,
+      for (final t in await _ready) if (t.id == thread.id) thread else t,
     ]);
   }
 
   Future<void> toggleOpen(String id) async {
     await _persist([
-      for (final t in _current)
+      for (final t in await _ready)
         if (t.id == id) t.copyWith(open: !t.open) else t,
     ]);
   }
 
   Future<void> remove(String id) async {
-    await _persist(_current.where((t) => t.id != id).toList());
+    await _persist((await _ready).where((t) => t.id != id).toList());
   }
 }
 
@@ -172,18 +177,18 @@ class CharacterNotifier extends _PersistedList<Character> {
   Future<void> add(String name) async {
     await _persist([
       Character(id: _newId(), name: name),
-      ..._current,
+      ...await _ready,
     ]);
   }
 
   Future<void> replace(Character character) async {
     await _persist([
-      for (final c in _current) if (c.id == character.id) character else c,
+      for (final c in await _ready) if (c.id == character.id) character else c,
     ]);
   }
 
   Future<void> remove(String id) async {
-    await _persist(_current.where((c) => c.id != id).toList());
+    await _persist((await _ready).where((c) => c.id != id).toList());
   }
 }
 
