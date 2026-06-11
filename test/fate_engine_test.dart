@@ -137,6 +137,24 @@ void main() {
     });
   });
 
+  group('Monster encounter + dialog data integrity', () {
+    test('monster grid is 12 rows of 5', () {
+      expect(data.monsterGrid.length, 12);
+      for (final row in data.monsterGrid.values) {
+        expect(row.length, 5);
+      }
+      expect(data.monsterEnvFormula.length, 10);
+    });
+
+    test('dialog grid is 5x5 with Fact center', () {
+      expect(data.dialogGrid.length, 5);
+      for (final row in data.dialogGrid) {
+        expect(row.length, 5);
+      }
+      expect(data.dialogGrid[2][2], 'Fact');
+    });
+  });
+
   group('Composite generators produce results', () {
     final o = oracleWith(99);
     test('all generators return non-empty output', () {
