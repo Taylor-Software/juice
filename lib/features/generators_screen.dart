@@ -97,7 +97,8 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             ActionChip(
               label: const Text('Wilderness Travel'),
               onPressed: () {
-                final r = widget.oracle.wildernessTravel(crawl);
+                final s = ref.read(crawlProvider).valueOrNull ?? const CrawlState();
+                final r = widget.oracle.wildernessTravel(s);
                 ref.read(crawlProvider.notifier).save(r.state);
                 setState(() => _last = r.result);
               },
@@ -110,12 +111,12 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             ActionChip(
               label: const Text('NPC Dialog'),
               onPressed: () {
-                widget.oracle
-                    .restoreDialogPos(crawl.dialogRow, crawl.dialogCol);
+                final s = ref.read(crawlProvider).valueOrNull ?? const CrawlState();
+                widget.oracle.restoreDialogPos(s.dialogRow, s.dialogCol);
                 final r = widget.oracle.npcDialog();
                 final pos = widget.oracle.dialogPos;
                 ref.read(crawlProvider.notifier).save(
-                    crawl.copyWith(dialogRow: pos.row, dialogCol: pos.col));
+                    s.copyWith(dialogRow: pos.row, dialogCol: pos.col));
                 setState(() => _last = r);
               },
             ),
