@@ -1737,5 +1737,218 @@
         "Why the leadership needs to change"
       ]
     ]
+  },
+  "monster_encounter": {
+    "grid": {
+      "1": [
+        "+ Wolf",
+        "- Ice Mephit",
+        "- Winter Wolf",
+        "Yeti",
+        "Werebear"
+      ],
+      "2": [
+        "+ Skeleton",
+        "- Warhorse Skeleton",
+        "- Wight",
+        "- Nightmare",
+        "Wraith"
+      ],
+      "3": [
+        "+ Drow",
+        "- Giant Spider",
+        "Quaggoth",
+        "- Phase Spider",
+        "Drider"
+      ],
+      "4": [
+        "+ Goblin",
+        "- Worg",
+        "+ Hobgoblin",
+        "+ Bugbear",
+        "Hobgoblin Captain"
+      ],
+      "5": [
+        "Orc",
+        "- Orog",
+        "Orc Eye of Gruumsh",
+        "- Troll",
+        "Orc War Chief"
+      ],
+      "6": [
+        "+ Kobold",
+        "+ Giant Weasel",
+        "+ Winged Kobold",
+        "+ Stirge",
+        "Young Dragon"
+      ],
+      "7": [
+        "Lizardfolk",
+        "Giant Lizard",
+        "Lizardfolk Shaman",
+        "- Giant Crocodile",
+        "Lizard King"
+      ],
+      "8": [
+        "+ Zombie",
+        "Ghoul",
+        "- Mummy",
+        "Ogre Zombie",
+        "Vampire Spawn"
+      ],
+      "9": [
+        "Yuan-ti Pureblood",
+        "- Cockatrice",
+        "- Yuan-ti Malison",
+        "Basilisk",
+        "Medusa"
+      ],
+      "0": [
+        "Gnoll",
+        "- Giant Hyena",
+        "Gnoll Pack Lord",
+        "+ Jackalwere",
+        "Lamia"
+      ],
+      "*": [
+        "+ Twig Blight",
+        "+ Needle Blight",
+        "+ Vine Blight",
+        "- Shambling Mound",
+        "Green Hag"
+      ],
+      "**": [
+        "+ Bandit",
+        "Thug",
+        "Scout",
+        "- Veteran",
+        "Bandit Captain"
+      ]
+    },
+    "env_formula": {
+      "1": [
+        0,
+        -1
+      ],
+      "2": [
+        0,
+        0
+      ],
+      "3": [
+        1,
+        -1
+      ],
+      "4": [
+        1,
+        0
+      ],
+      "5": [
+        3,
+        -1
+      ],
+      "6": [
+        2,
+        0
+      ],
+      "7": [
+        3,
+        1
+      ],
+      "8": [
+        3,
+        -1
+      ],
+      "9": [
+        4,
+        -1
+      ],
+      "10": [
+        4,
+        1
+      ]
+    }
+  },
+  "dialog": {
+    "grid": [
+      [
+        "Fact",
+        "Denial",
+        "Query",
+        "Denial",
+        "Action"
+      ],
+      [
+        "Want",
+        "Query",
+        "Need",
+        "Query",
+        "Fact"
+      ],
+      [
+        "Action",
+        "Need",
+        "Fact",
+        "Action",
+        "Denial"
+      ],
+      [
+        "Need",
+        "Query",
+        "Denial",
+        "Query",
+        "Want"
+      ],
+      [
+        "Query",
+        "Support",
+        "Query",
+        "Support",
+        "Need"
+      ]
+    ],
+    "direction": [
+      [
+        2,
+        "Neutral",
+        -1,
+        0
+      ],
+      [
+        5,
+        "Defensive",
+        0,
+        -1
+      ],
+      [
+        8,
+        "Aggressive",
+        0,
+        1
+      ],
+      [
+        10,
+        "Helpful",
+        1,
+        0
+      ]
+    ],
+    "subject": [
+      [
+        2,
+        "Them"
+      ],
+      [
+        5,
+        "Me"
+      ],
+      [
+        8,
+        "You"
+      ],
+      [
+        10,
+        "Us"
+      ]
+    ]
   }
 }

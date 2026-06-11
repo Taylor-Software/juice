@@ -39,6 +39,8 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     _Gen('Settlement', (o) => o.settlement()),
     _Gen('Wilderness Step', (o) => o.wildernessStep()),
     _Gen('Natural Hazard', (o) => o.naturalHazard()),
+    _Gen('Monster Encounter', (o) => o.monsterEncounter()),
+    _Gen('Creature Tracks', (o) => o.creatureTracks()),
     _Gen('Dungeon Name', (o) => o.dungeonName()),
     _Gen('Dungeon Room', (o) => o.dungeonRoom()),
     _Gen('Treasure', (o) => o.treasure()),
@@ -52,6 +54,7 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     _Gen('NPC Plot Knowledge', (o) => o.extendedInfo()),
     _Gen('Companion Response', (o) => o.companionResponse()),
     _Gen('NPC Dialog Topic', (o) => o.dialogTopic()),
+    _Gen('NPC Dialog', (o) => o.npcDialog()),
   ];
 
   void _run(_Gen g) => setState(() => _last = g.run(widget.oracle));

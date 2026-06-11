@@ -137,6 +137,74 @@ void main() {
     });
   });
 
+  group('Monster encounter + dialog data integrity', () {
+    test('monster grid is 12 rows of 5', () {
+      expect(data.monsterGrid.length, 12);
+      for (final row in data.monsterGrid.values) {
+        expect(row.length, 5);
+      }
+      expect(data.monsterEnvFormula.length, 10);
+    });
+
+    test('dialog grid is 5x5 with Fact center', () {
+      expect(data.dialogGrid.length, 5);
+      for (final row in data.dialogGrid) {
+        expect(row.length, 5);
+      }
+      expect(data.dialogGrid[2][2], 'Fact');
+    });
+  });
+
+  group('Monster encounter generator', () {
+    test('always yields difficulty, environment, and rolls', () {
+      final oracle = Oracle(data);
+      for (var i = 0; i < 2000; i++) {
+        final r = oracle.monsterEncounter();
+        expect(r.title, 'Monster Encounter');
+        expect(r.rolls, isNotEmpty);
+        final labels = r.rolls.map((x) => x.label).toList();
+        expect(labels, contains('Environment'));
+        expect(labels, contains('Difficulty'));
+      }
+    });
+
+    test('boss appears roughly 10% of the time', () {
+      final oracle = Oracle(data);
+      var bosses = 0;
+      const n = 20000;
+      for (var i = 0; i < n; i++) {
+        final r = oracle.monsterEncounter();
+        if (r.rolls.any((x) => x.label == 'Boss')) bosses++;
+      }
+      expect(bosses / n, closeTo(0.10, 0.01));
+    });
+  });
+
+  group('NPC dialog walk', () {
+    test('walks the grid, wraps, and ends on doubles', () {
+      final oracle = Oracle(data);
+      var sawEnd = false;
+      var sawPast = false;
+      var sawPresent = false;
+      for (var i = 0; i < 2000; i++) {
+        final r = oracle.npcDialog();
+        if (r.summary == 'Conversation ends') {
+          sawEnd = true;
+          continue;
+        }
+        final labels = r.rolls.map((x) => x.label).toList();
+        expect(labels, containsAll(['Fragment', 'Tone', 'Subject']));
+        final tense =
+            r.rolls.firstWhere((x) => x.label == 'Fragment').detail!;
+        if (tense.contains('past')) sawPast = true;
+        if (tense.contains('present')) sawPresent = true;
+      }
+      expect(sawEnd, isTrue, reason: 'doubles (10%) must end conversations');
+      expect(sawPast && sawPresent, isTrue,
+          reason: 'walk must reach both tense bands over 2000 beats');
+    });
+  });
+
   group('Composite generators produce results', () {
     final o = oracleWith(99);
     test('all generators return non-empty output', () {

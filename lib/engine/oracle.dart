@@ -318,4 +318,111 @@ class Oracle {
         title: 'NPC Dialog Topic',
         rolls: [Roll(label: 'Topic', value: _d100('dialog_topic'))],
       );
+
+  // -- Monster encounter -------------------------------------------------
+
+  /// Pick the monster-grid row key for [envRow] per the pocketfold formula.
+  String _monsterRowKey(int envRow) {
+    final formula = data.monsterEnvFormula['$envRow']!; // [modifier, skew]
+    final mod = formula[0], skew = formula[1];
+    final a = dice.dN(6), b = dice.dN(6);
+    final pick = skew > 0
+        ? (a > b ? a : b)
+        : skew < 0
+            ? (a < b ? a : b)
+            : a;
+    if (skew != 0 && a == b) return '**'; // doubles: bandits, any biome
+    final row = (pick + mod).clamp(1, 10);
+    if (envRow == 6 && row == 6) return '*'; // Forest special: blights
+    return row == 10 ? '0' : '$row';
+  }
+
+  /// Wilderness Monster Encounter (pocketfold left extension). Rolls the
+  /// current environment too; pass [envRow] (1..10) to pin it instead.
+  GenResult monsterEncounter({int? envRow}) {
+    final env = envRow ?? dice.d10Index();
+    final envName = data.table('wilderness_environment')[env - 1];
+    final gridRow = data.monsterGrid[_monsterRowKey(env)]!;
+    final d1 = dice.dN(10), d2 = dice.dN(10);
+    final band = d1 <= 4 ? 2 : (d1 <= 8 ? 3 : 4);
+    final difficulty = const {2: 'Easy', 3: 'Medium', 4: 'Hard'}[band]!;
+    final rolls = <Roll>[
+      Roll(label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
+      Roll(label: 'Difficulty', value: difficulty, detail: 'd10 ${d10Label(d1)}'),
+    ];
+    for (final cell in gridRow.take(band)) {
+      final hasPrefix = cell.startsWith('+ ') || cell.startsWith('- ');
+      final prefix = hasPrefix ? cell[0] : '';
+      final name = hasPrefix ? cell.substring(2) : cell;
+      final q1 = dice.dN(6), q2 = dice.dN(6);
+      final qty = (prefix == '+'
+              ? (q1 > q2 ? q1 : q2)
+              : prefix == '-'
+                  ? (q1 < q2 ? q1 : q2)
+                  : q1) -
+          1;
+      if (qty > 0) {
+        rolls.add(Roll(label: 'Monster', value: '$qty× $name'));
+      }
+    }
+    if (d1 == d2) {
+      rolls.add(Roll(label: 'Boss', value: gridRow[4]));
+    }
+    if (!rolls.any((r) => r.label == 'Monster' || r.label == 'Boss')) {
+      rolls.add(const Roll(label: 'Monster', value: 'None — signs only'));
+    }
+    return GenResult(title: 'Monster Encounter', rolls: rolls);
+  }
+
+  /// Creature tracks only: environment-tuned monster type, no difficulty.
+  GenResult creatureTracks({int? envRow}) {
+    final env = envRow ?? dice.d10Index();
+    final envName = data.table('wilderness_environment')[env - 1];
+    final cell = data.monsterGrid[_monsterRowKey(env)]![0];
+    final name = cell.startsWith('+ ') || cell.startsWith('- ')
+        ? cell.substring(2)
+        : cell;
+    return GenResult(title: 'Creature Tracks', rolls: [
+      Roll(label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
+      Roll(label: 'Tracks', value: name),
+    ]);
+  }
+
+  // -- NPC dialog walk ---------------------------------------------------
+
+  /// NPC dialog marker (row, col) on the 5x5 grid; starts and resets at
+  /// center "Fact". In-memory only — persisted state arrives with the
+  /// crawl-modes work.
+  int _dialogRow = 2, _dialogCol = 2;
+
+  /// One beat of NPC dialog: move the marker, read the fragment.
+  /// Doubles end the conversation and reset the marker (instructions p96).
+  GenResult npcDialog() {
+    final d1 = dice.dN(10), d2 = dice.dN(10);
+    if (d1 == d2) {
+      _dialogRow = 2;
+      _dialogCol = 2;
+      return GenResult(
+        title: 'NPC Dialog',
+        summary: 'Conversation ends',
+        rolls: [
+          Roll(label: 'Dice', value: '$d1, $d2', detail: 'doubles'),
+        ],
+      );
+    }
+    final dir = data.dialogDirection
+        .firstWhere((band) => d1 <= (band[0] as int));
+    final tone = dir[1] as String;
+    _dialogRow = (_dialogRow + (dir[2] as int)) % 5;
+    _dialogCol = (_dialogCol + (dir[3] as int)) % 5;
+    final subject = data.dialogSubject
+        .firstWhere((band) => d2 <= (band[0] as int))[1] as String;
+    final fragment = data.dialogGrid[_dialogRow][_dialogCol];
+    final tense = _dialogRow <= 1 ? 'past' : 'present';
+    return GenResult(title: 'NPC Dialog', rolls: [
+      Roll(label: 'Fragment', value: fragment, detail: tense),
+      Roll(label: 'Tone', value: tone, detail: 'd10 ${d10Label(d1)}'),
+      Roll(label: 'Subject', value: subject, detail: 'd10 ${d10Label(d2)}'),
+    ]);
+  }
 }

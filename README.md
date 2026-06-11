@@ -75,11 +75,8 @@ code + tests here.
 A few tables in the PDF are visual or OCR-ambiguous. These are implemented as
 best-effort and should be checked against the original before you rely on them:
 
-- **Wilderness Monster Encounter grid** — D&D monster names with track/skew
-  markers; OCR-garbled in the source. Not yet encoded as a dedicated generator
-  (the `wilderness_*` tables that *are* clean are wired up).
-- **NPC Dialog grid** (5×5 by disposition) — arcane layout; simplified/omitted
-  rather than guessed.
+- ~~Wilderness Monster Encounter grid~~ / ~~NPC Dialog grid~~ — encoded and
+  verified against the PDF (see `build_oracle.py` verify sections 6–7).
 - **Name generator skew pattern** — the source uses a per-row skew pattern over
   the syllable columns; here each column is rolled independently (d20) and
   concatenated. Names are plausible but not the exact weighted distribution.

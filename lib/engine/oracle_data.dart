@@ -50,6 +50,36 @@ class OracleData {
           .map((e) => (e as List))
           .toList();
 
+  // Monster encounter ------------------------------------------------------
+  Map<String, dynamic> get _monster =>
+      _json['monster_encounter'] as Map<String, dynamic>;
+
+  /// Row key ('1'..'0', '*', '**') -> 5 cells (tracks, easy, medium, hard, boss).
+  Map<String, List<String>> get monsterGrid =>
+      (_monster['grid'] as Map<String, dynamic>)
+          .map((k, v) => MapEntry(k, (v as List).cast<String>()));
+
+  /// Env row '1'..'10' -> [modifier, skew].
+  Map<String, List<int>> get monsterEnvFormula =>
+      (_monster['env_formula'] as Map<String, dynamic>)
+          .map((k, v) => MapEntry(k, (v as List).cast<int>()));
+
+  // NPC dialog ---------------------------------------------------------------
+  Map<String, dynamic> get _dialog => _json['dialog'] as Map<String, dynamic>;
+
+  /// 5x5 fragment grid; rows 0-1 are past tense.
+  List<List<String>> get dialogGrid => (_dialog['grid'] as List)
+      .map((r) => (r as List).cast<String>())
+      .toList();
+
+  /// [maxRoll, tone, dRow, dCol] bands for die 1.
+  List<List<dynamic>> get dialogDirection =>
+      (_dialog['direction'] as List).map((e) => e as List).toList();
+
+  /// [maxRoll, subject] bands for die 2.
+  List<List<dynamic>> get dialogSubject =>
+      (_dialog['subject'] as List).map((e) => e as List).toList();
+
   /// All raw table keys (for the browse screen), sorted.
   List<String> get allTableKeys =>
       _tables.keys.where((k) => k != 'intensity').toList()..sort();
