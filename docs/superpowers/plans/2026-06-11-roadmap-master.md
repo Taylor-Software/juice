@@ -15,7 +15,12 @@
 | 4 | Sessions (multi-campaign) | [2026-06-11-sessions.md](2026-06-11-sessions.md) | shipped (PR #4) |
 | 5 | Campaign file save/open (BYO cloud) | [2026-06-11-campaign-files.md](2026-06-11-campaign-files.md) | shipped (PR #5) |
 | 6 | Mythic GME core spike | [2026-06-11-mythic-spike.md](2026-06-11-mythic-spike.md) | shipped (PR #6) |
-| 7+ | Later items (journal depth, Mythic full, Ironsworn family per `docs/specs/ironsworn-family.md`, icons, PWA) | author when promoted into Next | — |
+| 7 | PWA polish | inline (trivial) | shipped (PR #7) |
+| 8 | Journal depth | [2026-06-11-journal-depth.md](2026-06-11-journal-depth.md) | shipped (PR #8) |
+| 9 | Mythic full (meaning tables) | [2026-06-11-mythic-meaning.md](2026-06-11-mythic-meaning.md) | shipped (PR #9) |
+| 10 | Ironsworn phase 1–2 | [2026-06-11-ironsworn-phase1.md](2026-06-11-ironsworn-phase1.md) | shipped (PR #10) |
+| 11 | Ironsworn phase 3 | [2026-06-11-ironsworn-phase3.md](2026-06-11-ironsworn-phase3.md) | shipped (PR #11) |
+| 12 | Abstract icons | — | closed: license-blocked |
 
 Constraints that bind every plan:
 - `flutter analyze` + `flutter test` green before every commit (CONVENTIONS.md).

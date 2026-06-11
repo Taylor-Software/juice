@@ -36,22 +36,25 @@ Dependencies:
 
 ## Later (directional)
 
-- **Journal depth** — link log entries to threads/characters, filter log
-  by thread, richer notes. The differentiation bet; juice-roll tracks
-  dice, we track story.
-- **Mythic GME full support** — Meaning Tables (47 in 2e, CC-BY-NC text,
-  embeddable with attribution), Behavior/Statistic/Detail checks, chaos
-  adjustment at scene end. Scope after the core spike proves fit.
-- **Ironsworn family (Ironsworn / Delve / Starforged / Sundered Isles)**
-  — optional per-ruleset toggles (expansions require base, base games
-  mutually exclusive), moves + oracle tables ingested from official
-  Datasworn JSON. Spec: `docs/specs/ironsworn-family.md`. Phased
-  (pipeline → Starforged slice → rest); pull phases forward as desired.
-- **Abstract Icons oracle** — only missing Juice oracle after the table
-  fixes. Blocked on licensing check: icons are the PDF author's art, the
-  competitor's CC BY-NC-SA grant is not theirs to give.
-- **PWA polish** — manifest, offline cache, install prompt. Builds on
-  web deploy.
+- ~~**Journal depth**~~ — **shipped 2026-06-11** (PR #8): log↔thread
+  links, filter chips, in-place edit. Character-linking deliberately cut.
+- ~~**Mythic GME full support**~~ — **shipped 2026-06-11** (PR #9): all
+  47 Meaning Tables. Behavior/Statistic/Detail checks deferred — no
+  clean machine-readable source exists; revisit if one appears.
+- ~~**Ironsworn family**~~ — **shipped 2026-06-11** (PRs #10–#11): all
+  four rulesets from official Datasworn data, family exclusivity, merged
+  Moves tab, per-asset license attribution (Sundered Isles is
+  CC-BY-NC-SA; the rest CC-BY).
+- **Abstract Icons oracle** — **closed as won't-ship 2026-06-11**: the
+  60 icons are the Juice author's art; no license grants redistribution
+  (the competitor's CC claim isn't theirs to give). Re-open only if the
+  author publishes the art under an open license.
+- ~~**PWA polish**~~ — **shipped 2026-06-11** (PR #7): proper manifest
+  identity/colors/description; offline cache via Flutter's service
+  worker; install prompt is the browser's native flow.
+
+**Roadmap complete** (one item closed as license-blocked). Next planning
+cycle starts from a fresh competitive scan.
 
 ## Cloud storage stance (BYO cloud, no server)
 
