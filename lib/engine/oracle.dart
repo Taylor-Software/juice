@@ -464,6 +464,32 @@ class Oracle {
     _dialogCol = col.clamp(0, 4);
   }
 
+  // -- Roll High oracle ----------------------------------------------------
+
+  /// Roll High yes/no oracle: higher roll = more yes. [die] is 'd100',
+  /// 'd20', or '2d6'; [oddsIndex] 0..6 (Almost Certain..Almost Impossible).
+  /// Mirrors the Python `roll_high` (rows proven by build_oracle.py).
+  GenResult rollHigh(String die, int oddsIndex) {
+    final roll = switch (die) {
+      'd100' => dice.d100(),
+      'd20' => dice.dN(20),
+      _ => dice.dN(6) + dice.dN(6),
+    };
+    final row = data.rollHighRows(die)[oddsIndex];
+    var outcome = '';
+    for (var i = 0; i < row.length; i++) {
+      final r = row[i];
+      if (r != null && roll >= r[0] && roll <= r[1]) {
+        outcome = data.rollHighOutcomes[i];
+        break;
+      }
+    }
+    return GenResult(title: 'Roll High Oracle', rolls: [
+      Roll(label: 'Answer', value: outcome, detail: '$die: $roll'),
+      Roll(label: 'Odds', value: data.rollHighOdds[oddsIndex]),
+    ]);
+  }
+
   // -- Mythic GME 2e (Word Mill Games, CC-BY-NC) --------------------------
 
   /// Fate Chart roll: [oddsIndex] 0..8 (Certain..Impossible), [chaos] 1..9.

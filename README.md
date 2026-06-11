@@ -6,6 +6,11 @@ scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
 immersion, plot points, extended NPC tables), plus a persistent threads /
 characters / roll-log tracker.
 
+The Fate tab also carries a generic **Roll High oracle** — a 7-step
+likelihood ladder (Almost Certain … Almost Impossible) with six graded
+answers (Yes, and → No, and), in d100, d20, and 2d6 variants. Each table row
+is machine-verified for exact dice-range coverage in `build_oracle.py`.
+
 Also includes **Mythic GME** support (Fate Chart with Chaos Factor dial, Scene
 Test, Event Focus rolling against your tracked Threads/Characters lists, and
 all 47 Meaning Tables).
