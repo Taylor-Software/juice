@@ -3,32 +3,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../state/providers.dart';
-import 'journal_screen.dart';
 
 class TrackerScreen extends ConsumerWidget {
   const TrackerScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 3,
+    return const DefaultTabController(
+      length: 2,
       child: Column(
         children: [
-          const Material(
+          Material(
             child: TabBar(
               tabs: [
                 Tab(text: 'Threads'),
                 Tab(text: 'Characters'),
-                Tab(text: 'Journal'),
               ],
             ),
           ),
-          const Expanded(
+          Expanded(
             child: TabBarView(
               children: [
                 _ThreadsTab(),
                 _CharactersTab(),
-                JournalScreen(),
               ],
             ),
           ),
