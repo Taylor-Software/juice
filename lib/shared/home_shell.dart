@@ -91,6 +91,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ],
       ),
     );
+    controller.dispose();
     if (name == null || name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(name.trim());
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
@@ -139,6 +140,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 children: [
                   const Text('Juice Oracle'),
                   Text(sessionName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall),
                 ],
               ),
