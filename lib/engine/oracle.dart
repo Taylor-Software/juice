@@ -451,6 +451,82 @@ class Oracle {
     _dialogCol = col.clamp(0, 4);
   }
 
+  // -- Mythic GME 2e (Word Mill Games, CC-BY-NC) --------------------------
+
+  /// Fate Chart roll: [oddsIndex] 0..8 (Certain..Impossible), [chaos] 1..9.
+  GenResult mythicFate(int oddsIndex, int chaos) {
+    final band = data.mythicBands[9 - chaos + oddsIndex];
+    final excYes = band[0], target = band[1], excNo = band[2];
+    final roll = dice.d100();
+    final String answer;
+    if (roll <= excYes) {
+      answer = 'Exceptional Yes';
+    } else if (roll <= target) {
+      answer = 'Yes';
+    } else if (roll < excNo) {
+      answer = 'No';
+    } else {
+      answer = 'Exceptional No';
+    }
+    final rolls = <Roll>[
+      Roll(label: 'Answer', value: answer, detail: 'd100 $roll vs $target'),
+      Roll(
+          label: 'Odds',
+          value: data.mythicOdds[oddsIndex],
+          detail: 'chaos $chaos'),
+    ];
+    if (roll < 100 && roll % 11 == 0 && roll ~/ 11 <= chaos) {
+      rolls.add(const Roll(
+          label: 'Random Event', value: 'Doubles! Roll Event Focus'));
+    }
+    return GenResult(title: 'Mythic Fate Chart', rolls: rolls);
+  }
+
+  /// Scene Test at the start of an expected scene.
+  GenResult mythicSceneTest(int chaos) {
+    final roll = dice.dN(10);
+    final String outcome;
+    if (roll > chaos) {
+      outcome = 'Expected Scene';
+    } else if (roll.isOdd) {
+      outcome = 'Altered Scene';
+    } else {
+      outcome = 'Interrupted Scene';
+    }
+    return GenResult(title: 'Mythic Scene Test', rolls: [
+      Roll(label: 'Scene', value: outcome, detail: 'd10 $roll vs chaos $chaos'),
+    ]);
+  }
+
+  /// Event Focus; thread/NPC-flavored results pick from the player's lists.
+  GenResult mythicEventFocus({
+    List<String> threads = const [],
+    List<String> characters = const [],
+  }) {
+    final roll = dice.d100();
+    final entry = data.mythicEventFocus
+        .firstWhere((e) => roll <= (e[0] as int));
+    final label = entry[1] as String;
+    final kind = entry[2] as String?;
+    final rolls = <Roll>[
+      Roll(label: 'Focus', value: label, detail: 'd100 $roll'),
+    ];
+    final pool = kind == 'thread'
+        ? threads
+        : kind == 'character'
+            ? characters
+            : const <String>[];
+    if (kind != null) {
+      rolls.add(Roll(
+        label: 'Target',
+        value: pool.isEmpty
+            ? '(no ${kind}s tracked — invent one)'
+            : pool[dice.dN(pool.length) - 1],
+      ));
+    }
+    return GenResult(title: 'Mythic Event Focus', rolls: rolls);
+  }
+
   /// One beat of NPC dialog: move the marker, read the fragment.
   /// Doubles end the conversation and reset the marker (instructions p96).
   GenResult npcDialog() {

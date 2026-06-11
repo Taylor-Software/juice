@@ -6,6 +6,11 @@ scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
 immersion, plot points, extended NPC tables), plus a persistent threads /
 characters / roll-log tracker.
 
+Also includes **Mythic GME** support (Fate Chart with Chaos Factor dial, Scene
+Test, and Event Focus rolling against your tracked Threads/Characters lists).
+Mythic Game Master Emulator © Word Mill Games, content used under CC-BY-NC 4.0
+— this app is free and non-commercial.
+
 Oracle content: [github.com/jrruethe/juice](https://github.com/jrruethe/juice),
 CC BY-NC-SA. This app is an unofficial implementation of those tables.
 

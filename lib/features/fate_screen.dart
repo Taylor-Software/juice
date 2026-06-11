@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../shared/result_card.dart';
 import '../state/providers.dart';
 
 class FateScreen extends ConsumerStatefulWidget {
@@ -16,6 +17,8 @@ class FateScreen extends ConsumerStatefulWidget {
 class _FateScreenState extends ConsumerState<FateScreen> {
   Likelihood _likelihood = Likelihood.normal;
   FateResult? _last;
+  int _oddsIndex = 4; // 50/50
+  GenResult? _mythicLast;
 
   void _roll() => setState(() => _last = widget.oracle.fateCheck(_likelihood));
 
@@ -69,6 +72,114 @@ class _FateScreenState extends ConsumerState<FateScreen> {
             ),
           ],
         ),
+        const SizedBox(height: 24),
+        const Divider(),
+        Text('Mythic GME', style: theme.textTheme.headlineSmall),
+        Text(
+          'Mythic Game Master Emulator © Word Mill Games (wordmillgames.com), '
+          'used under CC-BY-NC 4.0.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        Builder(builder: (context) {
+          final crawl =
+              ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
+          final chaos = crawl.chaosFactor.clamp(1, 9);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Chaos Factor: $chaos',
+                      style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: chaos > 1
+                        ? () => ref.read(crawlProvider.notifier).save(
+                            crawl.copyWith(chaosFactor: chaos - 1))
+                        : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: chaos < 9
+                        ? () => ref.read(crawlProvider.notifier).save(
+                            crawl.copyWith(chaosFactor: chaos + 1))
+                        : null,
+                  ),
+                ],
+              ),
+              DropdownMenu<int>(
+                initialSelection: _oddsIndex,
+                label: const Text('Odds'),
+                dropdownMenuEntries: [
+                  for (var i = 0; i < widget.oracle.data.mythicOdds.length; i++)
+                    DropdownMenuEntry(
+                        value: i, label: widget.oracle.data.mythicOdds[i]),
+                ],
+                onSelected: (v) =>
+                    setState(() => _oddsIndex = v ?? _oddsIndex),
+              ),
+              const SizedBox(height: 12),
+              if (_mythicLast != null) ...[
+                ResultCard(
+                  result: _mythicLast!,
+                  onLog: () {
+                    ref.read(logProvider.notifier).add(
+                        _mythicLast!.title, _mythicLast!.asText);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Logged')),
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
+              FilledButton.icon(
+                onPressed: () => setState(() => _mythicLast =
+                    widget.oracle.mythicFate(_oddsIndex, chaos)),
+                icon: const Icon(Icons.casino_outlined),
+                label: const Text('Fate Chart'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _mythicLast =
+                          widget.oracle.mythicSceneTest(chaos)),
+                      child: const Text('Scene Test'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        final threads = (ref
+                                    .read(threadsProvider)
+                                    .valueOrNull ??
+                                const <Thread>[])
+                            .where((t) => t.open)
+                            .map((t) => t.title)
+                            .toList();
+                        final characters = (ref
+                                    .read(charactersProvider)
+                                    .valueOrNull ??
+                                const <Character>[])
+                            .map((c) => c.name)
+                            .toList();
+                        setState(() => _mythicLast =
+                            widget.oracle.mythicEventFocus(
+                                threads: threads, characters: characters));
+                      },
+                      child: const Text('Event Focus'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
       ],
     );
   }

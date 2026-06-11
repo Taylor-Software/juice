@@ -1950,5 +1950,167 @@
         "Us"
       ]
     ]
+  },
+  "mythic": {
+    "odds": [
+      "Certain",
+      "Nearly Certain",
+      "Very Likely",
+      "Likely",
+      "50/50",
+      "Unlikely",
+      "Very Unlikely",
+      "Nearly Impossible",
+      "Impossible"
+    ],
+    "bands": [
+      [
+        20,
+        99,
+        101
+      ],
+      [
+        20,
+        99,
+        101
+      ],
+      [
+        20,
+        99,
+        101
+      ],
+      [
+        19,
+        95,
+        100
+      ],
+      [
+        18,
+        90,
+        99
+      ],
+      [
+        17,
+        85,
+        98
+      ],
+      [
+        15,
+        75,
+        96
+      ],
+      [
+        13,
+        65,
+        94
+      ],
+      [
+        10,
+        50,
+        91
+      ],
+      [
+        7,
+        35,
+        88
+      ],
+      [
+        5,
+        25,
+        86
+      ],
+      [
+        3,
+        15,
+        84
+      ],
+      [
+        2,
+        10,
+        83
+      ],
+      [
+        1,
+        5,
+        82
+      ],
+      [
+        0,
+        1,
+        81
+      ],
+      [
+        0,
+        1,
+        81
+      ],
+      [
+        0,
+        1,
+        81
+      ]
+    ],
+    "event_focus": [
+      [
+        5,
+        "Remote Event",
+        null
+      ],
+      [
+        10,
+        "Ambiguous Event",
+        null
+      ],
+      [
+        20,
+        "New NPC",
+        null
+      ],
+      [
+        40,
+        "NPC Action",
+        "character"
+      ],
+      [
+        45,
+        "NPC Negative",
+        "character"
+      ],
+      [
+        50,
+        "NPC Positive",
+        "character"
+      ],
+      [
+        55,
+        "Move toward a Thread",
+        "thread"
+      ],
+      [
+        65,
+        "Move away from a Thread",
+        "thread"
+      ],
+      [
+        70,
+        "Close a Thread",
+        "thread"
+      ],
+      [
+        80,
+        "PC Negative",
+        null
+      ],
+      [
+        85,
+        "PC Positive",
+        null
+      ],
+      [
+        100,
+        "Current Context",
+        null
+      ]
+    ]
   }
 }
