@@ -97,6 +97,10 @@ class OracleData {
   List<List<dynamic>> get mythicEventFocus =>
       (_mythic['event_focus'] as List).map((e) => e as List).toList();
 
+  /// 47 meaning tables: {id, name, entries[100], entries2?[100]}.
+  List<Map<String, dynamic>> get mythicMeaning =>
+      (_mythic['meaning'] as List).cast<Map<String, dynamic>>();
+
   /// All raw table keys (for the browse screen), sorted.
   List<String> get allTableKeys =>
       _tables.keys.where((k) => k != 'intensity').toList()..sort();

@@ -527,6 +527,21 @@ class Oracle {
     return GenResult(title: 'Mythic Event Focus', rolls: rolls);
   }
 
+  /// Two-word meaning prompt from the table with [id]; the second word
+  /// comes from entries2 when the table has pairs, else entries again.
+  GenResult mythicMeaning(String id) {
+    final table = data.mythicMeaning.firstWhere((t) => t['id'] == id);
+    final entries = (table['entries'] as List).cast<String>();
+    final entries2 =
+        (table['entries2'] as List?)?.cast<String>() ?? entries;
+    final r1 = dice.d100(), r2 = dice.d100();
+    return GenResult(title: 'Mythic Meaning', rolls: [
+      Roll(label: 'Table', value: table['name'] as String),
+      Roll(label: 'Word 1', value: entries[r1 - 1], detail: 'd100 $r1'),
+      Roll(label: 'Word 2', value: entries2[r2 - 1], detail: 'd100 $r2'),
+    ]);
+  }
+
   /// One beat of NPC dialog: move the marker, read the fragment.
   /// Doubles end the conversation and reset the marker (instructions p96).
   GenResult npcDialog() {

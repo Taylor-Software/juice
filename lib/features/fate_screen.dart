@@ -19,6 +19,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   FateResult? _last;
   int _oddsIndex = 4; // 50/50
   GenResult? _mythicLast;
+  String _meaningId = 'actions';
 
   void _roll() => setState(() => _last = widget.oracle.fateCheck(_likelihood));
 
@@ -174,6 +175,32 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       },
                       child: const Text('Event Focus'),
                     ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownMenu<String>(
+                      initialSelection: _meaningId,
+                      label: const Text('Meaning table'),
+                      expandedInsets: EdgeInsets.zero,
+                      dropdownMenuEntries: [
+                        for (final t in widget.oracle.data.mythicMeaning)
+                          DropdownMenuEntry(
+                              value: t['id'] as String,
+                              label: t['name'] as String),
+                      ],
+                      onSelected: (v) =>
+                          setState(() => _meaningId = v ?? _meaningId),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => setState(() => _mythicLast =
+                        widget.oracle.mythicMeaning(_meaningId)),
+                    child: const Text('Meaning'),
                   ),
                 ],
               ),

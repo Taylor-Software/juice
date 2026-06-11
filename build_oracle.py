@@ -10,8 +10,33 @@ instructions deep-dive. Tables flagged BEST_EFFORT are OCR-ambiguous or visual
 in the source and need a human pass against the PDF.
 """
 import json
+import os
 import random
 from collections import Counter
+
+# ---------------------------------------------------------------------------
+# Mythic 2e meaning tables (vendored from data/mythic_meaning/)
+# ---------------------------------------------------------------------------
+
+def load_mythic_meaning():
+    """Vendored Mythic 2e meaning tables (data/mythic_meaning/*.json)."""
+    tables = []
+    base = os.path.join(os.path.dirname(__file__), "data", "mythic_meaning")
+    for fname in sorted(os.listdir(base)):
+        if not fname.endswith(".json"):
+            continue
+        with open(os.path.join(base, fname)) as f:
+            t = json.load(f)
+        tables.append({
+            "id": t["id"],
+            "name": t["name"],
+            "entries": t["entries"],
+            "entries2": t.get("entries2") or None,
+        })
+    tables.sort(key=lambda t: t["name"])
+    return tables
+
+MYTHIC_MEANING = load_mythic_meaning()
 
 # ---------------------------------------------------------------------------
 # Simple d10 tables: index 1..9,0  -> we store as list[0..9] where list[0] is
@@ -669,6 +694,22 @@ def verify():
     if abs(re_rate - 0.05) > 0.005:
         failures.append(f"mythic random-event rate {re_rate:.4f} != ~0.05")
 
+    # 9. Mythic meaning tables: 47 tables, d100 lists.
+    if len(MYTHIC_MEANING) != 47:
+        failures.append(f"mythic meaning count {len(MYTHIC_MEANING)} != 47")
+    ids = [t["id"] for t in MYTHIC_MEANING]
+    if len(set(ids)) != len(ids):
+        failures.append("mythic meaning duplicate ids")
+    for t in MYTHIC_MEANING:
+        if len(t["entries"]) != 100:
+            failures.append(f"meaning {t['id']}: entries {len(t['entries'])} != 100")
+        if t["entries2"] is not None and len(t["entries2"]) != 100:
+            failures.append(f"meaning {t['id']}: entries2 len != 100")
+        if any(not isinstance(e, str) or not e for e in t["entries"]):
+            failures.append(f"meaning {t['id']}: empty/non-string entry")
+    if not any(t["id"] == "actions" and t["entries2"] for t in MYTHIC_MEANING):
+        failures.append("actions table must carry entries2 (word pairs)")
+
     return failures
 
 
@@ -705,6 +746,7 @@ def emit_json(path):
             "odds": MYTHIC_ODDS,
             "bands": [list(mythic_bands(t)) for t in MYTHIC_LADDER],
             "event_focus": [list(e) for e in MYTHIC_EVENT_FOCUS],
+            "meaning": MYTHIC_MEANING,
         },
     }
     with open(path, "w") as f:
