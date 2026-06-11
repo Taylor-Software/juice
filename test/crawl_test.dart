@@ -140,7 +140,7 @@ void main() {
   group('Crawl provider persistence', () {
     test('loads persisted state and saves updates', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.crawl.v1':
+        'juice.crawl.v1.default':
             '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
       });
       final container = ProviderContainer();
@@ -154,12 +154,12 @@ void main() {
           .read(crawlProvider.notifier)
           .save(const CrawlState(envRow: 9, lost: false));
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.crawl.v1'), contains('"envRow":9'));
+      expect(prefs.getString('juice.crawl.v1.default'), contains('"envRow":9'));
     });
 
     test('reset returns to defaults and persists them', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.crawl.v1': '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
+        'juice.crawl.v1.default': '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
