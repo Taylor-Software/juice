@@ -50,6 +50,27 @@ void main() {
           '"data":{"juice.threads.v1":[],"someday.v9":{}}}');
       expect(parsed.rawByKey.keys, ['juice.threads.v1']);
     });
+
+    test('rejects data payloads of the wrong shape', () {
+      expect(
+        () => parseCampaign(
+            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+            '"data":{"juice.threads.v1":"garbage"}}'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseCampaign(
+            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+            '"data":{"juice.threads.v1":[{"nope":true}]}}'),
+        throwsFormatException,
+      );
+      expect(
+        () => parseCampaign(
+            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+            '"data":{"juice.crawl.v1":[1,2,3]}}'),
+        throwsFormatException,
+      );
+    });
   });
 
   group('Provider export/import', () {

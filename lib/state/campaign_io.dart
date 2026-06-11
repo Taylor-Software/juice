@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../engine/models.dart';
 import 'providers.dart' show sessionScopedKeys;
 
 /// Campaign file format version this build writes and the max it reads.
@@ -58,13 +59,35 @@ CampaignImport parseCampaign(String raw) {
   if (data is! Map<String, dynamic>) {
     throw const FormatException('Campaign file has no data section');
   }
+  final rawByKey = <String, String>{};
+  for (final key in sessionScopedKeys) {
+    if (!data.containsKey(key)) continue;
+    final value = data[key];
+    try {
+      if (key == 'juice.log.v1') {
+        (value as List)
+            .map((e) => LogEntry.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (key == 'juice.threads.v1') {
+        (value as List)
+            .map((e) => Thread.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (key == 'juice.characters.v1') {
+        (value as List)
+            .map((e) => Character.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (key == 'juice.crawl.v1') {
+        CrawlState.fromJson(value as Map<String, dynamic>);
+      }
+    } catch (_) {
+      throw const FormatException('Campaign file data is malformed');
+    }
+    rawByKey[key] = jsonEncode(value);
+  }
   return CampaignImport(
     name: (decoded['name'] as String?)?.trim().isNotEmpty == true
         ? (decoded['name'] as String).trim()
         : 'Imported campaign',
-    rawByKey: {
-      for (final key in sessionScopedKeys)
-        if (data.containsKey(key)) key: jsonEncode(data[key]),
-    },
+    rawByKey: rawByKey,
   );
 }
