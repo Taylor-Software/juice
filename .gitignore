@@ -44,3 +44,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /oracle_data.json
+ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
