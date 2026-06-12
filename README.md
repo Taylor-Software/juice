@@ -1,5 +1,11 @@
 # Juice Oracle
 
+**Play it now:** https://taylor-software.github.io/juice/ — free, no account,
+your campaigns stay on your device.
+
+![The campaign journal: scenes with chaos factor, oracle results, prose, an
+on-device AI reading, and thread links](docs/screenshots/journal.png)
+
 A cross-platform (iOS / Android / web / desktop) Flutter app implementing the
 **Juice** solo-RPG oracle by jrruethe — Fate Check, all generators (quest,
 scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
