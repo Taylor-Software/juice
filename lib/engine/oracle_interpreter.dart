@@ -88,20 +88,26 @@ OUTPUT:
 {"interpretations":[{"lens":"literal","reading":"Behind the loose hearthstone sits a rusted tin box, something shifting inside when you lift it."},{"lens":"symbolic","reading":"A single mismatched teacup at the back of the cupboard — kept for someone who never came back."},{"lens":"complication","reading":"You find the cottage deed, and a second name on it you have never heard before."},{"lens":"foreshadow","reading":"A pressed flower falls from a book — a kind that only grows two valleys over."}]}
 ''';
 
-/// Builds the per-roll user message from a seed.
+/// Builds the per-roll user message from a seed. The format is line-keyed
+/// (one field per line, matching the few-shot examples), so runs of
+/// whitespace/newlines in seed fields collapse to single spaces.
 String buildOraclePrompt(OracleSeed seed) {
-  String orElse(String v, String fallback) =>
-      v.trim().isEmpty ? fallback : v.trim();
+  String flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
+  String orElse(String v, String fallback) {
+    final f = flat(v);
+    return f.isEmpty ? fallback : f;
+  }
+
   return 'INPUT:\n'
       'genre: ${orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${orElse(seed.tone, '(unspecified)')}\n'
-      'result: ${seed.resultText.trim()}\n'
+      'result: ${flat(seed.resultText)}\n'
       'scene: ${orElse(seed.sceneContext, '(none given)')}\n'
       'OUTPUT:';
 }
 
 /// Parses raw model output. Strips <think> spans and code fences, isolates
-/// the outermost JSON object, validates shape. On any failure returns the
+/// the first balanced JSON object, validates shape. On any failure returns the
 /// raw text as a single 'raw' card so the player still sees something.
 /// Never throws.
 List<OracleInterpretation> parseInterpretations(String raw) {
@@ -138,18 +144,40 @@ List<OracleInterpretation> parseInterpretations(String raw) {
         ];
 }
 
+/// Strips closed <think> spans, and an unterminated <think> to end-of-string
+/// so truncated chain-of-thought never leaks into a raw card.
 String _stripThink(String s) =>
-    s.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+    s.replaceAll(RegExp(r'<think>.*?(</think>|$)', dotAll: true), '');
 
+/// Returns the first balanced JSON object in [raw]: a string-aware brace
+/// scan from the first '{', so trailing prose — even prose containing
+/// braces — is ignored. Null if no object closes.
 String? _isolateJson(String raw) {
   final s = _stripThink(raw)
       .replaceAll('```json', '')
-      .replaceAll('```', '')
-      .trim();
+      .replaceAll('```', '');
   final start = s.indexOf('{');
-  final end = s.lastIndexOf('}');
-  if (start == -1 || end == -1 || end <= start) return null;
-  return s.substring(start, end + 1);
+  if (start == -1) return null;
+  var depth = 0;
+  var inString = false;
+  for (var i = start; i < s.length; i++) {
+    final c = s[i];
+    if (inString) {
+      if (c == r'\') {
+        i++; // skip the escaped character
+      } else if (c == '"') {
+        inString = false;
+      }
+    } else if (c == '"') {
+      inString = true;
+    } else if (c == '{') {
+      depth++;
+    } else if (c == '}') {
+      depth--;
+      if (depth == 0) return s.substring(start, i + 1);
+    }
+  }
+  return null;
 }
 
 /// Debug-eval seeds (see spec "Quality bar"). Used by the debug-only

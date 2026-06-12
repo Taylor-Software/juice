@@ -36,6 +36,29 @@ void main() {
     expect(loaded.tone, 'wry');
   });
 
+  test('settings are isolated per session and survive switching back',
+      () async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(sessionsProvider.future);
+
+    await container.read(settingsProvider.future);
+    await container
+        .read(settingsProvider.notifier)
+        .save(const CampaignSettings(genre: 'noir', tone: 'wry'));
+
+    await container.read(sessionsProvider.notifier).create('Second');
+    final fresh = await container.read(settingsProvider.future);
+    expect(fresh.genre, '');
+    expect(fresh.tone, '');
+
+    await container.read(sessionsProvider.notifier).switchTo('default');
+    final restored = await container.read(settingsProvider.future);
+    expect(restored.genre, 'noir');
+    expect(restored.tone, 'wry');
+  });
+
   test('save before build completes does not throw', () async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':

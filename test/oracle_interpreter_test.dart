@@ -25,6 +25,23 @@ void main() {
       expect(p, contains('tone: (unspecified)'));
       expect(p, contains('scene: (none given)'));
     });
+
+    test('multi-line seed fields collapse to one prompt line each', () {
+      const seed = OracleSeed(
+        resultText: 'Title\nBody line',
+        genre: 'grim  dark',
+        tone: 'tense',
+        sceneContext: 'Scene one\n(Chaos 5)',
+      );
+      final p = buildOraclePrompt(seed);
+      expect(p, contains('result: Title Body line'));
+      expect(p, contains('genre: grim dark'));
+      expect(p, contains('scene: Scene one (Chaos 5)'));
+      final lines = p.split('\n');
+      expect(lines, hasLength(6)); // INPUT:, genre, tone, result, scene, OUTPUT:
+      expect(lines.first, 'INPUT:');
+      expect(lines.last, 'OUTPUT:');
+    });
   });
 
   group('parseInterpretations', () {
@@ -51,6 +68,26 @@ void main() {
 
     test('prose around the JSON object is ignored', () {
       expect(parseInterpretations('Here you go!\n$clean\nEnjoy.'), hasLength(4));
+    });
+
+    test('trailing prose containing a brace is ignored', () {
+      expect(parseInterpretations('$clean\nEnjoy :-}'), hasLength(4));
+    });
+
+    test('unterminated think tag yields no cards', () {
+      expect(parseInterpretations('<think> hmm {partial'), isEmpty);
+    });
+
+    test('interpretations key holding a non-list falls back to raw', () {
+      final cards = parseInterpretations('{"interpretations":"x"}');
+      expect(cards.single.lens, 'raw');
+    });
+
+    test('numeric reading is tolerated via toString', () {
+      final cards = parseInterpretations(
+          '{"interpretations":[{"lens":"literal","reading":42}]}');
+      expect(cards.single.lens, 'literal');
+      expect(cards.single.reading, '42');
     });
 
     test('entries missing a reading are dropped; empty lens defaults', () {

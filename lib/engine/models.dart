@@ -612,10 +612,10 @@ class CampaignSettings {
   CampaignSettings copyWith({String? genre, String? tone}) =>
       CampaignSettings(genre: genre ?? this.genre, tone: tone ?? this.tone);
 
-  factory CampaignSettings.fromJson(Map<String, dynamic> json) =>
+  factory CampaignSettings.fromJson(Map<String, dynamic> j) =>
       CampaignSettings(
-        genre: json['genre'] as String? ?? '',
-        tone: json['tone'] as String? ?? '',
+        genre: j['genre'] as String? ?? '',
+        tone: j['tone'] as String? ?? '',
       );
 
   Map<String, dynamic> toJson() => {'genre': genre, 'tone': tone};
