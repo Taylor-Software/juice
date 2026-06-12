@@ -5,15 +5,17 @@
       "Bash(flutter analyze *)",
       "Bash(flutter test)",
       "Bash(flutter test *)",
-      "Bash(dart analyze)",
-      "Bash(dart analyze *)",
-      "Bash(dart fix --apply)",
-      "Bash(dart format .)",
       "Bash(flutter --version)",
       "Bash(flutter pub get)",
       "Bash(flutter pub upgrade)",
       "Bash(flutter pub outdated)",
       "Bash(flutter clean)",
+      "Bash(dart analyze)",
+      "Bash(dart analyze *)",
+      "Bash(dart fix --apply)",
+      "Bash(dart format .)",
+      "Bash(dart format *)",
+      "Bash(dart pub publish --dry-run *)",
       "Bash(git status *)",
       "Bash(git diff *)",
       "Bash(git log *)",
@@ -27,10 +29,14 @@
       "Bash(git pull *)",
       "Bash(git for-each-ref *)",
       "Bash(git rev-list *)",
+      "Bash(git show *)",
+      "Bash(git remote -v)",
+      "Bash(git stash list)",
       "Bash(gh pr *)",
       "Bash(gh issue *)",
-      "Bash(gh auth status)",
       "Bash(gh repo *)",
+      "Bash(gh auth status)",
+      "Bash(gh run *)",
       "Bash(find lib *)",
       "Bash(find test *)",
       "Bash(find docs *)",
@@ -45,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For focused questions, run graphify with: query \\\"<question>\\\" — scoped subgraph, much smaller than GRAPH_REPORT.md or grepping raw files.\"}}'   || true ;; esac"
+            "command": "CMD=$(python3 -c \"import json,sys; d=json.load(sys.stdin); print(d.get('tool_input',d).get('command',''))\" 2>/dev/null || true); case \"$CMD\" in *grep*|*rg\\ *|*ripgrep*|*find\\ *|*fd\\ *|*ack\\ *|*ag\\ *)   [ -f graphify-out/graph.json ] &&   echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For focused questions, run graphify with: query \\\"<question>\\\" - scoped subgraph, much smaller than GRAPH_REPORT.md or grepping raw files.\"}}'   || true ;; esac"
           }
         ]
       },
@@ -54,7 +60,29 @@
         "hooks": [
           {
             "type": "command",
-            "command": "HIT=$(python3 -c \"import json,sys;d=json.load(sys.stdin);t=d.get('tool_input',d);s=(str(t.get('file_path') or '')+' '+str(t.get('pattern') or '')+' '+str(t.get('path') or '')).lower().replace(chr(92),'/');exts=('.py','.js','.ts','.tsx','.jsx','.go','.rs','.java','.rb','.c','.h','.cpp','.hpp','.cc','.cs','.kt','.swift','.php','.scala','.lua','.sh','.md','.rst','.txt','.mdx');sys.stdout.write('1' if 'graphify-out/' not in s and any(e in s for e in exts) else '')\" 2>/dev/null || true); if [ \"$HIT\" = 1 ] && [ -f graphify-out/graph.json ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For codebase questions, use graphify: query \\\"<question>\\\" | explain \\\"<concept>\\\" | path \\\"<A>\\\" \\\"<B>\\\". Scoped subgraph — much smaller than reading source files. Read raw files only to modify code or when the graph lacks detail.\"}}'; fi || true"
+            "command": "HIT=$(python3 -c \"import json,sys;d=json.load(sys.stdin);t=d.get('tool_input',d);s=(str(t.get('file_path') or '')+' '+str(t.get('pattern') or '')+' '+str(t.get('path') or '')).lower().replace(chr(92),'/');exts=('.dart','.py','.js','.ts','.tsx','.jsx','.go','.rs','.java','.rb','.c','.h','.cpp','.hpp','.cc','.cs','.kt','.swift','.php','.scala','.lua','.sh','.md','.rst','.txt','.mdx');sys.stdout.write('1' if 'graphify-out/' not in s and any(e in s for e in exts) else '')\" 2>/dev/null || true); if [ \"$HIT\" = 1 ] && [ -f graphify-out/graph.json ]; then echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"graphify: knowledge graph at graphify-out/. For codebase questions, use graphify: query \\\"<question>\\\" | explain \\\"<concept>\\\" | path \\\"<A>\\\" \\\"<B>\\\". Scoped subgraph - much smaller than reading source files. Read raw files only to modify code or when the graph lacks detail.\"}}'; fi || true"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "F=$(python3 -c \"import json,sys;d=json.load(sys.stdin);print(d.get('tool_input',{}).get('file_path',''))\" 2>/dev/null); case \"$F\" in *.dart) command -v dart >/dev/null 2>&1 && dart format \"$F\" >/dev/null 2>&1 || true;; esac"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"${CLAUDE_PROJECT_DIR:-.}\" 2>/dev/null || true; CH=$(git status --porcelain 2>/dev/null | grep -E \"\\.dart$\" | head -1); if [ -n \"$CH\" ]; then echo '{\"systemMessage\":\"Stop-gate: uncommitted .dart changes present -- run /audit (analyze + test), then /checkpoint or /ship-pr before wrapping up.\"}'; fi"
           }
         ]
       }

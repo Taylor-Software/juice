@@ -33,3 +33,20 @@ Working rules for this repo:
   The web URL is a third-party dev mirror; swapping it to the user's own
   HF mirror is a release gate for web (see the oracle-interpreter spec,
   "Weights provenance").
+
+## Workflow system
+
+The Claude Code harness (commands, subagents, hooks, permissions) is documented in
+**[.claude/README.md](.claude/README.md)** — read it to understand the integrated
+system. The lifecycle commands and `github-steward` are a **shared canonical layer kept
+byte-identical across the Taylor-Software Flutter repos** (distribution source:
+`flutter-sdlc-template`); when you change one, mirror it.
+
+- **Slash commands:** `/prime` (load context), `/audit` (analyze + test), `/checkpoint`,
+  `/ship-pr <title>`, `/clean-branches`, `/code-analysis`.
+- **Subagents:** `doc-syncer`, `screenshot-bug-tracer`, `github-steward` (all `sonnet`).
+  **When you spawn ad-hoc `Explore`/retrieval subagents, pass `model: haiku`** and reserve
+  the session model for synthesis — the main token lever.
+- **Hooks:** `dart format` on every `.dart` edit; a stop-gate reminder when `.dart`
+  changes are uncommitted; and a graphify nudge that fires once `graphify-out/` exists
+  (build it with the `graphify` CLI to prefer scoped graph queries over raw greps).

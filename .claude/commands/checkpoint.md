@@ -44,7 +44,7 @@ Keep MEMORY.md index under 200 lines. Each entry one line, under 150 chars.
 4. Write commit message:
    - Conventional commit format (fix:, feat:, chore:, etc.)
    - Summarize "why" in 1-2 sentences
-   - End with `Co-Authored-By: Claude <model> <noreply@anthropic.com>`
+   - End with `Co-Authored-By: Claude <noreply@anthropic.com>`
 5. Commit using HEREDOC.
 
 ## Phase 6: Push
