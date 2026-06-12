@@ -80,6 +80,7 @@ class _OracleInterpretationSheetState
         genre: settings.genre,
         tone: settings.tone,
         sceneContext: widget.seed.sceneContext,
+        journalContext: widget.seed.journalContext,
       ));
       if (!mounted) return;
       setState(() {

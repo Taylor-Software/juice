@@ -506,11 +506,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   Future<void> _interpret(JournalEntry entry) async {
+    // Recall: the most relevant past entries ride into the prompt so
+    // readings can reference established NPCs, places, and threads.
+    final related = relatedEntries(
+        ref.read(journalProvider).valueOrNull ?? const [], entry);
     final seed = OracleSeed(
       resultText: entry.title.isEmpty
           ? entry.body
           : '${entry.title}\n${entry.body}',
       sceneContext: _sceneContext(),
+      journalContext: [
+        for (final e in related)
+          e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
+      ],
     );
     final accepted = await showModalBottomSheet<OracleInterpretation>(
       context: context,
