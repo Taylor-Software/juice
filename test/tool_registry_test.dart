@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/shared/tool_registry.dart';
 
@@ -20,8 +21,8 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(15));
-    expect(buildToolRegistry(family: ['classic']), hasLength(16));
+    expect(tools, hasLength(16));
+    expect(buildToolRegistry(family: ['classic']), hasLength(17));
     expect(
         tools.map((t) => t.id),
         containsAll([
@@ -39,6 +40,7 @@ void main() {
           'encounter',
           'maps',
           'party-emulator',
+          'sidekick-dialogue',
           'behavior-tables',
         ]));
   });
@@ -62,5 +64,19 @@ void main() {
     expect(tool.group, 'Party');
     expect(tool.label, 'Party Emulator');
     expect(tool.badge, 'Triple-O');
+  });
+
+  test('sidekick-dialogue sits in Party between the other two party tools', () {
+    final tools = buildToolRegistry(family: []);
+    final ids = tools.map((t) => t.id).toList();
+    expect(ids.indexOf('sidekick-dialogue'),
+        greaterThan(ids.indexOf('party-emulator')));
+    expect(ids.indexOf('sidekick-dialogue'),
+        lessThan(ids.indexOf('behavior-tables')));
+    final tool = tools.singleWhere((t) => t.id == 'sidekick-dialogue');
+    expect(tool.group, 'Party');
+    expect(tool.label, 'Sidekick Dialogue');
+    expect(tool.badge, 'PET');
+    expect(tool.icon, Icons.forum_outlined);
   });
 }

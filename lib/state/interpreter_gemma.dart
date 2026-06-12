@@ -77,8 +77,7 @@ class GemmaInterpreterService implements InterpreterService {
   @override
   String get downloadLabel => '~${_spec.approxMb} MB';
 
-  bool get _unsupported =>
-      _status.value.phase == InterpreterPhase.unsupported;
+  bool get _unsupported => _status.value.phase == InterpreterPhase.unsupported;
 
   @override
   Future<void> refresh() async {
@@ -87,12 +86,10 @@ class GemmaInterpreterService implements InterpreterService {
       if (await FlutterGemma.isModelInstalled(_spec.filename)) {
         await warmUp(); // already consented (it's on disk) — just load
       } else {
-        _status.value =
-            const InterpreterStatus(InterpreterPhase.needsDownload);
+        _status.value = const InterpreterStatus(InterpreterPhase.needsDownload);
       }
     } catch (e) {
-      _status.value =
-          InterpreterStatus(InterpreterPhase.error, message: '$e');
+      _status.value = InterpreterStatus(InterpreterPhase.error, message: '$e');
     }
   }
 
@@ -109,17 +106,15 @@ class GemmaInterpreterService implements InterpreterService {
   Future<void> _doWarmUp() async {
     try {
       if (!await FlutterGemma.isModelInstalled(_spec.filename)) {
-        _status.value =
-            const InterpreterStatus(InterpreterPhase.installing);
+        _status.value = const InterpreterStatus(InterpreterPhase.installing);
         await FlutterGemma.installModel(
                 modelType: _spec.modelType, fileType: _spec.fileType)
             .fromNetwork(_spec.url)
             .withProgress((p) {
-              if (_disposed) return; // don't repaint a disposed service
-              _status.value =
-                  InterpreterStatus(InterpreterPhase.installing, progress: p);
-            })
-            .install();
+          if (_disposed) return; // don't repaint a disposed service
+          _status.value =
+              InterpreterStatus(InterpreterPhase.installing, progress: p);
+        }).install();
       }
       if (!_disposed) {
         _status.value = const InterpreterStatus(InterpreterPhase.loading);
@@ -136,8 +131,7 @@ class GemmaInterpreterService implements InterpreterService {
       _status.value = const InterpreterStatus(InterpreterPhase.ready);
     } catch (e) {
       if (_disposed) return; // see above — don't repaint a disposed service
-      _status.value =
-          InterpreterStatus(InterpreterPhase.error, message: '$e');
+      _status.value = InterpreterStatus(InterpreterPhase.error, message: '$e');
     }
   }
 
@@ -176,10 +170,12 @@ class GemmaInterpreterService implements InterpreterService {
     throw StateError('Model load failed: $firstError');
   }
 
-  /// One set of chat params for both the web load probe and interpret():
-  /// on web the first createSession fixes the sampling params for the
-  /// lifetime of the (reused) engine session, so they must not diverge.
-  Future<InferenceChat> _createChat(InferenceModel model) {
+  /// One set of chat params for the web load probe, interpret(), and
+  /// voiceLine(): on web the first createSession fixes the sampling params
+  /// for the lifetime of the (reused) engine session, so they must not
+  /// diverge.
+  Future<InferenceChat> _createChat(InferenceModel model,
+      {String? systemInstruction}) {
     return model.createChat(
       temperature: 1.0, // variety is the product; defaults (topK 1) kill it
       topK: 64,
@@ -190,24 +186,23 @@ class GemmaInterpreterService implements InterpreterService {
       // never resets, so a session-level instruction would vanish after
       // the first roll; inline it into the prompt there instead (same
       // "[System: ...]" wrapping upstream applies on every platform).
-      systemInstruction: kIsWeb ? null : oracleSystemInstruction,
+      systemInstruction: kIsWeb ? null : systemInstruction,
     );
   }
 
-  @override
-  Future<List<OracleInterpretation>> interpret(OracleSeed seed) async {
+  /// One prompt → raw model text, the shared generation discipline for
+  /// interpret() and voiceLine(): fresh chat, inter-token watchdog,
+  /// web stopGeneration in `finally`.
+  Future<String> _generate(String prompt, {String? systemInstruction}) async {
     final model = _model;
     if (model == null) throw StateError('Interpreter not ready');
-    final chat = await _createChat(model);
-    final prompt = kIsWeb
-        ? '[System: $oracleSystemInstruction]\n\n${buildOraclePrompt(seed)}'
-        : buildOraclePrompt(seed);
+    final chat = await _createChat(model, systemInstruction: systemInstruction);
     await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
     final buffer = StringBuffer();
     // Inter-token watchdog: 60s with no token means the generation hung
     // (seen on web, where a MediaPipe error can leave the stream open
     // forever). Stream.timeout throws TimeoutException into the await-for;
-    // it propagates and the sheet shows its retry affordance.
+    // it propagates and the caller's UI shows its retry affordance.
     try {
       await for (final r in chat
           .generateChatResponseAsync()
@@ -228,7 +223,25 @@ class GemmaInterpreterService implements InterpreterService {
         await chat.stopGeneration();
       }
     }
-    return parseInterpretations(buffer.toString());
+    return buffer.toString();
+  }
+
+  @override
+  Future<List<OracleInterpretation>> interpret(OracleSeed seed) async {
+    final prompt = kIsWeb
+        ? '[System: $oracleSystemInstruction]\n\n${buildOraclePrompt(seed)}'
+        : buildOraclePrompt(seed);
+    return parseInterpretations(
+        await _generate(prompt, systemInstruction: oracleSystemInstruction));
+  }
+
+  @override
+  Future<String> voiceLine(VoiceSeed seed) async {
+    // The compact voice instruction is baked into buildVoicePrompt on every
+    // platform (no session instruction): the web session is shared and
+    // latch-locked, and a per-chat oracle instruction here would push the
+    // model back toward lens JSON.
+    return parseVoiceResponse(await _generate(buildVoicePrompt(seed)));
   }
 
   @override

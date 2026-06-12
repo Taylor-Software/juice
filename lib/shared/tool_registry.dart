@@ -9,6 +9,7 @@ import '../features/generators_screen.dart';
 import '../features/map_screen.dart';
 import '../features/moves_screen.dart';
 import '../features/party_emulator_screen.dart';
+import '../features/sidekick_screen.dart';
 import '../features/tables_screen.dart';
 import '../features/tracker_screen.dart';
 
@@ -108,6 +109,14 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         group: 'Party',
         badge: 'Triple-O',
         builder: (_) => const PartyEmulatorScreen(),
+      ),
+      ToolDef(
+        id: 'sidekick-dialogue',
+        label: 'Sidekick Dialogue',
+        icon: Icons.forum_outlined,
+        group: 'Party',
+        badge: 'PET',
+        builder: (_) => const SidekickScreen(),
       ),
       ToolDef(
         id: 'behavior-tables',

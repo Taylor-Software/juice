@@ -53,6 +53,10 @@ abstract class InterpreterService {
   /// One roll = one fresh chat. Requires phase == ready.
   Future<List<OracleInterpretation>> interpret(OracleSeed seed);
 
+  /// Voice one rolled sidekick line in character (plain text). Same
+  /// lifecycle contract as [interpret]: requires phase == ready.
+  Future<String> voiceLine(VoiceSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }
