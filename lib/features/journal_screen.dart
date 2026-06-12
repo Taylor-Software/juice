@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/journal_export.dart';
+import '../engine/journal_search.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../state/interpreter.dart';
@@ -40,11 +41,15 @@ class JournalScreen extends ConsumerStatefulWidget {
 
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String? _filterThreadId;
+  String? _filterTag;
+  bool _searching = false;
   final TextEditingController _composer = TextEditingController();
+  final TextEditingController _search = TextEditingController();
 
   @override
   void dispose() {
     _composer.dispose();
+    _search.dispose();
     super.dispose();
   }
 
@@ -72,14 +77,22 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               // Storage is newest-first; a reversed ListView reads forward
               // (oldest at top) while anchoring the viewport at the newest
               // entry, chat-style.
-              final visible = _filterThreadId == null
+              final tags = allTags(entries);
+              var visible = _filterThreadId == null
                   ? entries
                   : entries
                       .where((e) => e.threadId == _filterThreadId)
                       .toList();
+              if (_filterTag != null) {
+                visible =
+                    visible.where((e) => e.tags.contains(_filterTag)).toList();
+              }
+              if (_searching) {
+                visible = searchEntries(visible, _search.text);
+              }
               return Column(
                 children: [
-                  if (threads.isNotEmpty)
+                  if (threads.isNotEmpty || tags.isNotEmpty)
                     SizedBox(
                       height: 48,
                       child: ListView(
@@ -90,9 +103,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
                               label: const Text('All'),
-                              selected: _filterThreadId == null,
-                              onSelected: (_) =>
-                                  setState(() => _filterThreadId = null),
+                              selected:
+                                  _filterThreadId == null && _filterTag == null,
+                              onSelected: (_) => setState(() {
+                                _filterThreadId = null;
+                                _filterTag = null;
+                              }),
                             ),
                           ),
                           for (final t in threads)
@@ -105,6 +121,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                     setState(() => _filterThreadId = t.id),
                               ),
                             ),
+                          for (final tag in tags)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                key: Key('tag-chip-$tag'),
+                                label: Text('#$tag'),
+                                selected: _filterTag == tag,
+                                onSelected: (_) => setState(() => _filterTag =
+                                    _filterTag == tag ? null : tag),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -113,6 +140,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
+                        IconButton(
+                          key: const Key('journal-search'),
+                          icon: const Icon(Icons.search),
+                          tooltip: 'Search journal',
+                          onPressed: () => setState(() {
+                            _searching = !_searching;
+                            if (!_searching) _search.clear();
+                          }),
+                        ),
                         IconButton(
                           key: const Key('journal-export'),
                           icon: const Icon(Icons.ios_share),
@@ -127,6 +163,29 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       ],
                     ),
                   ),
+                  if (_searching)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                      child: TextField(
+                        key: const Key('journal-search-field'),
+                        controller: _search,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search journal…',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.close),
+                            tooltip: 'Close search',
+                            onPressed: () => setState(() {
+                              _search.clear();
+                              _searching = false;
+                            }),
+                          ),
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
                   Expanded(
                     child: ListView.builder(
                       reverse: true,
@@ -161,6 +220,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
+        const PopupMenuItem(value: 'tags', child: Text('Tags…')),
         const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
@@ -191,27 +251,34 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         );
       case JournalKind.text:
+        final extras = _suffixLines(e, threadTitle);
         return Card(
           child: ListTile(
             title: Text(e.body),
-            subtitle:
-                e.threadId != null ? Text('⤷ ${threadTitle(e.threadId!)}') : null,
+            subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
             trailing: menu,
           ),
         );
       case JournalKind.result:
+        final extras = _suffixLines(e, threadTitle);
         return Card(
           child: ListTile(
             title: Text(e.title),
-            subtitle: Text(e.threadId != null
-                ? '${e.body}\n⤷ ${threadTitle(e.threadId!)}'
-                : e.body),
+            subtitle: Text([e.body, ...extras].join('\n')),
             trailing: menu,
-            isThreeLine: e.body.contains('\n') || e.threadId != null,
+            isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
           ),
         );
     }
   }
+
+  /// Card-subtitle suffix lines: the `⤷ thread` link, then the `#a #b` tags.
+  List<String> _suffixLines(
+          JournalEntry e, String Function(String) threadTitle) =>
+      [
+        if (e.threadId != null) '⤷ ${threadTitle(e.threadId!)}',
+        if (e.tags.isNotEmpty) e.tags.map((t) => '#$t').join(' '),
+      ];
 
   // -- Composer ---------------------------------------------------------------
 
@@ -395,6 +462,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         await notifier.replace(picked == '__none__'
             ? entry.copyWith(clearThreadId: true)
             : entry.copyWith(threadId: picked));
+      case 'tags':
+        final updated = await showDialog<List<String>>(
+          context: context,
+          builder: (_) => _TagsDialog(initial: entry.tags),
+        );
+        if (updated == null) return;
+        await notifier.replace(entry.copyWith(tags: updated));
       case 'edit':
         final result = await showDialog<({String title, String note})>(
           context: context,
@@ -456,6 +530,97 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     await ref.read(journalProvider.notifier).replace(fresh.copyWith(
         body:
             '${fresh.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
+  }
+}
+
+// -- Tags dialog ---------------------------------------------------------------
+/// Edits an entry's tag list locally; pops the updated list on Save, null on
+/// Cancel. Add-tag flow mirrors the character sheet's (tracker_screen.dart).
+class _TagsDialog extends StatefulWidget {
+  const _TagsDialog({required this.initial});
+  final List<String> initial;
+
+  @override
+  State<_TagsDialog> createState() => _TagsDialogState();
+}
+
+class _TagsDialogState extends State<_TagsDialog> {
+  late final List<String> _tags = [...widget.initial];
+
+  Future<void> _addTag() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final tag = TextEditingController();
+        return AlertDialog(
+          title: const Text('Add tag'),
+          content: TextField(
+            key: const Key('tag-input'),
+            controller: tag,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Tag'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, tag.text),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+    // Preserve case (search compares case-insensitively); dedupe exact.
+    final tag = result?.trim() ?? '';
+    if (tag.isEmpty || _tags.contains(tag)) return;
+    setState(() => _tags.add(tag));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Tags'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_tags.isEmpty)
+            const Text('No tags yet.')
+          else
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final tag in _tags)
+                  InputChip(
+                    label: Text(tag),
+                    onDeleted: () => setState(() => _tags.remove(tag)),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('add-tag'),
+            icon: const Icon(Icons.add),
+            label: const Text('Add tag'),
+            onPressed: _addTag,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _tags),
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
