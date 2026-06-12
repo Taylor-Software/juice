@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/help_data.dart';
 import 'package:juice_oracle/features/help_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/shared/tool_registry.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 void main() {
@@ -113,5 +114,13 @@ void main() {
     await tester.tap(button);
     await tester.pumpAndSettle();
     expect(find.byType(LicensePage), findsOneWidget);
+  });
+
+  test('toolHelpPage maps every non-help tool id to a real help page', () {
+    final ids = buildToolRegistry(family: ['classic']).map((t) => t.id).toSet();
+    expect(toolHelpPage.keys.toSet(), ids.difference({'help'}));
+    for (final pageId in toolHelpPage.values) {
+      expect(() => data.page(pageId), returnsNormally, reason: pageId);
+    }
   });
 }

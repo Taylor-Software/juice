@@ -52,6 +52,27 @@ const toolGroups = [
   'Help',
 ];
 
+/// Registry tool id -> help page id (Help tool itself is absent).
+const toolHelpPage = <String, String>{
+  'fate-check': 'fate-check',
+  'roll-high': 'roll-high',
+  'mythic': 'mythic-gme',
+  'dice': 'dice-roller',
+  'gen-story': 'story-scenes',
+  'gen-npcs': 'npcs-dialog',
+  'gen-exploration': 'generators-tables',
+  'gen-encounters': 'generators-tables',
+  'gen-details': 'generators-tables',
+  'tables': 'generators-tables',
+  'party-emulator': 'party-emulator',
+  'behavior-tables': 'behavior-tables',
+  'sidekick-dialogue': 'sidekick-dialogue',
+  'threads-characters': 'threads-characters',
+  'encounter': 'encounter',
+  'maps': 'maps',
+  'moves': 'moves',
+};
+
 /// Build the registry. [family] is the enabled Ironsworn family chain
 /// (e.g. ['classic','delve']); empty = no Moves tool.
 List<ToolDef> buildToolRegistry({required List<String> family}) => [

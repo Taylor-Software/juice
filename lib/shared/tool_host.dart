@@ -170,6 +170,19 @@ class ToolHostState extends ConsumerState<ToolHost> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (active != null &&
+                  active.id != 'help' &&
+                  toolHelpPage.containsKey(active.id))
+                IconButton(
+                  key: const Key('tool-help'),
+                  icon: const Icon(Icons.help_outline),
+                  tooltip: 'Help',
+                  onPressed: () {
+                    ref.read(helpTopicProvider.notifier).state =
+                        toolHelpPage[active.id];
+                    openTool('help');
+                  },
+                ),
               IconButton(
                 key: const Key('tool-close'),
                 icon: const Icon(Icons.close),
