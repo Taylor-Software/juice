@@ -20,7 +20,8 @@ character.
 | Question | Decision |
 |---|---|
 | Platforms | Both web and mobile from the start (web spike first) |
-| Model | Qwen3 0.6B, public litert-community repo, no auth anywhere |
+| Model | Split, forced by the spike (below): web = Gemma3 1B int4 `-web.task`, mobile = Qwen3 0.6B int4 `.litertlm`. No auth anywhere |
+| Web weights source | User's own HF mirror of the official `gemma3-1b-it-int4-web.task` (user accepts the Gemma license, re-uploads under their account; clean provenance). Until that repo exists, development pins the `darkB/gemma3-1b-it-int4-web-litert` mirror; the URL is one constant to swap |
 | Hook point | Journal result entries get an Interpret action (one wiring point, covers every tool) |
 | Genre/tone | Per-campaign setting, new session-scoped key `juice.settings.v1` |
 | Prompt grounding | Full journal entry text (title + body) — Juice/Mythic tables have no per-word meanings, so the brief's word+meaning pairs are replaced by the already-formatted result text |
@@ -41,6 +42,24 @@ character.
   `@litert-lm/core`). The only proven public web models are gemma-4-E2B web
   builds at ~2GB (too heavy). Gemma 270M/1B web variants are gated
   (verified 401) — unusable from a shipped web app.
+
+### Spike results (branch `spike/llm-web`, commit 63a783c)
+
+- **Qwen3 on web is dead**: `@litert-lm/core` 0.12.1 and 0.13.1 both fail
+  with "Streaming HF_Tokenizer_Zlib section is not supported yet" on the
+  Qwen3 `.litertlm` files. Mobile-format `.task` (tried Qwen2.5 0.5B q8)
+  dies in a MediaPipe WASM abort. On web, only `-web.task` builds work.
+- **Gemma3 1B int4 `-web.task` (668MB) works end to end** in Chrome via
+  MediaPipe/WebGPU: network install → Cache API persistence → model load
+  (~40s warm) → generation (~50s). The renderer blocks during generation —
+  the sheet must set expectations; acceptable v1.
+- API facts: `FlutterGemma.initialize()` is required in `main()`;
+  `installModel` needs an explicit `fileType: ModelFileType.litertlm` for
+  litertlm artifacts (defaults to `.task`); web needs the MediaPipe
+  tasks-genai script include in index.html for the `.task` path.
+- Spike-prompt output was malformed JSON (cut-down prompt, no few-shot) —
+  the tolerant parser's raw-fallback behavior is load-bearing, and the full
+  few-shot prompt plus the quality bar below judge the rest.
 - Gemma models would need an HF token; impossible to ship client-side. Qwen3
   needs none.
 - Qwen3 license: Apache 2.0 — compatible with the app's non-commercial
@@ -79,14 +98,17 @@ No flutter_gemma import. Fully unit-testable.
   (`notInstalled | installing(progress 0-100) | ready | unsupported`),
   `Future<void> warmUp()`, `Future<List<OracleInterpretation>>
   interpret(OracleSeed)`, `Future<void> dispose()`.
-- `GemmaInterpreterService`: pins the model spec (int4 URL above,
-  `ModelType.qwen3`). `warmUp()` = `isModelInstalled` →
+- `GemmaInterpreterService`: pins a per-platform model spec —
+  web: `gemma3-1b-it-int4-web.task` (668MB, `ModelType.gemmaIt`,
+  `ModelFileType.task`, user-mirror URL); mobile: `qwen3_0_6b_mixed_int4.litertlm`
+  (475MB, `ModelType.qwen3`, `ModelFileType.litertlm`, official
+  litert-community URL). `warmUp()` = `isModelInstalled` →
   `installModel.fromNetwork(url).withProgress(...)` → `getActiveModel(
-  maxTokens: 1536, preferredBackend: gpu)`; on mobile, GPU init failure
+  maxTokens: 1280, preferredBackend: gpu)`; on mobile, GPU init failure
   falls back to CPU. `interpret()` = fresh `createChat(systemInstruction:
   oracleSystemInstruction, temperature: 1.0, topK: 64, topP: 0.95,
-  isThinking: false, modelType: ModelType.qwen3)` per roll (no bleed across
-  rolls), stream `TextResponse` tokens, parse.
+  isThinking: false, modelType: <platform model type>)` per roll (no bleed
+  across rolls), stream `TextResponse` tokens, parse.
 - Riverpod: `interpreterServiceProvider` (plain `Provider`, overridden with a
   fake in every widget test) + status exposure for UI. App-global, not
   session-scoped — the on-disk model is shared across campaigns.
@@ -158,8 +180,17 @@ or the 2GB public Gemma web build — user decides.
 
 ## Risks (accepted)
 
-- Web litertlm early preview — spiked first; mobile-only fallback.
-- 475MB download on a GitHub Pages PWA — consent-gated, never automatic.
-- 0.6B model quality — quality bar above; judged in live verify.
+- ~~Web litertlm early preview~~ — spiked: dead for Qwen3; web uses the
+  MediaPipe `-web.task` path instead (proven).
+- Two models, two behaviors (web Gemma3 1B / mobile Qwen3 0.6B) — forced by
+  artifact availability; prompt is shared, quality judged per platform.
+- 668MB (web) / 475MB (mobile) download — consent-gated, never automatic.
+- Web tab freezes during generation (MediaPipe main-thread prefill) — sheet
+  copy sets expectations; acceptable v1.
+- Weights provenance: ships only from the user's own HF mirror of the
+  official artifact (Gemma license accepted and attached). The third-party
+  darkB mirror is a development pin only — never ships to users; the swap is
+  one constant and is a merge-gate for any release build that enables web.
+- Small-model quality — quality bar above; judged in live verify.
 - Fourth dependency breaks the "three deps" rail — deliberate, user-directed;
   CLAUDE.md updated.
