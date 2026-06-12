@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
+import 'package:juice_oracle/engine/party_emulator.dart';
 import 'package:juice_oracle/features/party_emulator_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -20,15 +21,39 @@ void main() {
   const seededChar =
       '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":["brave","curious"]}]';
 
+  /// Ash with a seeded emulation block (PET tests).
+  String charsWith(
+          {int? agendaKey,
+          int? focusKey,
+          int tokens = 0,
+          List<String> usedTags = const []}) =>
+      jsonEncode([
+        {
+          'id': 'c1',
+          'name': 'Ash',
+          'note': '',
+          'stats': [],
+          'tracks': [],
+          'tags': ['brave', 'curious'],
+          'emulation': {
+            if (agendaKey != null) 'agendaKey': agendaKey,
+            if (focusKey != null) 'focusKey': focusKey,
+            'tokens': tokens,
+            'prominentTags': [],
+            'usedTags': usedTags,
+          },
+        }
+      ]);
+
   // Dice(Random(seed)) dN(6) sequences used below:
   //   seed 7 -> 5, 6, 3…   seed 9 -> 2, 3…   seed 5 -> 5, 1…
   //   seed 2 -> 4, 4, 5…   seed 10 -> 2, 2…  seed 0 -> 4, 6, 5, 2…
   Future<ProviderContainer> pump(WidgetTester tester,
-      {required int seed}) async {
+      {required int seed, String chars = seededChar}) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': seededChar,
+      'juice.characters.v1.default': chars,
     });
     tester.view.physicalSize = const Size(900, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -213,5 +238,272 @@ void main() {
     expect(body, contains('The Odd: (undefined — make it up now)'));
     expect(body, contains('Rolls: 4 & 4 — kept 4'));
     expect(body, contains('Doubles — this behavior grows into a Trait.'));
+  });
+
+  // -- PET (phase 3) ---------------------------------------------------------
+
+  /// The ACT lines the screen renders for one [ActResult].
+  List<String> actLines(ActResult r) {
+    final a = data.agendaEntry(r.agendaKey);
+    return [
+      'Agenda: ${a.name}',
+      'Ask: ${a.ask}${r.heads ? '' : ' (inverted)'}',
+      'Modifier: ${actModeLabel(r.modifier)}',
+      'Rolls: agenda ${r.agendaKey} · coin ${r.heads ? 'heads' : 'tails'}'
+          ' · modifier ${r.modifierDie}',
+    ];
+  }
+
+  testWidgets('emulation panel: placeholders, then Roll Agenda persists',
+      (tester) async {
+    final container = await pump(tester, seed: 7);
+    expect(find.byKey(const Key('pe-emulation')), findsOneWidget);
+    expect(find.byKey(const Key('pe-pet-actions')), findsOneWidget);
+    expect(keyedText(tester, 'pe-agenda-line'), 'Agenda: —');
+    expect(keyedText(tester, 'pe-focus-line'), 'Focus: —');
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 0');
+    await pickAsh(tester);
+    final key = roll2d6Key(Dice(Random(7))); // 5 + 6 = 11
+    final a = data.agendaEntry(key);
+    await tester.tap(find.byKey(const Key('pe-roll-agenda')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-agenda-line'),
+        'Agenda: ${a.name} — Ask: ${a.ask}');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.agendaKey, key);
+  });
+
+  testWidgets('Roll Focus persists the focus key and renders name + blurb',
+      (tester) async {
+    final container = await pump(tester, seed: 9);
+    await pickAsh(tester);
+    final key = roll2d6Key(Dice(Random(9))); // 2 + 3 = 5
+    final f = data.focusEntry(key);
+    await tester.tap(find.byKey(const Key('pe-roll-focus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-focus-line'), 'Focus: ${f.name} — ${f.blurb}');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.focusKey, key);
+  });
+
+  testWidgets('token stepper: plus increments, minus clamps at 0, persists',
+      (tester) async {
+    final container = await pump(tester, seed: 7);
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-token-minus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 0', reason: 'clamps at 0');
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 2');
+    await tester.tap(find.byKey(const Key('pe-token-minus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 1');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.tokens, 1);
+  });
+
+  testWidgets('ACT on the current agenda grants +1 token and notes the match',
+      (tester) async {
+    final expected = rollAct(Dice(Random(2)));
+    final container = await pump(tester,
+        seed: 2, chars: charsWith(agendaKey: expected.agendaKey));
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-act')));
+    await tester.pumpAndSettle();
+    final lines = keyedText(tester, 'pe-pet-lines');
+    for (final line in actLines(expected)) {
+      expect(lines, contains(line));
+    }
+    expect(lines, contains('Agenda match — +1 token'));
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.tokens, 1);
+    expect(chars.single.emulation!.agendaKey, expected.agendaKey);
+  });
+
+  testWidgets('ACT on a different agenda grants no token, keeps the agenda',
+      (tester) async {
+    final expected = rollAct(Dice(Random(2)));
+    final other = expected.agendaKey == 2 ? 3 : expected.agendaKey - 1;
+    final container =
+        await pump(tester, seed: 2, chars: charsWith(agendaKey: other));
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-act')));
+    await tester.pumpAndSettle();
+    final lines = keyedText(tester, 'pe-pet-lines');
+    expect(lines, isNot(contains('Agenda match')));
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.tokens, 0);
+    expect(chars.single.emulation!.agendaKey, other);
+  });
+
+  testWidgets('ACT with no agenda set adopts the rolled agenda, no token',
+      (tester) async {
+    final expected = rollAct(Dice(Random(5)));
+    final a = data.agendaEntry(expected.agendaKey);
+    final container = await pump(tester, seed: 5);
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-act')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-pet-title'),
+        'ACT — ${a.name} (${expected.heads ? 'as written' : 'inverted'})');
+    expect(
+        keyedText(tester, 'pe-pet-lines'), contains('Agenda set to ${a.name}'));
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.agendaKey, expected.agendaKey);
+    expect(chars.single.emulation!.tokens, 0);
+  });
+
+  testWidgets('REFOCUS persists the new focus and shows name + blurb',
+      (tester) async {
+    final key = roll2d6Key(Dice(Random(5))); // 5 + 1 = 6
+    final f = data.focusEntry(key);
+    final container = await pump(tester, seed: 5);
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-refocus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-pet-title'), 'REFOCUS — ${f.name}');
+    expect(keyedText(tester, 'pe-pet-lines'), 'Focus: ${f.name} — ${f.blurb}');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.focusKey, key);
+  });
+
+  testWidgets('tag spend: picker lists unspent only, two readings, marks used',
+      (tester) async {
+    final probe = Dice(Random(0));
+    final first = rollAct(probe);
+    final second = rollAct(probe);
+    final container = await pump(tester,
+        seed: 0, chars: charsWith(usedTags: const ['brave']));
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-tag-spend')));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(SimpleDialogOption, 'curious'), findsOneWidget);
+    expect(find.widgetWithText(SimpleDialogOption, 'brave'), findsNothing);
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'curious'));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-pet-title'), 'Tag spend — curious');
+    final lines = keyedText(tester, 'pe-pet-lines');
+    expect(lines, contains('Spent: curious'));
+    expect(lines, contains('Reading 1'));
+    expect(lines, contains('Reading 2'));
+    for (final line in [...actLines(first), ...actLines(second)]) {
+      expect(lines, contains(line));
+    }
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.usedTags, ['brave', 'curious']);
+    expect(chars.single.emulation!.tokens, 0,
+        reason: 'no agenda-match token on tag-spend rolls');
+    expect(chars.single.emulation!.agendaKey, isNull,
+        reason: 'tag-spend readings never adopt an agenda');
+  });
+
+  testWidgets('tag spend is disabled once every tag is spent', (tester) async {
+    await pump(tester,
+        seed: 0, chars: charsWith(usedTags: const ['brave', 'curious']));
+    await pickAsh(tester);
+    final button =
+        tester.widget<OutlinedButton>(find.byKey(const Key('pe-tag-spend')));
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('session start: new focus + real-life line, clears used tags',
+      (tester) async {
+    final probe = Dice(Random(7));
+    final key = roll2d6Key(probe); // 5 + 6 = 11
+    final life = data.realLife[probe.dN(6) - 1]; // d6 = 3
+    final f = data.focusEntry(key);
+    final container = await pump(tester,
+        seed: 7, chars: charsWith(usedTags: const ['brave', 'curious']));
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-session-start')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-pet-title'), 'Session start');
+    final lines = keyedText(tester, 'pe-pet-lines');
+    expect(lines, contains('Focus: ${f.name} — ${f.blurb}'));
+    expect(lines, contains('Real life: $life'));
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.focusKey, key);
+    expect(chars.single.emulation!.usedTags, isEmpty);
+  });
+
+  testWidgets('consequence rolls a d6 GM move without persisting',
+      (tester) async {
+    final move = data.consequences[Dice(Random(9)).dN(6) - 1]; // d6 = 2
+    final container = await pump(tester, seed: 9);
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-consequence')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-pet-title'), 'Consequence');
+    expect(keyedText(tester, 'pe-pet-lines'), 'Consequence: $move');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation, isNull, reason: 'consequence never writes');
+  });
+
+  testWidgets('PET journal entries: ACT and tag-spend titles and bodies',
+      (tester) async {
+    final probe = Dice(Random(10));
+    final act = rollAct(probe);
+    final first = rollAct(probe);
+    final second = rollAct(probe);
+    final a = data.agendaEntry(act.agendaKey);
+    final container = await pump(tester, seed: 10);
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-act')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-pet-log')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-tag-spend')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(SimpleDialogOption, 'brave'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-pet-log')));
+    await tester.pumpAndSettle();
+    final entries = container.read(journalProvider).valueOrNull ?? [];
+    expect(entries, hasLength(2));
+    // Newest first: the tag spend, then the ACT.
+    expect(entries[1].title,
+        'ACT — ${a.name} (${act.heads ? 'as written' : 'inverted'})');
+    expect(entries[1].body, startsWith('Character: Ash'));
+    for (final line in [...actLines(act), 'Agenda set to ${a.name}']) {
+      expect(entries[1].body, contains(line));
+    }
+    expect(entries[0].title, 'Tag spend — brave');
+    expect(entries[0].body, startsWith('Character: Ash'));
+    for (final line in [
+      'Spent: brave',
+      'Reading 1',
+      ...actLines(first),
+      'Reading 2',
+      ...actLines(second),
+    ]) {
+      expect(entries[0].body, contains(line));
+    }
+  });
+
+  testWidgets('No one: transient emulation renders, provider untouched',
+      (tester) async {
+    final container = await pump(tester, seed: 0);
+    final key = roll2d6Key(Dice(Random(0))); // 4 + 6 = 10
+    final a = data.agendaEntry(key);
+    await tester.tap(find.byKey(const Key('pe-roll-agenda')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-agenda-line'),
+        'Agenda: ${a.name} — Ask: ${a.ask}');
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 1');
+    final button =
+        tester.widget<OutlinedButton>(find.byKey(const Key('pe-tag-spend')));
+    expect(button.onPressed, isNull, reason: 'No one has no tags to spend');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation, isNull,
+        reason: 'No one rolls never touch the roster');
+    // Picking a character swaps the panel to their (empty) emulation.
+    await pickAsh(tester);
+    expect(keyedText(tester, 'pe-agenda-line'), 'Agenda: —');
+    expect(keyedText(tester, 'pe-tokens'), 'Tokens: 0');
   });
 }
