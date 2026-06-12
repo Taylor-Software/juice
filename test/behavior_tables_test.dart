@@ -46,8 +46,7 @@ void main() {
     }
     expect(find.byKey(const Key('bt-combo-action-focus')), findsOneWidget);
     expect(find.byKey(const Key('bt-combo-action-method')), findsOneWidget);
-    expect(find.byKey(const Key('bt-combo-disposition-motivation')),
-        findsOneWidget);
+    expect(find.byKey(const Key('bt-combo-action-motivation')), findsOneWidget);
     expect(find.text('PET & Sidekick © Tam H (hedonic.ink), CC-BY 4.0'),
         findsOneWidget);
     expect(find.text('Triple-O © Cezar Capacle / Critical Kit, CC-BY-SA 4.0'),

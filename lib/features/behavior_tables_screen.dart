@@ -36,11 +36,12 @@ class _BehaviorTablesScreenState extends ConsumerState<BehaviorTablesScreen> {
     'planning': 'Planning',
   };
 
-  /// The zine's suggested spark pairings (Triple-O p33).
+  /// The zine's suggested spark pairings (Triple-O p33: Action+Focus,
+  /// Action+Method, Action+Motivation).
   static const _combos = [
     ['action', 'focus'],
     ['action', 'method'],
-    ['disposition', 'motivation'],
+    ['action', 'motivation'],
   ];
 
   String _title(List<TableRollResult> rolls) =>

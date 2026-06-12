@@ -63,7 +63,7 @@ Asset keys:
 
 **Behavior Tables** (phase 1): one screen, 13 d66 roller chips under
 Spark / Specific headers + combo chips (Action+Focus, Action+Method,
-Disposition+Motivation — the zine's pairings). Result cards with
+Action+Motivation — the zine's pairings). Result cards with
 add-to-journal. Attribution footer.
 
 **Party Emulator** (phases 2-3): optional character dropdown.

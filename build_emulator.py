@@ -666,7 +666,10 @@ SIDEKICK_SAID_HOW_B = ["ruefully", "smiling", "quickly", "amused", "tartly",
 # clockwise from N. Context: 'gray' = history (top of the figure),
 # 'red' = current events (bottom); the printed figure shades a few hexes
 # only partially (e.g. the "partly gray need" called out in the caption) —
-# encoded binary here per the plan's reading.
+# encoded binary here per the plan's reading. Caption-derived ruling: the
+# p10 caption's worked example ("moving from the solid red query to the
+# partly gray need, it's history") pins the partly-gray need at (-1,0) as
+# gray — partly gray reads as gray/history.
 HEXFLOWER_HEXES = [
     # (index, q, r, topic, context)
     (0, 0, 0, "fact", "red"),        # center; usual start
@@ -675,7 +678,7 @@ HEXFLOWER_HEXES = [
     (3, 1, 0, "action", "red"),
     (4, 0, 1, "query", "red"),
     (5, -1, 1, "query", "red"),
-    (6, -1, 0, "need", "red"),
+    (6, -1, 0, "need", "gray"),  # partly gray in the figure; see ruling above
     (7, 0, -2, "denial", "gray"),    # top of the flower
     (8, 1, -2, "query", "gray"),
     (9, 2, -2, "denial", "gray"),

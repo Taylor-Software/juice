@@ -58,7 +58,7 @@ Mythic Game Master Emulator © Word Mill Games, content used under CC-BY-NC 4.0
 A **Party** toolkit begins with Behavior Tables — all thirteen Triple-O spark
 and specific d66 tables (© Cezar Capacle / Critical Kit, CC-BY-SA 4.0) for
 deciding what characters do, with the zine's spark combos (Action + Focus,
-Action + Method, Disposition + Motivation) and one-tap add-to-journal.
+Action + Method, Action + Motivation) and one-tap add-to-journal.
 
 Optional **Ironsworn family** rulesets (toggle in the app-bar tune icon):
 moves browser with action/progress rolls, and all oracle tables drawn from
