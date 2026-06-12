@@ -14,6 +14,7 @@ void main() {
     JournalKind kind = JournalKind.result,
     String? threadId,
     int? chaosFactor,
+    List<String> tags = const [],
   }) =>
       JournalEntry(
         id: id,
@@ -23,6 +24,7 @@ void main() {
         kind: kind,
         threadId: threadId,
         chaosFactor: chaosFactor,
+        tags: tags,
       );
 
   String md(List<JournalEntry> entriesNewestFirst) => journalToMarkdown(
@@ -139,6 +141,44 @@ void main() {
       ];
       expect(md(entries), contains('⤷ (closed thread)'));
       expect(html(entries), contains('⤷ (closed thread)'));
+    });
+  });
+
+  group('tags', () {
+    test('tagged entry gets a tag line after the thread line', () {
+      final entries = [
+        entry(id: '1', title: 'Fate Check', body: 'No.', threadId: 't1',
+            tags: ['omens', 'mill']),
+      ];
+      expect(md(entries), contains('⤷ Find the heir\n`#omens` `#mill`'));
+      final h = html(entries);
+      expect(h,
+          contains('<p class="thread"><small><em>#omens #mill</em></small></p>'));
+      expect(h.indexOf('#omens #mill'),
+          greaterThan(h.indexOf('Find the heir')));
+    });
+
+    test('tagged entry without a thread still gets its tag line', () {
+      final entries = [
+        entry(id: '1', title: 'Fate Check', body: 'No.', tags: ['omens']),
+      ];
+      expect(md(entries), contains('No.\n`#omens`'));
+      expect(html(entries), contains('<em>#omens</em>'));
+    });
+
+    test('untagged entries are unchanged (no tag line)', () {
+      final entries = [entry(id: '1', title: 'Fate Check', body: 'No.')];
+      expect(md(entries), isNot(contains('`#')));
+      expect(html(entries), isNot(contains('<em>#')));
+    });
+
+    test('html escapes tag text', () {
+      final entries = [
+        entry(id: '1', title: 'Check', body: 'x', tags: ['<evil>']),
+      ];
+      final out = html(entries);
+      expect(out, isNot(contains('<evil>')));
+      expect(out, contains('#&lt;evil&gt;'));
     });
   });
 
