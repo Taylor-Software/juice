@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,6 +91,22 @@ void main() {
     await tester.tap(find.byKey(const Key('interp-reroll')));
     await tester.pumpAndSettle();
     expect(fake.interpretCalls, 2);
+  });
+
+  testWidgets('double-tapped regenerate runs one generation', (tester) async {
+    final fake = await pump(tester,
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    expect(fake.interpretCalls, 1);
+    // Hold the next generation in flight and tap Regenerate twice in the
+    // same frame: the second tap must hit the _generating guard.
+    fake.interpretGate = Completer<void>();
+    await tester.tap(find.byKey(const Key('interp-regenerate')));
+    await tester.tap(find.byKey(const Key('interp-regenerate')));
+    fake.interpretGate!.complete();
+    fake.interpretGate = null;
+    await tester.pumpAndSettle();
+    expect(fake.interpretCalls, 2);
+    expect(find.text('fallback'), findsOneWidget);
   });
 
   testWidgets('interpret error shows retry', (tester) async {

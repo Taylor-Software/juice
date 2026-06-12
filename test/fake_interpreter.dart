@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/state/interpreter.dart';
@@ -11,6 +13,10 @@ class FakeInterpreterService implements InterpreterService {
   final ValueNotifier<InterpreterStatus> statusNotifier;
   final List<List<OracleInterpretation>> queuedResults = [];
   Object? interpretError;
+
+  /// When set, interpret() blocks on it after counting the call — lets a
+  /// test hold a generation in flight (e.g. to probe reentrancy guards).
+  Completer<void>? interpretGate;
   OracleSeed? lastSeed;
   int refreshCalls = 0;
   int warmUpCalls = 0;
@@ -36,6 +42,7 @@ class FakeInterpreterService implements InterpreterService {
   Future<List<OracleInterpretation>> interpret(OracleSeed seed) async {
     lastSeed = seed;
     interpretCalls++;
+    if (interpretGate case final gate?) await gate.future;
     if (interpretError != null) throw interpretError!;
     if (queuedResults.isEmpty) {
       return const [OracleInterpretation(lens: 'literal', reading: 'fallback')];

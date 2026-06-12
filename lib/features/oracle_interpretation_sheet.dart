@@ -63,14 +63,17 @@ class _OracleInterpretationSheetState
   }
 
   Future<void> _generate() async {
-    final settings = await ref.read(settingsProvider.future);
-    if (!mounted) return;
+    if (_generating) return;
+    // Claim the flag synchronously, before any await, so a second call in
+    // the same frame (e.g. a double-tapped Regenerate) bails out above.
     setState(() {
       _generating = true;
       _generateError = null;
       _cards = null;
       _dismissed.clear();
     });
+    final settings = await ref.read(settingsProvider.future);
+    if (!mounted) return;
     try {
       final cards = await _service.interpret(OracleSeed(
         resultText: widget.seed.resultText,
@@ -162,7 +165,7 @@ class _OracleInterpretationSheetState
       context: context,
       builder: (_) => _SettingsDialog(current: current),
     );
-    if (result == null) return;
+    if (!mounted || result == null) return;
     await ref.read(settingsProvider.notifier).save(result);
   }
 
