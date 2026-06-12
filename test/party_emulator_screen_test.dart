@@ -429,6 +429,52 @@ void main() {
     expect(chars.single.emulation!.usedTags, isEmpty);
   });
 
+  // Lost-update regression (live-browser repro): a token-plus press after
+  // session start used to read-modify-write the BUILD-captured emulation
+  // snapshot, resurrecting the pre-session-start focus/usedTags. Two tests:
+  // the settled sequence (guards the common path; passed even pre-fix once a
+  // rebuild refreshed `selected`) and the same-frame double press (no rebuild
+  // between the presses — this one reproduced the clobber pre-fix).
+  testWidgets('session start then token-plus (settled): no lost update',
+      (tester) async {
+    final key = roll2d6Key(Dice(Random(7))); // 5 + 6 = 11
+    final container = await pump(tester,
+        seed: 7, chars: charsWith(focusKey: 4, usedTags: const ['brave']));
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-session-start')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.pumpAndSettle();
+    final e =
+        (await container.read(charactersProvider.future)).single.emulation!;
+    expect(e.tokens, 1);
+    expect(e.usedTags, isEmpty,
+        reason: 'token-plus must not resurrect spent tags');
+    expect(e.focusKey, key,
+        reason: 'token-plus must not clobber the session-start focus');
+  });
+
+  testWidgets('session start + token-plus in one frame: no lost update',
+      (tester) async {
+    final key = roll2d6Key(Dice(Random(7))); // 5 + 6 = 11
+    final container = await pump(tester,
+        seed: 7, chars: charsWith(focusKey: 4, usedTags: const ['brave']));
+    await pickAsh(tester);
+    // No pump between the taps: the session-start write lands in the
+    // provider, but the widget has not rebuilt, so the token handler still
+    // holds the stale build-captured character.
+    await tester.tap(find.byKey(const Key('pe-session-start')));
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.pumpAndSettle();
+    final e =
+        (await container.read(charactersProvider.future)).single.emulation!;
+    expect(e.tokens, 1);
+    expect(e.usedTags, isEmpty,
+        reason: 'token-plus must not resurrect spent tags');
+    expect(e.focusKey, key,
+        reason: 'token-plus must not clobber the session-start focus');
+  });
+
   testWidgets('consequence rolls a d6 GM move without persisting',
       (tester) async {
     final move = data.consequences[Dice(Random(9)).dN(6) - 1]; // d6 = 2

@@ -410,32 +410,57 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
   // -- PET procedures (phase 3) ----------------------------------------------
 
   /// The selected character's emulation (created on first write), or the
-  /// transient 'No one' state.
+  /// transient 'No one' state. Build-time display only — handlers must go
+  /// through [_currentEmulation] / [_updateEmulation], which read fresh at
+  /// press time.
   CharacterEmulation _emulationOf(Character? c) =>
       c == null ? _transient : (c.emulation ?? const CharacterEmulation());
 
-  /// Persist [e] on the character, or hold it in-screen for 'No one'.
-  Future<void> _saveEmulation(Character? c, CharacterEmulation e) async {
+  /// [c] as the provider holds it right now — never the build-captured
+  /// snapshot, which goes stale the moment another press persists. Falls
+  /// back to [c] if it left the roster mid-press.
+  Future<Character> _freshCharacter(Character c) async {
+    final chars = await ref.read(charactersProvider.future);
+    return chars.firstWhere((x) => x.id == c.id, orElse: () => c);
+  }
+
+  /// The press-time emulation: what a handler must base decisions and
+  /// result text on.
+  Future<CharacterEmulation> _currentEmulation(Character? c) async => c == null
+      ? _transient
+      : ((await _freshCharacter(c)).emulation ?? const CharacterEmulation());
+
+  /// Persist [up] applied to the character's CURRENT emulation, or to the
+  /// in-screen 'No one' state. Reading fresh inside the write is the
+  /// lost-update guard: a press landing before the next rebuild must not
+  /// clobber fields persisted since (live repro: session start, then
+  /// token-plus resurrected the cleared usedTags and old focus).
+  Future<void> _updateEmulation(
+      Character? c, CharacterEmulation Function(CharacterEmulation) up) async {
     if (c == null) {
-      setState(() => _transient = e);
+      setState(() => _transient = up(_transient));
       return;
     }
-    await ref
-        .read(charactersProvider.notifier)
-        .replace(c.copyWith(emulation: e));
+    final cur = await _freshCharacter(c);
+    await ref.read(charactersProvider.notifier).replace(cur.copyWith(
+        emulation: up(cur.emulation ?? const CharacterEmulation())));
   }
 
-  Future<void> _rollAgenda(Character? selected) => _saveEmulation(
-      selected, _emulationOf(selected).copyWith(agendaKey: roll2d6Key(_dice)));
-
-  Future<void> _rollFocus(Character? selected) => _saveEmulation(
-      selected, _emulationOf(selected).copyWith(focusKey: roll2d6Key(_dice)));
-
-  Future<void> _bumpTokens(Character? selected, int delta) async {
-    final e = _emulationOf(selected);
-    final next = e.tokens + delta;
-    await _saveEmulation(selected, e.copyWith(tokens: next < 0 ? 0 : next));
+  Future<void> _rollAgenda(Character? selected) {
+    final key = roll2d6Key(_dice);
+    return _updateEmulation(selected, (e) => e.copyWith(agendaKey: key));
   }
+
+  Future<void> _rollFocus(Character? selected) {
+    final key = roll2d6Key(_dice);
+    return _updateEmulation(selected, (e) => e.copyWith(focusKey: key));
+  }
+
+  Future<void> _bumpTokens(Character? selected, int delta) =>
+      _updateEmulation(selected, (e) {
+        final next = e.tokens + delta;
+        return e.copyWith(tokens: next < 0 ? 0 : next);
+      });
 
   /// The result-card lines for one ACT reading.
   List<String> _actLines(EmulatorData data, ActResult r) {
@@ -450,16 +475,20 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
   }
 
   Future<void> _act(EmulatorData data, Character? selected) async {
-    final e = _emulationOf(selected);
+    // One fresh snapshot decides match-vs-adopt and the result text; the
+    // write still recomputes from the updater's argument.
+    final e = await _currentEmulation(selected);
     final r = rollAct(_dice);
     final a = data.agendaEntry(r.agendaKey);
     final lines = _actLines(data, r);
     if (e.agendaKey == null) {
       lines.add('Agenda set to ${a.name}');
-      await _saveEmulation(selected, e.copyWith(agendaKey: r.agendaKey));
+      await _updateEmulation(
+          selected, (cur) => cur.copyWith(agendaKey: r.agendaKey));
     } else if (e.agendaKey == r.agendaKey) {
       lines.add('Agenda match — +1 token');
-      await _saveEmulation(selected, e.copyWith(tokens: e.tokens + 1));
+      await _updateEmulation(
+          selected, (cur) => cur.copyWith(tokens: cur.tokens + 1));
     }
     setState(() => _pet = _PetOutcome(
         'ACT — ${a.name} (${r.heads ? 'as written' : 'inverted'})', lines));
@@ -468,8 +497,7 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
   Future<void> _refocus(EmulatorData data, Character? selected) async {
     final key = roll2d6Key(_dice);
     final f = data.focusEntry(key);
-    await _saveEmulation(
-        selected, _emulationOf(selected).copyWith(focusKey: key));
+    await _updateEmulation(selected, (e) => e.copyWith(focusKey: key));
     setState(() => _pet =
         _PetOutcome('REFOCUS — ${f.name}', ['Focus: ${f.name} — ${f.blurb}']));
   }
@@ -492,10 +520,10 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       ),
     );
     if (tag == null) return;
-    final e = _emulationOf(selected);
     final first = rollAct(_dice);
     final second = rollAct(_dice);
-    await _saveEmulation(selected, e.copyWith(usedTags: [...e.usedTags, tag]));
+    await _updateEmulation(
+        selected, (e) => e.copyWith(usedTags: [...e.usedTags, tag]));
     setState(() => _pet = _PetOutcome('Tag spend — $tag', [
           'Spent: $tag',
           'Reading 1',
@@ -507,12 +535,11 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
 
   /// Session start: a fresh Focus + a d6 real-life event; spent tags reset.
   Future<void> _sessionStart(EmulatorData data, Character? selected) async {
-    final e = _emulationOf(selected);
     final key = roll2d6Key(_dice);
     final f = data.focusEntry(key);
     final life = data.realLife[_dice.dN(6) - 1];
-    await _saveEmulation(
-        selected, e.copyWith(focusKey: key, usedTags: const []));
+    await _updateEmulation(
+        selected, (e) => e.copyWith(focusKey: key, usedTags: const []));
     setState(() => _pet = _PetOutcome('Session start', [
           'Focus: ${f.name} — ${f.blurb}',
           'Real life: $life',
