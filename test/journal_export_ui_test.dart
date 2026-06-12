@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 
 import 'fake_interpreter.dart';
@@ -24,9 +25,14 @@ void main() {
       'juice.threads.v1.default': threadsJson,
     });
     final fake = FakeInterpreterService();
+    // Use the real app theme: its FilledButton minimumSize once laid the
+    // export options out wider than the screen, invisible to the user.
     await tester.pumpWidget(ProviderScope(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
-      child: const MaterialApp(home: Scaffold(body: JournalScreen())),
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
     ));
     await tester.pumpAndSettle();
   }
@@ -43,6 +49,14 @@ void main() {
   Future<void> export(WidgetTester tester, String formatKey) async {
     await tester.tap(find.byKey(const Key('journal-export')));
     await tester.pumpAndSettle();
+    // Guard against the regression where the format options were laid out
+    // wider than the screen and rendered clipped/invisible: the option must
+    // sit fully within the screen bounds, not just be findable by key.
+    final screenWidth =
+        tester.view.physicalSize.width / tester.view.devicePixelRatio;
+    final optionRect = tester.getRect(find.byKey(Key(formatKey)));
+    expect(optionRect.right, lessThanOrEqualTo(screenWidth),
+        reason: 'export option "$formatKey" must be fully on screen');
     await tester.tap(find.byKey(Key(formatKey)));
     await tester.pumpAndSettle();
   }

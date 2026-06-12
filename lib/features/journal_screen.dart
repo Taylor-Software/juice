@@ -282,24 +282,20 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<(String, String)?> _buildExport() async {
     final format = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => SimpleDialog(
         title: const Text('Export journal'),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FilledButton.tonal(
-              key: const Key('export-markdown'),
-              onPressed: () => Navigator.pop(context, 'md'),
-              child: const Text('Markdown'),
-            ),
-            const SizedBox(width: 12),
-            FilledButton.tonal(
-              key: const Key('export-html'),
-              onPressed: () => Navigator.pop(context, 'html'),
-              child: const Text('HTML'),
-            ),
-          ],
-        ),
+        children: [
+          SimpleDialogOption(
+            key: const Key('export-markdown'),
+            onPressed: () => Navigator.pop(context, 'md'),
+            child: const Text('Markdown'),
+          ),
+          SimpleDialogOption(
+            key: const Key('export-html'),
+            onPressed: () => Navigator.pop(context, 'html'),
+            child: const Text('HTML'),
+          ),
+        ],
       ),
     );
     if (format == null || !mounted) return null;
