@@ -23,6 +23,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // flutter_gemma's LiteRT-LM/GPU native paths are arm64-only; other
+        // ABIs would ship a broken interpreter (spec: oracle-interpreter
+        // phase 2). The Flutter Gradle plugin pre-populates abiFilters with
+        // all supported ABIs at apply time, so clear before restricting.
+        ndk {
+            abiFilters.clear()
+            abiFilters += "arm64-v8a"
+        }
     }
 
     buildTypes {
@@ -30,6 +39,10 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
