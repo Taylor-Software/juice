@@ -94,6 +94,26 @@ third-party model mirror in `lib/state/interpreter_gemma.dart` to the
 user's own HF mirror of the official `gemma3-1b-it-int4-web.task`
 (provenance; see spec "Weights provenance").
 
+## Cycle 3: campaign memory + reach (started 2026-06-11)
+
+Driven by the 2026-06-11 competitive rescan: juice-roll is dormant
+(no threat); the community's top unmet need is campaign memory/retrieval
+("find that NPC detail from twelve sessions ago"); our two uncontested
+claims are the multi-system journal and on-device journal-aware AI.
+Web-first PWAs are the community norm — distribution = community channels,
+not app stores.
+
+| # | Item | Status |
+|---|---|---|
+| A | Quick wins: Location grid table, tap-to-roll fate check, WCAG AA contrast pass | In progress |
+| B | Journal export (styled HTML/markdown per campaign) | Scoped |
+| E | Discoverability prep: itch.io page assets, awesome-ironsworn PR, Tomkin community-resources submission, repo topics/screenshots (submissions need owner sign-off) | Scoped |
+| C | Journal search + tags (foundation for D) | Next |
+| D | Journal-aware interpreter (retrieval over journal → seed context) | Next, after C |
+
+Deferred: store distribution (Play/TestFlight) — community discovers via
+web/itch; revisit on demand signal.
+
 ## Cloud storage stance (BYO cloud, no server)
 
 The app stays standalone with no server component and no network code.
