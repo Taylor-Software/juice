@@ -5,7 +5,8 @@ A cross-platform (iOS / Android / web / desktop) Flutter app implementing the
 scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
 immersion, plot points, extended NPC tables), plus a persistent campaign
 journal (your prose, scene dividers with a chaos-factor snapshot, and every
-roll you choose to keep) with threads tracking and flexible, system-agnostic
+roll you choose to keep — exportable as Markdown or a styled standalone HTML
+page for sharing) with threads tracking and flexible, system-agnostic
 character sheets (free-text stats, current/max tracks with steppers, tags,
 notes — one model covers D&D, Ironsworn, or Mythic NPCs). An encounter tracker runs
 initiative order (drag to override), turns and rounds, status tags, and
@@ -15,8 +16,7 @@ your dungeon room-by-room as you roll it (pan/zoom, tap a room for its
 detail, linger rolls) and reveals a wilderness hex map as you travel
 (env-colored hexes from the same verified drift tables, Lost markers,
 manual reveal for prep); both persist per campaign and snapshot into the
-journal. Journals export as Markdown or a styled standalone HTML page for
-sharing.
+journal.
 
 The Ask-the-Oracle tools also include a generic **Roll High oracle** — a 7-step
 likelihood ladder (Almost Certain … Almost Impossible) with six graded
