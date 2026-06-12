@@ -37,6 +37,7 @@ one-tap add-to-journal.
   only suggests, you decide. Set your campaign's genre and tone from the
   sheet to steer the voice. Web uses Gemma 3 1B (Google, Gemma license);
   mobile uses Qwen3 0.6B (Alibaba, Apache 2.0).
+  Mobile builds target arm64 (Android) and iOS 16+.
 
 Also includes **Mythic GME** support (Fate Chart with Chaos Factor dial, Scene
 Test, Event Focus rolling against your tracked Threads/Characters lists, and
