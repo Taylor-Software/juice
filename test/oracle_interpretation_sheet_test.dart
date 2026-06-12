@@ -5,12 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/features/oracle_interpretation_sheet.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 import 'fake_interpreter.dart';
+
+/// settingsProvider stand-in whose load always fails.
+class _ThrowingSettingsNotifier extends SettingsNotifier {
+  @override
+  Future<CampaignSettings> build() async => throw StateError('settings boom');
+}
 
 void main() {
   const seed = OracleSeed(resultText: 'Fate Check (Likely) — Yes…');
@@ -130,6 +137,30 @@ void main() {
     await tester.tap(find.byKey(const Key('interp-retry')));
     await tester.pumpAndSettle();
     expect(find.text('fallback'), findsOneWidget);
+  });
+
+  testWidgets('settings load failure shows retry, not a stuck spinner',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        interpreterServiceProvider.overrideWithValue(fake),
+        settingsProvider.overrideWith(_ThrowingSettingsNotifier.new),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+            body: OracleInterpretationSheet(seed: seed, onAccept: (_) {})),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('interp-retry')), findsOneWidget);
+    expect(find.textContaining('settings boom'), findsOneWidget);
+    expect(fake.interpretCalls, 0);
   });
 
   testWidgets('genre/tone editable from header and persisted',

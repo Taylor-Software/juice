@@ -114,11 +114,16 @@ class GemmaInterpreterService implements InterpreterService {
         await FlutterGemma.installModel(
                 modelType: _spec.modelType, fileType: _spec.fileType)
             .fromNetwork(_spec.url)
-            .withProgress((p) => _status.value =
-                InterpreterStatus(InterpreterPhase.installing, progress: p))
+            .withProgress((p) {
+              if (_disposed) return; // don't repaint a disposed service
+              _status.value =
+                  InterpreterStatus(InterpreterPhase.installing, progress: p);
+            })
             .install();
       }
-      _status.value = const InterpreterStatus(InterpreterPhase.loading);
+      if (!_disposed) {
+        _status.value = const InterpreterStatus(InterpreterPhase.loading);
+      }
       final model = await _loadModel();
       if (_disposed) {
         // dispose() ran mid-load: release the model and stay torn down
@@ -203,20 +208,25 @@ class GemmaInterpreterService implements InterpreterService {
     // (seen on web, where a MediaPipe error can leave the stream open
     // forever). Stream.timeout throws TimeoutException into the await-for;
     // it propagates and the sheet shows its retry affordance.
-    await for (final r in chat
-        .generateChatResponseAsync()
-        .timeout(const Duration(seconds: 60))) {
-      if (r is TextResponse) buffer.write(r.token);
-    }
-    if (kIsWeb) {
-      // Upstream web behavior: one WebModelSession is cached and reused by
-      // every chat, and addQueryChunk appends to its _promptParts list,
-      // which nothing clears on success — each roll would re-send all
-      // previous prompts. stopGeneration() clears the list in a `finally`
-      // without closing the engine (cancelProcessing is a no-op once the
-      // stream completed). Mobile recreates the native session per chat,
-      // so this is web-only.
-      await chat.stopGeneration();
+    try {
+      await for (final r in chat
+          .generateChatResponseAsync()
+          .timeout(const Duration(seconds: 60))) {
+        if (r is TextResponse) buffer.write(r.token);
+      }
+    } finally {
+      if (kIsWeb) {
+        // Upstream web behavior: one WebModelSession is cached and reused by
+        // every chat, and addQueryChunk appends to its _promptParts list,
+        // which nothing clears on success — each roll would re-send all
+        // previous prompts. stopGeneration() clears the list in a `finally`
+        // without closing the engine (cancelProcessing is a no-op once the
+        // stream completed). Mobile recreates the native session per chat,
+        // so this is web-only. Run it in a `finally` so a timeout or
+        // mid-stream error also cancels the hung generation and clears the
+        // stale prompt parts — otherwise retry re-sends them.
+        await chat.stopGeneration();
+      }
     }
     return parseInterpretations(buffer.toString());
   }

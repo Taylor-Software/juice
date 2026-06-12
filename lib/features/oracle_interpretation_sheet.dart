@@ -72,9 +72,9 @@ class _OracleInterpretationSheetState
       _cards = null;
       _dismissed.clear();
     });
-    final settings = await ref.read(settingsProvider.future);
-    if (!mounted) return;
     try {
+      final settings = await ref.read(settingsProvider.future);
+      if (!mounted) return;
       final cards = await _service.interpret(OracleSeed(
         resultText: widget.seed.resultText,
         genre: settings.genre,
