@@ -21,8 +21,8 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(16));
-    expect(buildToolRegistry(family: ['classic']), hasLength(17));
+    expect(tools, hasLength(17));
+    expect(buildToolRegistry(family: ['classic']), hasLength(18));
     expect(
         tools.map((t) => t.id),
         containsAll([
@@ -42,7 +42,17 @@ void main() {
           'party-emulator',
           'sidekick-dialogue',
           'behavior-tables',
+          'help',
         ]));
+  });
+
+  test('Help group is last and hosts the help tool', () {
+    expect(toolGroups.last, 'Help');
+    final tool =
+        buildToolRegistry(family: []).singleWhere((t) => t.id == 'help');
+    expect(tool.group, 'Help');
+    expect(tool.label, 'Help');
+    expect(tool.icon, Icons.help_outline);
   });
 
   test('Party group sits after NPCs & Dialog and hosts behavior-tables', () {

@@ -6,6 +6,7 @@ import '../features/dice_roller_screen.dart';
 import '../features/encounter_screen.dart';
 import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
+import '../features/help_screen.dart';
 import '../features/map_screen.dart';
 import '../features/moves_screen.dart';
 import '../features/party_emulator_screen.dart';
@@ -48,6 +49,7 @@ const toolGroups = [
   'Names & Details',
   'Characters & Threads',
   'Reference',
+  'Help',
 ];
 
 /// Build the registry. [family] is the enabled Ironsworn family chain
@@ -194,4 +196,11 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
           badge: 'Ironsworn',
           builder: (_) => MovesScreen(rulesetIds: family),
         ),
+      ToolDef(
+        id: 'help',
+        label: 'Help',
+        icon: Icons.help_outline,
+        group: 'Help',
+        builder: (_) => const HelpScreen(),
+      ),
     ];
