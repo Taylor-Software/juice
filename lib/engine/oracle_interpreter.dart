@@ -1,6 +1,7 @@
 /// On-device LLM oracle interpretation: prompt schema + tolerant parser.
-/// Pure Dart — no flutter_gemma, no Flutter. The service layer
-/// (lib/state/interpreter.dart) owns the model; this file owns the words.
+/// Pure Dart — no flutter_gemma, no Flutter. The service layer behind
+/// lib/state/interpreter.dart owns the model (interpreter_gemma.dart is the
+/// implementation); this file owns the words.
 ///
 /// Adapted from a user-provided design (see spec). Key change: the seed is
 /// the journal entry's already-formatted result text — Juice/Mythic tables
@@ -181,7 +182,7 @@ String? _isolateJson(String raw) {
 }
 
 /// Debug-eval seeds (see spec "Quality bar"). Used by the debug-only
-/// runEval in lib/state/interpreter.dart and by live verification.
+/// runInterpreterEval in lib/state/interpreter.dart and by live verification.
 const List<OracleSeed> kEvalSeeds = <OracleSeed>[
   OracleSeed(
     resultText: 'Fate Check (Unlikely) — Yes…',
