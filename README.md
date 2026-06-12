@@ -87,6 +87,11 @@ Ironsworn and Starforged are separate game families and are mutually exclusive;
 enabling one family turns the other off. Expansions require their base game and
 are disabled automatically when their base is turned off.
 
+An in-app **Help** tool (in the launcher, plus a "?" on every tool's header)
+covers every tool with a user guide, gives a quick-reference summary of each
+supported system, and ends in a credits page listing all content licenses —
+with Flutter's package-license viewer one tap away.
+
 Oracle content: [github.com/jrruethe/juice](https://github.com/jrruethe/juice),
 CC BY-NC-SA. This app is an unofficial implementation of those tables.
 Party emulator content: Triple-O © Cezar Capacle / Critical Kit, CC-BY-SA 4.0
