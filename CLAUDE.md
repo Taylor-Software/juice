@@ -20,9 +20,16 @@ Working rules for this repo:
   those assets — edit the script, not the generated JSON.
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
-- Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` + `file_picker` (campaign file export/import) only.
+- Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
+  `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
+  oracle interpreter; service seam in `lib/state/interpreter.dart`, tests
+  always use the fake — never construct `GemmaInterpreterService` in tests).
   No dio/repository (no network), no codegen (static data), no router (the
   journal is the single home screen; tools open in a keep-alive panel via
   `lib/shared/tool_host.dart` + the declarative registry in
   `lib/shared/tool_registry.dart`). Add rails only when a real need appears.
 - Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`). The journal lives in `juice.journal.v2` (one-shot migration from `juice.log.v1` in `JournalNotifier.build`; the legacy key stays import-only and is excluded from campaign exports). Campaign files are schema v2; v1 still imports.
+- Interpreter models are pinned in `lib/state/interpreter_gemma.dart`.
+  The web URL is a third-party dev mirror; swapping it to the user's own
+  HF mirror is a release gate for web (see the oracle-interpreter spec,
+  "Weights provenance").
