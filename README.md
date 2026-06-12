@@ -143,7 +143,9 @@ best-effort and should be checked against the original before you rely on them:
 - ~~Abstract Icons~~ — implemented: all 60 icons (CC BY-NC-SA 4.0 per the
   official itch.io release) vendored under `assets/abstract_icons/`, rolled
   as 1d10 row + 1d6 column from the Names & Details tool.
-- **Location compass grid** (5×5 d100) — not yet encoded; low priority.
+- ~~Location compass grid~~ — implemented: 1d100 onto the 5×5 compass grid,
+  formula verified against the PDF's cell ranges (`build_oracle.py` verify
+  section 11), rolled from the Exploration tool.
 
 If you want any of these brought to full fidelity, point me at the relevant PDF
 page and I'll encode it and add a verification.
