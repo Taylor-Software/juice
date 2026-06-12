@@ -36,7 +36,8 @@ class FateResult {
   static String _glyph(int v) => v > 0 ? '+' : (v < 0 ? '-' : '0');
 
   /// Shorthand like "+-4" (primary, secondary, intensity), per the PDF.
-  String get shorthand => '${_glyph(primary)}${_glyph(secondary)}$intensityRoll';
+  String get shorthand =>
+      '${_glyph(primary)}${_glyph(secondary)}$intensityRoll';
 
   bool get isRandomEvent => result.contains('Random Event');
   bool get isInvalidAssumption => result == 'Invalid Assumption';
@@ -459,6 +460,97 @@ class MapState {
       );
 }
 
+/// Party-emulator state on a character (PET agenda/focus/tokens, Triple-O
+/// trait marks, Sidekick mood + hexflower position). Additive: stays null
+/// until the Party Emulator first writes it.
+class CharacterEmulation {
+  const CharacterEmulation({
+    this.agendaKey,
+    this.focusKey,
+    this.mood,
+    this.tokens = 0,
+    this.prominentTags = const [],
+    this.usedTags = const [],
+    this.hexIndex,
+  });
+
+  /// 2..12 key into pet.agenda; null = not rolled yet.
+  final int? agendaKey;
+
+  /// 2..12 key into pet.focus; null = not rolled yet.
+  final int? focusKey;
+
+  /// Sidekick mood id ('default'…); null = not set.
+  final String? mood;
+
+  /// PET tokens earned by playing the agenda.
+  final int tokens;
+
+  /// Tags marked prominent (Triple-O doubles growth) — marks on
+  /// [Character.tags], the one Trait list.
+  final List<String> prominentTags;
+
+  /// Tags checked off by PET tag spends until session reset.
+  final List<String> usedTags;
+
+  /// 0..18 Sidekick hexflower position; null = not placed.
+  final int? hexIndex;
+
+  /// Lists replace wholesale; clear flags null the nullable fields
+  /// (house pattern: clearThreadId).
+  CharacterEmulation copyWith({
+    int? agendaKey,
+    bool clearAgenda = false,
+    int? focusKey,
+    bool clearFocus = false,
+    String? mood,
+    bool clearMood = false,
+    int? tokens,
+    List<String>? prominentTags,
+    List<String>? usedTags,
+    int? hexIndex,
+    bool clearHex = false,
+  }) =>
+      CharacterEmulation(
+        agendaKey: clearAgenda ? null : (agendaKey ?? this.agendaKey),
+        focusKey: clearFocus ? null : (focusKey ?? this.focusKey),
+        mood: clearMood ? null : (mood ?? this.mood),
+        tokens: tokens ?? this.tokens,
+        prominentTags: prominentTags ?? this.prominentTags,
+        usedTags: usedTags ?? this.usedTags,
+        hexIndex: clearHex ? null : (hexIndex ?? this.hexIndex),
+      );
+
+  /// Null fields are omitted, keeping persisted characters compact.
+  Map<String, dynamic> toJson() => {
+        if (agendaKey != null) 'agendaKey': agendaKey,
+        if (focusKey != null) 'focusKey': focusKey,
+        if (mood != null) 'mood': mood,
+        'tokens': tokens,
+        'prominentTags': prominentTags,
+        'usedTags': usedTags,
+        if (hexIndex != null) 'hexIndex': hexIndex,
+      };
+
+  /// Parses the emulation block; null for anything that isn't a map.
+  /// Tolerant: junk-typed fields fall back to their defaults.
+  static CharacterEmulation? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int? intOr(dynamic v) => v is int ? v : null;
+    List<String> strings(dynamic v) =>
+        v is List ? v.whereType<String>().toList() : const [];
+    return CharacterEmulation(
+      agendaKey: intOr(j['agendaKey']),
+      focusKey: intOr(j['focusKey']),
+      mood: j['mood'] is String ? j['mood'] as String : null,
+      tokens: intOr(j['tokens']) ?? 0,
+      prominentTags: strings(j['prominentTags']),
+      usedTags: strings(j['usedTags']),
+      hexIndex: intOr(j['hexIndex']),
+    );
+  }
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
@@ -469,6 +561,7 @@ class Character {
     this.stats = const [],
     this.tracks = const [],
     this.tags = const [],
+    this.emulation,
   });
   final String id;
   final String name;
@@ -477,6 +570,9 @@ class Character {
   final List<CharTrack> tracks;
   final List<String> tags;
 
+  /// Party-emulator state; null until the Party tool writes it.
+  final CharacterEmulation? emulation;
+
   /// Lists are replaced wholesale when provided; null keeps the current list.
   Character copyWith({
     String? name,
@@ -484,6 +580,8 @@ class Character {
     List<CharStat>? stats,
     List<CharTrack>? tracks,
     List<String>? tags,
+    CharacterEmulation? emulation,
+    bool clearEmulation = false,
   }) =>
       Character(
         id: id,
@@ -492,8 +590,11 @@ class Character {
         stats: stats ?? this.stats,
         tracks: tracks ?? this.tracks,
         tags: tags ?? this.tags,
+        emulation: clearEmulation ? null : (emulation ?? this.emulation),
       );
 
+  /// 'emulation' is written only when non-null so existing characters and
+  /// campaign files stay byte-stable until the feature is used.
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -501,6 +602,7 @@ class Character {
         'stats': stats.map((s) => s.toJson()).toList(),
         'tracks': tracks.map((t) => t.toJson()).toList(),
         'tags': tags,
+        if (emulation != null) 'emulation': emulation!.toJson(),
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -516,6 +618,7 @@ class Character {
             .whereType<CharTrack>()
             .toList(),
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
+        emulation: CharacterEmulation.maybeFromJson(j['emulation']),
       );
 }
 
@@ -620,8 +723,7 @@ class CampaignSettings {
   CampaignSettings copyWith({String? genre, String? tone}) =>
       CampaignSettings(genre: genre ?? this.genre, tone: tone ?? this.tone);
 
-  factory CampaignSettings.fromJson(Map<String, dynamic> j) =>
-      CampaignSettings(
+  factory CampaignSettings.fromJson(Map<String, dynamic> j) => CampaignSettings(
         genre: j['genre'] as String? ?? '',
         tone: j['tone'] as String? ?? '',
       );
