@@ -87,7 +87,7 @@ accepted readings append to the entry. Dice stay authoritative.
 |---|---|---|
 | 0 | Web spike (litertlm vs -web.task, model availability) | **Done** — findings in spec (2026-06-11) |
 | 1 | Engine + service + sheet + journal wiring + web path | **Done** — PR #20 (2026-06-11) |
-| 2 | Mobile platform config (Android ABI/OpenCL, iOS Podfile) + device verify | Scoped, not started |
+| 2 | Mobile platform config (Android ABI/OpenCL, iOS Podfile) + device verify | **Done** — PR #21 (2026-06-11); full loop verified on iOS simulator; physical-device pass still open |
 
 Release gates before announcing the web feature: swap the dev-pinned
 third-party model mirror in `lib/state/interpreter_gemma.dart` to the
