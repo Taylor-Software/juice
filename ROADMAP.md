@@ -105,7 +105,7 @@ not app stores.
 
 | # | Item | Status |
 |---|---|---|
-| A | Quick wins: Location grid table, tap-to-roll fate check, WCAG AA contrast pass | In progress |
+| A | Quick wins: Location grid table, tap-to-roll fate check, WCAG AA contrast pass | **Done** — PR #22 (2026-06-11) |
 | B | Journal export (styled HTML/markdown per campaign) | Scoped |
 | E | Discoverability prep: itch.io page assets, awesome-ironsworn PR, Tomkin community-resources submission, repo topics/screenshots (submissions need owner sign-off) | Scoped |
 | C | Journal search + tags (foundation for D) | Next |
