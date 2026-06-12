@@ -350,11 +350,13 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       ),
     );
     if (tag == null) return;
-    final emulation = c.emulation ?? const CharacterEmulation();
-    if (emulation.prominentTags.contains(tag)) return;
-    await ref.read(charactersProvider.notifier).replace(c.copyWith(
-        emulation: emulation
-            .copyWith(prominentTags: [...emulation.prominentTags, tag])));
+    // Commit through [_updateEmulation]: the dialog await outlives the
+    // captured [c], so dedupe and write against the press-time emulation.
+    await _updateEmulation(
+        c,
+        (e) => e.prominentTags.contains(tag)
+            ? e
+            : e.copyWith(prominentTags: [...e.prominentTags, tag]));
   }
 
   Future<void> _addTrait(Character c) async {
@@ -384,10 +386,15 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       },
     );
     final trait = result?.trim() ?? '';
-    if (trait.isEmpty || c.tags.contains(trait)) return;
+    if (trait.isEmpty) return;
+    // Tags live on the Character (not its emulation), so [_updateEmulation]
+    // doesn't apply: re-read the roster at commit time instead, then dedupe
+    // and write against that fresh character — never the captured [c].
+    final cur = await _freshCharacter(c);
+    if (cur.tags.contains(trait)) return;
     await ref
         .read(charactersProvider.notifier)
-        .replace(c.copyWith(tags: [...c.tags, trait]));
+        .replace(cur.copyWith(tags: [...cur.tags, trait]));
   }
 
   void _log(Character? selected) {

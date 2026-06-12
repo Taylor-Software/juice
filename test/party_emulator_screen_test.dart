@@ -475,6 +475,54 @@ void main() {
         reason: 'token-plus must not clobber the session-start focus');
   });
 
+  // Same lost-update class, dialog edition: the doubles trait handlers
+  // committed from the Character captured when the dialog-opening button was
+  // pressed. The dialog itself needs pumps to render, but those never refresh
+  // the closure-captured character — so the same-frame window is between the
+  // conflicting press (token-plus) and the press that opens the dialog, and
+  // the stale commit lands after the dialog closes, clobbering the token bump.
+  testWidgets('token-plus + mark prominent in one frame: no lost update',
+      (tester) async {
+    final container = await pump(tester, seed: 2); // rolls 4 & 4
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-double-down')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-keep-0')));
+    await tester.pumpAndSettle();
+    // No pump between the taps: the token write lands in the provider, but
+    // the banner button still holds the stale build-captured character.
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.tap(find.text('Mark trait prominent'));
+    await tester.pumpAndSettle(); // renders the dialog; capture already stale
+    await tester.tap(find.text('brave').last);
+    await tester.pumpAndSettle();
+    final c = (await container.read(charactersProvider.future)).single;
+    expect(c.emulation!.prominentTags, ['brave']);
+    expect(c.emulation!.tokens, 1,
+        reason: 'mark-prominent must not clobber the token bump');
+  });
+
+  testWidgets('token-plus + add trait in one frame: no lost update',
+      (tester) async {
+    final container = await pump(tester, seed: 10); // rolls 2 & 2
+    await pickAsh(tester);
+    await tester.tap(find.byKey(const Key('pe-double-down')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('pe-keep-0')));
+    await tester.pumpAndSettle();
+    // No pump between the taps (see the mark-prominent twin above).
+    await tester.tap(find.byKey(const Key('pe-token-plus')));
+    await tester.tap(find.text('Add new trait'));
+    await tester.pumpAndSettle(); // renders the dialog; capture already stale
+    await tester.enterText(find.byKey(const Key('pe-trait-input')), 'reckless');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    final c = (await container.read(charactersProvider.future)).single;
+    expect(c.tags, ['brave', 'curious', 'reckless']);
+    expect(c.emulation?.tokens, 1,
+        reason: 'add-trait must not clobber the token bump');
+  });
+
   testWidgets('consequence rolls a d6 GM move without persisting',
       (tester) async {
     final move = data.consequences[Dice(Random(9)).dN(6) - 1]; // d6 = 2
