@@ -12,20 +12,43 @@ void main() {
   });
 
   test('moves tool present only when a family is enabled', () {
+    expect(buildToolRegistry(family: []).any((t) => t.id == 'moves'), isFalse);
     expect(
-        buildToolRegistry(family: []).any((t) => t.id == 'moves'), isFalse);
-    expect(buildToolRegistry(family: ['starforged']).any((t) => t.id == 'moves'),
+        buildToolRegistry(family: ['starforged']).any((t) => t.id == 'moves'),
         isTrue);
   });
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(13));
-    expect(buildToolRegistry(family: ['classic']), hasLength(14));
-    expect(tools.map((t) => t.id), containsAll([
-      'fate-check', 'roll-high', 'mythic', 'dice',
-      'gen-story', 'gen-npcs', 'gen-exploration', 'gen-encounters',
-      'gen-details', 'threads-characters', 'tables', 'encounter', 'maps',
-    ]));
+    expect(tools, hasLength(14));
+    expect(buildToolRegistry(family: ['classic']), hasLength(15));
+    expect(
+        tools.map((t) => t.id),
+        containsAll([
+          'fate-check',
+          'roll-high',
+          'mythic',
+          'dice',
+          'gen-story',
+          'gen-npcs',
+          'gen-exploration',
+          'gen-encounters',
+          'gen-details',
+          'threads-characters',
+          'tables',
+          'encounter',
+          'maps',
+          'behavior-tables',
+        ]));
+  });
+
+  test('Party group sits after NPCs & Dialog and hosts behavior-tables', () {
+    expect(
+        toolGroups.indexOf('Party'), toolGroups.indexOf('NPCs & Dialog') + 1);
+    final tool = buildToolRegistry(family: [])
+        .singleWhere((t) => t.id == 'behavior-tables');
+    expect(tool.group, 'Party');
+    expect(tool.label, 'Behavior Tables');
+    expect(tool.badge, 'Triple-O');
   });
 }

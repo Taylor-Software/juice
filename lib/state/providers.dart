@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
+import '../engine/emulator_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -112,7 +113,8 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
 
   Future<void> replace(JournalEntry entry) async {
     await _persist([
-      for (final e in await _ready) if (e.id == entry.id) entry else e,
+      for (final e in await _ready)
+        if (e.id == entry.id) entry else e,
     ]);
   }
 
@@ -148,7 +150,8 @@ class ThreadNotifier extends _PersistedList<Thread> {
 
   Future<void> replace(Thread thread) async {
     await _persist([
-      for (final t in await _ready) if (t.id == thread.id) thread else t,
+      for (final t in await _ready)
+        if (t.id == thread.id) thread else t,
     ]);
   }
 
@@ -185,7 +188,8 @@ class CharacterNotifier extends _PersistedList<Character> {
 
   Future<void> replace(Character character) async {
     await _persist([
-      for (final c in await _ready) if (c.id == character.id) character else c,
+      for (final c in await _ready)
+        if (c.id == character.id) character else c,
     ]);
   }
 
@@ -285,7 +289,8 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
   Future<void> updateCombatant(Combatant c) async {
     final s = await _ready;
     await save(s.copyWith(combatants: [
-      for (final e in s.combatants) if (e.id == c.id) c else e,
+      for (final e in s.combatants)
+        if (e.id == c.id) c else e,
     ]));
   }
 
@@ -411,14 +416,17 @@ class MapNotifier extends AsyncNotifier<MapState> {
     if (pos.alreadyRevealed) {
       final hexes = [
         for (final h in s.hexes)
-          if (h.col == pos.col && h.row == pos.row) h.copyWith(lost: lost)
-          else h,
+          if (h.col == pos.col && h.row == pos.row)
+            h.copyWith(lost: lost)
+          else
+            h,
       ];
       await save(s.copyWith(
           hexes: hexes, currentHexCol: pos.col, currentHexRow: pos.row));
       return hexes.firstWhere((h) => h.col == pos.col && h.row == pos.row);
     }
-    final cell = HexCell(col: pos.col, row: pos.row, envRow: envRow, lost: lost);
+    final cell =
+        HexCell(col: pos.col, row: pos.row, envRow: envRow, lost: lost);
     await save(s.copyWith(
       hexes: [...s.hexes, cell],
       currentHexCol: pos.col,
@@ -670,3 +678,7 @@ final rulesetDataProvider =
   final raw = await rootBundle.loadString('assets/ruleset_$id.json');
   return jsonDecode(raw) as Map<String, dynamic>;
 });
+
+/// Loads the party-emulator asset (Triple-O + Pettish tables) once.
+final emulatorDataProvider =
+    FutureProvider<EmulatorData>((ref) => EmulatorData.load());

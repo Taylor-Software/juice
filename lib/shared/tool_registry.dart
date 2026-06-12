@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../engine/oracle.dart';
+import '../features/behavior_tables_screen.dart';
 import '../features/dice_roller_screen.dart';
 import '../features/encounter_screen.dart';
 import '../features/fate_screen.dart';
@@ -39,6 +40,7 @@ const toolGroups = [
   'Dice',
   'Story & Scenes',
   'NPCs & Dialog',
+  'Party',
   'Exploration',
   'Encounters & Combat',
   'Names & Details',
@@ -88,8 +90,7 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         icon: Icons.auto_stories_outlined,
         group: 'Story & Scenes',
         badge: 'Juice',
-        builder: (o) =>
-            GeneratorsScreen(oracle: o!, section: GenSection.story),
+        builder: (o) => GeneratorsScreen(oracle: o!, section: GenSection.story),
       ),
       ToolDef(
         id: 'gen-npcs',
@@ -98,6 +99,14 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         group: 'NPCs & Dialog',
         badge: 'Juice',
         builder: (o) => GeneratorsScreen(oracle: o!, section: GenSection.npcs),
+      ),
+      ToolDef(
+        id: 'behavior-tables',
+        label: 'Behavior Tables',
+        icon: Icons.groups_outlined,
+        group: 'Party',
+        badge: 'Triple-O',
+        builder: (_) => const BehaviorTablesScreen(),
       ),
       ToolDef(
         id: 'gen-exploration',
