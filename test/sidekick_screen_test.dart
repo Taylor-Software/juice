@@ -314,6 +314,45 @@ void main() {
     expect(chars.single.emulation!.hexIndex, to);
   });
 
+  testWidgets('step shows the crossed line tone and journals it',
+      (tester) async {
+    // First two probe draws are the 2d6 direction (documented dice order);
+    // the crossed rose line's tone comes from the asset via the accessor.
+    final probe = Dice(Random(11));
+    final tone = data.hexDirectionTone(probe.dN(6) + probe.dN(6));
+    final container = (await pump(tester, seed: 11)).$2;
+    await openHexTab(tester);
+    await tester.tap(find.byKey(const Key('sd-hex-step')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'sd-hex-lines'), contains('Tone: $tone'));
+    await tester.tap(find.byKey(const Key('sd-hex-log')));
+    await tester.pumpAndSettle();
+    final entries = container.read(journalProvider).valueOrNull ?? [];
+    expect(entries.single.body, contains('Tone: $tone'));
+  });
+
+  testWidgets('reset returns to the center hex, persists, and notes it',
+      (tester) async {
+    final container =
+        (await pump(tester, seed: 11, chars: charsWith(hexIndex: 7))).$2;
+    await pickAsh(tester);
+    await openHexTab(tester);
+    final seven = data.hex(7);
+    expect(
+        keyedText(tester, 'sd-hex-readout'),
+        'Topic: ${seven.topic} · Context: '
+        '${seven.context == 'gray' ? 'history (gray)' : 'current events (red)'}',
+        reason: 'seeded off-center so the reset visibly moves');
+    await tester.tap(find.byKey(const Key('sd-hex-reset')));
+    await tester.pumpAndSettle();
+    expect(keyedText(tester, 'sd-hex-lines'),
+        'Conversation reset — back to center.');
+    expect(keyedText(tester, 'sd-hex-readout'),
+        'Topic: fact · Context: current events (red)');
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.emulation!.hexIndex, 0);
+  });
+
   testWidgets('stepping off the flower edge stays put', (tester) async {
     // Find a seed whose 2d6 walks off the edge from hex 7 (the top).
     var edgeSeed = 0;

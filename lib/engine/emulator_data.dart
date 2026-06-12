@@ -215,6 +215,11 @@ class EmulatorData {
     return dir as String;
   }
 
+  /// Tone of the rose line a 2d6 sum (2..12) crosses — per the source,
+  /// "the tone changes to that of the line you crossed".
+  String hexDirectionTone(int key2d6) => (_hexflower['direction_tones']
+      as Map<String, dynamic>)[hexDirection(key2d6)] as String;
+
   /// The hex one step from [from] toward [key2d6]'s direction (the asset's
   /// direction_deltas applied to axial q/r); null when the step leaves the
   /// flower (UI: stay put).

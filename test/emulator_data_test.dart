@@ -177,6 +177,20 @@ void main() {
     expect(() => data.hexDirection(13), throwsArgumentError);
   });
 
+  test('hexDirectionTone maps every 2d6 sum to its crossed line tone', () {
+    // Pinned per the zine's rose: "a 10-11 crosses 'neutral'".
+    expect(data.hexDirectionTone(10), 'neutral');
+    expect(data.hexDirectionTone(11), 'neutral');
+    // Full sweep vs the asset: each key carries its direction's tone.
+    final tones = section('hexflower')['direction_tones'] as Map;
+    for (var key = 2; key <= 12; key++) {
+      expect(data.hexDirectionTone(key), tones[data.hexDirection(key)],
+          reason: 'key $key');
+    }
+    expect(() => data.hexDirectionTone(1), throwsArgumentError);
+    expect(() => data.hexDirectionTone(13), throwsArgumentError);
+  });
+
   test('hexStep follows direction_deltas over q/r; off-edge is null', () {
     final hexflower = section('hexflower');
     final deltas = hexflower['direction_deltas'] as Map;

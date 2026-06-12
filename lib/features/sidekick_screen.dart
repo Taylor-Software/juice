@@ -377,13 +377,22 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
           style: theme.textTheme.titleMedium,
         ),
         const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FilledButton(
-            key: const Key('sd-hex-step'),
-            onPressed: () => _step(data, selected),
-            child: const Text('Step (2d6)'),
-          ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            FilledButton(
+              key: const Key('sd-hex-step'),
+              onPressed: () => _step(data, selected),
+              child: const Text('Step (2d6)'),
+            ),
+            TextButton(
+              key: const Key('sd-hex-reset'),
+              onPressed: () => _resetHex(data, selected),
+              child: const Text('Reset'),
+            ),
+          ],
         ),
         if (_hex != null) ...[
           const SizedBox(height: 16),
@@ -420,6 +429,7 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
     setState(() => _hex = _HexOutcome(
           dice: (a, b),
           direction: data.hexDirection(a + b),
+          tone: data.hexDirectionTone(a + b),
           to: to,
           topic: landed.topic,
           context: landed.context,
@@ -427,6 +437,16 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
               to != null && data.hex(to).context != data.hex(from).context,
           d3: d3,
         ));
+  }
+
+  /// Source: reset the map when the conversation feels done — back to the
+  /// center hex. Same fresh-read updater as a step (persisted; transient
+  /// for 'No one').
+  Future<void> _resetHex(EmulatorData data, Character? selected) async {
+    await _updateEmulation(selected, (cur) => cur.copyWith(hexIndex: 0));
+    final center = data.hex(0);
+    setState(() =>
+        _hex = _HexOutcome.reset(topic: center.topic, context: center.context));
   }
 
   Widget _hexResultCard(ThemeData theme, Character? selected) {
@@ -508,11 +528,14 @@ class _DialogueOutcome {
 }
 
 /// One hexflower step: where the 2d6 walked (null = off the edge, stay
-/// put), the d3 priority, and the now-current hex's topic/context.
+/// put), the crossed rose line's tone, the d3 priority, and the
+/// now-current hex's topic/context. Or a conversation reset (null dice):
+/// the walk jumped back to the center hex.
 class _HexOutcome {
   const _HexOutcome({
     required this.dice,
     required this.direction,
+    required this.tone,
     required this.to,
     required this.topic,
     required this.context,
@@ -520,22 +543,36 @@ class _HexOutcome {
     required this.d3,
   });
 
-  final (int, int) dice;
-  final String direction;
+  const _HexOutcome.reset({required this.topic, required this.context})
+      : dice = null,
+        direction = null,
+        tone = null,
+        to = 0,
+        contextSwitch = false,
+        d3 = null;
+
+  final (int, int)? dice;
+  final String? direction;
+  final String? tone;
   final int? to;
   final String topic;
   final String context;
   final bool contextSwitch;
-  final int d3;
+  final int? d3;
 
-  String get priority => const ['me', 'you', 'us'][d3 - 1];
+  String get priority => const ['me', 'you', 'us'][d3! - 1];
 
-  List<String> get lines => [
-        to == null ? 'Edge — stay put' : 'Stepped $direction → $topic',
-        if (contextSwitch) 'Context switch',
-        'Priority: $priority',
-        'Rolls: ${dice.$1} & ${dice.$2} ($direction) · d3 $d3',
-      ];
+  List<String> get lines {
+    final dice = this.dice;
+    if (dice == null) return const ['Conversation reset — back to center.'];
+    return [
+      to == null ? 'Edge — stay put' : 'Stepped $direction → $topic',
+      'Tone: $tone',
+      if (contextSwitch) 'Context switch',
+      'Priority: $priority',
+      'Rolls: ${dice.$1} & ${dice.$2} ($direction) · d3 $d3',
+    ];
+  }
 }
 
 /// Read-only 19-hex flower: flat-top hexes laid out from axial q/r, gray
