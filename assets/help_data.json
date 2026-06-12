@@ -1,0 +1,303 @@
+{
+  "sections": [
+    {
+      "id": "guide",
+      "title": "User guide",
+      "pages": [
+        {
+          "id": "getting-started",
+          "title": "Getting started",
+          "blocks": [
+            {"p": "Juice Oracle is a solo-RPG toolkit built around a campaign journal. The journal is your home screen: everything you roll can be kept as an entry, and your own prose goes right in the text field at the bottom."},
+            {"h": "Open a tool"},
+            {"steps": ["Tap the tools icon (crossed hammers) in the app bar.", "Pick a tool from the list, or type in the search field.", "Tools keep their state while the panel is closed — reopen to continue where you left off."]},
+            {"tip": "Recently used tools appear as chips at the top of the launcher."},
+            {"p": "Your campaign lives entirely on this device. Use sessions (folder icon) for multiple campaigns, and campaign files to back up or move them."}
+          ]
+        },
+        {
+          "id": "journal",
+          "title": "The journal",
+          "blocks": [
+            {"p": "The journal reads like a chat log: oldest entries at the top, newest at the bottom, with the composer field underneath. Anything you type there becomes a text entry; rolls you keep from a tool (the bookmark icon) arrive as result cards."},
+            {"h": "Scenes"},
+            {"p": "The movie icon next to the composer starts a new scene: a titled divider that also snapshots the current chaos factor, so you can read the campaign's tension at a glance later."},
+            {"h": "Find, organize, edit"},
+            {"steps": ["Tap the magnifier to search. Every word must match somewhere in an entry, and a #tag term matches that tag.", "Each entry's ⋮ menu links it to a thread, edits its tags, edits the text in place, or deletes it.", "Chips above the stream filter the view by one open thread or one #tag."]},
+            {"p": "The share icon exports the whole journal as Markdown or as a styled, standalone HTML page — pick the format, then choose where to save it."},
+            {"tip": "Search terms combine: '#omen vault' finds entries tagged omen that also mention the vault."}
+          ]
+        },
+        {
+          "id": "sessions-campaigns",
+          "title": "Sessions & campaign files",
+          "blocks": [
+            {"p": "Each campaign is its own sandbox — journal, threads, characters, maps, crawl state, and settings all live per campaign. The folder icon in the app bar opens the campaign list."},
+            {"steps": ["Tap a campaign to switch to it.", "New campaign starts a fresh one and switches over.", "The delete icon removes a campaign and everything in it; the last remaining campaign can't be deleted."]},
+            {"h": "Campaign files"},
+            {"p": "Export campaign saves the active campaign as a .juice.json file through the system save dialog; Import campaign loads one back in as a new campaign. Files are written in schema v2 — older v1 files still import."},
+            {"tip": "There is no built-in cloud sync. Export into a folder your cloud service already syncs (Drive, iCloud, Dropbox…) to back up or move campaigns between devices."}
+          ]
+        },
+        {
+          "id": "fate-check",
+          "title": "Fate Check",
+          "blocks": [
+            {"p": "Ask the oracle a yes/no question about the fiction, weigh the odds, and roll. The Fate Check rolls 2dF + 1d6: the fate dice grade the answer, the d6 sets its intensity."},
+            {"steps": ["Frame a yes/no question.", "Tap Unlikely, Normal, or Likely — selecting a likelihood rolls immediately; the Roll button rerolls at the same setting.", "Keep the answer with the bookmark icon to add it to the journal."]},
+            {"p": "Two special outcomes keep you honest: a Random Event means something else happens alongside the answer (the screen offers a one-tap Random Event roll), and an Invalid Assumption means the question itself assumed something false — re-ask it. Pay the Price is on hand for when things go wrong."},
+            {"p": "The same screen scrolls down to the Roll High oracle and Mythic GME, including the chaos factor stepper that Mythic and scene dividers use."}
+          ]
+        },
+        {
+          "id": "roll-high",
+          "title": "Roll High Oracle",
+          "blocks": [
+            {"p": "A system-neutral yes/no oracle where rolling high means yes. Pick a die — d100, d20, or 2d6 — and one of seven likelihood steps, from Almost Certain down to Almost Impossible."},
+            {"p": "Answers come back in six grades: Yes, and · Yes · Yes, but · No, but · No · No, and. Even a flat no carries a story nudge."},
+            {"p": "Roll Oracle rolls at the chosen settings; bookmark the result card to keep it in the journal."},
+            {"tip": "The 2d6 variant curves toward the middle answers; d100 spreads them evenly. Pick the feel you want."}
+          ]
+        },
+        {
+          "id": "mythic-gme",
+          "title": "Mythic GME",
+          "blocks": [
+            {"p": "Mythic answers questions through its Fate Chart: the odds you state cross the current chaos factor to set the chance of yes. The chaos factor (1–9) is the dial at the top of the section — raise it when scenes spiral, lower it when the characters are in control."},
+            {"steps": ["At the start of a scene, roll Scene Test against the chaos factor: the scene plays out as expected, is altered, or is interrupted by an event.", "Ask questions with Fate Chart at your chosen odds.", "When an event fires, Event Focus tells you who or what it is about — it rolls against your actual Threads and Characters lists.", "Color any of it with the 47 Meaning Tables, picked from the dropdown."]},
+            {"p": "Doubles on the Fate Chart can trigger a random event on top of the answer. Every result card bookmarks into the journal."},
+            {"tip": "New scene dividers in the journal snapshot the chaos factor automatically — a built-in record of how wild the campaign has been."}
+          ]
+        },
+        {
+          "id": "dice-roller",
+          "title": "Dice Roller",
+          "blocks": [
+            {"p": "A free-form roller for full dice notation: NdX (3d6), d% for percentile, dF for Fate dice, flat modifiers, and multi-group sums like 2d6+1d8-1."},
+            {"p": "Keep and drop suffixes trim a group: 4d6kh3 keeps the highest three, kl keeps the lowest, dh/dl drop instead. d20adv and d20dis are shorthand for advantage and disadvantage."},
+            {"steps": ["Type an expression, or build one with the quick chips (tapping d6 twice makes 2d6).", "Roll — the card shows the total and a per-die breakdown, with dropped dice struck through.", "Tap a history row to reroll that expression."]},
+            {"tip": "The bookmark icon writes the whole breakdown into the journal, not just the total."}
+          ]
+        },
+        {
+          "id": "story-scenes",
+          "title": "Story & Scenes",
+          "blocks": [
+            {"p": "One-tap generators for the story layer: New Quest, New Scene, Random Event, Challenge, Pay the Price (and its critical cousin, Major Plot Twist), and Plot Point."},
+            {"p": "Each chip rolls a small bundle of table results that you read together as a prompt — the oracle proposes, you interpret."},
+            {"tip": "Tap the bookmark icon on any result card and the full roll lands in your journal."}
+          ]
+        },
+        {
+          "id": "npcs-dialog",
+          "title": "NPCs & Dialog",
+          "blocks": [
+            {"p": "Generators for people: NPC sketches a full character, NPC Behavior answers what they do next (with Active and Passive skews), NPC Combat covers fights, and NPC Plot Knowledge, Companion Response, and NPC Dialog Topic handle what they know and say."},
+            {"p": "The NPC Dialog chip is a crawl, not a one-shot: each press steps a conversation grid, so dialog drifts naturally from topic to topic. Its position persists per campaign until you reset the crawl."},
+            {"tip": "Bookmark results as you go — a dialog logged line by line reads like a transcript in the journal."}
+          ]
+        },
+        {
+          "id": "generators-tables",
+          "title": "Generators & tables",
+          "blocks": [
+            {"p": "Three more generator tools follow the same pattern. Exploration & Crawl rolls settlements, natural hazards, dungeon names and rooms, plus locations on a compass grid. Monsters & Tracks covers monster encounters and creature tracks. Names & Details produces treasure, names, meanings, immersion prompts, details, properties, random ideas, and abstract icons."},
+            {"h": "Crawl modes"},
+            {"p": "Wilderness Travel drifts you from environment to environment using the travel tables and can flag you as Lost, which worsens encounter checks until the drift finds you again. Dungeon Linger rolls what happens if you stay in a room. The NPC Dialog crawl lives on the NPCs tool. All crawl state persists per campaign; Reset Crawl clears it."},
+            {"p": "The Table Browser, in the Reference group, lists every Juice table for direct rolls, with an Adv/Dis toggle to skew any roll."},
+            {"tip": "Every result card has a bookmark icon — one tap and the full roll detail is in your journal."}
+          ]
+        },
+        {
+          "id": "party-emulator",
+          "title": "Party Emulator",
+          "blocks": [
+            {"p": "Decides what a party member does and keeps their inner life ticking. Pick a character from the dropdown at the top — or 'No one' for a quick NPC whose state isn't saved."},
+            {"h": "Emulation panel"},
+            {"p": "The Emulation card shows the character's Agenda (with its Ask — the question they keep testing against the world), their current Focus, and their tokens. Roll Agenda and Roll Focus deal new ones on 2d6; the +/− buttons adjust tokens."},
+            {"h": "PET actions"},
+            {"steps": ["ACT poses the agenda's Ask: a coin reads it as written (heads) or inverted (tails), and a modifier die layers as-written, inverted, or exaggerated guidance. Rolling the character's own agenda is a match and earns a token.", "REFOCUS deals a new Focus.", "Spend tag picks one of the character's unspent tags for two ACT readings; the tag stays checked off until session start.", "Session start deals a fresh Focus, rolls a real-life event, and resets all spent tags.", "Consequence rolls one of six GM-style moves for when things go wrong."]},
+            {"h": "Triple-O check"},
+            {"p": "Name the Obvious (the Option and Odd can wait until after the roll), then Roll d6 — 4-6 Obvious, 2-3 Option, 1 Odd — or Double-Down with 2d6 and keep the die you prefer. Doubles grow the behavior into a Trait: mark an existing tag prominent or add a new one. The Group switch adds Assign by dice, which rolls a die per course and ranks them: highest becomes the Obvious, lowest the Odd."}
+          ]
+        },
+        {
+          "id": "behavior-tables",
+          "title": "Behavior Tables",
+          "blocks": [
+            {"p": "Thirteen rollable d66 tables for deciding behavior. The six spark tables — Action, Focus, Method, Disposition, Motivation, Dynamics — give abstract prompts you combine; the seven specific tables — Combat, Social, Exploration, Delving, Interpretation, Downtime, Planning — answer concrete situations directly."},
+            {"p": "The combo chips roll the zine's suggested spark pairings in one tap: Action + Focus, Action + Method, Action + Motivation. Bookmark any result to log every rolled row in the journal."},
+            {"tip": "These tables feed the Party Emulator's Triple-O check well: spark a behavior here, then test which course the character actually takes."}
+          ]
+        },
+        {
+          "id": "sidekick-dialogue",
+          "title": "Sidekick Dialogue",
+          "blocks": [
+            {"p": "Puts words in a companion's mouth. Pick a character — their mood is one of six and persists on their sheet ('No one' keeps a throwaway mood). Roll line rolls 2d6 for a line from the current mood's table, plus chips for tone, topic, and how it's said."},
+            {"p": "Doubles change the mood first: a d6 picks the new mood and the line rerolls under it, so the shift shows in the very next thing they say."},
+            {"p": "Voice this hands the rolled line, the character's tags, and your campaign's genre and tone to the on-device interpreter and returns a fuller in-character delivery. It needs the interpreter model downloaded and ready (see the Oracle interpreter page)."},
+            {"h": "Hexflower"},
+            {"steps": ["Step rolls 2d6 on the compass rose and walks the conversation one hex in that direction (off the edge, you stay put).", "Each hex is a topic; gray hexes draw on history, red ones on current events.", "The tone becomes that of the rose line you crossed, and a d3 sets the priority: me, you, or us.", "Reset returns the conversation to the center hex."]}
+          ]
+        },
+        {
+          "id": "threads-characters",
+          "title": "Threads & Characters",
+          "blocks": [
+            {"p": "Your campaign's open questions and cast. Threads track quests, vows, and mysteries — tick the checkbox to close one (it stays, struck through). Mythic's Event Focus and the journal's thread links both read this list."},
+            {"p": "Characters are system-agnostic sheets: free-form stats (any label, any value), tracks with current/max steppers (HP, stress, supply — whatever the game needs), tags, and notes. One model covers a D&D NPC or an Ironsworn companion equally well."},
+            {"p": "Once the Party tools have touched a character, a read-only Emulation line (prominent traits, tokens) appears on the sheet — the Party Emulator owns that state."},
+            {"tip": "Tags on characters double as PET personality tags — the Party Emulator's Spend tag action draws from them."}
+          ]
+        },
+        {
+          "id": "encounter",
+          "title": "Encounter Tracker",
+          "blocks": [
+            {"p": "An initiative tracker. Add combatants From characters or Ad-hoc; a combatant linked to a character reads and writes that sheet's first track live, so damage dealt here is damage on the sheet."},
+            {"steps": ["Rows keep initiative order, highest first — drag to override it.", "Next turn moves the pointer, skipping defeated combatants and counting rounds as it wraps.", "Add status tags (stunned, hidden, blessed…) with the + chip; the heart icon marks a combatant defeated."]},
+            {"p": "End encounter (the flag icon) writes a summary — final round and who fell — into the journal and resets the tracker."}
+          ]
+        },
+        {
+          "id": "maps",
+          "title": "Maps",
+          "blocks": [
+            {"p": "Two maps that draw themselves from your rolls, both persisted per campaign. Pan and pinch-zoom freely."},
+            {"h": "Dungeon"},
+            {"p": "New room rolls the dungeon oracle and adds the room to the map, corridor-connected to where you are. Tap a room to select it and read its detail; Linger rolls what happens if you stay and appends it to the room."},
+            {"h": "Hex"},
+            {"p": "Travel runs the wilderness crawl and reveals the next hex, colored by environment, with a marker when you're Lost. Faint neighbor hexes can be tapped to reveal them manually — handy for prep."},
+            {"tip": "The bookmark icon on either tab snapshots a map summary into the journal; the reset icons clear one map without touching the other."}
+          ]
+        },
+        {
+          "id": "moves",
+          "title": "Moves & Oracles",
+          "blocks": [
+            {"p": "Turn on a ruleset under the tune icon in the app bar and a Moves & Oracles tool appears in the launcher's Reference group. Ironsworn and Starforged are separate games, so the families are mutually exclusive — enabling one switches the other off. Delve folds into the Ironsworn tool, Sundered Isles into Starforged."},
+            {"p": "The Moves tab lists every move by category; tap one for its full text. Moves that roll do it in place: an action roll takes your stat and adds (d6 + stat + adds against two d10 challenge dice), a progress roll tests your progress score instead. The result quotes the move's own strong hit, weak hit, or miss text."},
+            {"p": "The Oracles tab rolls any table from the official Datasworn data, organized by collection."},
+            {"tip": "Results bookmark into the journal like everything else."}
+          ]
+        },
+        {
+          "id": "interpreter",
+          "title": "Oracle interpreter (on-device AI)",
+          "blocks": [
+            {"p": "An optional on-device AI that reads oracle results. Choose Interpret… from a result entry's menu in the journal and it offers four short readings through different lenses: literal, symbolic, complication, and foreshadow. Accept one to append it to the entry, or dismiss them and reroll."},
+            {"p": "The first use asks before downloading the model once (about 670 MB on web, 480 MB on mobile). After that it loads from storage. Everything runs on your device — nothing you write is ever sent anywhere."},
+            {"p": "Set your campaign's genre and tone (the small tune icon in the interpretation sheet) to steer the voice. Readings also recall your most relevant earlier journal entries — retrieved on device — so they can reference established people and places."},
+            {"p": "In Sidekick Dialogue, Voice this uses the same model to deliver a rolled line in character."},
+            {"tip": "The dice stay authoritative. The model only suggests interpretations of what you already rolled — you decide what's true."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "systems",
+      "title": "System references",
+      "pages": [
+        {
+          "id": "juice-oracle",
+          "title": "Juice oracle",
+          "blocks": [
+            {"p": "Juice is the toolkit's core oracle: a compact GM-replacement system built around a fate check and a deep stack of generator tables, designed to run any RPG solo."},
+            {"p": "The Fate Check asks a yes/no question at Unlikely, Normal, or Likely odds and rolls 2dF + 1d6 — the fate dice grade the answer from strong yes to strong no, the d6 scores its intensity. Edge results inject chaos: a Random Event drops something unplanned into the scene, and an Invalid Assumption tells you the question itself was built on a false premise."},
+            {"p": "Around the check sit generators for quests, scenes, NPCs and their behavior, settlements, dungeons, monsters, treasure, names, and meaning, plus crawl procedures that drift wilderness travel, dungeon delving, and NPC dialog one step at a time."},
+            {"p": "In the app: the Fate Check tool, every generator tool, the crawl chips, the Table Browser, and both Maps grow from Juice tables — all machine-verified against the source at build time."},
+            {"p": "Juice oracle content © jrruethe, CC BY-NC-SA 4.0 — this app is an unofficial implementation."}
+          ]
+        },
+        {
+          "id": "roll-high-system",
+          "title": "Roll High",
+          "blocks": [
+            {"p": "Roll High is a minimal yes/no oracle: rate how likely a yes is on a seven-step ladder, from Almost Certain down to Almost Impossible, roll, and read high as yes."},
+            {"p": "Instead of a bare yes or no, the result lands on one of six graded answers — Yes, and · Yes · Yes, but · No, but · No · No, and — so every roll moves the story. The ladder comes in d100, d20, and 2d6 flavors: same odds, different feel."},
+            {"p": "In the app: the Roll High Oracle tool in the Ask the Oracle group."},
+            {"p": "Roll High table data verified in-app; part of the Juice oracle content, © jrruethe, CC BY-NC-SA 4.0."}
+          ]
+        },
+        {
+          "id": "mythic-gme-system",
+          "title": "Mythic Game Master Emulator",
+          "blocks": [
+            {"p": "Mythic runs a game without a GM by looping three ideas: ask the oracle yes/no questions, test each scene against your expectations, and track rising tension as a chaos factor from 1 to 9. After every scene the chaos factor moves — up if events ran away from the characters, down if they stayed in control."},
+            {"p": "Questions go to the Fate Chart: your stated odds cross the current chaos factor to give the chance of yes, with very low or very high rolls producing exceptional answers and doubles spinning off random events."},
+            {"p": "Scenes open with a Scene Test: roll against chaos to learn whether the scene you planned plays out as expected, arrives altered, or is interrupted by something new. Events get an Event Focus (who or what they are about) and take color from word-pair Meaning Tables."},
+            {"p": "In the app: the Mythic GME tool holds the chaos stepper, Fate Chart, Scene Test, Event Focus wired to your Threads & Characters lists, and all 47 Meaning Tables; journal scene dividers snapshot the chaos factor."},
+            {"p": "Mythic Game Master Emulator © Word Mill Games, content used under CC-BY-NC 4.0."}
+          ]
+        },
+        {
+          "id": "ironsworn-family",
+          "title": "Ironsworn & Starforged",
+          "blocks": [
+            {"p": "Ironsworn (dark fantasy) and Starforged (science fiction) are solo-first RPGs where everything happens through moves — short rules triggered by the fiction."},
+            {"p": "An action roll adds a stat and situational adds to one d6, then compares the total against two d10 challenge dice: beat both for a strong hit, exactly one for a weak hit, neither is a miss. Matching challenge dice mark a match — an extra twist. Long efforts like vows and journeys accumulate progress instead, and a progress roll tests that score against the challenge dice with no d6 at all."},
+            {"p": "Oracles — mostly d100 tables — cover everything from names to plot turns. This app draws moves and oracles from the official Datasworn data set."},
+            {"p": "Four titles are supported: Ironsworn, its Delve expansion, Starforged, and its Sundered Isles expansion. The families are mutually exclusive here — enabling one turns the other off — and each expansion folds into its base game's Moves tool."},
+            {"p": "Ironsworn, Delve and Starforged © Shawn Tomkin, CC-BY 4.0 (Datasworn data); Sundered Isles CC-BY-NC-SA 4.0."}
+          ]
+        },
+        {
+          "id": "triple-o",
+          "title": "Triple-O (player emulator)",
+          "blocks": [
+            {"p": "Triple-O answers 'what would this character do?' with three candidate courses of action: the Obvious (what anyone would expect), the Option (a sound alternative), and the Odd (the surprise)."},
+            {"h": "The check"},
+            {"steps": ["Name the Obvious — Option and Odd can be defined after the roll.", "Roll a d6: 4-6 the character takes the Obvious, 2-3 the Option, 1 the Odd.", "Or Double-Down with 2d6 and keep whichever die you prefer.", "Doubles on a double-down mean the behavior grows: mark a trait prominent or add a new one."]},
+            {"p": "Group mode rolls a d6 per course and assigns them by rank: highest is the Obvious, lowest the Odd. The thirteen behavior tables (spark and specific) feed the check with concrete prompts."},
+            {"p": "Triple-O © Cezar Capacle / Critical Kit, CC-BY-SA 4.0."}
+          ]
+        },
+        {
+          "id": "pet",
+          "title": "PET (Player Emulator with Tags)",
+          "blocks": [
+            {"p": "PET gives a party member an inner life you can roll against: an Agenda they pursue, a Focus coloring the current session, tokens that reward conviction, and the character's own personality tags."},
+            {"p": "Every agenda carries an Ask — the question that character keeps putting to the world. The ACT procedure poses it: a coin decides whether the Ask applies as written (heads) or inverted (tails), and a modifier die layers as-written, inverted, or exaggerated guidance on top. Rolling the character's own agenda is a match: conviction pays off with a token."},
+            {"p": "Spending a personality tag buys two ACT readings at once and checks the tag off until the next session start. Session start deals a fresh Focus, rolls a real-life event that's been weighing on the character, and restores all spent tags. When things go wrong, a d6 of consequences offers a GM-style move."},
+            {"p": "In the app: the Party Emulator tool runs all of this per character; tags live on the character sheet."},
+            {"p": "PET © Tam H (hedonic.ink), CC-BY 4.0."}
+          ]
+        },
+        {
+          "id": "sidekick",
+          "title": "Sidekick",
+          "blocks": [
+            {"p": "Sidekick generates companion dialogue. The character carries one of six moods — default, taciturn, savvy, high-strung, sassy, selfish — and 2d6 picks a line from the current mood's table while d6 chips add a tone, a topic, and how the line is delivered."},
+            {"p": "Doubles on the line dice change the mood before any words come out: a d6 picks the new mood and the line rerolls under it."},
+            {"p": "For longer conversations there is a 19-hex hexflower of topics: 2d6 on a compass rose walks the talk one hex per step, gray hexes drawing on history and red ones on current events. Crossing a rose line shifts the tone to that line's, a d3 says whose priority the line serves (me, you, or us), and a reset returns to the neutral center."},
+            {"p": "In the app: the Sidekick Dialogue tool, with each character's mood and hexflower position persisted on their sheet."},
+            {"p": "Sidekick © Tam H (hedonic.ink), CC-BY 4.0."}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "about",
+      "title": "About & licenses",
+      "pages": [
+        {
+          "id": "credits",
+          "title": "Credits & licenses",
+          "blocks": [
+            {"p": "Juice Oracle is free and non-commercial. No accounts, no network play — your campaigns stay on your device."},
+            {"h": "Content"},
+            {"p": "Juice oracle content © jrruethe — CC BY-NC-SA 4.0 — github.com/jrruethe/juice. This app is an unofficial implementation of those tables."},
+            {"p": "Mythic Game Master Emulator © Word Mill Games — content used under CC-BY-NC 4.0."},
+            {"p": "Ironsworn, Ironsworn: Delve and Ironsworn: Starforged © Shawn Tomkin — CC-BY 4.0, via the official Datasworn data. Starforged: Sundered Isles — CC-BY-NC-SA 4.0."},
+            {"p": "Triple-O © Cezar Capacle / Critical Kit — CC-BY-SA 4.0. The derived table data in this app stays CC-BY-SA 4.0."},
+            {"p": "PET & Sidekick © Tam H (hedonic.ink) — CC-BY 4.0."},
+            {"p": "Abstract icon set © thunder9861 (official Juice itch.io release) — CC BY-NC-SA 4.0."},
+            {"h": "On-device AI models"},
+            {"p": "Web: Gemma 3 1B (Google) under the Gemma license. Mobile: Qwen3 0.6B (Alibaba) under Apache 2.0. Models run entirely on your device after a one-time download."}
+          ]
+        }
+      ]
+    }
+  ]
+}
