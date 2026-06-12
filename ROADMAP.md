@@ -122,6 +122,29 @@ submissions (docs/discoverability/submissions.md), physical-device pass.
 Next planning cycle starts from a fresh competitive scan and any user
 feedback from the discoverability channels.
 
+## Party emulator (Pettish + Triple-O, user-requested)
+
+Spec: `docs/superpowers/specs/2026-06-12-party-emulator-design.md`.
+Flips the solo seat: the player GMs, the app emulates the characters —
+what they do (Triple-O), how they feel and why (PET), what they say
+(Sidekick) — anchored on existing Characters, journaled, voiceable by the
+on-device interpreter.
+
+| Phase | Item | Status |
+|---|---|---|
+| 1 | Data pipeline (`build_emulator.py`) + Behavior Tables (13 d66 tables) | **Done** — PR #28 (2026-06-12) |
+| 2 | Triple-O check + `Character.emulation` + Party Emulator tool | **Done** — PR #29 (2026-06-12) |
+| 3 | PET procedures (ACT/REFOCUS/tag spend/session start/tokens/consequences) | **Done** — PR #30 (2026-06-12) |
+| 4 | Sidekick dialogue + hexflower walker + `voiceLine` | **Done** — PR #31 (2026-06-12) |
+
+**Party emulator complete** (2026-06-12, PRs #28–#31). Descoped: the
+hexflower figure's heavy-border interrupt (visual-only in the source PDF,
+never encoded; the context-switch note + conversation Reset cover the
+rule's intent — revisit only if a machine-readable border source appears).
+Phase 3's live verification caught a lost-update bug class
+(read-modify-write from build-captured state); all emulation writes now
+read fresh at press time — keep that pattern for future handlers.
+
 ## Cloud storage stance (BYO cloud, no server)
 
 The app stays standalone with no server component and no network code.

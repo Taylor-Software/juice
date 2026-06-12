@@ -1,6 +1,14 @@
 # Party Emulator — player/NPC emulation (design)
 
-Date: 2026-06-12. Status: approved.
+Date: 2026-06-12. Status: **shipped** (PRs #28–#31, 2026-06-12).
+
+> Shipped amendments: the hexflower's heavy-border interrupt (§2) was
+> descoped — the heavy lines exist only in the printed figure and were
+> never encoded (phase-1 deferred them); the context-switch note and the
+> conversation Reset cover the rule's intent. The direction-tone rule
+> ("tone changes to that of the line you crossed") IS implemented via
+> `hexflower.direction_tones`. The emulation panel omits mood (it lives
+> with the Sidekick tool, where the mood mechanic is used).
 Sources (user-provided PDFs, both verified for license):
 - **Pettish** by Tam H (hedonic.ink) — PET (Player Emulator with Tags),
   Sidekick dialogue oracle, Sidekick hexflower. Text **CC-BY 4.0**.
