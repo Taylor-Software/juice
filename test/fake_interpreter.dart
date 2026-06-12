@@ -7,12 +7,16 @@ import 'package:juice_oracle/state/interpreter.dart';
 /// Scriptable fake. Tests drive [status] directly and queue results.
 class FakeInterpreterService implements InterpreterService {
   FakeInterpreterService({InterpreterStatus? initial})
-      : statusNotifier =
-            ValueNotifier(initial ?? const InterpreterStatus(InterpreterPhase.needsDownload));
+      : statusNotifier = ValueNotifier(
+            initial ?? const InterpreterStatus(InterpreterPhase.needsDownload));
 
   final ValueNotifier<InterpreterStatus> statusNotifier;
   final List<List<OracleInterpretation>> queuedResults = [];
   Object? interpretError;
+  final List<String> queuedVoice = [];
+  Object? voiceError;
+  VoiceSeed? lastVoiceSeed;
+  int voiceCalls = 0;
 
   /// When set, interpret() blocks on it after counting the call — lets a
   /// test hold a generation in flight (e.g. to probe reentrancy guards).
@@ -48,6 +52,15 @@ class FakeInterpreterService implements InterpreterService {
       return const [OracleInterpretation(lens: 'literal', reading: 'fallback')];
     }
     return queuedResults.removeAt(0);
+  }
+
+  @override
+  Future<String> voiceLine(VoiceSeed seed) async {
+    lastVoiceSeed = seed;
+    voiceCalls++;
+    if (voiceError != null) throw voiceError!;
+    if (queuedVoice.isEmpty) return 'A canned voiced line.';
+    return queuedVoice.removeAt(0);
   }
 
   @override

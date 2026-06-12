@@ -190,7 +190,8 @@ List<OracleInterpretation> _salvageLensReadings(String s) {
     final lensEnd = frag.indexOf('"');
     if (lensEnd == -1) continue;
     var lens = frag.substring(0, lensEnd).trim();
-    final key = RegExp(r'"reading"\s*:\s*"').firstMatch(frag.substring(lensEnd));
+    final key =
+        RegExp(r'"reading"\s*:\s*"').firstMatch(frag.substring(lensEnd));
     if (key == null) continue;
     final start = lensEnd + key.end;
     final end = frag.lastIndexOf('"}');
@@ -212,9 +213,7 @@ String _stripThink(String s) =>
 /// scan from the first '{', so trailing prose — even prose containing
 /// braces — is ignored. Null if no object closes.
 String? _isolateJson(String raw) {
-  final s = _stripThink(raw)
-      .replaceAll('```json', '')
-      .replaceAll('```', '');
+  final s = _stripThink(raw).replaceAll('```json', '').replaceAll('```', '');
   final start = s.indexOf('{');
   if (start == -1) return null;
   var depth = 0;
@@ -237,6 +236,103 @@ String? _isolateJson(String raw) {
     }
   }
   return null;
+}
+
+// -- Sidekick voice -----------------------------------------------------------
+
+/// Everything the model needs to voice one rolled dialogue line
+/// (party-emulator spec §4).
+class VoiceSeed {
+  const VoiceSeed({
+    required this.line,
+    required this.mood,
+    this.tone,
+    this.topic,
+    this.characterName,
+    this.characterTags = const [],
+    this.genre = '',
+    this.toneSetting = '',
+    this.journalContext = const [],
+  });
+
+  /// The rolled dialogue line, verbatim.
+  final String line;
+
+  /// Mood id the line was rolled under ('default'…).
+  final String mood;
+
+  /// Tone / topic chips, when rolled alongside.
+  final String? tone;
+  final String? topic;
+
+  /// The speaking character, when one is selected; tags double as Traits.
+  final String? characterName;
+  final List<String> characterTags;
+
+  /// Per-campaign settings (as [OracleSeed.genre]/[OracleSeed.tone]).
+  final String genre;
+  final String toneSetting;
+
+  /// Recall lines (see relatedEntries); capped like the oracle prompt.
+  final List<String> journalContext;
+}
+
+/// Compact instruction (~150 tokens, well under the lens prompt's budget):
+/// one in-character utterance, plain text. Inlined into the prompt on every
+/// platform — the shared web session cannot take a per-chat system
+/// instruction (see interpreter_gemma.dart).
+const String _voiceInstruction = '''
+You voice one party character for a solo tabletop RPG player. Expand the
+rolled line into EXACTLY ONE in-character utterance, 1-2 short sentences,
+spoken aloud in the character's words. Keep the rolled line's intent, the
+stated mood, and the line tone. Honor the genre and campaign tone. recall:
+lines are excerpts from the player's journal; treat them as established
+facts. Output plain text only: just the spoken words — no JSON, no
+markdown, no quotation marks, no stage directions, no commentary.''';
+
+/// Builds the voiceLine prompt: the instruction plus line-keyed fields
+/// (format and recall capping as [buildOraclePrompt]). Optional fields are
+/// omitted entirely; empty settings become explicit placeholders.
+String buildVoicePrompt(VoiceSeed seed) {
+  String flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
+  String orElse(String v, String fallback) {
+    final f = flat(v);
+    return f.isEmpty ? fallback : f;
+  }
+
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+
+  final name = seed.characterName;
+  final tone = seed.tone;
+  final topic = seed.topic;
+  return '$_voiceInstruction\n\n'
+      'INPUT:\n'
+      'genre: ${orElse(seed.genre, '(unspecified)')}\n'
+      'tone: ${orElse(seed.toneSetting, '(unspecified)')}\n'
+      '${name == null ? '' : 'character: ${flat(name)}\n'}'
+      '${seed.characterTags.isEmpty ? '' : 'traits: ${flat(seed.characterTags.join(', '))}\n'}'
+      'mood: ${flat(seed.mood)}\n'
+      '${tone == null ? '' : 'line tone: ${flat(tone)}\n'}'
+      '${topic == null ? '' : 'topic: ${flat(topic)}\n'}'
+      'line: ${flat(seed.line)}\n'
+      '$recall'
+      'OUTPUT:';
+}
+
+/// Parses raw voiceLine output: strips think spans, trims. Unlike the lens
+/// parser there is no salvage tier — an empty result throws FormatException
+/// and the UI offers retry.
+String parseVoiceResponse(String raw) {
+  final out = _stripThink(raw).trim();
+  if (out.isEmpty) throw const FormatException('Empty voice response');
+  return out;
 }
 
 /// Debug-eval seeds (see spec "Quality bar"). Used by the debug-only

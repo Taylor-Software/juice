@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 
+import 'fake_interpreter.dart';
+
 void main() {
   group('buildOraclePrompt', () {
     test('carries result, genre, tone, scene', () {
@@ -87,7 +89,8 @@ void main() {
       expect(p, contains('genre: grim dark'));
       expect(p, contains('scene: Scene one (Chaos 5)'));
       final lines = p.split('\n');
-      expect(lines, hasLength(6)); // INPUT:, genre, tone, result, scene, OUTPUT:
+      expect(
+          lines, hasLength(6)); // INPUT:, genre, tone, result, scene, OUTPUT:
       expect(lines.first, 'INPUT:');
       expect(lines.last, 'OUTPUT:');
     });
@@ -109,14 +112,15 @@ void main() {
     });
 
     test('think tags are stripped before parsing', () {
-      final cards = parseInterpretations(
-          '<think>\nthe player wants…\n</think>\n$clean');
+      final cards =
+          parseInterpretations('<think>\nthe player wants…\n</think>\n$clean');
       expect(cards, hasLength(4));
       expect(cards.first.reading, 'A');
     });
 
     test('prose around the JSON object is ignored', () {
-      expect(parseInterpretations('Here you go!\n$clean\nEnjoy.'), hasLength(4));
+      expect(
+          parseInterpretations('Here you go!\n$clean\nEnjoy.'), hasLength(4));
     });
 
     test('trailing prose containing a brace is ignored', () {
@@ -205,6 +209,115 @@ result: Fate Check (Likely) — Yes, and…
         expect(cards.single.lens, 'raw');
         expect(cards.single.reading, garbage);
       });
+    });
+  });
+
+  group('buildVoicePrompt', () {
+    test('carries line, mood, chips, character, settings, and the contract',
+        () {
+      const seed = VoiceSeed(
+        line: "I'm not getting any younger.",
+        mood: 'sassy',
+        tone: 'eager',
+        topic: 'a want/desire',
+        characterName: 'Ash',
+        characterTags: ['brave', 'curious'],
+        genre: 'grimdark fantasy',
+        toneSetting: 'tense and dangerous',
+      );
+      final p = buildVoicePrompt(seed);
+      expect(p, contains("line: I'm not getting any younger."));
+      expect(p, contains('mood: sassy'));
+      expect(p, contains('line tone: eager'));
+      expect(p, contains('topic: a want/desire'));
+      expect(p, contains('character: Ash'));
+      expect(p, contains('traits: brave, curious'));
+      expect(p, contains('genre: grimdark fantasy'));
+      expect(p, contains('tone: tense and dangerous'));
+      // The compact plain-text instruction rides inside the prompt (the web
+      // session cannot take a per-chat system instruction).
+      expect(p, contains('ONE'));
+      expect(p, contains('1-2 short sentences'));
+      expect(p, contains('plain text'));
+      expect(p, isNot(contains('JSON shape')));
+      expect(p, endsWith('OUTPUT:'));
+    });
+
+    test('optional fields are omitted; empty settings get placeholders', () {
+      const seed = VoiceSeed(line: 'Duck.', mood: 'taciturn');
+      final p = buildVoicePrompt(seed);
+      // The instruction block mentions field names in prose; the omission
+      // assertions only concern the INPUT block.
+      final input = p.substring(p.indexOf('INPUT:'));
+      expect(input, contains('line: Duck.'));
+      expect(input, contains('mood: taciturn'));
+      expect(input, isNot(contains('line tone:')));
+      expect(input, isNot(contains('topic:')));
+      expect(input, isNot(contains('character:')));
+      expect(input, isNot(contains('traits:')));
+      expect(input, contains('genre: (unspecified)'));
+      expect(input, contains('tone: (unspecified)'));
+      expect(input, isNot(contains('recall:')));
+    });
+
+    test('recall lines are capped and truncated like the oracle prompt', () {
+      final seed = VoiceSeed(
+        line: 'Go.',
+        mood: 'default',
+        journalContext: ['x' * 300, 'b', 'c'],
+      );
+      final recalls = buildVoicePrompt(seed)
+          .split('\n')
+          .where((l) => l.startsWith('recall: '))
+          .toList();
+      expect(recalls, hasLength(kRecallMaxEntries));
+      expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…');
+      expect(recalls[1], 'recall: b');
+    });
+
+    test('multi-line seed fields collapse to one prompt line each', () {
+      const seed = VoiceSeed(line: 'Look\n  out!', mood: 'default');
+      expect(buildVoicePrompt(seed), contains('line: Look out!'));
+    });
+  });
+
+  group('parseVoiceResponse', () {
+    test('strips think tags and trims', () {
+      expect(parseVoiceResponse('<think>hmm</think>\n  Get down, now!  '),
+          'Get down, now!');
+    });
+
+    test('plain text passes through trimmed', () {
+      expect(parseVoiceResponse('  Right behind you.\n'), 'Right behind you.');
+    });
+
+    test('empty, whitespace, or all-think output throws FormatException', () {
+      expect(() => parseVoiceResponse(''), throwsFormatException);
+      expect(() => parseVoiceResponse('   \n'), throwsFormatException);
+      expect(() => parseVoiceResponse('<think>still going'),
+          throwsFormatException);
+    });
+  });
+
+  group('FakeInterpreterService.voiceLine', () {
+    test('captures the seed, drains the queue, then falls back canned',
+        () async {
+      final fake = FakeInterpreterService();
+      fake.queuedVoice.addAll(['First!', 'Second.']);
+      const seed = VoiceSeed(line: 'Go.', mood: 'default');
+      expect(await fake.voiceLine(seed), 'First!');
+      expect(fake.lastVoiceSeed, same(seed));
+      expect(await fake.voiceLine(seed), 'Second.');
+      final canned = await fake.voiceLine(seed);
+      expect(canned, isNotEmpty);
+      expect(fake.voiceCalls, 3);
+    });
+
+    test('throws the scripted error', () async {
+      final fake = FakeInterpreterService()
+        ..voiceError = StateError('Interpreter not ready');
+      expect(fake.voiceLine(const VoiceSeed(line: 'Go.', mood: 'default')),
+          throwsStateError);
     });
   });
 
