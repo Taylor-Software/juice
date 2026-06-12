@@ -113,6 +113,50 @@ void main() {
       final cards = parseInterpretations('{"interpretations": [oops');
       expect(cards.single.lens, 'raw');
     });
+
+    group('salvage of unescaped-quote output', () {
+      // Verbatim Gemma3 1B (web) capture: structurally correct lens/reading
+      // sequence, but the literal reading contains unescaped double quotes,
+      // and the model rambled extra INPUT lines after the object.
+      const captured =
+          r'''{"interpretations":[{"lens":"literal","reading":"The wood creaks and glows fire-swept, no warmth you look for," but you recognize the scent of iron," you're not alone."},{"lens":"symbolic","reading":"The stones within the mill pulse with a slow betrayal, a reckoning waiting."},{"lens":"complication","reading":"The map you seek is a lie. Return to the city gate."},{"lens":"foreshadow","reading":"A shadow coalesces within the mill and a whisper speaks."}]}
+
+INPUT:
+genre: grimdark fantasy
+tone: tense and dangerous
+result: Fate Check (Likely) — Yes, and…
+''';
+
+      test('real captured Gemma output -> four cards, quotes preserved', () {
+        final cards = parseInterpretations(captured);
+        expect(cards, hasLength(4));
+        expect(cards.map((c) => c.lens).toList(), kLenses);
+        expect(cards.first.reading, contains("you're not alone"));
+        expect(cards.first.reading, contains(r'scent of iron,"'));
+        expect(cards.first.reading, endsWith("you're not alone."));
+        expect(cards.last.reading,
+            'A shadow coalesces within the mill and a whisper speaks.');
+      });
+
+      test('unescaped quote in a middle card only -> four cards', () {
+        final cards = parseInterpretations(
+            '{"interpretations":[{"lens":"literal","reading":"A"},'
+            '{"lens":"symbolic","reading":"He said "no" and left."},'
+            '{"lens":"complication","reading":"C"},'
+            '{"lens":"foreshadow","reading":"D"}]}');
+        expect(cards, hasLength(4));
+        expect(cards.map((c) => c.lens).toList(), kLenses);
+        expect(cards[1].reading, 'He said "no" and left.');
+        expect(cards[3].reading, 'D');
+      });
+
+      test('garbage with quotes and braces but no delimiters -> raw', () {
+        const garbage = 'the "model" said {nothing useful} at all"}';
+        final cards = parseInterpretations(garbage);
+        expect(cards.single.lens, 'raw');
+        expect(cards.single.reading, garbage);
+      });
+    });
   });
 
   test('system instruction states the contract', () {

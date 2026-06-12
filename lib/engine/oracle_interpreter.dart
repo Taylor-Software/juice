@@ -108,9 +108,11 @@ String buildOraclePrompt(OracleSeed seed) {
 }
 
 /// Parses raw model output. Strips <think> spans and code fences, isolates
-/// the first balanced JSON object, validates shape. On any failure returns the
-/// raw text as a single 'raw' card so the player still sees something.
-/// Never throws.
+/// the first balanced JSON object, validates shape. If jsonDecode fails or
+/// yields no cards, a salvage stage extracts lens/reading pairs by their
+/// stable delimiters — small models emit unescaped quotes inside readings,
+/// which breaks strict JSON. On any remaining failure returns the raw text
+/// as a single 'raw' card so the player still sees something. Never throws.
 List<OracleInterpretation> parseInterpretations(String raw) {
   final cleaned = _isolateJson(raw);
   if (cleaned != null) {
@@ -134,15 +136,46 @@ List<OracleInterpretation> parseInterpretations(String raw) {
         if (out.isNotEmpty) return out;
       }
     } catch (_) {
-      // fall through to raw fallback
+      // fall through to salvage / raw fallback
     }
   }
+  final salvaged = _salvageLensReadings(cleaned ?? _stripThink(raw));
+  if (salvaged.isNotEmpty) return salvaged;
   final fallback = _stripThink(raw).trim();
   return fallback.isEmpty
       ? const <OracleInterpretation>[]
       : <OracleInterpretation>[
           OracleInterpretation(lens: 'raw', reading: fallback),
         ];
+}
+
+/// Salvage stage for structurally-correct-but-invalid JSON: small models
+/// emit unescaped double quotes inside reading text, which breaks jsonDecode
+/// while leaving the `{"lens":"` / `"reading":"` / closing `"}` delimiters
+/// intact (readings never contain those exact sequences in practice). Splits
+/// on the lens delimiter and, per fragment, takes the lens up to the next
+/// quote and the reading up to the fragment's last `"}` boundary — so stray
+/// inner quotes are preserved verbatim. Returns an empty list if nothing
+/// salvageable is found.
+List<OracleInterpretation> _salvageLensReadings(String s) {
+  final out = <OracleInterpretation>[];
+  final fragments = s.split('{"lens":"');
+  for (var i = 1; i < fragments.length; i++) {
+    final frag = fragments[i];
+    final lensEnd = frag.indexOf('"');
+    if (lensEnd == -1) continue;
+    var lens = frag.substring(0, lensEnd).trim();
+    final key = RegExp(r'"reading"\s*:\s*"').firstMatch(frag.substring(lensEnd));
+    if (key == null) continue;
+    final start = lensEnd + key.end;
+    final end = frag.lastIndexOf('"}');
+    if (end <= start) continue;
+    final reading = frag.substring(start, end).trim();
+    if (reading.isEmpty) continue;
+    if (lens.isEmpty || lens.length > 24) lens = 'reading';
+    out.add(OracleInterpretation(lens: lens, reading: reading));
+  }
+  return out;
 }
 
 /// Strips closed <think> spans, and an unterminated <think> to end-of-string
