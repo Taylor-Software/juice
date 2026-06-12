@@ -24,6 +24,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/oracle_data.json
+    - assets/emulator_data.json
     - assets/ruleset_starforged.json
     - assets/ruleset_classic.json
     - assets/ruleset_delve.json
