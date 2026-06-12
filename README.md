@@ -63,6 +63,11 @@ Emulator runs the Triple-O check itself: name the Obvious / Option / Odd (or
 let dice assign a group's three courses), then roll a d6 — or Double-Down with
 2d6 and keep your favorite. Doubles grow the behavior into a character Trait,
 adding a new tag or marking an existing one prominent on the character sheet.
+PET procedures complete the emulator: each character keeps an Agenda, a Focus,
+and tokens — ACT rolls the agenda with a coin (the Ask as written or inverted)
+plus a modifier die (as written / inverted / exaggerated) and grants a token on
+an agenda match, spending a personality tag yields two readings, and session
+start deals a fresh Focus, a real-life event, and a clean slate of tags.
 
 Optional **Ironsworn family** rulesets (toggle in the app-bar tune icon):
 moves browser with action/progress rolls, and all oracle tables drawn from

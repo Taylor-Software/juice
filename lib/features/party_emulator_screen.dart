@@ -9,7 +9,9 @@ import '../state/providers.dart';
 
 /// Party Emulator — the Triple-O check: define the Obvious / Option / Odd
 /// (or let dice assign group courses), roll or double-down, and let doubles
-/// grow the character's Traits (party emulator phase 2).
+/// grow the character's Traits (party emulator phase 2) — plus the PET
+/// procedures: per-character Agenda / Focus / tokens with ACT, REFOCUS,
+/// tag spend, session start, and consequences (phase 3).
 class PartyEmulatorScreen extends ConsumerStatefulWidget {
   const PartyEmulatorScreen({super.key, this.dice});
 
@@ -38,6 +40,12 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
 
   /// The double-down favorite die; picking it resolves the band.
   int? _keptDie;
+
+  /// Emulation state for 'No one' — never persisted (phase-3 PET).
+  CharacterEmulation _transient = const CharacterEmulation();
+
+  /// Last PET procedure outcome (result card + journal source).
+  _PetOutcome? _pet;
 
   static const _undefinedCourse = '(undefined — make it up now)';
 
@@ -132,6 +140,14 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
           ],
           onChanged: (v) => setState(() => _characterId = v),
         ),
+        const SizedBox(height: 12),
+        _emulationCard(theme, data, selected),
+        const SizedBox(height: 12),
+        _petActionsCard(theme, data, selected),
+        if (_pet != null) ...[
+          const SizedBox(height: 16),
+          _petResultCard(theme, selected),
+        ],
         const SizedBox(height: 12),
         _checkCard(theme),
         if (_result != null) ...[
@@ -334,11 +350,13 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       ),
     );
     if (tag == null) return;
-    final emulation = c.emulation ?? const CharacterEmulation();
-    if (emulation.prominentTags.contains(tag)) return;
-    await ref.read(charactersProvider.notifier).replace(c.copyWith(
-        emulation: emulation
-            .copyWith(prominentTags: [...emulation.prominentTags, tag])));
+    // Commit through [_updateEmulation]: the dialog await outlives the
+    // captured [c], so dedupe and write against the press-time emulation.
+    await _updateEmulation(
+        c,
+        (e) => e.prominentTags.contains(tag)
+            ? e
+            : e.copyWith(prominentTags: [...e.prominentTags, tag]));
   }
 
   Future<void> _addTrait(Character c) async {
@@ -368,10 +386,15 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       },
     );
     final trait = result?.trim() ?? '';
-    if (trait.isEmpty || c.tags.contains(trait)) return;
+    if (trait.isEmpty) return;
+    // Tags live on the Character (not its emulation), so [_updateEmulation]
+    // doesn't apply: re-read the roster at commit time instead, then dedupe
+    // and write against that fresh character — never the captured [c].
+    final cur = await _freshCharacter(c);
+    if (cur.tags.contains(trait)) return;
     await ref
         .read(charactersProvider.notifier)
-        .replace(c.copyWith(tags: [...c.tags, trait]));
+        .replace(cur.copyWith(tags: [...cur.tags, trait]));
   }
 
   void _log(Character? selected) {
@@ -390,4 +413,322 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
       const SnackBar(content: Text('Added to journal')),
     );
   }
+
+  // -- PET procedures (phase 3) ----------------------------------------------
+
+  /// The selected character's emulation (created on first write), or the
+  /// transient 'No one' state. Build-time display only — handlers must go
+  /// through [_currentEmulation] / [_updateEmulation], which read fresh at
+  /// press time.
+  CharacterEmulation _emulationOf(Character? c) =>
+      c == null ? _transient : (c.emulation ?? const CharacterEmulation());
+
+  /// [c] as the provider holds it right now — never the build-captured
+  /// snapshot, which goes stale the moment another press persists. Falls
+  /// back to [c] if it left the roster mid-press.
+  Future<Character> _freshCharacter(Character c) async {
+    final chars = await ref.read(charactersProvider.future);
+    return chars.firstWhere((x) => x.id == c.id, orElse: () => c);
+  }
+
+  /// The press-time emulation: what a handler must base decisions and
+  /// result text on.
+  Future<CharacterEmulation> _currentEmulation(Character? c) async => c == null
+      ? _transient
+      : ((await _freshCharacter(c)).emulation ?? const CharacterEmulation());
+
+  /// Persist [up] applied to the character's CURRENT emulation, or to the
+  /// in-screen 'No one' state. Reading fresh inside the write is the
+  /// lost-update guard: a press landing before the next rebuild must not
+  /// clobber fields persisted since (live repro: session start, then
+  /// token-plus resurrected the cleared usedTags and old focus).
+  Future<void> _updateEmulation(
+      Character? c, CharacterEmulation Function(CharacterEmulation) up) async {
+    if (c == null) {
+      setState(() => _transient = up(_transient));
+      return;
+    }
+    final cur = await _freshCharacter(c);
+    await ref.read(charactersProvider.notifier).replace(cur.copyWith(
+        emulation: up(cur.emulation ?? const CharacterEmulation())));
+  }
+
+  Future<void> _rollAgenda(Character? selected) {
+    final key = roll2d6Key(_dice);
+    return _updateEmulation(selected, (e) => e.copyWith(agendaKey: key));
+  }
+
+  Future<void> _rollFocus(Character? selected) {
+    final key = roll2d6Key(_dice);
+    return _updateEmulation(selected, (e) => e.copyWith(focusKey: key));
+  }
+
+  Future<void> _bumpTokens(Character? selected, int delta) =>
+      _updateEmulation(selected, (e) {
+        final next = e.tokens + delta;
+        return e.copyWith(tokens: next < 0 ? 0 : next);
+      });
+
+  /// The result-card lines for one ACT reading.
+  List<String> _actLines(EmulatorData data, ActResult r) {
+    final a = data.agendaEntry(r.agendaKey);
+    return [
+      'Agenda: ${a.name}',
+      'Ask: ${a.ask}${r.heads ? '' : ' (inverted)'}',
+      'Modifier: ${actModeLabel(r.modifier)}',
+      'Rolls: agenda ${r.agendaKey} · coin ${r.heads ? 'heads' : 'tails'}'
+          ' · modifier ${r.modifierDie}',
+    ];
+  }
+
+  Future<void> _act(EmulatorData data, Character? selected) async {
+    // One fresh snapshot decides match-vs-adopt and the result text; the
+    // write still recomputes from the updater's argument.
+    final e = await _currentEmulation(selected);
+    final r = rollAct(_dice);
+    final a = data.agendaEntry(r.agendaKey);
+    final lines = _actLines(data, r);
+    if (e.agendaKey == null) {
+      lines.add('Agenda set to ${a.name}');
+      await _updateEmulation(
+          selected, (cur) => cur.copyWith(agendaKey: r.agendaKey));
+    } else if (e.agendaKey == r.agendaKey) {
+      lines.add('Agenda match — +1 token');
+      await _updateEmulation(
+          selected, (cur) => cur.copyWith(tokens: cur.tokens + 1));
+    }
+    setState(() => _pet = _PetOutcome(
+        'ACT — ${a.name} (${r.heads ? 'as written' : 'inverted'})', lines));
+  }
+
+  Future<void> _refocus(EmulatorData data, Character? selected) async {
+    final key = roll2d6Key(_dice);
+    final f = data.focusEntry(key);
+    await _updateEmulation(selected, (e) => e.copyWith(focusKey: key));
+    setState(() => _pet =
+        _PetOutcome('REFOCUS — ${f.name}', ['Focus: ${f.name} — ${f.blurb}']));
+  }
+
+  /// Spend an unspent tag: pick it, roll TWO ACT readings (no agenda-match
+  /// token, no agenda adoption — pure prompts), check the tag off.
+  Future<void> _spendTag(
+      EmulatorData data, Character selected, List<String> unspent) async {
+    final tag = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Spend a tag'),
+        children: [
+          for (final t in unspent)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, t),
+              child: Text(t),
+            ),
+        ],
+      ),
+    );
+    if (tag == null) return;
+    final first = rollAct(_dice);
+    final second = rollAct(_dice);
+    await _updateEmulation(
+        selected, (e) => e.copyWith(usedTags: [...e.usedTags, tag]));
+    setState(() => _pet = _PetOutcome('Tag spend — $tag', [
+          'Spent: $tag',
+          'Reading 1',
+          ..._actLines(data, first),
+          'Reading 2',
+          ..._actLines(data, second),
+        ]));
+  }
+
+  /// Session start: a fresh Focus + a d6 real-life event; spent tags reset.
+  Future<void> _sessionStart(EmulatorData data, Character? selected) async {
+    final key = roll2d6Key(_dice);
+    final f = data.focusEntry(key);
+    final life = data.realLife[_dice.dN(6) - 1];
+    await _updateEmulation(
+        selected, (e) => e.copyWith(focusKey: key, usedTags: const []));
+    setState(() => _pet = _PetOutcome('Session start', [
+          'Focus: ${f.name} — ${f.blurb}',
+          'Real life: $life',
+        ]));
+  }
+
+  void _consequence(EmulatorData data) {
+    final move = data.consequences[_dice.dN(6) - 1];
+    setState(() => _pet = _PetOutcome('Consequence', ['Consequence: $move']));
+  }
+
+  Widget _emulationCard(
+      ThemeData theme, EmulatorData data, Character? selected) {
+    final e = _emulationOf(selected);
+    final agenda = e.agendaKey == null ? null : data.agendaEntry(e.agendaKey!);
+    final focus = e.focusKey == null ? null : data.focusEntry(e.focusKey!);
+    return Card(
+      key: const Key('pe-emulation'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Emulation', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Text(
+              agenda == null
+                  ? 'Agenda: —'
+                  : 'Agenda: ${agenda.name} — Ask: ${agenda.ask}',
+              key: const Key('pe-agenda-line'),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              focus == null
+                  ? 'Focus: —'
+                  : 'Focus: ${focus.name} — ${focus.blurb}',
+              key: const Key('pe-focus-line'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Row(
+              children: [
+                Text('Tokens: ${e.tokens}', key: const Key('pe-tokens')),
+                IconButton(
+                  key: const Key('pe-token-minus'),
+                  tooltip: 'Spend a token',
+                  icon: const Icon(Icons.remove),
+                  onPressed: () => _bumpTokens(selected, -1),
+                ),
+                IconButton(
+                  key: const Key('pe-token-plus'),
+                  tooltip: 'Add a token',
+                  icon: const Icon(Icons.add),
+                  onPressed: () => _bumpTokens(selected, 1),
+                ),
+              ],
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton(
+                  key: const Key('pe-roll-agenda'),
+                  onPressed: () => _rollAgenda(selected),
+                  child: const Text('Roll Agenda'),
+                ),
+                OutlinedButton(
+                  key: const Key('pe-roll-focus'),
+                  onPressed: () => _rollFocus(selected),
+                  child: const Text('Roll Focus'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _petActionsCard(
+      ThemeData theme, EmulatorData data, Character? selected) {
+    final e = _emulationOf(selected);
+    final unspent = selected == null
+        ? const <String>[]
+        : [
+            for (final t in selected.tags)
+              if (!e.usedTags.contains(t)) t
+          ];
+    return Card(
+      key: const Key('pe-pet-actions'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('PET actions', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton(
+                  key: const Key('pe-act'),
+                  onPressed: () => _act(data, selected),
+                  child: const Text('ACT'),
+                ),
+                OutlinedButton(
+                  key: const Key('pe-refocus'),
+                  onPressed: () => _refocus(data, selected),
+                  child: const Text('REFOCUS'),
+                ),
+                OutlinedButton(
+                  key: const Key('pe-tag-spend'),
+                  onPressed: unspent.isEmpty
+                      ? null
+                      : () => _spendTag(data, selected!, unspent),
+                  child: const Text('Spend tag'),
+                ),
+                OutlinedButton(
+                  key: const Key('pe-session-start'),
+                  onPressed: () => _sessionStart(data, selected),
+                  child: const Text('Session start'),
+                ),
+                OutlinedButton(
+                  key: const Key('pe-consequence'),
+                  onPressed: () => _consequence(data),
+                  child: const Text('Consequence'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _petResultCard(ThemeData theme, Character? selected) {
+    final p = _pet!;
+    return Card(
+      key: const Key('pe-pet-result'),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(p.title,
+                      key: const Key('pe-pet-title'),
+                      style: theme.textTheme.titleMedium),
+                ),
+                IconButton(
+                  key: const Key('pe-pet-log'),
+                  tooltip: 'Add to journal',
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  onPressed: () => _logPet(selected),
+                ),
+              ],
+            ),
+            Text(p.lines.join('\n'), key: const Key('pe-pet-lines')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _logPet(Character? selected) {
+    final p = _pet!;
+    ref.read(journalProvider.notifier).add(
+        p.title,
+        [if (selected != null) 'Character: ${selected.name}', ...p.lines]
+            .join('\n'));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Added to journal')),
+    );
+  }
+}
+
+/// A PET procedure outcome: the journal title plus the result card's lines.
+class _PetOutcome {
+  const _PetOutcome(this.title, this.lines);
+  final String title;
+  final List<String> lines;
 }
