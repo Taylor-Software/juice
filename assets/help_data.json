@@ -138,7 +138,7 @@
             {"p": "Doubles change the mood first: a d6 picks the new mood and the line rerolls under it, so the shift shows in the very next thing they say."},
             {"p": "Voice this hands the rolled line, the character's tags, and your campaign's genre and tone to the on-device interpreter and returns a fuller in-character delivery. It needs the interpreter model downloaded and ready (see the Oracle interpreter page)."},
             {"h": "Hexflower"},
-            {"steps": ["Step rolls 2d6 on the compass rose and walks the conversation one hex in that direction (off the edge, you stay put).", "Each hex is a topic; gray hexes draw on history, red ones on current events.", "The tone becomes that of the rose line you crossed, and a d3 sets the priority: me, you, or us.", "Reset returns the conversation to the center hex."]}
+            {"steps": ["Step rolls 2d6 on the compass rose and walks the conversation one hex in that direction (off the edge, you stay put).", "Each hex is a topic; gray hexes draw on history, red ones on current events.", "Each step also re-keys the tone — it takes the label of the compass direction you moved along — and a d3 sets the priority: me, you, or us.", "Reset returns the conversation to the center hex."]}
           ]
         },
         {
@@ -270,7 +270,7 @@
           "blocks": [
             {"p": "Sidekick generates companion dialogue. The character carries one of six moods — default, taciturn, savvy, high-strung, sassy, selfish — and 2d6 picks a line from the current mood's table while d6 chips add a tone, a topic, and how the line is delivered."},
             {"p": "Doubles on the line dice change the mood before any words come out: a d6 picks the new mood and the line rerolls under it."},
-            {"p": "For longer conversations there is a 19-hex hexflower of topics: 2d6 on a compass rose walks the talk one hex per step, gray hexes drawing on history and red ones on current events. Crossing a rose line shifts the tone to that line's, a d3 says whose priority the line serves (me, you, or us), and a reset returns to the neutral center."},
+            {"p": "For longer conversations there is a 19-hex hexflower of topics: 2d6 on a compass rose walks the talk one hex per step, gray hexes drawing on history and red ones on current events. Each step re-keys the tone from the direction moved, a d3 sets whose priority the line serves (me, you, or us), and a reset returns to the neutral center."},
             {"p": "In the app: the Sidekick Dialogue tool, with each character's mood and hexflower position persisted on their sheet."},
             {"p": "Sidekick © Tam H (hedonic.ink), CC-BY 4.0."}
           ]
