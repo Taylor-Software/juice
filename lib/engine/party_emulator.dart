@@ -33,3 +33,62 @@ TableRollResult rollBehavior(EmulatorData data, String table, Dice dice) {
 List<TableRollResult> rollCombo(
         EmulatorData data, List<String> tables, Dice dice) =>
     [for (final t in tables) rollBehavior(data, t, dice)];
+
+// -- Triple-O check ----------------------------------------------------------
+
+/// The three courses of action of a Triple-O check.
+enum TripleOBand { obvious, option, odd }
+
+extension TripleOBandLabel on TripleOBand {
+  String get label => switch (this) {
+        TripleOBand.obvious => 'The Obvious',
+        TripleOBand.option => 'The Option',
+        TripleOBand.odd => 'The Odd',
+      };
+}
+
+/// Band for one d6, per the zine: 4-6 the Obvious, 2-3 the Option, 1 the Odd.
+TripleOBand bandFor(int d6) => switch (d6) {
+      >= 4 => TripleOBand.obvious,
+      >= 2 => TripleOBand.option,
+      _ => TripleOBand.odd,
+    };
+
+/// A Triple-O check roll: either a single die (band decided) or a
+/// double-down pair (the USER picks the favorite die in the UI, so the
+/// engine decides no band; [isDoubles] flags trait growth).
+class TripleOResult {
+  const TripleOResult.single(int this.die) : dice = null;
+  const TripleOResult.doubleDown((int, int) this.dice) : die = null;
+
+  /// The single check die; null for double-down.
+  final int? die;
+
+  /// Both double-down dice; null for a single roll.
+  final (int, int)? dice;
+
+  /// Matching double-down dice grow the behavior into a Trait.
+  bool get isDoubles => dice != null && dice!.$1 == dice!.$2;
+
+  /// Decided band — non-null only for a single roll.
+  TripleOBand? get band => die == null ? null : bandFor(die!);
+}
+
+/// Single-die Triple-O check.
+TripleOResult rollTripleO(Dice dice) => TripleOResult.single(dice.dN(6));
+
+/// Double-down: 2d6, favorite die picked by the player afterwards.
+TripleOResult rollDoubleDown(Dice dice) =>
+    TripleOResult.doubleDown((dice.dN(6), dice.dN(6)));
+
+/// Pure group assignment given the three course rolls: returns course
+/// indices ordered [obvious, option, odd] = highest, middle, lowest roll.
+/// Ties broken by earlier list position keeping its higher slot.
+List<int> assignOrder(List<int> rolls) => [0, 1, 2]..sort((a, b) {
+    final byRoll = rolls[b].compareTo(rolls[a]);
+    return byRoll != 0 ? byRoll : a.compareTo(b);
+  });
+
+/// Group assignment: one d6 per course (in list order); see [assignOrder].
+List<int> assignCourses(Dice dice) =>
+    assignOrder([dice.dN(6), dice.dN(6), dice.dN(6)]);

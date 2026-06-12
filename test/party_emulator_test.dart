@@ -75,4 +75,69 @@ void main() {
         ];
     expect(run(), run());
   });
+
+  test('bandFor maps 4-6 obvious, 2-3 option, 1 odd', () {
+    expect(bandFor(1), TripleOBand.odd);
+    expect(bandFor(2), TripleOBand.option);
+    expect(bandFor(3), TripleOBand.option);
+    expect(bandFor(4), TripleOBand.obvious);
+    expect(bandFor(5), TripleOBand.obvious);
+    expect(bandFor(6), TripleOBand.obvious);
+  });
+
+  test('band labels carry the zine article', () {
+    expect(TripleOBand.obvious.label, 'The Obvious');
+    expect(TripleOBand.option.label, 'The Option');
+    expect(TripleOBand.odd.label, 'The Odd');
+  });
+
+  test('rollTripleO is a single die with a decided band', () {
+    final r = rollTripleO(Dice(Random(7))); // first d6 = 5
+    expect(r.die, 5);
+    expect(r.dice, isNull);
+    expect(r.isDoubles, isFalse);
+    expect(r.band, TripleOBand.obvious);
+  });
+
+  test('rollDoubleDown rolls both dice and decides no band', () {
+    final r = rollDoubleDown(Dice(Random(5))); // rolls 5, 1
+    expect(r.die, isNull);
+    expect(r.dice, (5, 1));
+    expect(r.band, isNull, reason: 'the player picks the favorite die');
+    expect(r.isDoubles, isFalse);
+  });
+
+  test('double-down doubles are flagged for trait growth', () {
+    expect(rollDoubleDown(Dice(Random(2))).isDoubles, isTrue); // rolls 4, 4
+    final dice = Dice(Random(11));
+    var seenDoubles = false, seenDistinct = false;
+    for (var i = 0; i < 200; i++) {
+      final r = rollDoubleDown(dice);
+      expect(r.isDoubles, r.dice!.$1 == r.dice!.$2);
+      r.isDoubles ? seenDoubles = true : seenDistinct = true;
+    }
+    expect(seenDoubles, isTrue);
+    expect(seenDistinct, isTrue);
+  });
+
+  test('assignOrder ranks courses highest→obvious; ties keep list order', () {
+    expect(assignOrder([1, 2, 3]), [2, 1, 0]);
+    expect(assignOrder([6, 5, 4]), [0, 1, 2]);
+    expect(assignOrder([4, 4, 2]), [0, 1, 2]); // tie: earlier keeps obvious
+    expect(assignOrder([2, 5, 5]), [1, 2, 0]); // tie: earlier keeps obvious
+    expect(assignOrder([3, 3, 3]), [0, 1, 2]); // triple tie: list order
+  });
+
+  test('assignCourses orders courses by three d6, ties deterministic', () {
+    // Seed 0 rolls [4, 6, 5]: course 1 highest, then 2, then 0.
+    expect(assignCourses(Dice(Random(0))), [1, 2, 0]);
+    // Seed 2 rolls [4, 4, 5]: 5 takes obvious; the tied 4s keep list order.
+    expect(assignCourses(Dice(Random(2))), [2, 0, 1]);
+    // Seed 4 rolls [1, 4, 4]: tied 4s take obvious/option in list order.
+    expect(assignCourses(Dice(Random(4))), [1, 2, 0]);
+    for (var s = 0; s < 30; s++) {
+      expect(assignCourses(Dice(Random(s)))..sort(), [0, 1, 2],
+          reason: 'seed $s must yield a permutation of 0-2');
+    }
+  });
 }
