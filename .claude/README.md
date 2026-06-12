@@ -25,8 +25,11 @@ All six are shared-canonical (identical in `deep_iq_v2`):
 | `/audit` | `flutter analyze` + `flutter test`, compressed to counts + failures. ~1-2K token cost regardless of suite size. |
 | `/checkpoint` | Verify → document → cleanup → commit → push → PR, in strict phases. |
 | `/ship-pr <title>` | Full branch→commit→rebase→push→PR→squash-merge→cleanup. Works local (`gh`) or remote (GitHub MCP). |
-| `/clean-branches` | Delete local branches whose squash-merge already landed on `main`. Content-aware + safe. |
+| `/clean-branches` | Delete local branches whose squash-merge already landed on the default branch. Content-aware + safe. |
 | `/code-analysis` | Fans out 4 **Haiku** scan agents (packages/patterns/perf/dead-code), synthesizes on the session model. |
+
+`/ship-pr` and `/clean-branches` detect the repo's default branch from
+`git remote show origin` — they work unchanged on `main` and `master` repos.
 
 ## Subagents (`agents/`) and model routing
 
@@ -60,6 +63,7 @@ subgraph is far cheaper than reading source files. Absent the graph, the hooks n
 
 ## Keeping the canonical layer in sync
 
-The six commands above and `agents/github-steward.md` are intended to be **identical** in
-`juice/.claude/` and `deep_iq_v2/.claude/`. When you change one, mirror it to the other
-in the same change.
+The six commands above and `agents/github-steward.md` are intended to be **identical**
+across the Taylor-Software Flutter repos (`juice`, `deep_iq_v2`, `flops`, `coffee-empire`,
+`homo`, `mobile_office`, `idle-engine`), with `flutter-sdlc-template` as the distribution
+source. When you change one, mirror it to the others in the same change.

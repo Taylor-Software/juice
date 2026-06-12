@@ -39,7 +39,8 @@ Working rules for this repo:
 The Claude Code harness (commands, subagents, hooks, permissions) is documented in
 **[.claude/README.md](.claude/README.md)** — read it to understand the integrated
 system. The lifecycle commands and `github-steward` are a **shared canonical layer kept
-byte-identical with the `deep_iq_v2` repo**; when you change one, mirror it.
+byte-identical across the Taylor-Software Flutter repos** (distribution source:
+`flutter-sdlc-template`); when you change one, mirror it.
 
 - **Slash commands:** `/prime` (load context), `/audit` (analyze + test), `/checkpoint`,
   `/ship-pr <title>`, `/clean-branches`, `/code-analysis`.

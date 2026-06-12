@@ -2,15 +2,20 @@
 description: Ship the staged work as one squash-merged PR — commit + push + PR + merge + cleanup. The 10-step branch-PR-merge dance run automatically.
 ---
 
-The user wants to ship the current work as a complete pull request — the full mechanical dance from "I have changes" to "merged on main and local cleaned up."
+The user wants to ship the current work as a complete pull request — the full mechanical dance from "I have changes" to "merged on the default branch and local cleaned up."
 
 > **Environment note:** the `gh` steps below assume a local session where `gh` is authed. In a remote / web session `gh` is unavailable — use the GitHub MCP tools (`mcp__github__create_pull_request`, `mcp__github__merge_pull_request`, `mcp__github__pull_request_read`) for the PR open / merge / verify steps instead. The git steps (stage, commit, rebase, push) are the same in both.
 
 ## Preconditions you check before doing anything
 
-1. **You're not on `main`** — `git branch --show-current` must be a feature / fix / docs / chore branch. If on main, error out: "Won't ship from main; create a branch first."
-2. **The branch tracks `origin/<same-branch>` OR is brand-new** — either is fine; brand-new means you'll push with `-u`.
-3. **There's something to ship** — if `git status --short` is empty AND `git log origin/main..HEAD` is empty, error out: "Nothing to ship."
+1. **Detect the default branch** — repos differ (`main` vs `master`), so never hardcode it:
+   ```bash
+   DEFAULT=$(git remote show origin | sed -n 's/.*HEAD branch: //p')
+   ```
+   Every reference to `$DEFAULT` below means this detected branch.
+2. **You're not on `$DEFAULT`** — `git branch --show-current` must be a feature / fix / docs / chore branch. If on the default branch, error out: "Won't ship from the default branch; create a branch first."
+3. **The branch tracks `origin/<same-branch>` OR is brand-new** — either is fine; brand-new means you'll push with `-u`.
+4. **There's something to ship** — if `git status --short` is empty AND `git log origin/$DEFAULT..HEAD` is empty, error out: "Nothing to ship."
 
 ## What `$ARGUMENTS` contains
 
@@ -32,7 +37,7 @@ The argument string is the PR title (and the commit subject). Required. If empty
    EOF
    )"
    ```
-5. **Pull + rebase before push.** `git fetch origin main` and `git rebase origin/main`. If conflicts, abort and surface them: "rebase conflict on `<file>`, resolve and re-run /ship-pr."
+5. **Pull + rebase before push.** `git fetch origin "$DEFAULT"` and `git rebase "origin/$DEFAULT"`. If conflicts, abort and surface them: "rebase conflict on `<file>`, resolve and re-run /ship-pr."
 6. **Push the branch.** `git push -u origin <branch>` if it doesn't track yet, otherwise plain `git push`. Tail the last 3 lines of output.
 7. **Open the PR.** Use `gh pr create` with `--title` matching `$ARGUMENTS` and `--body` from a HEREDOC. Body template:
    ```markdown
@@ -47,12 +52,12 @@ The argument string is the PR title (and the commit subject). Required. If empty
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
    ```
    Capture the PR URL from the output.
-8. **Squash-merge with admin.** `gh pr merge <num> --squash --delete-branch --admin`. The command will print one warning about `'main' is already used by worktree` — that's expected (the merge happens on the remote anyway, and the local main worktree is held by another session). Ignore that line; the next command compensates.
+8. **Squash-merge with admin.** `gh pr merge <num> --squash --delete-branch --admin`. The command may print one warning that the default branch `is already used by worktree` — that's expected (the merge happens on the remote anyway, and the local default-branch worktree is held by another session). Ignore that line; the next command compensates.
 9. **Verify merge** with `gh pr view <num> --json state` — must show `MERGED`.
 10. **Force-delete the remote branch** if it still exists: `git push origin --delete <branch>`. The squash-merge with `--delete-branch` usually handles this but the worktree-lock warning sometimes leaves it behind.
-11. **Reset locally** to a fresh `working` branch off `origin/main`:
+11. **Reset locally** to a fresh `working` branch off the default branch:
     ```bash
-    git checkout -B working origin/main
+    git checkout -B working "origin/$DEFAULT"
     git fetch --prune origin
     git branch -D <feature-branch>
     ```
@@ -69,6 +74,6 @@ The argument string is the PR title (and the commit subject). Required. If empty
 
 - Don't run `/audit` or duplicate the analyze + test work it already does — just inline `flutter analyze` and `flutter test`.
 - Don't open the user's editor to write the commit message — compose it yourself from the diff.
-- Don't push to `main` directly. Don't bypass `--squash`. Don't skip `--admin` (the user has authorized it for solo work).
+- Don't push to the default branch directly. Don't bypass `--squash`. Don't skip `--admin` (the user has authorized it for solo work).
 - Don't sleep / poll for merge state. `gh pr view` is synchronous.
 - Don't use `git push --no-verify` or `git commit --no-verify`. If hooks fail, fix the cause.
