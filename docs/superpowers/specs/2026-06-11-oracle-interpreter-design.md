@@ -91,6 +91,7 @@ No flutter_gemma import. Fully unit-testable.
   beside `isThinking: false`), strips ``` fences, isolates outermost
   `{…}`, validates shape. Any failure → single `raw`-lens fallback card.
   Never throws.
+- The RAG hook is now implemented (cycle 3 item D, PR pending): `OracleSeed.journalContext` carries entries ranked by `relatedEntries` (journal_search.dart) into `recall:` prompt lines, engine-capped at 2 entries × 100 chars for the 1280-token web budget.
 
 ### 2. Service — `lib/state` (seam + flutter_gemma impl + providers)
 

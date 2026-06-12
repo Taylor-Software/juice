@@ -42,7 +42,9 @@ one-tap add-to-journal.
   on your device (WebGPU in the browser; arm64 on mobile). One-time model
   download (~670 MB web / ~480 MB mobile) after explicit consent; nothing
   you write leaves your device. The dice stay authoritative — the model
-  only suggests, you decide. Set your campaign's genre and tone from the
+  only suggests, you decide. Readings can draw on the most relevant earlier
+  journal entries, retrieved on device, so interpretations remember your
+  campaign's people and places. Set your campaign's genre and tone from the
   sheet to steer the voice. Web uses Gemma 3 1B (Google, Gemma license);
   mobile uses Qwen3 0.6B (Alibaba, Apache 2.0).
   Mobile builds target arm64 (Android) and iOS 16+.
