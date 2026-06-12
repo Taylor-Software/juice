@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -682,3 +683,13 @@ final rulesetDataProvider =
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.
 final emulatorDataProvider =
     FutureProvider<EmulatorData>((ref) => EmulatorData.load());
+
+/// Loads the hand-written help asset once.
+final helpDataProvider = FutureProvider<HelpData>((ref) async {
+  final raw = await rootBundle.loadString('assets/help_data.json');
+  return HelpData(jsonDecode(raw) as Map<String, dynamic>);
+});
+
+/// Page id the Help tool should open at (set by the tool-host '?');
+/// consumed once by the Help screen, then reset to null.
+final helpTopicProvider = StateProvider<String?>((ref) => null);
