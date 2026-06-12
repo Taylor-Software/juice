@@ -66,6 +66,26 @@ void main() {
     expect(fake.lastSeed?.sceneContext, 'Scene: The burned mill (Chaos 5)');
   });
 
+  testWidgets('accepting after the entry was deleted drops the reading',
+      (tester) async {
+    final (fake, container) = await pump(tester);
+    fake.queuedResults.add(const [
+      OracleInterpretation(lens: 'symbolic', reading: 'The road closes'),
+    ]);
+    await openMenuFor(tester, 'Fate Check (Likely)');
+    await tester.tap(find.text('Interpret…'));
+    await tester.pumpAndSettle();
+    // Entry vanishes while the sheet is still open.
+    await container.read(journalProvider.notifier).remove('2');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('interp-accept-0')));
+    await tester.pumpAndSettle();
+    // No crash, nothing resurrected: only the scene remains.
+    final entries = container.read(journalProvider).valueOrNull!;
+    expect(entries.where((e) => e.id == '2'), isEmpty);
+    expect(entries, hasLength(1));
+  });
+
   testWidgets('scene/text entries do not offer Interpret', (tester) async {
     await pump(tester);
     // The scene row's menu (scene renders as a divider row, not a Card):

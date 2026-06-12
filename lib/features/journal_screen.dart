@@ -120,6 +120,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   Widget _entry(JournalEntry e, List<Thread> threads,
       String Function(String) threadTitle) {
+    // Read without listening is safe: `unsupported` is decided once in the
+    // GemmaInterpreterService constructor and never flips later.
     final canInterpret = e.kind == JournalKind.result &&
         ref.read(interpreterServiceProvider).status.value.phase !=
             InterpreterPhase.unsupported;
@@ -355,9 +357,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       ),
     );
     if (accepted == null || !mounted) return;
-    await ref.read(journalProvider.notifier).replace(entry.copyWith(
+    // The sheet can stay open a long time; re-read the entry so the append
+    // can't clobber concurrent edits or resurrect a deleted entry.
+    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
+        .where((e) => e.id == entry.id)
+        .firstOrNull;
+    if (fresh == null) return;
+    await ref.read(journalProvider.notifier).replace(fresh.copyWith(
         body:
-            '${entry.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
+            '${fresh.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
   }
 }
 
