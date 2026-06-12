@@ -32,6 +32,14 @@
 
   <title>Juice Oracle</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- MediaPipe GenAI inference for the oracle interpreter's .task model
+       over WebGPU (flutter_gemma web backend). -->
+  <script type="module">
+  import { FilesetResolver, LlmInference } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.27';
+  window.FilesetResolver = FilesetResolver;
+  window.LlmInference = LlmInference;
+  </script>
 </head>
 <body>
   <!--

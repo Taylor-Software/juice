@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/oracle_interpreter.dart';
+import '../state/interpreter.dart';
 import '../state/providers.dart';
+import 'oracle_interpretation_sheet.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
@@ -117,9 +120,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   Widget _entry(JournalEntry e, List<Thread> threads,
       String Function(String) threadTitle) {
+    final canInterpret = e.kind == JournalKind.result &&
+        ref.read(interpreterServiceProvider).status.value.phase !=
+            InterpreterPhase.unsupported;
     final menu = PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),
       itemBuilder: (_) => [
+        if (canInterpret)
+          const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
         const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
@@ -269,6 +277,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       String action, JournalEntry entry, List<Thread> threads) async {
     final notifier = ref.read(journalProvider.notifier);
     switch (action) {
+      case 'interpret':
+        await _interpret(entry);
       case 'delete':
         await notifier.remove(entry.id);
       case 'link':
@@ -315,6 +325,39 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             ? entry.copyWith(body: result.note)
             : entry.copyWith(title: result.title.trim(), body: result.note));
     }
+  }
+
+  /// Latest scene entry (storage is newest-first), as model context.
+  String _sceneContext() {
+    final entries = ref.read(journalProvider).valueOrNull ?? const [];
+    for (final e in entries) {
+      if (e.kind == JournalKind.scene) {
+        final chaos = e.chaosFactor != null ? ' (Chaos ${e.chaosFactor})' : '';
+        return 'Scene: ${e.title}$chaos';
+      }
+    }
+    return '';
+  }
+
+  Future<void> _interpret(JournalEntry entry) async {
+    final seed = OracleSeed(
+      resultText: entry.title.isEmpty
+          ? entry.body
+          : '${entry.title}\n${entry.body}',
+      sceneContext: _sceneContext(),
+    );
+    final accepted = await showModalBottomSheet<OracleInterpretation>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => OracleInterpretationSheet(
+        seed: seed,
+        onAccept: (card) => Navigator.pop(sheetContext, card),
+      ),
+    );
+    if (accepted == null || !mounted) return;
+    await ref.read(journalProvider.notifier).replace(entry.copyWith(
+        body:
+            '${entry.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
   }
 }
 
