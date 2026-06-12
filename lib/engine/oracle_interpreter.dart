@@ -10,6 +10,12 @@ library;
 
 import 'dart:convert';
 
+/// Hard caps on the prompt's `recall:` block. The web model is only proven
+/// at 1280 total tokens (system instruction ≈700, output ≈250); two
+/// 100-char excerpts are ≈70 tokens worst case, which fits the remainder.
+const int kRecallMaxEntries = 2;
+const int kRecallMaxChars = 100;
+
 /// Everything the model needs to interpret one logged oracle result.
 class OracleSeed {
   const OracleSeed({
@@ -17,6 +23,7 @@ class OracleSeed {
     this.genre = '',
     this.tone = '',
     this.sceneContext = '',
+    this.journalContext = const [],
   });
 
   /// The journal entry's title + body, verbatim.
@@ -26,8 +33,13 @@ class OracleSeed {
   final String genre;
   final String tone;
 
-  /// Latest scene entry's title (+ chaos factor), or empty. Future RAG hook.
+  /// Latest scene entry's title (+ chaos factor), or empty.
   final String sceneContext;
+
+  /// Most-relevant past journal entries (see relatedEntries in
+  /// journal_search.dart), one string each. The prompt renders at most
+  /// [kRecallMaxEntries] of them as `recall:` lines.
+  final List<String> journalContext;
 }
 
 /// A single interpretation card; [lens] is the register it was written in.
@@ -65,6 +77,7 @@ Rules:
 - The four readings must be genuinely different ideas, not rephrasings.
 - Honor the stated genre and tone in word choice and imagery.
 - Use the scene context if given; otherwise invent freely but stay in tone.
+- recall: lines are excerpts from the player's earlier journal. Treat them as established facts; weave them in when they fit.
 - Output ONLY a JSON object. No preamble, no markdown fences, no commentary.
 
 JSON shape:
@@ -99,10 +112,22 @@ String buildOraclePrompt(OracleSeed seed) {
     return f.isEmpty ? fallback : f;
   }
 
+  // Recall block, capped engine-side so no caller can blow the web
+  // model's 1280-token budget (see kRecallMaxEntries/kRecallMaxChars).
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+
   return 'INPUT:\n'
       'genre: ${orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${orElse(seed.tone, '(unspecified)')}\n'
       'result: ${flat(seed.resultText)}\n'
+      '$recall'
       'scene: ${orElse(seed.sceneContext, '(none given)')}\n'
       'OUTPUT:';
 }

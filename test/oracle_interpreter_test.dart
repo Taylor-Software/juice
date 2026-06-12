@@ -26,6 +26,55 @@ void main() {
       expect(p, contains('scene: (none given)'));
     });
 
+    test('journalContext renders recall lines between result and scene', () {
+      const seed = OracleSeed(
+        resultText: 'Fate Check — Yes',
+        journalContext: ['a', 'b'],
+      );
+      expect(buildOraclePrompt(seed).split('\n'), [
+        'INPUT:',
+        'genre: (unspecified)',
+        'tone: (unspecified)',
+        'result: Fate Check — Yes',
+        'recall: a',
+        'recall: b',
+        'scene: (none given)',
+        'OUTPUT:',
+      ]);
+    });
+
+    test('recall lines are capped and truncated for the token budget', () {
+      // The web model is only proven at 1280 total tokens; these caps are
+      // load-bearing, not tuning knobs.
+      expect(kRecallMaxEntries, 2);
+      expect(kRecallMaxChars, 100);
+      final seed = OracleSeed(
+        resultText: 'r',
+        journalContext: ['x' * 300, 'b', 'c'],
+      );
+      final recalls = buildOraclePrompt(seed)
+          .split('\n')
+          .where((l) => l.startsWith('recall: '))
+          .toList();
+      expect(recalls, hasLength(kRecallMaxEntries));
+      expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…');
+      expect(recalls[1], 'recall: b');
+    });
+
+    test('no journalContext -> no recall line', () {
+      const seed = OracleSeed(resultText: 'Story: Betrayal / Ally');
+      expect(buildOraclePrompt(seed), isNot(contains('recall:')));
+    });
+
+    test('recall strings are whitespace-flattened', () {
+      const seed = OracleSeed(
+        resultText: 'r',
+        journalContext: ['Omen draw —\n  black   feather'],
+      );
+      expect(buildOraclePrompt(seed),
+          contains('recall: Omen draw — black feather'));
+    });
+
     test('multi-line seed fields collapse to one prompt line each', () {
       const seed = OracleSeed(
         resultText: 'Title\nBody line',
@@ -165,5 +214,6 @@ result: Fate Check (Likely) — Yes, and…
       expect(oracleSystemInstruction, contains(lens));
     }
     expect(oracleSystemInstruction, contains('ONLY a JSON object'));
+    expect(oracleSystemInstruction, contains('recall:'));
   });
 }

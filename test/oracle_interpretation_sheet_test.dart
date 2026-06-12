@@ -24,7 +24,8 @@ void main() {
 
   Future<FakeInterpreterService> pump(WidgetTester tester,
       {InterpreterStatus? initial,
-      void Function(OracleInterpretation)? onAccept}) async {
+      void Function(OracleInterpretation)? onAccept,
+      OracleSeed seedOverride = seed}) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
@@ -35,7 +36,7 @@ void main() {
       child: MaterialApp(
         home: Scaffold(
           body: OracleInterpretationSheet(
-            seed: seed,
+            seed: seedOverride,
             onAccept: onAccept ?? (_) {},
           ),
         ),
@@ -82,6 +83,17 @@ void main() {
     expect(find.text('LITERAL'), findsOneWidget);
     await tester.tap(find.byKey(const Key('interp-accept-0')));
     expect(accepted?.reading, 'Wolves at the gate');
+  });
+
+  testWidgets('journalContext rides the rebuilt seed into the service',
+      (tester) async {
+    final fake = await pump(tester,
+        initial: const InterpreterStatus(InterpreterPhase.ready),
+        seedOverride: const OracleSeed(
+            resultText: 'Fate Check (Likely) — Yes…',
+            journalContext: ['x']));
+    expect(fake.interpretCalls, 1);
+    expect(fake.lastSeed!.journalContext, ['x']);
   });
 
   testWidgets('swipe dismisses a card; all dismissed offers reroll',

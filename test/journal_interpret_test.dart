@@ -17,11 +17,11 @@ void main() {
 
   Future<(FakeInterpreterService, ProviderContainer)> pump(
       WidgetTester tester,
-      {InterpreterStatus? initial}) async {
+      {InterpreterStatus? initial, String journal = journalJson}) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': journalJson,
+      'juice.journal.v2.default': journal,
     });
     final fake = FakeInterpreterService(
         initial: initial ?? const InterpreterStatus(InterpreterPhase.ready));
@@ -64,6 +64,27 @@ void main() {
     // Seed carried the entry text and the latest scene as context.
     expect(fake.lastSeed?.resultText, 'Fate Check (Likely)\nYes, and…');
     expect(fake.lastSeed?.sceneContext, 'Scene: The burned mill (Chaos 5)');
+  });
+
+  testWidgets('interpret seed recalls related entries, not unrelated ones',
+      (tester) async {
+    // Newest-first: target, a related result (shares 'Magistrate'), an
+    // unrelated result, and the scene divider.
+    const recallJournal =
+        '[{"id":"4","timestamp":"2026-06-11T13:00:00.000","title":"Fate Check (Likely)","body":"The Magistrate relents.","kind":"result"},'
+        '{"id":"3","timestamp":"2026-06-11T12:00:00.000","title":"Omen draw","body":"The Magistrate sealed the mill.","kind":"result"},'
+        '{"id":"2","timestamp":"2026-06-11T11:00:00.000","title":"Supply roll","body":"Rations run low.","kind":"result"},'
+        '{"id":"1","timestamp":"2026-06-11T10:00:00.000","title":"The burned mill","body":"","kind":"scene","chaosFactor":5}]';
+    final (fake, _) = await pump(tester, journal: recallJournal);
+    await openMenuFor(tester, 'Fate Check (Likely)');
+    await tester.tap(find.text('Interpret…'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('interp-accept-0')));
+    await tester.pumpAndSettle();
+    // Related entry rides along as 'title — body'; the unrelated entry and
+    // the target's own text do not.
+    expect(fake.lastSeed!.journalContext,
+        ['Omen draw — The Magistrate sealed the mill.']);
   });
 
   testWidgets('accepting after the entry was deleted drops the reading',
