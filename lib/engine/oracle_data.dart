@@ -80,6 +80,24 @@ class OracleData {
   List<List<dynamic>> get dialogSubject =>
       (_dialog['subject'] as List).map((e) => e as List).toList();
 
+  // Location grid ----------------------------------------------------------
+  Map<String, dynamic> get _location =>
+      _json['location'] as Map<String, dynamic>;
+
+  /// Location grid height (5).
+  int get locationRows => _location['rows'] as int;
+
+  /// Location grid width (5).
+  int get locationCols => _location['cols'] as int;
+
+  /// Per-row compass labels, North..South.
+  List<String> get locationRowLabels =>
+      (_location['row_labels'] as List).cast<String>();
+
+  /// Per-column compass labels, West..East.
+  List<String> get locationColLabels =>
+      (_location['col_labels'] as List).cast<String>();
+
   // Roll High oracle -------------------------------------------------------
   Map<String, dynamic> get _rollHigh =>
       _json['roll_high'] as Map<String, dynamic>;

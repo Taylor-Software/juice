@@ -83,7 +83,13 @@ class _FateScreenState extends ConsumerState<FateScreen> {
               ButtonSegment(value: Likelihood.likely, label: Text('Likely')),
             ],
             selected: {_likelihood},
-            onSelectionChanged: (s) => setState(() => _likelihood = s.first),
+            onSelectionChanged: (s) => setState(() {
+              _likelihood = s.first;
+              // Tap-to-roll: selecting a likelihood rolls immediately
+              // (validated demand — juice-roll issue #4). The Roll button
+              // stays for re-rolls at the same likelihood.
+              _last = widget.oracle.fateCheck(_likelihood);
+            }),
           ),
           const SizedBox(height: 16),
           if (last != null) _FateResultCard(result: last, glyph: _glyph),

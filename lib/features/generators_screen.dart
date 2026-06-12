@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/oracle_data.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 
@@ -83,10 +84,12 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
   ];
 
   ({String asset, int d10, int d6})? _lastIcon;
+  LocationResult? _lastLocation;
 
   void _run(_Gen g) => setState(() {
         _last = g.run(widget.oracle);
         _lastIcon = null;
+        _lastLocation = null;
       });
 
   @override
@@ -112,6 +115,22 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             result: last,
             onLog: () {
               ref.read(journalProvider.notifier).add(last.title, last.asText);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Added to journal')),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (_lastLocation != null) ...[
+          _LocationCard(
+            result: _lastLocation!,
+            data: widget.oracle.data,
+            onLog: () {
+              final loc = _lastLocation!;
+              ref
+                  .read(journalProvider.notifier)
+                  .add('Location', '${loc.label} (${loc.roll})');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Added to journal')),
               );
@@ -171,6 +190,15 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
                   onPressed: () =>
                       setState(() => _last = widget.oracle.dungeonLinger()),
                 ),
+                ActionChip(
+                  key: const Key('gen-location'),
+                  label: const Text('Location'),
+                  onPressed: () => setState(() {
+                    _lastLocation = widget.oracle.rollLocation();
+                    _last = null;
+                    _lastIcon = null;
+                  }),
+                ),
               ],
               if (showNpcDialog)
                 ActionChip(
@@ -197,6 +225,7 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
                   onPressed: () => setState(() {
                     _lastIcon = widget.oracle.abstractIcon();
                     _last = null;
+                    _lastLocation = null;
                   }),
                 ),
             ],
@@ -215,6 +244,84 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Result card for the Location grid roll: 5x5 compass grid with the rolled
+/// cell highlighted, edge labels, and the standard add-to-journal action.
+class _LocationCard extends StatelessWidget {
+  const _LocationCard(
+      {required this.result, required this.data, required this.onLog});
+  final LocationResult result;
+  final OracleData data;
+  final VoidCallback onLog;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final grid = Column(
+      key: const Key('location-grid'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var r = 0; r < data.locationRows; r++)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var c = 0; c < data.locationCols; c++)
+                Container(
+                  width: 28,
+                  height: 28,
+                  margin: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: r == result.row && c == result.col
+                        ? scheme.primaryContainer
+                        : scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: scheme.outlineVariant),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Location', style: theme.textTheme.titleMedium),
+                IconButton(
+                  key: const Key('location-log'),
+                  tooltip: 'Add to journal',
+                  icon: const Icon(Icons.bookmark_add_outlined),
+                  onPressed: onLog,
+                ),
+              ],
+            ),
+            Text('North', style: theme.textTheme.bodySmall),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('West', style: theme.textTheme.bodySmall),
+                const SizedBox(width: 8),
+                grid,
+                const SizedBox(width: 8),
+                Text('East', style: theme.textTheme.bodySmall),
+              ],
+            ),
+            Text('South', style: theme.textTheme.bodySmall),
+            const SizedBox(height: 8),
+            Text('${result.label} (${result.roll})',
+                style: theme.textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
     );
   }
 }

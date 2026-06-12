@@ -505,6 +505,19 @@ DIALOG_DIRECTION = [  # (max_roll, tone, drow, dcol)
 ]
 DIALOG_SUBJECT = [(2, "Them"), (5, "Me"), (8, "You"), (10, "Us")]
 
+# Location grid (screen PDF, bottom-left): 1d100 -> 5x5 compass grid.
+# Read 1d100 as 0-99; row = n // 20, col = (n % 20) // 4.
+LOCATION_GRID = {
+    "rows": 5,
+    "cols": 5,
+    "row_labels": ["North", "North", "Center", "South", "South"],
+    "col_labels": ["West", "West", "Center", "East", "East"],
+}
+
+def location_cell(n):
+    """0-99 -> (col, row) on the Location grid."""
+    return ((n % 20) // 4, n // 20)
+
 # ---------------------------------------------------------------------------
 # ENGINE
 # ---------------------------------------------------------------------------
@@ -807,6 +820,26 @@ def verify():
     if not any(t["id"] == "actions" and t["entries2"] for t in MYTHIC_MEANING):
         failures.append("actions table must carry entries2 (word pairs)")
 
+    # 11. Location grid: formula matches the PDF's explicit cell ranges
+    # (each cell spans 4 consecutive values: cell (col,row) = row*20+col*4 ..
+    # +3, e.g. 0-3 NW, 48-51 Center, 96-99 SE), covering 0-99 exactly once.
+    expected = {}
+    for row in range(5):
+        for col in range(5):
+            lo = row * 20 + col * 4
+            for n in range(lo, lo + 4):
+                expected[n] = (col, row)
+    if len(expected) != 100:
+        failures.append(f"location grid covers {len(expected)} values != 100")
+    for n in range(100):
+        if location_cell(n) != expected[n]:
+            failures.append(f"location_cell({n}) = {location_cell(n)} "
+                            f"!= {expected[n]}")
+    if (LOCATION_GRID["rows"], LOCATION_GRID["cols"]) != (5, 5) or \
+            len(LOCATION_GRID["row_labels"]) != 5 or \
+            len(LOCATION_GRID["col_labels"]) != 5:
+        failures.append("location grid metadata not 5x5")
+
     return failures
 
 
@@ -839,6 +872,7 @@ def emit_json(path):
             "direction": [list(x) for x in DIALOG_DIRECTION],
             "subject": [list(x) for x in DIALOG_SUBJECT],
         },
+        "location": LOCATION_GRID,
         "roll_high": {
             "outcomes": ROLL_HIGH_OUTCOMES,
             "odds": ROLL_HIGH_ODDS,

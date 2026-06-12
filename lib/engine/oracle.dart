@@ -27,6 +27,37 @@ const Map<String, Map<String, String>> _fateMap = {
   '-1,-1': {'normal': 'No And', 'likely': 'No And', 'unlikely': 'No And'},
 };
 
+/// Location grid cell (screen PDF): 1d100 read as 0-99 onto a 5x5
+/// compass grid; row = n ~/ 20, col = (n % 20) ~/ 4.
+class LocationResult {
+  const LocationResult(
+      {required this.roll, required this.col, required this.row});
+  final int roll;
+  final int col;
+  final int row;
+
+  /// 'North-West' … 'Center' … 'South-East' (cols 0-1 W, 2 center, 3-4 E;
+  /// rows 0-1 N, 2 center, 3-4 S).
+  String get label {
+    final ns = row < 2 ? 'North' : (row == 2 ? '' : 'South');
+    final ew = col < 2 ? 'West' : (col == 2 ? '' : 'East');
+    if (ns.isEmpty && ew.isEmpty) return 'Center';
+    if (ns.isEmpty) return ew;
+    if (ew.isEmpty) return ns;
+    return '$ns-$ew';
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is LocationResult &&
+      other.roll == roll &&
+      other.col == col &&
+      other.row == row;
+
+  @override
+  int get hashCode => Object.hash(roll, col, row);
+}
+
 /// The oracle engine. Wraps [OracleData] + [Dice] and exposes every roll the
 /// app offers. Composite generators combine multiple table rolls.
 class Oracle {
@@ -448,6 +479,17 @@ class Oracle {
       Roll(label: 'Tracks', value: name),
     ]);
   }
+
+  // -- Location grid -------------------------------------------------------
+
+  /// Pure mapping of a 0-99 value onto the Location grid. The formula
+  /// mirrors the verified Python `location_cell` in build_oracle.py (same
+  /// rule as the Fate Check map): row = n ~/ 20, col = (n % 20) ~/ 4.
+  LocationResult locationFor(int n) =>
+      LocationResult(roll: n, col: (n % 20) ~/ 4, row: n ~/ 20);
+
+  /// Roll 1d100 read as 0-99 (the 100/"00" face is 0) onto the grid.
+  LocationResult rollLocation() => locationFor(dice.d100() % 100);
 
   // -- NPC dialog walk ---------------------------------------------------
 
