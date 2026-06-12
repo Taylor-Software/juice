@@ -5,7 +5,8 @@ A cross-platform (iOS / Android / web / desktop) Flutter app implementing the
 scene, NPC, settlement, wilderness, dungeon, treasure, names, meaning,
 immersion, plot points, extended NPC tables), plus a persistent campaign
 journal (your prose, scene dividers with a chaos-factor snapshot, and every
-roll you choose to keep) with threads tracking and flexible, system-agnostic
+roll you choose to keep — exportable as Markdown or a styled standalone HTML
+page for sharing) with threads tracking and flexible, system-agnostic
 character sheets (free-text stats, current/max tracks with steppers, tags,
 notes — one model covers D&D, Ironsworn, or Mythic NPCs). An encounter tracker runs
 initiative order (drag to override), turns and rounds, status tags, and
