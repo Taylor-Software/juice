@@ -1,6 +1,6 @@
 # In-app help system — user guide, system references, credits (design)
 
-Date: 2026-06-12. Status: approved.
+Date: 2026-06-12. Status: **shipped** (PR #32, 2026-06-12).
 
 ## Goal
 

@@ -145,6 +145,14 @@ Phase 3's live verification caught a lost-update bug class
 (read-modify-write from build-captured state); all emulation writes now
 read fresh at press time — keep that pattern for future handlers.
 
+## Help system (user-requested)
+
+Spec: `docs/superpowers/specs/2026-06-12-help-system-design.md`.
+**Shipped 2026-06-12** — PR #32: in-app Help tool (user guide for every
+tool, original-wording quick-references for all seven supported systems,
+credits page with every content license + Flutter's package LicensePage),
+plus a per-tool "?" deep link in the tool host.
+
 ## Cloud storage stance (BYO cloud, no server)
 
 The app stays standalone with no server component and no network code.
