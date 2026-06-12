@@ -109,10 +109,18 @@ not app stores.
 | B | Journal export (styled HTML/markdown per campaign) | **Done** — PR #23 (2026-06-12) |
 | E | Discoverability prep: itch.io page assets, awesome-ironsworn PR, Tomkin community-resources submission, repo topics/screenshots (submissions need owner sign-off) | **Prep done** — PR #24 (2026-06-12); repo metadata live; submissions drafted in docs/discoverability/submissions.md, awaiting owner posting |
 | C | Journal search + tags (foundation for D) | **Done** — PR #26 (2026-06-12) |
-| D | Journal-aware interpreter (retrieval over journal → seed context) | Next, after C |
+| D | Journal-aware interpreter (retrieval over journal → seed context) | **Done** — PR #27 (2026-06-12) |
 
 Deferred: store distribution (Play/TestFlight) — community discovers via
 web/itch; revisit on demand signal.
+
+**Cycle 3 complete** (2026-06-12, PRs #20-#24, #26-#27 + repo metadata).
+The journal remembers: search, tags, styled exports, and an interpreter
+whose readings recall related past entries — all retrieval on device.
+Open user actions: web model mirror swap (release gate), discoverability
+submissions (docs/discoverability/submissions.md), physical-device pass.
+Next planning cycle starts from a fresh competitive scan and any user
+feedback from the discoverability channels.
 
 ## Cloud storage stance (BYO cloud, no server)
 
