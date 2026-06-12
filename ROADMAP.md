@@ -76,6 +76,24 @@ The journal becomes the home surface; every tool is summoned over it
 surface; dice, oracles, sheets, encounters, and maps all feed it. Next
 planning cycle starts from a fresh competitive scan and user feedback.
 
+## Oracle interpreter (on-device LLM, user-requested)
+
+Spec: `docs/superpowers/specs/2026-06-11-oracle-interpreter-design.md`.
+Journal results gain an Interpret action: four lens readings (literal /
+symbolic / complication / foreshadow) from a small on-device model;
+accepted readings append to the entry. Dice stay authoritative.
+
+| Phase | Item | Status |
+|---|---|---|
+| 0 | Web spike (litertlm vs -web.task, model availability) | **Done** — findings in spec (2026-06-11) |
+| 1 | Engine + service + sheet + journal wiring + web path | **Done** — PR #20 (2026-06-11) |
+| 2 | Mobile platform config (Android ABI/OpenCL, iOS Podfile) + device verify | Scoped, not started |
+
+Release gates before announcing the web feature: swap the dev-pinned
+third-party model mirror in `lib/state/interpreter_gemma.dart` to the
+user's own HF mirror of the official `gemma3-1b-it-int4-web.task`
+(provenance; see spec "Weights provenance").
+
 ## Cloud storage stance (BYO cloud, no server)
 
 The app stays standalone with no server component and no network code.
