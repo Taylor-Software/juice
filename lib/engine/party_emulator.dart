@@ -81,6 +81,56 @@ TripleOResult rollTripleO(Dice dice) => TripleOResult.single(dice.dN(6));
 TripleOResult rollDoubleDown(Dice dice) =>
     TripleOResult.doubleDown((dice.dN(6), dice.dN(6)));
 
+// -- PET (Player Emulator with Tags) -----------------------------------------
+
+/// 2d6 curved roll for agenda/focus keys (the in-play method; the source's
+/// flat-d12 creation variant is not surfaced in UI and is out of scope).
+int roll2d6Key(Dice dice) => dice.dN(6) + dice.dN(6);
+
+/// How the modifier die layers guidance on the Ask.
+enum ActMode { asWritten, inverted, exaggerated }
+
+/// Guidance wording for an [ActMode].
+String actModeLabel(ActMode m) => switch (m) {
+      ActMode.asWritten => 'as written',
+      ActMode.inverted => 'inverted',
+      ActMode.exaggerated => 'exaggerated',
+    };
+
+/// One PET ACT roll. Combined reading per Pettish: the coin sets the base
+/// reading of the Ask (heads = as written, tails = inverted); the modifier
+/// die layers as-written/inverted/exaggerated guidance on top.
+class ActResult {
+  const ActResult({
+    required this.agendaKey,
+    required this.heads,
+    required this.modifierDie,
+  });
+
+  /// Rolled agenda key, 2d6 (2..12).
+  final int agendaKey;
+
+  /// Coin: true = the Ask as written, false = inverted.
+  final bool heads;
+
+  /// Modifier d6: 1-2 asWritten, 3-4 inverted, 5-6 exaggerated.
+  final int modifierDie;
+
+  ActMode get modifier => switch (modifierDie) {
+        <= 2 => ActMode.asWritten,
+        <= 4 => ActMode.inverted,
+        _ => ActMode.exaggerated,
+      };
+}
+
+/// Roll ACT. Dice order (tests pin it): agenda 2d6 as two dN(6) calls,
+/// then the coin as one dN(2) (1 = heads), then the modifier dN(6).
+ActResult rollAct(Dice dice) => ActResult(
+      agendaKey: roll2d6Key(dice),
+      heads: dice.dN(2) == 1,
+      modifierDie: dice.dN(6),
+    );
+
 /// Pure group assignment given the three course rolls: returns course
 /// indices ordered [obvious, option, odd] = highest, middle, lowest roll.
 /// Ties broken by earlier list position keeping its higher slot.

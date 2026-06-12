@@ -67,6 +67,40 @@ void main() {
     expect(() => data.d66Entry('combat', 10), throwsArgumentError);
   });
 
+  test('agendaEntry returns the keyed agenda row (anchors pinned)', () {
+    final a = data.agendaEntry(2);
+    expect(a.key, 2);
+    expect(a.group, 'Drama');
+    expect(a.name, 'DRAMA');
+    expect(a.ask, 'what would be the worst thing to reveal right now?');
+    expect(a.flavor, contains('dark secrets'));
+    expect(data.agendaEntry(12).name, 'AGREEABLE');
+  });
+
+  test('focusEntry returns the keyed focus row (anchors pinned)', () {
+    final f = data.focusEntry(2);
+    expect(f.key, 2);
+    expect(f.name, 'PLAYFUL');
+    expect(f.blurb, startsWith('a focus on relaxing'));
+    expect(data.focusEntry(12).name, 'APATHETIC');
+  });
+
+  test('agendaEntry and focusEntry throw outside 2..12', () {
+    expect(() => data.agendaEntry(1), throwsArgumentError);
+    expect(() => data.agendaEntry(13), throwsArgumentError);
+    expect(() => data.focusEntry(1), throwsArgumentError);
+    expect(() => data.focusEntry(13), throwsArgumentError);
+  });
+
+  test('PET lists: 36 personality tags, 6 consequences, 6 real-life', () {
+    expect(data.personalityTags, hasLength(36));
+    expect(data.personalityTags.first, 'chatty');
+    expect(data.consequences, hasLength(6));
+    expect(data.consequences[0], 'expose a weakness');
+    expect(data.realLife, hasLength(6));
+    expect(data.realLife[5], 'victorious');
+  });
+
   test('attribution carries both license lines', () {
     expect(data.attribution, [
       'PET & Sidekick © Tam H (hedonic.ink), CC-BY 4.0',

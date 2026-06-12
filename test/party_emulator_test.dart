@@ -128,6 +128,71 @@ void main() {
     expect(assignOrder([3, 3, 3]), [0, 1, 2]); // triple tie: list order
   });
 
+  test('roll2d6Key sums two d6: curved range 2-12, deterministic', () {
+    final dice = Dice(Random(13));
+    final seen = <int>{};
+    for (var i = 0; i < 200; i++) {
+      final k = roll2d6Key(dice);
+      expect(k, inInclusiveRange(2, 12));
+      seen.add(k);
+    }
+    expect(seen.length, 11, reason: '200 curved rolls reach all keys 2-12');
+    List<int> run() {
+      final d = Dice(Random(21));
+      return [for (var i = 0; i < 50; i++) roll2d6Key(d)];
+    }
+
+    expect(run(), run());
+    // Arity pin: the key is the sum of exactly the first two d6.
+    final probe = Dice(Random(3));
+    expect(roll2d6Key(Dice(Random(3))), probe.dN(6) + probe.dN(6));
+  });
+
+  test('rollAct draws agenda 2d6, then coin d2, then modifier d6', () {
+    for (var seed = 0; seed < 20; seed++) {
+      // Probe replays the documented dice order on the same seed; any
+      // reordering or extra draw in rollAct would desynchronize the stream.
+      final probe = Dice(Random(seed));
+      final key = probe.dN(6) + probe.dN(6);
+      final heads = probe.dN(2) == 1;
+      final mod = probe.dN(6);
+      final r = rollAct(Dice(Random(seed)));
+      expect(r.agendaKey, key, reason: 'seed $seed');
+      expect(r.heads, heads, reason: 'seed $seed');
+      expect(r.modifierDie, mod, reason: 'seed $seed');
+    }
+  });
+
+  test('rollAct stays in range and shows both coin faces over 200 rolls', () {
+    final dice = Dice(Random(99));
+    var headsSeen = false, tailsSeen = false;
+    for (var i = 0; i < 200; i++) {
+      final r = rollAct(dice);
+      expect(r.agendaKey, inInclusiveRange(2, 12));
+      expect(r.modifierDie, inInclusiveRange(1, 6));
+      r.heads ? headsSeen = true : tailsSeen = true;
+    }
+    expect(headsSeen, isTrue);
+    expect(tailsSeen, isTrue);
+  });
+
+  test('modifier die bands 1-2 as written, 3-4 inverted, 5-6 exaggerated', () {
+    ActMode modeFor(int die) =>
+        ActResult(agendaKey: 7, heads: true, modifierDie: die).modifier;
+    expect(modeFor(1), ActMode.asWritten);
+    expect(modeFor(2), ActMode.asWritten);
+    expect(modeFor(3), ActMode.inverted);
+    expect(modeFor(4), ActMode.inverted);
+    expect(modeFor(5), ActMode.exaggerated);
+    expect(modeFor(6), ActMode.exaggerated);
+  });
+
+  test('actModeLabel renders the guidance wording', () {
+    expect(actModeLabel(ActMode.asWritten), 'as written');
+    expect(actModeLabel(ActMode.inverted), 'inverted');
+    expect(actModeLabel(ActMode.exaggerated), 'exaggerated');
+  });
+
   test('assignCourses orders courses by three d6, ties deterministic', () {
     // Seed 0 rolls [4, 6, 5]: course 1 highest, then 2, then 0.
     expect(assignCourses(Dice(Random(0))), [1, 2, 0]);
