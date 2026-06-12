@@ -7,11 +7,13 @@ import 'models.dart';
 /// Case-insensitive multi-term search. Every whitespace-separated term in
 /// [query] must match somewhere in the entry (title, body, or a tag) —
 /// AND semantics. Blank query returns [entries] unchanged. Preserves
-/// input order.
+/// input order. A leading '#' on a term is stripped (the UI displays tags
+/// as '#tag', so typed-back queries must still match the raw tag).
 List<JournalEntry> searchEntries(List<JournalEntry> entries, String query) {
   final terms = query
       .toLowerCase()
       .split(RegExp(r'\s+'))
+      .map((t) => t.startsWith('#') ? t.substring(1) : t)
       .where((t) => t.isNotEmpty)
       .toList();
   if (terms.isEmpty) return entries;

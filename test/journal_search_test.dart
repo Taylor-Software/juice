@@ -76,4 +76,16 @@ void main() {
       expect(allTags(const []), isEmpty);
     });
   });
+
+  test("leading '#' on a term is stripped (matches the chip display)", () {
+    final tagged = JournalEntry(
+        id: 't',
+        timestamp: DateTime(2026),
+        title: '',
+        body: '',
+        kind: JournalKind.text,
+        tags: const ['omens']);
+    expect(searchEntries([tagged], '#omens'), [tagged]);
+    expect(searchEntries([tagged], '#'), [tagged]); // bare '#' -> no terms
+  });
 }
