@@ -7,8 +7,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
+import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_interpreter.dart';
 
 void main() {
   testWidgets('journal is home; launcher opens grouped tools',
@@ -62,5 +65,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Ironsworn Moves & Oracles'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('app pause disposes the interpreter service', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final data = OracleData(jsonDecode(
+            File('assets/oracle_data.json').readAsStringSync())
+        as Map<String, dynamic>);
+    final fake = FakeInterpreterService();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+      child: MaterialApp(home: HomeShell(oracle: Oracle(data))),
+    ));
+    await tester.pumpAndSettle();
+    expect(fake.disposeCalls, 0);
+    // AppLifecycleListener asserts on legal transitions, so walk the chain.
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    expect(fake.disposeCalls, 1);
+    // Restore so the lifecycle state doesn't leak into other tests.
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding
+        .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
   });
 }

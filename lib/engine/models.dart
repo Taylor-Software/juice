@@ -602,3 +602,21 @@ class SessionsState {
             .toList(),
       );
 }
+
+// -- Campaign settings (genre/tone for the oracle interpreter) ---------------
+class CampaignSettings {
+  const CampaignSettings({this.genre = '', this.tone = ''});
+  final String genre;
+  final String tone;
+
+  CampaignSettings copyWith({String? genre, String? tone}) =>
+      CampaignSettings(genre: genre ?? this.genre, tone: tone ?? this.tone);
+
+  factory CampaignSettings.fromJson(Map<String, dynamic> j) =>
+      CampaignSettings(
+        genre: j['genre'] as String? ?? '',
+        tone: j['tone'] as String? ?? '',
+      );
+
+  Map<String, dynamic> toJson() => {'genre': genre, 'tone': tone};
+}

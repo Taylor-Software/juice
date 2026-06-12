@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
+import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'tool_host.dart';
 import 'tool_registry.dart';
@@ -22,6 +24,26 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   final _hostKey = GlobalKey<ToolHostState>();
+  AppLifecycleListener? _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    // Mobile: free the native LLM session when backgrounded (the model file
+    // stays on disk; next use reloads). Web stays warm — reload is ~40s and
+    // browsers fire hide on every tab switch.
+    if (!kIsWeb) {
+      _lifecycle = AppLifecycleListener(
+        onPause: () => ref.read(interpreterServiceProvider).dispose(),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    super.dispose();
+  }
 
   Future<void> _showSessions(BuildContext context) async {
     await showDialog<void>(

@@ -32,6 +32,18 @@
 
   <title>Juice Oracle</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- MediaPipe GenAI inference for the oracle interpreter's .task model
+       over WebGPU (flutter_gemma web backend). -->
+  <script type="module">
+  import { FilesetResolver, LlmInference } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-genai@0.10.27';
+  window.FilesetResolver = FilesetResolver;
+  window.LlmInference = LlmInference;
+  </script>
+
+  <!-- Cache API helpers (cachePut/cacheGet globals) for persistent model
+       storage — required by flutter_gemma's web model repository. -->
+  <script src="https://cdn.jsdelivr.net/gh/DenisovAV/flutter_gemma@0.11.14/web/cache_api.js"></script>
 </head>
 <body>
   <!--

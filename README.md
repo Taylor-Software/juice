@@ -28,6 +28,16 @@ A general **dice roller** tool parses full dice notation — `NdX`, `d%`, `dF`
 (dropped dice struck through), quick-tap dice chips, session history, and
 one-tap add-to-journal.
 
+- **Oracle interpreter (on-device AI, optional):** any oracle result in the
+  journal can be expanded into four short readings — literal, symbolic,
+  complication, foreshadow — by a small language model that runs entirely
+  on your device (WebGPU in the browser; arm64 on mobile). One-time model
+  download (~670 MB web / ~480 MB mobile) after explicit consent; nothing
+  you write leaves your device. The dice stay authoritative — the model
+  only suggests, you decide. Set your campaign's genre and tone from the
+  sheet to steer the voice. Web uses Gemma 3 1B (Google, Gemma license);
+  mobile uses Qwen3 0.6B (Alibaba, Apache 2.0).
+
 Also includes **Mythic GME** support (Fate Chart with Chaos Factor dial, Scene
 Test, Event Focus rolling against your tracked Threads/Characters lists, and
 all 47 Meaning Tables).
