@@ -68,6 +68,11 @@ and tokens — ACT rolls the agenda with a coin (the Ask as written or inverted)
 plus a modifier die (as written / inverted / exaggerated) and grants a token on
 an agenda match, spending a personality tag yields two readings, and session
 start deals a fresh Focus, a real-life event, and a clean slate of tags.
+Sidekick Dialogue gives characters words: 2d6 lines keyed to a persisted mood
+(doubles change the mood first), tone/topic/said-how chips, and a 19-hex
+conversation hexflower that walks between history and current events with a
+me/you/us priority die — and any rolled line can be voiced into a full
+in-character utterance by the on-device interpreter.
 
 Optional **Ironsworn family** rulesets (toggle in the app-bar tune icon):
 moves browser with action/progress rolls, and all oracle tables drawn from
