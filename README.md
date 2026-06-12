@@ -15,7 +15,8 @@ your dungeon room-by-room as you roll it (pan/zoom, tap a room for its
 detail, linger rolls) and reveals a wilderness hex map as you travel
 (env-colored hexes from the same verified drift tables, Lost markers,
 manual reveal for prep); both persist per campaign and snapshot into the
-journal.
+journal. Journals export as Markdown or a styled standalone HTML page for
+sharing.
 
 The Ask-the-Oracle tools also include a generic **Roll High oracle** — a 7-step
 likelihood ladder (Almost Certain … Almost Impossible) with six graded
