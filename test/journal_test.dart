@@ -35,6 +35,53 @@ void main() {
     });
   });
 
+  group('JournalEntry tags', () {
+    test('round-trips through JSON', () {
+      final e = JournalEntry(
+        id: '1',
+        timestamp: DateTime.utc(2026),
+        title: 't',
+        body: 'b',
+        tags: const ['omens', 'NPC'],
+      );
+      expect(JournalEntry.fromJson(e.toJson()).tags, ['omens', 'NPC']);
+    });
+
+    test('legacy JSON without tags key parses to empty list', () {
+      final e = JournalEntry.fromJson({
+        'id': '1',
+        'timestamp': '2026-01-01T00:00:00Z',
+        'title': 't',
+        'body': 'b',
+      });
+      expect(e.tags, isEmpty);
+    });
+
+    test('non-string junk in tags is dropped', () {
+      final e = JournalEntry.fromJson({
+        'id': '1',
+        'timestamp': '2026-01-01T00:00:00Z',
+        'title': 't',
+        'body': 'b',
+        'tags': ['ok', 7, null, 'fine'],
+      });
+      expect(e.tags, ['ok', 'fine']);
+    });
+
+    test('copyWith carries, overrides, and clears tags', () {
+      final e = JournalEntry(
+        id: '1',
+        timestamp: DateTime.utc(2026),
+        title: 't',
+        body: 'b',
+        tags: const ['omens'],
+      );
+      expect(e.copyWith(body: 'edited').tags, ['omens']);
+      expect(e.copyWith(tags: ['mill']).tags, ['mill']);
+      expect(e.copyWith(tags: []).tags, isEmpty);
+    });
+  });
+
   group('JournalEntry kinds', () {
     test('kind defaults to result when absent in JSON (legacy entries)', () {
       final e = JournalEntry.fromJson({

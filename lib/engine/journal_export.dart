@@ -98,6 +98,12 @@ String _entryBlock(
         ? '<p class="thread"><small><em>⤷ ${_esc(title)}</em></small></p>'
         : '⤷ $title');
   }
+  if (e.tags.isNotEmpty) {
+    lines.add(html
+        ? '<p class="thread"><small><em>'
+            '${e.tags.map((t) => '#${_esc(t)}').join(' ')}</em></small></p>'
+        : e.tags.map((t) => '`#$t`').join(' '));
+  }
   return lines.join('\n');
 }
 

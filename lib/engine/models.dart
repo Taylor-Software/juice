@@ -78,6 +78,7 @@ class JournalEntry {
     this.threadId,
     this.kind = JournalKind.result,
     this.chaosFactor,
+    this.tags = const [],
   });
   final String id;
   final DateTime timestamp;
@@ -89,11 +90,15 @@ class JournalEntry {
   /// Chaos factor snapshot for scene dividers (Mythic), else null.
   final int? chaosFactor;
 
+  /// Player-applied tags; replaced wholesale via copyWith (pass `[]` to clear).
+  final List<String> tags;
+
   JournalEntry copyWith({
     String? title,
     String? body,
     String? threadId,
     bool clearThreadId = false,
+    List<String>? tags,
   }) =>
       JournalEntry(
         id: id,
@@ -103,6 +108,7 @@ class JournalEntry {
         threadId: clearThreadId ? null : (threadId ?? this.threadId),
         kind: kind,
         chaosFactor: chaosFactor,
+        tags: tags ?? this.tags,
       );
 
   Map<String, dynamic> toJson() => {
@@ -113,6 +119,7 @@ class JournalEntry {
         'threadId': threadId,
         'kind': kind.name,
         if (chaosFactor != null) 'chaosFactor': chaosFactor,
+        'tags': tags,
       };
 
   factory JournalEntry.fromJson(Map<String, dynamic> j) => JournalEntry(
@@ -123,6 +130,7 @@ class JournalEntry {
         threadId: j['threadId'] as String?,
         kind: JournalKind.values.asNameMap()[j['kind']] ?? JournalKind.result,
         chaosFactor: j['chaosFactor'] as int?,
+        tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
       );
 }
 
