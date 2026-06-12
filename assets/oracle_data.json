@@ -1951,6 +1951,24 @@
       ]
     ]
   },
+  "location": {
+    "rows": 5,
+    "cols": 5,
+    "row_labels": [
+      "North",
+      "North",
+      "Center",
+      "South",
+      "South"
+    ],
+    "col_labels": [
+      "West",
+      "West",
+      "Center",
+      "East",
+      "East"
+    ]
+  },
   "roll_high": {
     "outcomes": [
       "Yes, and",
