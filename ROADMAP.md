@@ -107,7 +107,7 @@ not app stores.
 |---|---|---|
 | A | Quick wins: Location grid table, tap-to-roll fate check, WCAG AA contrast pass | **Done** — PR #22 (2026-06-11) |
 | B | Journal export (styled HTML/markdown per campaign) | **Done** — PR #23 (2026-06-12) |
-| E | Discoverability prep: itch.io page assets, awesome-ironsworn PR, Tomkin community-resources submission, repo topics/screenshots (submissions need owner sign-off) | Scoped |
+| E | Discoverability prep: itch.io page assets, awesome-ironsworn PR, Tomkin community-resources submission, repo topics/screenshots (submissions need owner sign-off) | **Prep done** — PR #24 (2026-06-12); repo metadata live; submissions drafted in docs/discoverability/submissions.md, awaiting owner posting |
 | C | Journal search + tags (foundation for D) | Next |
 | D | Journal-aware interpreter (retrieval over journal → seed context) | Next, after C |
 
