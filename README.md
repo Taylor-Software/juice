@@ -55,6 +55,11 @@ all 47 Meaning Tables).
 Mythic Game Master Emulator © Word Mill Games, content used under CC-BY-NC 4.0
 — this app is free and non-commercial.
 
+A **Party** toolkit begins with Behavior Tables — all thirteen Triple-O spark
+and specific d66 tables (© Cezar Capacle / Critical Kit, CC-BY-SA 4.0) for
+deciding what characters do, with the zine's spark combos (Action + Focus,
+Action + Method, Disposition + Motivation) and one-tap add-to-journal.
+
 Optional **Ironsworn family** rulesets (toggle in the app-bar tune icon):
 moves browser with action/progress rolls, and all oracle tables drawn from
 official Datasworn data (© Shawn Tomkin). All four titles are supported:
@@ -70,6 +75,9 @@ are disabled automatically when their base is turned off.
 
 Oracle content: [github.com/jrruethe/juice](https://github.com/jrruethe/juice),
 CC BY-NC-SA. This app is an unofficial implementation of those tables.
+Party emulator content: Triple-O © Cezar Capacle / Critical Kit, CC-BY-SA 4.0
+(the derived table data in `assets/emulator_data.json` stays CC-BY-SA 4.0);
+PET & Sidekick © Tam H (hedonic.ink), CC-BY 4.0.
 
 **Live app:** https://taylor-software.github.io/juice/
 
