@@ -152,6 +152,27 @@ void main() {
       });
       expect(() => parseCampaign(bad), throwsFormatException);
     });
+
+    test('campaign export/import carries juice.settings.v1', () {
+      final encoded = encodeCampaign(
+        name: 'S',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {
+          'juice.settings.v1': '{"genre":"grimdark","tone":"tense"}',
+        },
+      );
+      final parsed = parseCampaign(encoded);
+      expect(parsed.rawByKey['juice.settings.v1'], contains('grimdark'));
+    });
+
+    test('malformed settings section rejects the file', () {
+      final encoded = encodeCampaign(
+        name: 'S',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {'juice.settings.v1': '[1,2]'},
+      );
+      expect(() => parseCampaign(encoded), throwsFormatException);
+    });
   });
 
   group('Provider export/import', () {

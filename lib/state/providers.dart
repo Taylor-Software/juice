@@ -453,6 +453,35 @@ class MapNotifier extends AsyncNotifier<MapState> {
 final mapProvider =
     AsyncNotifierProvider<MapNotifier, MapState>(MapNotifier.new);
 
+// -- Campaign settings (genre/tone for the interpreter) ----------------------
+class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
+  static const _baseKey = 'juice.settings.v1';
+
+  late String _scopedKey;
+
+  @override
+  Future<CampaignSettings> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const CampaignSettings();
+    return CampaignSettings.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> save(CampaignSettings s) async {
+    // Await build() so an early save cannot throw on _scopedKey.
+    state.valueOrNull ?? await future;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
+    state = AsyncData(s);
+  }
+}
+
+final settingsProvider =
+    AsyncNotifierProvider<SettingsNotifier, CampaignSettings>(
+        SettingsNotifier.new);
+
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
@@ -463,6 +492,7 @@ const sessionScopedKeys = [
   'juice.crawl.v1',
   'juice.encounter.v1',
   'juice.map.v1',
+  'juice.settings.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {

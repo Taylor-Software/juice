@@ -86,6 +86,8 @@ CampaignImport parseCampaign(String raw) {
         EncounterState.fromJson(value as Map<String, dynamic>);
       } else if (key == 'juice.map.v1') {
         MapState.fromJson(value as Map<String, dynamic>);
+      } else if (key == 'juice.settings.v1') {
+        CampaignSettings.fromJson(value as Map<String, dynamic>);
       }
     } catch (_) {
       throw const FormatException('Campaign file data is malformed');
