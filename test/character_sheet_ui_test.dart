@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
+import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -71,6 +72,34 @@ void main() {
     await tester.tap(find.byKey(const Key('sheet-back')));
     await tester.pumpAndSettle();
     expect(find.text('HP 7/10'), findsOneWidget);
+  });
+
+  testWidgets('sheet shows the emulation summary only when emulation exists',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":[]},'
+              '{"id":"c2","name":"Em","note":"","stats":[],"tracks":[],"tags":["brave"],'
+              '"emulation":{"tokens":3,"prominentTags":["brave","bold"],"usedTags":[]}}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: TrackerScreen()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Characters'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Em'));
+    await tester.pumpAndSettle();
+    expect(
+        find.text('Emulation: 2 prominent traits · 3 tokens'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('sheet-back')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Emulation:'), findsNothing);
   });
 
   testWidgets('sheet falls back to list when the character disappears',

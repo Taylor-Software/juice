@@ -49,7 +49,8 @@ class _ThreadsTab extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (threads) {
           if (threads.isEmpty) {
-            return const _Empty('No threads yet. Track quests, vows, mysteries.');
+            return const _Empty(
+                'No threads yet. Track quests, vows, mysteries.');
           }
           return ListView.builder(
             padding: const EdgeInsets.all(12),
@@ -115,8 +116,8 @@ class _ThreadsTab extends ConsumerWidget {
         }
       }
     } else {
-      await notifier.replace(
-          existing.copyWith(title: result.title.trim(), note: result.note.trim()));
+      await notifier.replace(existing.copyWith(
+          title: result.title.trim(), note: result.note.trim()));
     }
   }
 }
@@ -270,8 +271,8 @@ class _CharactersTabState extends ConsumerState<_CharactersTab> {
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                onPressed: () => _replace(c.copyWith(
-                    stats: [...c.stats]..removeAt(i))),
+                onPressed: () =>
+                    _replace(c.copyWith(stats: [...c.stats]..removeAt(i))),
               ),
             ],
           ),
@@ -301,8 +302,8 @@ class _CharactersTabState extends ConsumerState<_CharactersTab> {
               ),
               IconButton(
                 icon: const Icon(Icons.delete_outline),
-                onPressed: () => _replace(c.copyWith(
-                    tracks: [...c.tracks]..removeAt(i))),
+                onPressed: () =>
+                    _replace(c.copyWith(tracks: [...c.tracks]..removeAt(i))),
               ),
             ],
           ),
@@ -320,8 +321,8 @@ class _CharactersTabState extends ConsumerState<_CharactersTab> {
             for (final tag in c.tags)
               InputChip(
                 label: Text(tag),
-                onDeleted: () => _replace(c.copyWith(
-                    tags: c.tags.where((t) => t != tag).toList())),
+                onDeleted: () => _replace(
+                    c.copyWith(tags: c.tags.where((t) => t != tag).toList())),
               ),
           ],
         ),
@@ -332,6 +333,17 @@ class _CharactersTabState extends ConsumerState<_CharactersTab> {
           label: const Text('Add tag'),
           onPressed: () => _addTag(context, c),
         ),
+        // Read-only summary; the Party Emulator tool owns the editing.
+        if (c.emulation != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: Text(
+              'Emulation: ${c.emulation!.prominentTags.length} prominent '
+              'traits · ${c.emulation!.tokens} tokens',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ),
         section('Notes'),
         Text(c.note.isEmpty ? '—' : c.note),
       ],

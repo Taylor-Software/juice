@@ -20,8 +20,8 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(14));
-    expect(buildToolRegistry(family: ['classic']), hasLength(15));
+    expect(tools, hasLength(15));
+    expect(buildToolRegistry(family: ['classic']), hasLength(16));
     expect(
         tools.map((t) => t.id),
         containsAll([
@@ -38,6 +38,7 @@ void main() {
           'tables',
           'encounter',
           'maps',
+          'party-emulator',
           'behavior-tables',
         ]));
   });
@@ -49,6 +50,17 @@ void main() {
         .singleWhere((t) => t.id == 'behavior-tables');
     expect(tool.group, 'Party');
     expect(tool.label, 'Behavior Tables');
+    expect(tool.badge, 'Triple-O');
+  });
+
+  test('party-emulator sits in Party before behavior-tables', () {
+    final tools = buildToolRegistry(family: []);
+    final ids = tools.map((t) => t.id).toList();
+    expect(ids.indexOf('party-emulator'),
+        lessThan(ids.indexOf('behavior-tables')));
+    final tool = tools.singleWhere((t) => t.id == 'party-emulator');
+    expect(tool.group, 'Party');
+    expect(tool.label, 'Party Emulator');
     expect(tool.badge, 'Triple-O');
   });
 }

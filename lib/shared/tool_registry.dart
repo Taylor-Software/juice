@@ -8,6 +8,7 @@ import '../features/fate_screen.dart';
 import '../features/generators_screen.dart';
 import '../features/map_screen.dart';
 import '../features/moves_screen.dart';
+import '../features/party_emulator_screen.dart';
 import '../features/tables_screen.dart';
 import '../features/tracker_screen.dart';
 
@@ -99,6 +100,14 @@ List<ToolDef> buildToolRegistry({required List<String> family}) => [
         group: 'NPCs & Dialog',
         badge: 'Juice',
         builder: (o) => GeneratorsScreen(oracle: o!, section: GenSection.npcs),
+      ),
+      ToolDef(
+        id: 'party-emulator',
+        label: 'Party Emulator',
+        icon: Icons.psychology_outlined,
+        group: 'Party',
+        badge: 'Triple-O',
+        builder: (_) => const PartyEmulatorScreen(),
       ),
       ToolDef(
         id: 'behavior-tables',
