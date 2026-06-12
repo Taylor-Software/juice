@@ -1,6 +1,12 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../state/interpreter.dart';
@@ -11,6 +17,22 @@ import 'oracle_interpretation_sheet.dart';
 /// with a composer pinned at the bottom for free-text and scene entries.
 class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
+
+  /// Save seam: tests swap this to capture (fileName, bytes) instead of
+  /// opening the platform save dialog ([FilePicker.saveFile] is static).
+  @visibleForTesting
+  static Future<void> Function(String fileName, List<int> bytes) saveFile =
+      defaultSaveFile;
+
+  @visibleForTesting
+  static Future<void> defaultSaveFile(String fileName, List<int> bytes) =>
+      FilePicker.saveFile(
+        dialogTitle: 'Export journal',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: [fileName.split('.').last],
+        bytes: Uint8List.fromList(bytes),
+      );
 
   @override
   ConsumerState<JournalScreen> createState() => _JournalScreenState();
@@ -86,15 +108,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                         ],
                       ),
                     ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                      child: TextButton.icon(
-                        icon: const Icon(Icons.clear_all),
-                        label: const Text('Clear'),
-                        onPressed: _confirmClear,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton(
+                          key: const Key('journal-export'),
+                          icon: const Icon(Icons.ios_share),
+                          tooltip: 'Export journal…',
+                          onPressed: _export,
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(Icons.clear_all),
+                          label: const Text('Clear'),
+                          onPressed: _confirmClear,
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(
@@ -231,6 +261,70 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // Clear before the await so a second tap can't re-send the same text.
     _composer.clear();
     await ref.read(journalProvider.notifier).addText(text);
+  }
+
+  Future<void> _export() async {
+    final built = await _buildExport();
+    if (built == null) return;
+    final (fileName, content) = built;
+    try {
+      await JournalScreen.saveFile(fileName, utf8.encode(content));
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+    }
+  }
+
+  /// Format dialog + document building. Returns the (fileName, content) the
+  /// save seam would write, or null when the user cancels.
+  Future<(String, String)?> _buildExport() async {
+    final format = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Export journal'),
+        content: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FilledButton.tonal(
+              key: const Key('export-markdown'),
+              onPressed: () => Navigator.pop(context, 'md'),
+              child: const Text('Markdown'),
+            ),
+            const SizedBox(width: 12),
+            FilledButton.tonal(
+              key: const Key('export-html'),
+              onPressed: () => Navigator.pop(context, 'html'),
+              child: const Text('HTML'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (format == null || !mounted) return null;
+    final entries =
+        ref.read(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    // All threads, open AND closed, so closed-thread links keep their titles.
+    final allThreads =
+        ref.read(threadsProvider).valueOrNull ?? const <Thread>[];
+    final threadTitles = {for (final t in allThreads) t.id: t.title};
+    final name =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
+    final content = format == 'md'
+        ? journalToMarkdown(
+            campaignName: name,
+            entriesNewestFirst: entries,
+            threadTitles: threadTitles,
+            exportedAt: DateTime.now())
+        : journalToHtml(
+            campaignName: name,
+            entriesNewestFirst: entries,
+            threadTitles: threadTitles,
+            exportedAt: DateTime.now());
+    var slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    slug = slug.replaceAll(RegExp(r'^-+|-+$'), '');
+    return ('${slug.isEmpty ? 'campaign' : slug}-journal.$format', content);
   }
 
   Future<void> _confirmClear() async {
