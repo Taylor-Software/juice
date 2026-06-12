@@ -29,6 +29,35 @@ class FocusEntry {
   final String blurb;
 }
 
+/// Sidekick dialogue mood ids in printed order; the mood-change d6 maps
+/// 1..6 onto this list.
+const List<String> kSidekickMoods = [
+  'default',
+  'taciturn',
+  'savvy',
+  'high_strung',
+  'sassy',
+  'selfish',
+];
+
+/// One sidekick.hexflower hex: axial coords plus the conversation topic and
+/// context color ('gray' = history, 'red' = current events).
+class HexInfo {
+  const HexInfo({
+    required this.index,
+    required this.q,
+    required this.r,
+    required this.topic,
+    required this.context,
+  });
+
+  final int index;
+  final int q;
+  final int r;
+  final String topic;
+  final String context;
+}
+
 /// Parsed view over assets/emulator_data.json (emitted by build_emulator.py:
 /// Triple-O spark/specific d66 tables + Pettish PET/Sidekick data).
 class EmulatorData {
@@ -118,6 +147,88 @@ class EmulatorData {
 
   /// The six PET real-life events for session start (d6 order).
   List<String> get realLife => (_pet['real_life'] as List).cast<String>();
+
+  Map<String, dynamic> get _sidekick =>
+      _json['sidekick'] as Map<String, dynamic>;
+
+  /// Dialogue mood ids in printed order (see [kSidekickMoods]).
+  List<String> get moods => kSidekickMoods;
+
+  /// Dialogue line for [mood] at 2d6 [key] (2..12); ArgumentError outside.
+  String dialogueLine(String mood, int key) {
+    final table = (_sidekick['dialogue'] as Map<String, dynamic>)[mood];
+    if (table == null) throw ArgumentError('unknown mood: $mood');
+    final line = (table as Map<String, dynamic>)['$key'];
+    if (line == null) throw ArgumentError('bad dialogue key: $key');
+    return line as String;
+  }
+
+  List<String> _sidekickList(String key) =>
+      (_sidekick[key] as List).cast<String>();
+
+  /// The six tone chips (d6 order).
+  List<String> get tones => _sidekickList('tone');
+
+  /// The six topic chips (d6 order).
+  List<String> get topics => _sidekickList('topic');
+
+  /// The six "said how" first-word chips (d6 order).
+  List<String> get saidHowA => _sidekickList('said_how_a');
+
+  /// The six "said how" second-word chips (d6 order).
+  List<String> get saidHowB => _sidekickList('said_how_b');
+
+  Map<String, dynamic> get _hexflower =>
+      _sidekick['hexflower'] as Map<String, dynamic>;
+
+  List<Map<String, dynamic>> get _hexes =>
+      (_hexflower['hexes'] as List).cast<Map<String, dynamic>>();
+
+  /// Hexflower hex [index] (0..18); ArgumentError outside.
+  HexInfo hex(int index) {
+    final hexes = _hexes;
+    if (index < 0 || index >= hexes.length) {
+      throw ArgumentError('bad hex index: $index');
+    }
+    final h = hexes[index];
+    return HexInfo(
+      index: h['index'] as int,
+      q: h['q'] as int,
+      r: h['r'] as int,
+      topic: h['topic'] as String,
+      context: h['context'] as String,
+    );
+  }
+
+  /// Neighbor indices of hex [index], from the asset's adjacency map.
+  List<int> hexNeighbors(int index) {
+    final adj = (_hexflower['adjacency'] as Map<String, dynamic>)['$index'];
+    if (adj == null) throw ArgumentError('bad hex index: $index');
+    return (adj as List).cast<int>();
+  }
+
+  /// Direction ('N'|'NE'|'SE'|'S'|'SW'|'NW') for a 2d6 sum (2..12), per the
+  /// overlay rose around the flower.
+  String hexDirection(int key2d6) {
+    final dir = (_hexflower['directions'] as Map<String, dynamic>)['$key2d6'];
+    if (dir == null) throw ArgumentError('bad direction key: $key2d6');
+    return dir as String;
+  }
+
+  /// The hex one step from [from] toward [key2d6]'s direction (the asset's
+  /// direction_deltas applied to axial q/r); null when the step leaves the
+  /// flower (UI: stay put).
+  int? hexStep(int from, int key2d6) {
+    final delta = (_hexflower['direction_deltas']
+        as Map<String, dynamic>)[hexDirection(key2d6)] as List;
+    final h = hex(from);
+    final q = h.q + (delta[0] as int);
+    final r = h.r + (delta[1] as int);
+    for (final cell in _hexes) {
+      if (cell['q'] == q && cell['r'] == r) return cell['index'] as int;
+    }
+    return null;
+  }
 
   /// License attribution lines, displayed in the Party tools.
   List<String> get attribution =>

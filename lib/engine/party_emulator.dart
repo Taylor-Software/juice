@@ -131,6 +131,64 @@ ActResult rollAct(Dice dice) => ActResult(
       modifierDie: dice.dN(6),
     );
 
+// -- Sidekick dialogue --------------------------------------------------------
+
+/// One Sidekick dialogue roll: the line key plus the tone/topic/said-how
+/// chips. Per the source, matching line dice change the mood BEFORE the
+/// line: a d6 picks the new mood and the line rerolls under it.
+class DialogueResult {
+  const DialogueResult({
+    required this.dice,
+    this.newMood,
+    required this.lineKey,
+    required this.toneIx,
+    required this.topicIx,
+    required this.saidHowAIx,
+    required this.saidHowBIx,
+  });
+
+  /// The first 2d6 — doubles trigger the mood change.
+  final (int, int) dice;
+
+  /// Doubles changed the mood before the line was rolled.
+  bool get moodChanged => newMood != null;
+
+  /// The d6-picked mood id (over [kSidekickMoods]); null unless
+  /// [moodChanged].
+  final String? newMood;
+
+  /// The (re)rolled 2d6 sum keying the dialogue line (2..12).
+  final int lineKey;
+
+  /// d6 chip indices (0..5) into tones / topics / saidHowA / saidHowB.
+  final int toneIx;
+  final int topicIx;
+  final int saidHowAIx;
+  final int saidHowBIx;
+}
+
+/// Roll one dialogue line. Dice order (tests pin it): 2d6 line → when
+/// doubles: d6 mood + 2d6 reroll → d6 tone → d6 topic → d6 saidHowA →
+/// d6 saidHowB.
+DialogueResult rollDialogue(Dice dice) {
+  final a = dice.dN(6), b = dice.dN(6);
+  String? newMood;
+  var lineKey = a + b;
+  if (a == b) {
+    newMood = kSidekickMoods[dice.dN(6) - 1];
+    lineKey = dice.dN(6) + dice.dN(6);
+  }
+  return DialogueResult(
+    dice: (a, b),
+    newMood: newMood,
+    lineKey: lineKey,
+    toneIx: dice.dN(6) - 1,
+    topicIx: dice.dN(6) - 1,
+    saidHowAIx: dice.dN(6) - 1,
+    saidHowBIx: dice.dN(6) - 1,
+  );
+}
+
 /// Pure group assignment given the three course rolls: returns course
 /// indices ordered [obvious, option, odd] = highest, middle, lowest roll.
 /// Ties broken by earlier list position keeping its higher slot.
