@@ -561,6 +561,7 @@ const sessionScopedKeys = [
   'juice.crawl.v1',
   'juice.encounter.v1',
   'juice.map.v1',
+  'juice.verdant.v1',
   'juice.settings.v1',
 ];
 
