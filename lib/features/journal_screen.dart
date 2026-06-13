@@ -47,9 +47,30 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final TextEditingController _search = TextEditingController();
+  bool _slashActive = false;
+
+  // Built-in (non-registry) slash commands handled inline.
+  static const _builtinScene = 'scene';
+  static const _builtinHelp = 'help';
+
+  @override
+  void initState() {
+    super.initState();
+    _composer.addListener(_onComposerChanged);
+  }
+
+  void _onComposerChanged() {
+    final isSlash = _composer.text.startsWith('/');
+    if (isSlash != _slashActive) {
+      setState(() => _slashActive = isSlash);
+    } else if (isSlash) {
+      setState(() {}); // refilter as the token changes
+    }
+  }
 
   @override
   void dispose() {
+    _composer.removeListener(_onComposerChanged);
     _composer.dispose();
     _search.dispose();
     super.dispose();
@@ -205,6 +226,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             },
           ),
         ),
+        if (_slashActive) _slashPalette(),
         _composerBar(),
       ],
     );
@@ -321,6 +343,30 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         sourceTool: e.sourceTool, payload: r.payload);
   }
 
+  /// Runs a registry command from the palette: rolls against the loaded
+  /// oracle and drops a structured entry. Mythic pulls live chaos.
+  Future<void> _runCommand(CommandDef cmd,
+      {String? odds, String? notation}) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final args = <String, String>{};
+    if (odds != null) args['odds'] = odds;
+    if (notation != null) args['notation'] = notation;
+    if (cmd.id == 'fate-mythic') {
+      args['chaos'] =
+          '${ref.read(crawlProvider).valueOrNull?.chaosFactor ?? 5}';
+    }
+    try {
+      final r = cmd.run(oracle, args);
+      await ref.read(journalProvider.notifier).addResult(r.title, r.body,
+          sourceTool: cmd.toolId, payload: r.payload);
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   /// Card-subtitle suffix lines: the `⤷ thread` link, then the `#a #b` tags.
   List<String> _suffixLines(
           JournalEntry e, String Function(String) threadTitle) =>
@@ -328,6 +374,75 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (e.threadId != null) '⤷ ${threadTitle(e.threadId!)}',
         if (e.tags.isNotEmpty) e.tags.map((t) => '#$t').join(' '),
       ];
+
+  // -- Slash palette ----------------------------------------------------------
+
+  Widget _slashPalette() {
+    final parsed = parseSlash(_composer.text);
+    if (parsed == null) return const SizedBox.shrink();
+    final registry = buildCommandRegistry();
+    // Built-ins surface when their name prefixes the token.
+    final showScene = _builtinScene.startsWith(parsed.token.toLowerCase());
+    final showHelp = _builtinHelp.startsWith(parsed.token.toLowerCase());
+    final matches = matchCommands(registry, parsed.token);
+    final theme = Theme.of(context);
+    return Material(
+      key: const Key('slash-palette'),
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 280),
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: [
+            for (final c in matches)
+              _SlashRow(
+                command: c,
+                notation: parsed.rest,
+                onRun: ({String? odds}) => _selectCommand(c, odds: odds),
+              ),
+            if (showScene)
+              ListTile(
+                key: const Key('slash-cmd-scene'),
+                dense: true,
+                leading: const Icon(Icons.movie_outlined),
+                title: const Text('Start a scene'),
+                onTap: () {
+                  _composer.clear();
+                  _newScene();
+                },
+              ),
+            if (showHelp)
+              ListTile(
+                key: const Key('slash-cmd-help'),
+                dense: true,
+                leading: const Icon(Icons.help_outline),
+                title: const Text('Open Help'),
+                onTap: () {
+                  _composer.clear();
+                  ToolHost.openToolIfKnown(context, 'help');
+                },
+              ),
+            if (matches.isEmpty && !showScene && !showHelp)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text('No matching command'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectCommand(CommandDef c, {String? odds}) async {
+    final parsed = parseSlash(_composer.text);
+    _composer.clear(); // also flips _slashActive off via the listener
+    await _runCommand(c,
+        odds: odds,
+        notation: c.arg == CommandArg.notation ? (parsed?.rest ?? '') : null);
+  }
 
   // -- Composer ---------------------------------------------------------------
 
@@ -372,11 +487,32 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   Future<void> _send() async {
-    final text = _composer.text.trim();
-    if (text.isEmpty) return;
-    // Clear before the await so a second tap can't re-send the same text.
+    final text = _composer.text;
+    if (text.startsWith('/')) {
+      // Enter runs the first matching command (built-ins win when they
+      // exactly head the token); otherwise the palette stays open.
+      final parsed = parseSlash(text)!;
+      final tok = parsed.token.toLowerCase();
+      // A bare '/' with no command typed shouldn't silently fire a roll.
+      if (tok.isEmpty) return;
+      if (_builtinScene == tok) {
+        _composer.clear();
+        await _newScene();
+        return;
+      }
+      if (_builtinHelp == tok) {
+        _composer.clear();
+        if (mounted) ToolHost.openToolIfKnown(context, 'help');
+        return;
+      }
+      final matches = matchCommands(buildCommandRegistry(), parsed.token);
+      if (matches.isNotEmpty) await _selectCommand(matches.first);
+      return;
+    }
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
     _composer.clear();
-    await ref.read(journalProvider.notifier).addText(text);
+    await ref.read(journalProvider.notifier).addText(trimmed);
   }
 
   Future<void> _export() async {
@@ -805,6 +941,79 @@ class _Empty extends StatelessWidget {
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
         ),
       ),
+    );
+  }
+}
+
+// -- Slash row ----------------------------------------------------------------
+
+class _SlashRow extends StatefulWidget {
+  const _SlashRow(
+      {required this.command, required this.notation, required this.onRun});
+  final CommandDef command;
+  final String notation;
+  final void Function({String? odds}) onRun;
+
+  @override
+  State<_SlashRow> createState() => _SlashRowState();
+}
+
+class _SlashRowState extends State<_SlashRow> {
+  bool _expanded = false;
+
+  List<String> get _oddsOptions => switch (widget.command.id) {
+        'fate-juice' => const ['unlikely', 'normal', 'likely'],
+        'fate-mythic' => kMythicOdds,
+        'fate-roll-high' => kRollHighOdds,
+        _ => const [],
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.command;
+    final hasOdds = c.arg == CommandArg.odds;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          key: Key('slash-cmd-${c.id}'),
+          dense: true,
+          title: Text(c.label),
+          subtitle: c.arg == CommandArg.notation
+              ? Text(widget.notation.isEmpty
+                  ? 'Type dice notation, e.g. /dice 3d6+2'
+                  : 'Roll ${widget.notation}')
+              : null,
+          trailing: hasOdds ? const Icon(Icons.tune, size: 18) : null,
+          onTap: () {
+            if (hasOdds) {
+              setState(() => _expanded = !_expanded);
+            } else {
+              widget.onRun();
+            }
+          },
+        ),
+        if (hasOdds && _expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                for (final o in _oddsOptions)
+                  ActionChip(
+                    key: Key('slash-odds-$o'),
+                    label: Text(o == 'normal'
+                        ? 'Normal'
+                        : (o.isNotEmpty
+                            ? '${o[0].toUpperCase()}${o.substring(1)}'
+                            : o)),
+                    onPressed: () => widget.onRun(odds: o),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

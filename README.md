@@ -40,6 +40,9 @@ Oracle and dice results land in the journal as **structured entries**: a
 summary, the individual roll rows, a one-tap **re-roll**, and **open-in-tool**
 to jump back to the tool that produced them.
 
+- Slash commands: type `/` in the journal to roll a fate check, dice, or a
+  quick generator without opening a tool — the result lands inline.
+
 - **Oracle interpreter (on-device AI, optional):** any oracle result in the
   journal can be expanded into four short readings — literal, symbolic,
   complication, foreshadow — by a small language model that runs entirely

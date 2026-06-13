@@ -99,6 +99,42 @@ void main() {
     expect(commandById(commands, 'nope'), isNull);
   });
 
+  group('slash parsing + matching', () {
+    final reg = buildCommandRegistry();
+
+    test('parseSlash returns null when not a slash command', () {
+      expect(parseSlash('hello'), isNull);
+      expect(parseSlash('  /fate'), isNull); // must be leading char
+      expect(parseSlash(''), isNull);
+    });
+
+    test('parseSlash splits token and rest', () {
+      expect(parseSlash('/'), (token: '', rest: ''));
+      expect(parseSlash('/fa'), (token: 'fa', rest: ''));
+      expect(parseSlash('/dice 3d6+2'), (token: 'dice', rest: '3d6+2'));
+      expect(parseSlash('/fate likely'), (token: 'fate', rest: 'likely'));
+      expect(parseSlash('/name  '), (token: 'name', rest: ''));
+    });
+
+    test('matchCommands by empty token returns all', () {
+      expect(matchCommands(reg, '').length, reg.length);
+    });
+
+    test('matchCommands filters by id/keyword/label prefix-ish', () {
+      final dice = matchCommands(reg, 'dice');
+      expect(dice.map((c) => c.id), contains('dice'));
+      final fate = matchCommands(reg, 'fate');
+      // all three fate commands match the keyword 'fate'
+      expect(fate.map((c) => c.id),
+          containsAll(['fate-juice', 'fate-mythic', 'fate-roll-high']));
+      expect(matchCommands(reg, 'zzz'), isEmpty);
+    });
+
+    test('matchCommands is case-insensitive', () {
+      expect(matchCommands(reg, 'DICE').map((c) => c.id), contains('dice'));
+    });
+  });
+
   test('command bodies equal the payload-derived text (render contract)', () {
     // Render shows summary+rolls; body must start from the same text so the
     // journal can detect appended notes (see journal payload rendering).
