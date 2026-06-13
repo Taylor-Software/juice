@@ -495,6 +495,32 @@ class MapNotifier extends AsyncNotifier<MapState> {
         hexes: [...s.hexes, HexCell(col: col, row: row, envRow: envRow)]));
   }
 
+  /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
+  Future<void> setHexTerrain(int col, int row, String terrainKey) async {
+    final s = await _ready;
+    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
+    await save(s.copyWith(hexes: [
+      for (final h in s.hexes)
+        if (h.col == col && h.row == row)
+          h.copyWith(terrain: terrainKey)
+        else
+          h,
+    ]));
+  }
+
+  /// Add a Point of Interest (1..12) to an existing hex; ignores duplicates.
+  Future<void> addHexPoi(int col, int row, int poiN) async {
+    final s = await _ready;
+    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
+    await save(s.copyWith(hexes: [
+      for (final h in s.hexes)
+        if (h.col == col && h.row == row)
+          h.copyWith(pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN])
+        else
+          h,
+    ]));
+  }
+
   /// Clear the dungeon graph, keeping the hex field.
   Future<void> resetDungeon() async {
     final s = await _ready;
