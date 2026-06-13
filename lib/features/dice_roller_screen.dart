@@ -15,7 +15,16 @@ class DiceRollerScreen extends ConsumerStatefulWidget {
 }
 
 class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
-  static const _quickDice = ['d4', 'd6', 'd8', 'd10', 'd12', 'd20', 'd100', 'dF'];
+  static const _quickDice = [
+    'd4',
+    'd6',
+    'd8',
+    'd10',
+    'd12',
+    'd20',
+    'd100',
+    'dF'
+  ];
   static const _historyCap = 20;
 
   final TextEditingController _input = TextEditingController();
@@ -49,8 +58,8 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
     } else {
       final segments = t.split('+');
       final pattern = die == 'dF' ? r'^(\d*)d[fF]$' : '^(\\d*)$die\$';
-      final match =
-          RegExp(pattern, caseSensitive: false).firstMatch(segments.last.trim());
+      final match = RegExp(pattern, caseSensitive: false)
+          .firstMatch(segments.last.trim());
       if (match != null) {
         final count = match.group(1)!;
         final n = count.isEmpty ? 2 : int.parse(count) + 1;
@@ -146,9 +155,27 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
                         tooltip: 'Add to journal',
                         icon: const Icon(Icons.bookmark_add_outlined),
                         onPressed: () {
-                          ref
-                              .read(journalProvider.notifier)
-                              .add('Dice Roll', last.asText);
+                          // Body is the one-line total so the journal's rich
+                          // payload card reads cleanly; the per-group
+                          // breakdown rides in the payload rolls.
+                          ref.read(journalProvider.notifier).addResult(
+                            'Dice Roll',
+                            '${last.expression} = ${last.total}',
+                            sourceTool: 'dice',
+                            payload: {
+                              'v': 1,
+                              'summary': '${last.expression} = ${last.total}',
+                              'rolls': [
+                                for (final grp in last.groups)
+                                  if (grp.dice.isNotEmpty)
+                                    {
+                                      'label': grp.label,
+                                      'display':
+                                          '${grp.dice.map((d) => d.kept ? d.display : '[${d.display}]').join(', ')} (${grp.subtotal})',
+                                    }
+                              ],
+                            },
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Added to journal')),
                           );
@@ -203,8 +230,8 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
               trailing: const Icon(Icons.replay),
               onTap: () {
                 final expression = _history[i].expression;
-                setState(() =>
-                    _record(parseDice(expression).roll(widget.dice)));
+                setState(
+                    () => _record(parseDice(expression).roll(widget.dice)));
               },
             ),
         ],

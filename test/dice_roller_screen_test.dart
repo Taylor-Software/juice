@@ -13,8 +13,8 @@ void main() {
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(
-            home: Scaffold(body: DiceRollerScreen(dice: Dice())))));
+        child:
+            MaterialApp(home: Scaffold(body: DiceRollerScreen(dice: Dice())))));
     await tester.pumpAndSettle();
   }
 
@@ -40,6 +40,24 @@ void main() {
         of: find.text('Roll'),
         matching: find.byWidgetPredicate((w) => w is FilledButton)));
     expect(button.onPressed, isNull);
+  });
+
+  testWidgets('dice add-to-journal sets sourceTool and payload summary',
+      (tester) async {
+    await pump(tester);
+    await tester.enterText(find.byKey(const Key('dice-input')), '2d6+3');
+    await tester.pump();
+    await tester.tap(find.text('Roll'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add to journal'));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(DiceRollerScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.single.sourceTool, 'dice');
+    final summary = entries.single.payload?['summary'] as String?;
+    expect(summary, isNotNull);
+    expect(summary, matches(RegExp(r'^2d6\+3 = \d+$')));
   });
 
   testWidgets('roll renders breakdown and total; history rerolls; journal add',
