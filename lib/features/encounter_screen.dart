@@ -40,10 +40,18 @@ class EncounterScreen extends ConsumerWidget {
         children: [
           Text('Round ${s.round}', style: theme.textTheme.titleMedium),
           const Spacer(),
-          FilledButton.tonal(
-            key: const Key('next-turn'),
-            onPressed: () => ref.read(encounterProvider.notifier).nextTurn(),
-            child: const Text('Next turn'),
+          // Flexible bounds the button's width. As a bare non-flex Row child
+          // alongside a Spacer (flex), RenderFlex measures the FilledButton at
+          // maxWidth:Infinity and a Material button throws "BoxConstraints
+          // forces an infinite width" under the tool host's loose constraints
+          // — freezing the app (release web) / blanking the tool (debug).
+          // Same root cause and fix as the Maps tool's _controls.
+          Flexible(
+            child: FilledButton.tonal(
+              key: const Key('next-turn'),
+              onPressed: () => ref.read(encounterProvider.notifier).nextTurn(),
+              child: const Text('Next turn'),
+            ),
           ),
           IconButton(
             key: const Key('end-encounter'),
@@ -109,12 +117,12 @@ class EncounterScreen extends ConsumerWidget {
       } else if (char.tracks.isNotEmpty) {
         track = char.tracks.first;
         final linked = char;
-        void step(int delta) =>
-            ref.read(charactersProvider.notifier).replace(linked.copyWith(
-                tracks: [
-                  linked.tracks.first.adjusted(delta),
-                  ...linked.tracks.skip(1),
-                ]));
+        void step(int delta) => ref
+            .read(charactersProvider.notifier)
+            .replace(linked.copyWith(tracks: [
+              linked.tracks.first.adjusted(delta),
+              ...linked.tracks.skip(1),
+            ]));
         minus = () => step(-1);
         plus = () => step(1);
       }
@@ -253,8 +261,8 @@ class EncounterScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('End encounter?'),
-        content:
-            const Text('A summary is added to the journal and the tracker resets.'),
+        content: const Text(
+            'A summary is added to the journal and the tracker resets.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -284,8 +292,7 @@ class EncounterScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _addTag(
-      BuildContext context, WidgetRef ref, Combatant c) async {
+  Future<void> _addTag(BuildContext context, WidgetRef ref, Combatant c) async {
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
