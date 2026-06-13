@@ -95,6 +95,30 @@ CommandResult _fromGen(String command, Map<String, String> args, GenResult g) =>
     CommandResult(
         title: g.title, body: g.asText, payload: _payload(command, args, g));
 
+/// Parsed slash input: the command token (text after `/` up to the first
+/// space) and the remaining argument text. Null when [text] is not a slash
+/// command (must start with `/`).
+({String token, String rest})? parseSlash(String text) {
+  if (!text.startsWith('/')) return null;
+  final body = text.substring(1);
+  final sp = body.indexOf(' ');
+  if (sp < 0) return (token: body, rest: '');
+  return (token: body.substring(0, sp), rest: body.substring(sp + 1).trim());
+}
+
+/// Commands whose id, label, or any keyword contains [token]
+/// (case-insensitive). Empty token returns all commands in registry order.
+List<CommandDef> matchCommands(List<CommandDef> registry, String token) {
+  final q = token.toLowerCase();
+  if (q.isEmpty) return registry;
+  return registry
+      .where((c) =>
+          c.id.toLowerCase().contains(q) ||
+          c.label.toLowerCase().contains(q) ||
+          c.keywords.any((k) => k.toLowerCase().contains(q)))
+      .toList();
+}
+
 List<CommandDef> buildCommandRegistry() => [
       CommandDef(
         id: 'fate-juice',
