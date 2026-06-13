@@ -43,6 +43,8 @@ to jump back to the tool that produced them.
 - Slash commands: type `/` in the journal to roll a fate check, dice, or a
   quick generator without opening a tool — the result lands inline.
 
+- Ask anything: end a journal line with `?` (or `/ask`) and the oracle answers using your campaign's default oracle — question and answer land in one entry. Any line with dialogue can be **voiced** in character by the on-device model.
+
 - Campaign header: a collapsible band over the journal shows the current scene, Mythic chaos, pinned threads, starred characters, and crawl state — each opens its tool. Set the campaign's default oracle here.
 
 - System profiles: pick which systems a campaign uses (Juice, Mythic, Ironsworn, Party) when you create it — the tools, slash commands, and header scope to that set. Existing campaigns keep everything.

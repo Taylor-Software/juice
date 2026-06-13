@@ -55,9 +55,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // Active @-mention query (text from the last '@' to the caret), or null.
   String? _mentionQuery;
 
+  // True when the composer text is a question (trailing ?) and slash/mention
+  // are not active.
+  bool _askActive = false;
+
   // Built-in (non-registry) slash commands handled inline.
   static const _builtinScene = 'scene';
   static const _builtinHelp = 'help';
+  static const _builtinAsk = 'ask';
 
   @override
   void initState() {
@@ -79,10 +84,86 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         mention = upToCaret.substring(at + 1);
       }
     }
+    final isQuestion = !slash &&
+        mention == null &&
+        text.trim().endsWith('?') &&
+        text.trim().length > 1;
     setState(() {
       _slashActive = slash;
       _mentionQuery = mention;
+      _askActive = isQuestion;
     });
+  }
+
+  // -- Ask-anything helpers --------------------------------------------------
+
+  String _fateCommandId(String oracle) => switch (oracle) {
+        'mythic' => 'fate-mythic',
+        'roll-high' => 'fate-roll-high',
+        _ => 'fate-juice',
+      };
+
+  List<String> _oddsOptions(String oracle) => switch (oracle) {
+        'mythic' => kMythicOdds,
+        'roll-high' => kRollHighOdds,
+        _ => const ['unlikely', 'normal', 'likely'],
+      };
+
+  String _oddsLabel(String o) =>
+      o.isEmpty ? o : '${o[0].toUpperCase()}${o.substring(1)}';
+
+  Widget _askChip() => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+          child: ActionChip(
+            key: const Key('ask-chip'),
+            avatar: const Icon(Icons.psychology_alt_outlined, size: 18),
+            label: const Text('Ask the oracle'),
+            onPressed: () => _ask(_composer.text.trim()),
+          ),
+        ),
+      );
+
+  Future<void> _ask(String question) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null || question.isEmpty) return;
+    // Await settings so defaultOracle is available even when called early.
+    final CampaignSettings settings;
+    if (ref.read(settingsProvider).hasValue) {
+      settings = ref.read(settingsProvider).requireValue;
+    } else {
+      settings = await ref.read(settingsProvider.future);
+    }
+    if (!mounted) return;
+    final ora = settings.defaultOracle;
+    final opts = _oddsOptions(ora);
+    // ignore: use_build_context_synchronously — mounted checked above
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('How likely?'),
+        children: [
+          for (final o in opts)
+            SimpleDialogOption(
+              key: Key('ask-odds-$o'),
+              onPressed: () => Navigator.pop(ctx, o),
+              child: Text(_oddsLabel(o)),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final cmd = commandById(buildCommandRegistry(), _fateCommandId(ora))!;
+    final args = <String, String>{'odds': picked};
+    if (cmd.id == 'fate-mythic') {
+      args['chaos'] =
+          '${ref.read(crawlProvider).valueOrNull?.chaosFactor ?? 5}';
+    }
+    final r = cmd.run(oracle, args);
+    _composer.clear();
+    await ref.read(journalProvider.notifier).addResult(question, r.body,
+        sourceTool: cmd.toolId, payload: r.payload);
   }
 
   @override
@@ -275,14 +356,27 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             },
           ),
         ),
-        if (_slashActive) _slashPalette(),
-        if (_mentionQuery != null) _mentionPanel(),
+        if (_slashActive)
+          _slashPalette()
+        else if (_mentionQuery != null)
+          _mentionPanel()
+        else if (_askActive)
+          _askChip(),
         _composerBar(),
       ],
     );
   }
 
   // -- Entry rendering ------------------------------------------------------
+
+  bool _isDialogShaped(JournalEntry e) =>
+      e.body.contains('"') ||
+      e.sourceTool == 'gen-npcs' ||
+      e.sourceTool == 'sidekick-dialogue';
+
+  bool get _canVoice =>
+      ref.read(interpreterServiceProvider).status.value.phase !=
+      InterpreterPhase.unsupported;
 
   Widget _entry(JournalEntry e, List<Thread> threads,
       String Function(String) threadTitle) {
@@ -297,6 +391,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       itemBuilder: (_) => [
         if (canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
+        if (_canVoice && _isDialogShaped(e))
+          const PopupMenuItem(value: 'voice', child: Text('Voice…')),
         if (saveAs != null)
           PopupMenuItem(
               value: 'save-entity',
@@ -449,8 +545,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             kAllSystems;
     final registry = commandsForSystems(buildCommandRegistry(), systems);
     // Built-ins surface when their name prefixes the token.
-    final showScene = _builtinScene.startsWith(parsed.token.toLowerCase());
-    final showHelp = _builtinHelp.startsWith(parsed.token.toLowerCase());
+    final tok = parsed.token.toLowerCase();
+    final showScene = _builtinScene.startsWith(tok);
+    final showHelp = _builtinHelp.startsWith(tok);
+    final showAsk = _builtinAsk.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -492,7 +590,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   ToolHost.openToolIfKnown(context, 'help');
                 },
               ),
-            if (matches.isEmpty && !showScene && !showHelp)
+            if (showAsk)
+              ListTile(
+                key: const Key('slash-cmd-ask'),
+                dense: true,
+                leading: const Icon(Icons.psychology_alt_outlined),
+                title: const Text('Ask the oracle'),
+                subtitle: const Text('Type your question after /ask'),
+                onTap: () {
+                  final question = parsed.rest.trim();
+                  if (question.isNotEmpty) {
+                    _ask(question);
+                  }
+                  // If no question typed yet, leave the composer so user can
+                  // type their question.
+                },
+              ),
+            if (matches.isEmpty && !showScene && !showHelp && !showAsk)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text('No matching command'),
@@ -651,6 +765,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (mounted) ToolHost.openToolIfKnown(context, 'help');
         return;
       }
+      if (_builtinAsk == tok) {
+        final question = parsed.rest.trim();
+        if (question.isNotEmpty) await _ask(question);
+        return;
+      }
       final systems =
           ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
               kAllSystems;
@@ -803,6 +922,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     switch (action) {
       case 'interpret':
         await _interpret(entry);
+      case 'voice':
+        await _voiceEntry(entry);
       case 'save-entity':
         await _saveAsEntity(entry);
       case 'delete':
@@ -908,6 +1029,41 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     await ref.read(journalProvider.notifier).replace(fresh.copyWith(
         body:
             '${fresh.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
+  }
+
+  Future<void> _voiceEntry(JournalEntry entry) async {
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+    final related = relatedEntries(
+        ref.read(journalProvider).valueOrNull ?? const [], entry);
+    final seed = VoiceSeed(
+      line: entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
+      mood: 'default',
+      genre: settings.genre,
+      toneSetting: settings.tone,
+      journalContext: [
+        for (final e in related)
+          e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
+      ],
+    );
+    String? voiced;
+    try {
+      voiced = await ref.read(interpreterServiceProvider).voiceLine(seed);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not voice: $e')));
+      return;
+    }
+    if (voiced.trim().isEmpty || !mounted) return;
+    // Re-read fresh so the append can't clobber concurrent edits.
+    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
+        .where((x) => x.id == entry.id)
+        .firstOrNull;
+    if (fresh == null) return;
+    await ref
+        .read(journalProvider.notifier)
+        .replace(fresh.copyWith(body: '${fresh.body}\n\n— Voiced: $voiced'));
   }
 }
 
