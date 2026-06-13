@@ -194,14 +194,26 @@ void main() {
         }
         final labels = r.rolls.map((x) => x.label).toList();
         expect(labels, containsAll(['Fragment', 'Tone', 'Subject']));
-        final tense =
-            r.rolls.firstWhere((x) => x.label == 'Fragment').detail!;
+        final tense = r.rolls.firstWhere((x) => x.label == 'Fragment').detail!;
         if (tense.contains('past')) sawPast = true;
         if (tense.contains('present')) sawPresent = true;
       }
       expect(sawEnd, isTrue, reason: 'doubles (10%) must end conversations');
       expect(sawPast && sawPresent, isTrue,
           reason: 'walk must reach both tense bands over 2000 beats');
+    });
+
+    test('walking off a grid edge wraps, never throws RangeError', () {
+      // Regression: a −1 direction delta from row/col 0 used to yield −1
+      // (Dart % keeps the dividend sign) and crash on dialogGrid[-1].
+      final o = oracleWith(7);
+      for (var i = 0; i < 1000; i++) {
+        o.restoreDialogPos(0, 0); // force the top-left corner each beat
+        o.npcDialog(); // must not throw regardless of the rolled direction
+        final pos = o.dialogPos;
+        expect(pos.row, inInclusiveRange(0, 4));
+        expect(pos.col, inInclusiveRange(0, 4));
+      }
     });
   });
 
@@ -266,9 +278,8 @@ void main() {
         final (lo, hi) = entry.value;
         for (final row in rows) {
           for (var v = lo; v <= hi; v++) {
-            final hits = row
-                .where((r) => r != null && v >= r[0] && v <= r[1])
-                .length;
+            final hits =
+                row.where((r) => r != null && v >= r[0] && v <= r[1]).length;
             expect(hits, 1, reason: '${entry.key} value $v');
           }
         }

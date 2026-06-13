@@ -130,7 +130,9 @@ class Oracle {
     return GenResult(
       title: 'New Scene',
       rolls: [
-        Roll(label: 'Random Event', value: data.table('random_event')[reIdx - 1]),
+        Roll(
+            label: 'Random Event',
+            value: data.table('random_event')[reIdx - 1]),
         Roll(label: 'Physical Challenge', value: _pick('challenge_physical')),
         Roll(label: 'Mental Challenge', value: _pick('challenge_mental')),
         Roll(label: 'DC', value: data.table('dc')[dcIdx - 1]),
@@ -169,8 +171,11 @@ class Oracle {
       ]);
 
   GenResult npcBehavior({int skew = 0}) => GenResult(
-        title: 'NPC Behavior${skew > 0 ? ' (Active)' : skew < 0 ? ' (Passive)' : ''}',
-        rolls: [Roll(label: 'Behavior', value: _pick('npc_behavior', skew: skew))],
+        title:
+            'NPC Behavior${skew > 0 ? ' (Active)' : skew < 0 ? ' (Passive)' : ''}',
+        rolls: [
+          Roll(label: 'Behavior', value: _pick('npc_behavior', skew: skew))
+        ],
       );
 
   GenResult npcCombat() => GenResult(title: 'NPC Combat Action', rolls: [
@@ -216,7 +221,8 @@ class Oracle {
       Roll(label: 'Weather', value: _pick('wilderness_weather')),
     ];
     return (
-      result: GenResult(title: 'Wilderness Travel', summary: note, rolls: rolls),
+      result:
+          GenResult(title: 'Wilderness Travel', summary: note, rolls: rolls),
       state: s.copyWith(envRow: env, lost: lost),
     );
   }
@@ -280,8 +286,8 @@ class Oracle {
       ]);
 
   /// Lingering in the current area: encounter-only roll at d6.
-  GenResult dungeonLinger() =>
-      GenResult(title: 'Dungeon Linger', rolls: _dungeonEncounterRolls(linger: true));
+  GenResult dungeonLinger() => GenResult(
+      title: 'Dungeon Linger', rolls: _dungeonEncounterRolls(linger: true));
 
   GenResult treasure() {
     final cat = data.treasureCategories[dice.dN(6) - 1];
@@ -305,9 +311,8 @@ class Oracle {
     final mid = data.nameMid[dice.dN(20) - 1];
     final end = data.nameEnd[dice.dN(20) - 1];
     final name = (start + mid + end);
-    final cased = name.isEmpty
-        ? name
-        : name[0].toUpperCase() + name.substring(1);
+    final cased =
+        name.isEmpty ? name : name[0].toUpperCase() + name.substring(1);
     return GenResult(
       title: 'Name',
       summary: cased,
@@ -439,8 +444,12 @@ class Oracle {
     final band = d1 <= 4 ? 2 : (d1 <= 8 ? 3 : 4);
     final difficulty = const {2: 'Easy', 3: 'Medium', 4: 'Hard'}[band]!;
     final rolls = <Roll>[
-      Roll(label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
-      Roll(label: 'Difficulty', value: difficulty, detail: 'd10 ${d10Label(d1)}'),
+      Roll(
+          label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
+      Roll(
+          label: 'Difficulty',
+          value: difficulty,
+          detail: 'd10 ${d10Label(d1)}'),
     ];
     for (final cell in gridRow.take(band)) {
       final hasPrefix = cell.startsWith('+ ') || cell.startsWith('- ');
@@ -475,7 +484,8 @@ class Oracle {
         ? cell.substring(2)
         : cell;
     return GenResult(title: 'Creature Tracks', rolls: [
-      Roll(label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
+      Roll(
+          label: 'Environment', value: envName, detail: 'd10 ${d10Label(env)}'),
       Roll(label: 'Tracks', value: name),
     ]);
   }
@@ -585,8 +595,8 @@ class Oracle {
     List<String> characters = const [],
   }) {
     final roll = dice.d100();
-    final entry = data.mythicEventFocus
-        .firstWhere((e) => roll <= (e[0] as int));
+    final entry =
+        data.mythicEventFocus.firstWhere((e) => roll <= (e[0] as int));
     final label = entry[1] as String;
     final kind = entry[2] as String?;
     final rolls = <Roll>[
@@ -611,10 +621,10 @@ class Oracle {
   /// Two-word meaning prompt from the table with [id]; the second word
   /// comes from entries2 when the table has pairs, else entries again.
   GenResult mythicMeaning(String id) {
-    final table = data.mythicMeaning.firstWhere((t) => t['id'] == id);
+    final table = data.mythicMeaning.firstWhere((t) => t['id'] == id,
+        orElse: () => throw ArgumentError('Unknown Mythic meaning table: $id'));
     final entries = (table['entries'] as List).cast<String>();
-    final entries2 =
-        (table['entries2'] as List?)?.cast<String>() ?? entries;
+    final entries2 = (table['entries2'] as List?)?.cast<String>() ?? entries;
     final r1 = dice.d100(), r2 = dice.d100();
     return GenResult(title: 'Mythic Meaning', rolls: [
       Roll(label: 'Table', value: table['name'] as String),
@@ -638,9 +648,11 @@ class Oracle {
         ],
       );
     }
-    final dir = data.dialogDirection
-        .firstWhere((band) => d1 <= (band[0] as int));
+    final dir =
+        data.dialogDirection.firstWhere((band) => d1 <= (band[0] as int));
     final tone = dir[1] as String;
+    // Dart's `%` is non-negative for a positive divisor (−1 % 5 == 4), so a
+    // −1 delta from row/col 0 wraps to 4 — no RangeError (regression-tested).
     _dialogRow = (_dialogRow + (dir[2] as int)) % 5;
     _dialogCol = (_dialogCol + (dir[3] as int)) % 5;
     final subject = data.dialogSubject

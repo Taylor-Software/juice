@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
@@ -118,9 +119,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final content = await ref.read(sessionsProvider.notifier).exportActive();
     final name =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
-    var slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-    slug = slug.replaceAll(RegExp(r'^-+|-+$'), '');
-    final fileName = '${slug.isEmpty ? 'campaign' : slug}.juice.json';
+    final fileName = '${slugify(name)}.juice.json';
     try {
       await FilePicker.saveFile(
         dialogTitle: 'Export campaign',

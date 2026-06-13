@@ -102,21 +102,25 @@ OUTPUT:
 {"interpretations":[{"lens":"literal","reading":"Behind the loose hearthstone sits a rusted tin box, something shifting inside when you lift it."},{"lens":"symbolic","reading":"A single mismatched teacup at the back of the cupboard — kept for someone who never came back."},{"lens":"complication","reading":"You find the cottage deed, and a second name on it you have never heard before."},{"lens":"foreshadow","reading":"A pressed flower falls from a book — a kind that only grows two valleys over."}]}
 ''';
 
+/// Collapses internal whitespace/newlines in a seed field to single spaces
+/// (the prompt format is line-keyed, so embedded newlines would break it).
+String _flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+/// [_flat] with an explicit placeholder when the field is empty.
+String _orElse(String v, String fallback) {
+  final f = _flat(v);
+  return f.isEmpty ? fallback : f;
+}
+
 /// Builds the per-roll user message from a seed. The format is line-keyed
 /// (one field per line, matching the few-shot examples), so runs of
 /// whitespace/newlines in seed fields collapse to single spaces.
 String buildOraclePrompt(OracleSeed seed) {
-  String flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
-  String orElse(String v, String fallback) {
-    final f = flat(v);
-    return f.isEmpty ? fallback : f;
-  }
-
   // Recall block, capped engine-side so no caller can blow the web
   // model's 1280-token budget (see kRecallMaxEntries/kRecallMaxChars).
   final recall = StringBuffer();
   for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = flat(context);
+    final f = _flat(context);
     if (f.isEmpty) continue;
     final cut =
         f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
@@ -124,11 +128,11 @@ String buildOraclePrompt(OracleSeed seed) {
   }
 
   return 'INPUT:\n'
-      'genre: ${orElse(seed.genre, '(unspecified)')}\n'
-      'tone: ${orElse(seed.tone, '(unspecified)')}\n'
-      'result: ${flat(seed.resultText)}\n'
+      'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
+      'tone: ${_orElse(seed.tone, '(unspecified)')}\n'
+      'result: ${_flat(seed.resultText)}\n'
       '$recall'
-      'scene: ${orElse(seed.sceneContext, '(none given)')}\n'
+      'scene: ${_orElse(seed.sceneContext, '(none given)')}\n'
       'OUTPUT:';
 }
 
@@ -294,15 +298,9 @@ markdown, no quotation marks, no stage directions, no commentary.''';
 /// (format and recall capping as [buildOraclePrompt]). Optional fields are
 /// omitted entirely; empty settings become explicit placeholders.
 String buildVoicePrompt(VoiceSeed seed) {
-  String flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
-  String orElse(String v, String fallback) {
-    final f = flat(v);
-    return f.isEmpty ? fallback : f;
-  }
-
   final recall = StringBuffer();
   for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = flat(context);
+    final f = _flat(context);
     if (f.isEmpty) continue;
     final cut =
         f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
@@ -314,14 +312,14 @@ String buildVoicePrompt(VoiceSeed seed) {
   final topic = seed.topic;
   return '$_voiceInstruction\n\n'
       'INPUT:\n'
-      'genre: ${orElse(seed.genre, '(unspecified)')}\n'
-      'tone: ${orElse(seed.toneSetting, '(unspecified)')}\n'
-      '${name == null ? '' : 'character: ${flat(name)}\n'}'
-      '${seed.characterTags.isEmpty ? '' : 'traits: ${flat(seed.characterTags.join(', '))}\n'}'
-      'mood: ${flat(seed.mood)}\n'
-      '${tone == null ? '' : 'line tone: ${flat(tone)}\n'}'
-      '${topic == null ? '' : 'topic: ${flat(topic)}\n'}'
-      'line: ${flat(seed.line)}\n'
+      'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
+      'tone: ${_orElse(seed.toneSetting, '(unspecified)')}\n'
+      '${name == null ? '' : 'character: ${_flat(name)}\n'}'
+      '${seed.characterTags.isEmpty ? '' : 'traits: ${_flat(seed.characterTags.join(', '))}\n'}'
+      'mood: ${_flat(seed.mood)}\n'
+      '${tone == null ? '' : 'line tone: ${_flat(tone)}\n'}'
+      '${topic == null ? '' : 'topic: ${_flat(topic)}\n'}'
+      'line: ${_flat(seed.line)}\n'
       '$recall'
       'OUTPUT:';
 }
@@ -356,11 +354,9 @@ String buildSummaryPrompt(List<String> entries) {
       'Recent journal entries (oldest first):\n$body\n\nRecap:';
 }
 
-/// Plain-text parse: strip think-tags, trim (as parseVoiceResponse).
-String parseSummary(String raw) {
-  final s = raw.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
-  return s.trim();
-}
+/// Plain-text parse: strip think-tags (incl. an unterminated span, via the
+/// shared [_stripThink]), then trim — same discipline as parseVoiceResponse.
+String parseSummary(String raw) => _stripThink(raw).trim();
 
 /// Debug-eval seeds (see spec "Quality bar"). Used by the debug-only
 /// runInterpreterEval in lib/state/interpreter.dart and by live verification.

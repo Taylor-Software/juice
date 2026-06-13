@@ -105,12 +105,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         _ => 'fate-juice',
       };
 
-  List<String> _oddsOptions(String oracle) => switch (oracle) {
-        'mythic' => kMythicOdds,
-        'roll-high' => kRollHighOdds,
-        _ => const ['unlikely', 'normal', 'likely'],
-      };
-
   String _oddsLabel(String o) =>
       o.isEmpty ? o : '${o[0].toUpperCase()}${o.substring(1)}';
 
@@ -300,7 +294,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     }
     if (!mounted) return;
     final ora = settings.defaultOracle;
-    final opts = _oddsOptions(ora);
+    final opts = oddsForOracle(ora);
     // ignore: use_build_context_synchronously — mounted checked above
     final picked = await showDialog<String>(
       context: context,
@@ -317,7 +311,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       ),
     );
     if (picked == null || !mounted) return;
-    final cmd = commandById(buildCommandRegistry(), _fateCommandId(ora))!;
+    final cmd = commandById(buildCommandRegistry(), _fateCommandId(ora));
+    if (cmd == null) return;
     final args = <String, String>{'odds': picked};
     if (cmd.id == 'fate-mythic') {
       args['chaos'] =
@@ -1025,9 +1020,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             entriesNewestFirst: entries,
             threadTitles: threadTitles,
             exportedAt: DateTime.now());
-    var slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
-    slug = slug.replaceAll(RegExp(r'^-+|-+$'), '');
-    return ('${slug.isEmpty ? 'campaign' : slug}-journal.$format', content);
+    return ('${slugify(name)}-journal.$format', content);
   }
 
   Future<void> _confirmClear() async {
@@ -1650,12 +1643,8 @@ class _SlashRow extends StatefulWidget {
 class _SlashRowState extends State<_SlashRow> {
   bool _expanded = false;
 
-  List<String> get _oddsOptions => switch (widget.command.id) {
-        'fate-juice' => const ['unlikely', 'normal', 'likely'],
-        'fate-mythic' => kMythicOdds,
-        'fate-roll-high' => kRollHighOdds,
-        _ => const [],
-      };
+  // A fate command's `system` is its oracle name (juice/mythic/roll-high).
+  List<String> get _oddsOptions => oddsForOracle(widget.command.system);
 
   @override
   Widget build(BuildContext context) {

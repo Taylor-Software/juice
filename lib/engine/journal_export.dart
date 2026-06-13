@@ -5,6 +5,16 @@ library;
 import 'mention_parser.dart';
 import 'models.dart';
 
+/// Lowercase, hyphenated filename slug for [name] (e.g. "My Game!" →
+/// "my-game"); returns [fallback] when nothing usable remains.
+String slugify(String name, {String fallback = 'campaign'}) {
+  final slug = name
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+      .replaceAll(RegExp(r'^-+|-+$'), '');
+  return slug.isEmpty ? fallback : slug;
+}
+
 /// Renders the journal as Markdown, oldest entry first.
 String journalToMarkdown({
   required String campaignName,

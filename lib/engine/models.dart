@@ -1,5 +1,6 @@
 /// Plain immutable models for engine output and persisted state.
 /// No freezed/codegen — the data is small and stable.
+library;
 
 /// Likelihood applied to a Fate Check.
 enum Likelihood { unlikely, normal, likely }
