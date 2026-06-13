@@ -152,9 +152,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
             ResultCard(
               result: _rhLast!,
               onLog: () {
-                ref
-                    .read(journalProvider.notifier)
-                    .add(_rhLast!.title, _rhLast!.asText);
+                ref.read(journalProvider.notifier).addResult(
+                    _rhLast!.title, _rhLast!.asText,
+                    sourceTool: 'roll-high', payload: _rhLast!.toPayload());
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Added to journal')),
                 );
@@ -227,9 +227,10 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                   ResultCard(
                     result: _mythicLast!,
                     onLog: () {
-                      ref
-                          .read(journalProvider.notifier)
-                          .add(_mythicLast!.title, _mythicLast!.asText);
+                      ref.read(journalProvider.notifier).addResult(
+                          _mythicLast!.title, _mythicLast!.asText,
+                          sourceTool: 'mythic',
+                          payload: _mythicLast!.toPayload());
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Added to journal')),
                       );
@@ -312,7 +313,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   }
 
   void _logGen(GenResult g) {
-    ref.read(journalProvider.notifier).add(g.title, g.asText);
+    ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+        sourceTool: 'fate-check', payload: g.toPayload());
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text('${g.title}: ${g.summary ?? g.rolls.first.value}')),
@@ -356,10 +358,23 @@ class _FateResultCard extends ConsumerWidget {
                   tooltip: 'Add to journal',
                   icon: const Icon(Icons.bookmark_add_outlined),
                   onPressed: () {
-                    ref.read(journalProvider.notifier).add(
-                          'Fate Check (${result.likelihood.label})',
-                          '${result.result} — ${result.intensity}  [${result.shorthand}]',
-                        );
+                    final g = GenResult(
+                      title: 'Fate Check (${result.likelihood.label})',
+                      summary: result.result,
+                      rolls: [
+                        Roll(
+                            label: 'Answer',
+                            value: result.result,
+                            detail: result.shorthand),
+                        Roll(
+                            label: 'Intensity',
+                            value: result.intensity,
+                            detail: 'd6 ${result.intensityRoll}'),
+                      ],
+                    );
+                    ref.read(journalProvider.notifier).addResult(
+                        g.title, g.asText,
+                        sourceTool: 'fate-check', payload: g.toPayload());
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Added to journal')),
                     );

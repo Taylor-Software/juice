@@ -6,10 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/command_registry.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
+import '../shared/tool_host.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'oracle_interpretation_sheet.dart';
@@ -56,6 +58,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(journalProvider);
+    // Watch the oracle so payload entries gain their re-roll affordance once
+    // it finishes loading (re-roll runs a command against it).
+    ref.watch(oracleProvider);
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
@@ -261,6 +266,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         );
       case JournalKind.result:
         final extras = _suffixLines(e, threadTitle);
+        final p = e.payload;
+        if (p != null && p['v'] == 1 && p['rolls'] is List) {
+          return _PayloadCard(
+            entry: e,
+            extras: extras,
+            menu: menu,
+            onReroll: _canReroll(e) ? () => _reroll(e) : null,
+            onOpenTool: e.sourceTool == null
+                ? null
+                : () {
+                    if (!ToolHost.openToolIfKnown(context, e.sourceTool!)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Tool not available')));
+                    }
+                  },
+          );
+        }
         return Card(
           child: ListTile(
             title: Text(e.title),
@@ -270,6 +292,33 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         );
     }
+  }
+
+  bool _canReroll(JournalEntry e) {
+    final p = e.payload;
+    return p != null &&
+        p['rerollable'] == true &&
+        p['command'] is String &&
+        ref.read(oracleProvider).valueOrNull != null;
+  }
+
+  Future<void> _reroll(JournalEntry e) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    final p = e.payload;
+    if (oracle == null || p == null) return;
+    final cmd = commandById(buildCommandRegistry(), p['command'] as String);
+    if (cmd == null) return;
+    final args = <String, String>{
+      for (final entry in ((p['args'] as Map?) ?? const {}).entries)
+        '${entry.key}': '${entry.value}',
+    };
+    if (cmd.id == 'fate-mythic') {
+      args['chaos'] =
+          '${ref.read(crawlProvider).valueOrNull?.chaosFactor ?? 5}';
+    }
+    final r = cmd.run(oracle, args);
+    await ref.read(journalProvider.notifier).addResult(r.title, r.body,
+        sourceTool: e.sourceTool, payload: r.payload);
   }
 
   /// Card-subtitle suffix lines: the `⤷ thread` link, then the `#a #b` tags.
@@ -483,9 +532,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (result == null) return;
         // Text entries have no title; scenes have no body. Require only the
         // field that actually carries the entry's content.
-        final relevant = entry.kind == JournalKind.text
-            ? result.note
-            : result.title;
+        final relevant =
+            entry.kind == JournalKind.text ? result.note : result.title;
         if (relevant.trim().isEmpty) return;
         await notifier.replace(entry.kind == JournalKind.text
             ? entry.copyWith(body: result.note)
@@ -511,9 +559,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final related = relatedEntries(
         ref.read(journalProvider).valueOrNull ?? const [], entry);
     final seed = OracleSeed(
-      resultText: entry.title.isEmpty
-          ? entry.body
-          : '${entry.title}\n${entry.body}',
+      resultText:
+          entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
       sceneContext: _sceneContext(),
       journalContext: [
         for (final e in related)
@@ -756,6 +803,115 @@ class _Empty extends StatelessWidget {
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+      ),
+    );
+  }
+}
+
+/// Rich rendering for entries that carry a structured payload: summary +
+/// roll rows + appended-notes remainder + re-roll / open-in-tool actions.
+class _PayloadCard extends StatelessWidget {
+  const _PayloadCard({
+    required this.entry,
+    required this.extras,
+    required this.menu,
+    this.onReroll,
+    this.onOpenTool,
+  });
+
+  final JournalEntry entry;
+  final List<String> extras;
+  final Widget menu;
+  final VoidCallback? onReroll;
+  final VoidCallback? onOpenTool;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final p = entry.payload!;
+    final summary = p['summary'] as String?;
+    final rolls = [
+      for (final r in (p['rolls'] as List))
+        if (r is Map) ('${r['label']}', '${r['display']}'),
+    ];
+    // Body content beyond the payload-derived text (e.g. appended oracle
+    // readings) still renders; the base text is shown structured instead.
+    final rollsText = rolls.map((r) => '${r.$1}: ${r.$2}').join('\n');
+    final baseText = summary == null ? rollsText : '$summary\n$rollsText';
+    var remainder = '';
+    if (entry.body != baseText) {
+      remainder = entry.body.startsWith(baseText)
+          ? entry.body.substring(baseText.length).trimLeft()
+          : entry.body;
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child:
+                        Text(entry.title, style: theme.textTheme.titleSmall)),
+                if (onReroll != null)
+                  IconButton(
+                    key: Key('entry-reroll-${entry.id}'),
+                    tooltip: 'Roll again',
+                    icon: const Icon(Icons.replay, size: 20),
+                    onPressed: onReroll,
+                  ),
+                if (onOpenTool != null)
+                  IconButton(
+                    key: Key('entry-open-tool-${entry.id}'),
+                    tooltip: 'Open in tool',
+                    icon: const Icon(Icons.open_in_new, size: 20),
+                    onPressed: onOpenTool,
+                  ),
+                menu,
+              ],
+            ),
+            if (summary != null)
+              Text(
+                summary,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(color: theme.colorScheme.primary),
+              ),
+            const SizedBox(height: 4),
+            for (final r in rolls)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        r.$1,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ),
+                    Expanded(
+                        child: Text(r.$2, style: theme.textTheme.bodyMedium)),
+                  ],
+                ),
+              ),
+            if (remainder.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(remainder, style: theme.textTheme.bodyMedium),
+            ],
+            if (extras.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                extras.join('\n'),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            ],
+          ],
         ),
       ),
     );

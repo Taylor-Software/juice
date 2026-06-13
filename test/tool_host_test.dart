@@ -240,4 +240,17 @@ void main() {
     expect(find.byKey(const Key('help-back')), findsOneWidget);
     expect(find.text('Party Emulator'), findsOneWidget);
   });
+
+  testWidgets('openToolIfKnown opens known tools and rejects unknown',
+      (tester) async {
+    await pump(tester);
+    final ctx = tester.element(find.text('journal home'));
+    // Unknown id returns false without opening anything.
+    expect(ToolHost.openToolIfKnown(ctx, 'no-such-tool'), isFalse);
+    // Known id returns true and opens the tool panel.
+    expect(ToolHost.openToolIfKnown(ctx, 'counter'), isTrue);
+    await tester.pumpAndSettle();
+    // The Counter tool body is now visible (panel opened to that tool).
+    expect(find.text('count 0'), findsOneWidget);
+  });
 }

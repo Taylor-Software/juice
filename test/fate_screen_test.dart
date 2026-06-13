@@ -12,6 +12,38 @@ import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets('fate-check add-to-journal sets sourceTool and payload rolls',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: FateScreen(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+
+    // Tap Likely to roll immediately.
+    await tester.tap(find.descendant(
+        of: find.byType(SegmentedButton<Likelihood>),
+        matching: find.text('Likely')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Add to journal'));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(FateScreen)));
+    final entries = container.read(journalProvider).valueOrNull ?? [];
+    expect(entries, hasLength(1));
+    expect(entries.single.sourceTool, 'fate-check');
+    final rolls = entries.single.payload?['rolls'] as List?;
+    expect(rolls, isNotNull);
+    expect(rolls, isNotEmpty);
+  });
+
   testWidgets('selecting a likelihood rolls immediately at that likelihood',
       (tester) async {
     SharedPreferences.setMockInitialValues({

@@ -36,6 +36,10 @@ A general **dice roller** tool parses full dice notation — `NdX`, `d%`, `dF`
 (dropped dice struck through), quick-tap dice chips, session history, and
 one-tap add-to-journal.
 
+Oracle and dice results land in the journal as **structured entries**: a
+summary, the individual roll rows, a one-tap **re-roll**, and **open-in-tool**
+to jump back to the tool that produced them.
+
 - **Oracle interpreter (on-device AI, optional):** any oracle result in the
   journal can be expanded into four short readings — literal, symbolic,
   complication, foreshadow — by a small language model that runs entirely

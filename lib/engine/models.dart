@@ -64,6 +64,15 @@ class GenResult {
     final body = rolls.map((r) => '${r.label}: ${r.display}').join('\n');
     return summary == null ? body : '$summary\n$body';
   }
+
+  /// Structured journal payload (spec: cycle4 living-journal §2).
+  Map<String, dynamic> toPayload() => {
+        'v': 1,
+        if (summary != null) 'summary': summary,
+        'rolls': [
+          for (final r in rolls) {'label': r.label, 'display': r.display}
+        ],
+      };
 }
 
 /// Kind of journal entry: player prose, a tool result, or a scene divider.
@@ -80,6 +89,8 @@ class JournalEntry {
     this.kind = JournalKind.result,
     this.chaosFactor,
     this.tags = const [],
+    this.sourceTool,
+    this.payload,
   });
   final String id;
   final DateTime timestamp;
@@ -93,6 +104,14 @@ class JournalEntry {
 
   /// Player-applied tags; replaced wholesale via copyWith (pass `[]` to clear).
   final List<String> tags;
+
+  /// Tool-registry id that produced this result (open-in-tool), else null.
+  final String? sourceTool;
+
+  /// Structured result payload (v1: summary/rolls/command/args/rerollable);
+  /// null for prose and legacy entries. Tolerant: render falls back to flat
+  /// text for unknown shapes.
+  final Map<String, dynamic>? payload;
 
   JournalEntry copyWith({
     String? title,
@@ -110,6 +129,8 @@ class JournalEntry {
         kind: kind,
         chaosFactor: chaosFactor,
         tags: tags ?? this.tags,
+        sourceTool: sourceTool,
+        payload: payload,
       );
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +142,8 @@ class JournalEntry {
         'kind': kind.name,
         if (chaosFactor != null) 'chaosFactor': chaosFactor,
         'tags': tags,
+        if (sourceTool != null) 'sourceTool': sourceTool,
+        if (payload != null) 'payload': payload,
       };
 
   factory JournalEntry.fromJson(Map<String, dynamic> j) => JournalEntry(
@@ -132,6 +155,8 @@ class JournalEntry {
         kind: JournalKind.values.asNameMap()[j['kind']] ?? JournalKind.result,
         chaosFactor: j['chaosFactor'] as int?,
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
+        sourceTool: j['sourceTool'] as String?,
+        payload: (j['payload'] as Map?)?.cast<String, dynamic>(),
       );
 }
 

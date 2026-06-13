@@ -26,6 +26,17 @@ class ToolHost extends ConsumerStatefulWidget {
   static void openLauncher(BuildContext context) =>
       context.findAncestorStateOfType<ToolHostState>()!.openLauncher();
 
+  /// Opens [id] in the nearest ToolHost when the registry has it; returns
+  /// false (no-op) otherwise. Used by journal entry "open in tool" actions.
+  static bool openToolIfKnown(BuildContext context, String id) {
+    final host = context.findAncestorStateOfType<ToolHostState>();
+    if (host == null || !host.widget.tools.any((t) => t.id == id)) {
+      return false;
+    }
+    host.openTool(id);
+    return true;
+  }
+
   @override
   ConsumerState<ToolHost> createState() => ToolHostState();
 }

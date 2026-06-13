@@ -19,8 +19,12 @@ void main() {
       );
       expect(JournalEntry.fromJson(e.toJson()).threadId, 'th1');
       expect(
-        JournalEntry.fromJson(
-            {'id': '1', 'timestamp': '2026-01-01T00:00:00Z', 'title': 't', 'body': 'b'}).threadId,
+        JournalEntry.fromJson({
+          'id': '1',
+          'timestamp': '2026-01-01T00:00:00Z',
+          'title': 't',
+          'body': 'b'
+        }).threadId,
         isNull,
       );
     });
@@ -242,5 +246,23 @@ void main() {
       expect(entries.single.title, 'Legacy roll');
       expect(entries.single.kind, JournalKind.result);
     });
+  });
+
+  test('addResult persists sourceTool and payload', () async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(journalProvider.notifier);
+    await container.read(journalProvider.future);
+    await notifier.addResult(
+      'Dice Roll',
+      '3d6 = 11',
+      sourceTool: 'dice',
+      payload: {'v': 1, 'summary': '3d6 = 11', 'rolls': const []},
+    );
+    final entries = await container.read(journalProvider.future);
+    expect(entries.first.sourceTool, 'dice');
+    expect(entries.first.payload!['summary'], '3d6 = 11');
+    expect(entries.first.kind, JournalKind.result);
   });
 }

@@ -48,6 +48,15 @@ class GeneratorsScreen extends ConsumerStatefulWidget {
 class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
   GenResult? _last;
 
+  /// Registry tool id for entries logged from this screen (open-in-tool).
+  String get _sourceTool => switch (widget.section) {
+        GenSection.story => 'gen-story',
+        GenSection.npcs => 'gen-npcs',
+        GenSection.exploration => 'gen-exploration',
+        GenSection.encounters => 'gen-encounters',
+        GenSection.details || null => 'gen-details',
+      };
+
   static final List<_Gen> _gens = [
     _Gen('New Quest', GenSection.story, (o) => o.newQuest()),
     _Gen('New Scene', GenSection.story, (o) => o.newScene()),
@@ -98,8 +107,7 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     final last = _last;
     final crawl = ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
     final section = widget.section;
-    final showCrawl =
-        section == null || section == GenSection.exploration;
+    final showCrawl = section == null || section == GenSection.exploration;
     final showNpcDialog = section == null || section == GenSection.npcs;
     final showAbstractIcon = section == null || section == GenSection.details;
     final gens =
@@ -114,7 +122,9 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
           ResultCard(
             result: last,
             onLog: () {
-              ref.read(journalProvider.notifier).add(last.title, last.asText);
+              ref.read(journalProvider.notifier).addResult(
+                  last.title, last.asText,
+                  sourceTool: _sourceTool, payload: last.toPayload());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Added to journal')),
               );
@@ -128,9 +138,12 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
             data: widget.oracle.data,
             onLog: () {
               final loc = _lastLocation!;
-              ref
-                  .read(journalProvider.notifier)
-                  .add('Location', '${loc.label} (${loc.roll})');
+              final g = GenResult(title: 'Location', rolls: [
+                Roll(
+                    label: 'Location', value: loc.label, detail: '${loc.roll}'),
+              ]);
+              ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+                  sourceTool: _sourceTool, payload: g.toPayload());
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Added to journal')),
               );
@@ -178,8 +191,8 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
                 ActionChip(
                   label: const Text('Wilderness Travel'),
                   onPressed: () {
-                    final s =
-                        ref.read(crawlProvider).valueOrNull ?? const CrawlState();
+                    final s = ref.read(crawlProvider).valueOrNull ??
+                        const CrawlState();
                     final r = widget.oracle.wildernessTravel(s);
                     ref.read(crawlProvider.notifier).save(r.state);
                     setState(() => _last = r.result);
@@ -204,8 +217,8 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
                 ActionChip(
                   label: const Text('NPC Dialog'),
                   onPressed: () {
-                    final s =
-                        ref.read(crawlProvider).valueOrNull ?? const CrawlState();
+                    final s = ref.read(crawlProvider).valueOrNull ??
+                        const CrawlState();
                     widget.oracle.restoreDialogPos(s.dialogRow, s.dialogCol);
                     final r = widget.oracle.npcDialog();
                     final pos = widget.oracle.dialogPos;
