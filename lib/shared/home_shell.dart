@@ -209,12 +209,17 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.name;
     final rulesets =
         ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
-    final family = [
-      if (rulesets.contains('classic')) 'classic',
-      if (rulesets.contains('delve')) 'delve',
-      if (rulesets.contains('starforged')) 'starforged',
-      if (rulesets.contains('sundered_isles')) 'sundered_isles',
-    ];
+    final systems =
+        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
+    final family = !systems.contains('ironsworn')
+        ? const <String>[]
+        : [
+            if (rulesets.contains('classic')) 'classic',
+            if (rulesets.contains('delve')) 'delve',
+            if (rulesets.contains('starforged')) 'starforged',
+            if (rulesets.contains('sundered_isles')) 'sundered_isles',
+          ];
     return Scaffold(
       appBar: AppBar(
         title: sessionName == null
@@ -234,70 +239,72 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             tooltip: 'Tools',
             onPressed: () => _hostKey.currentState?.openLauncher(),
           ),
-          IconButton(
-            icon: const Icon(Icons.tune),
-            tooltip: 'Rulesets',
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (_) => Consumer(builder: (context, ref, _) {
-                const rulesetNames = {
-                  'classic': 'Ironsworn',
-                  'delve': 'Ironsworn: Delve',
-                  'starforged': 'Ironsworn: Starforged',
-                  'sundered_isles': 'Starforged: Sundered Isles',
-                };
-                final enabled =
-                    ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
-                return SimpleDialog(
-                  title: const Text('Rulesets'),
-                  children: [
-                    for (final id in const [
-                      'classic',
-                      'delve',
-                      'starforged',
-                      'sundered_isles'
-                    ])
-                      SwitchListTile(
-                        title: Text(rulesetNames[id]!),
-                        subtitle: id == 'classic'
-                            ? const Text('Rules © Shawn Tomkin, CC-BY 4.0')
-                            : null,
-                        value: enabled.contains(id),
-                        onChanged: (on) async {
-                          final otherFamily = (id == 'classic' || id == 'delve')
-                              ? const {'starforged', 'sundered_isles'}
-                              : const {'classic', 'delve'};
-                          if (on && enabled.any(otherFamily.contains)) {
-                            final ok = await showDialog<bool>(
-                              context: context,
-                              builder: (context) => AlertDialog(
-                                title: const Text('Switch family?'),
-                                content: const Text(
-                                    'Ironsworn and Starforged are separate games — enabling this turns the other family off.'),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(false),
-                                      child: const Text('Cancel')),
-                                  FilledButton(
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(true),
-                                      child: const Text('Switch')),
-                                ],
-                              ),
-                            );
-                            if (ok != true) return;
-                          }
-                          await ref
-                              .read(rulesetsProvider.notifier)
-                              .setRuleset(id, on);
-                        },
-                      ),
-                  ],
-                );
-              }),
+          if (systems.contains('ironsworn'))
+            IconButton(
+              icon: const Icon(Icons.tune),
+              tooltip: 'Rulesets',
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => Consumer(builder: (context, ref, _) {
+                  const rulesetNames = {
+                    'classic': 'Ironsworn',
+                    'delve': 'Ironsworn: Delve',
+                    'starforged': 'Ironsworn: Starforged',
+                    'sundered_isles': 'Starforged: Sundered Isles',
+                  };
+                  final enabled = ref.watch(rulesetsProvider).valueOrNull ??
+                      const <String>{};
+                  return SimpleDialog(
+                    title: const Text('Rulesets'),
+                    children: [
+                      for (final id in const [
+                        'classic',
+                        'delve',
+                        'starforged',
+                        'sundered_isles'
+                      ])
+                        SwitchListTile(
+                          title: Text(rulesetNames[id]!),
+                          subtitle: id == 'classic'
+                              ? const Text('Rules © Shawn Tomkin, CC-BY 4.0')
+                              : null,
+                          value: enabled.contains(id),
+                          onChanged: (on) async {
+                            final otherFamily =
+                                (id == 'classic' || id == 'delve')
+                                    ? const {'starforged', 'sundered_isles'}
+                                    : const {'classic', 'delve'};
+                            if (on && enabled.any(otherFamily.contains)) {
+                              final ok = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: const Text('Switch family?'),
+                                  content: const Text(
+                                      'Ironsworn and Starforged are separate games — enabling this turns the other family off.'),
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(false),
+                                        child: const Text('Cancel')),
+                                    FilledButton(
+                                        onPressed: () =>
+                                            Navigator.of(context).pop(true),
+                                        child: const Text('Switch')),
+                                  ],
+                                ),
+                              );
+                              if (ok != true) return;
+                            }
+                            await ref
+                                .read(rulesetsProvider.notifier)
+                                .setRuleset(id, on);
+                          },
+                        ),
+                    ],
+                  );
+                }),
+              ),
             ),
-          ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',
@@ -308,7 +315,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       body: SafeArea(
         child: ToolHost(
           key: _hostKey,
-          tools: buildToolRegistry(family: family),
+          tools: buildToolRegistry(family: family, systems: systems),
           oracle: widget.oracle,
           child: const JournalScreen(),
         ),
