@@ -376,6 +376,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   // -- Entry rendering ------------------------------------------------------
 
+  bool _isDialogShaped(JournalEntry e) =>
+      e.body.contains('"') ||
+      e.sourceTool == 'gen-npcs' ||
+      e.sourceTool == 'sidekick-dialogue';
+
+  bool get _canVoice =>
+      ref.read(interpreterServiceProvider).status.value.phase !=
+      InterpreterPhase.unsupported;
+
   Widget _entry(JournalEntry e, List<Thread> threads,
       String Function(String) threadTitle) {
     // Read without listening is safe: `unsupported` is decided once in the
@@ -389,6 +398,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       itemBuilder: (_) => [
         if (canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
+        if (_canVoice && _isDialogShaped(e))
+          const PopupMenuItem(value: 'voice', child: Text('Voice…')),
         if (saveAs != null)
           PopupMenuItem(
               value: 'save-entity',
@@ -918,6 +929,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     switch (action) {
       case 'interpret':
         await _interpret(entry);
+      case 'voice':
+        await _voiceEntry(entry);
       case 'save-entity':
         await _saveAsEntity(entry);
       case 'delete':
@@ -1023,6 +1036,41 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     await ref.read(journalProvider.notifier).replace(fresh.copyWith(
         body:
             '${fresh.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
+  }
+
+  Future<void> _voiceEntry(JournalEntry entry) async {
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+    final related = relatedEntries(
+        ref.read(journalProvider).valueOrNull ?? const [], entry);
+    final seed = VoiceSeed(
+      line: entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
+      mood: 'default',
+      genre: settings.genre,
+      toneSetting: settings.tone,
+      journalContext: [
+        for (final e in related)
+          e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
+      ],
+    );
+    String? voiced;
+    try {
+      voiced = await ref.read(interpreterServiceProvider).voiceLine(seed);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Could not voice: $e')));
+      return;
+    }
+    if (voiced.trim().isEmpty || !mounted) return;
+    // Re-read fresh so the append can't clobber concurrent edits.
+    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
+        .where((x) => x.id == entry.id)
+        .firstOrNull;
+    if (fresh == null) return;
+    await ref
+        .read(journalProvider.notifier)
+        .replace(fresh.copyWith(body: '${fresh.body}\n\n— Voiced: $voiced'));
   }
 }
 
