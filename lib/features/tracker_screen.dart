@@ -73,10 +73,26 @@ class _ThreadsTab extends ConsumerWidget {
                             color: theme.colorScheme.onSurfaceVariant),
                   ),
                   subtitle: t.note.isEmpty ? null : Text(t.note),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () =>
-                        ref.read(threadsProvider.notifier).remove(t.id),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: Key('pin-thread-${t.id}'),
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(t.pinned
+                            ? Icons.push_pin
+                            : Icons.push_pin_outlined),
+                        tooltip: t.pinned ? 'Unpin' : 'Pin',
+                        onPressed: () => ref
+                            .read(threadsProvider.notifier)
+                            .togglePinned(t.id),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () =>
+                            ref.read(threadsProvider.notifier).remove(t.id),
+                      ),
+                    ],
                   ),
                   onTap: () => _editThread(context, ref, t),
                 ),
@@ -167,10 +183,24 @@ class _CharactersTabState extends ConsumerState<_CharactersTab> {
                   subtitle: t != null
                       ? Text('${t.label} ${t.current}/${t.max}')
                       : (c.note.isEmpty ? null : Text(c.note)),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: () =>
-                        ref.read(charactersProvider.notifier).remove(c.id),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: Key('star-char-${c.id}'),
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(c.starred ? Icons.star : Icons.star_border),
+                        tooltip: c.starred ? 'Unstar' : 'Star',
+                        onPressed: () => ref
+                            .read(charactersProvider.notifier)
+                            .toggleStarred(c.id),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () =>
+                            ref.read(charactersProvider.notifier).remove(c.id),
+                      ),
+                    ],
                   ),
                   onTap: () => setState(() => _editingId = c.id),
                 ),

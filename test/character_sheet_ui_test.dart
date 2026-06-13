@@ -16,10 +16,28 @@ void main() {
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.characters.v1.default': seeded,
     });
-    await tester.pumpWidget(const ProviderScope(
-        child: MaterialApp(home: Scaffold(body: TrackerScreen()))));
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: TrackerScreen()))));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Characters'));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(TrackerScreen)));
+  }
+
+  Future<ProviderContainer> pumpThreads(WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.threads.v1.default':
+          '[{"id":"t1","title":"Find the Relic","open":true}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: TrackerScreen()))));
     await tester.pumpAndSettle();
     return ProviderScope.containerOf(
         tester.element(find.byType(TrackerScreen)));
@@ -114,5 +132,45 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('sheet-back')), findsNothing);
     expect(find.textContaining('No characters yet'), findsOneWidget);
+  });
+
+  testWidgets('character list row has star IconButton that toggles starred',
+      (tester) async {
+    final container = await pump(tester);
+    // Star button present in list row.
+    expect(find.byKey(const Key('star-char-c1')), findsOneWidget);
+    // Initially not starred.
+    expect((await container.read(charactersProvider.future)).single.starred,
+        isFalse);
+    // Tap star → starred.
+    await tester.tap(find.byKey(const Key('star-char-c1')));
+    await tester.pumpAndSettle();
+    expect((await container.read(charactersProvider.future)).single.starred,
+        isTrue);
+    // Tap again → unstarred.
+    await tester.tap(find.byKey(const Key('star-char-c1')));
+    await tester.pumpAndSettle();
+    expect((await container.read(charactersProvider.future)).single.starred,
+        isFalse);
+  });
+
+  testWidgets('thread list row has pin IconButton that toggles pinned',
+      (tester) async {
+    final container = await pumpThreads(tester);
+    // Pin button present.
+    expect(find.byKey(const Key('pin-thread-t1')), findsOneWidget);
+    // Initially not pinned.
+    expect(
+        (await container.read(threadsProvider.future)).single.pinned, isFalse);
+    // Tap pin → pinned.
+    await tester.tap(find.byKey(const Key('pin-thread-t1')));
+    await tester.pumpAndSettle();
+    expect(
+        (await container.read(threadsProvider.future)).single.pinned, isTrue);
+    // Tap again → unpinned.
+    await tester.tap(find.byKey(const Key('pin-thread-t1')));
+    await tester.pumpAndSettle();
+    expect(
+        (await container.read(threadsProvider.future)).single.pinned, isFalse);
   });
 }
