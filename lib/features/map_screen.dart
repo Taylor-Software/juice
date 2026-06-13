@@ -45,6 +45,13 @@ class MapScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The body is an IndexedStack driven by the TabController, not a
+    // TabBarView. The tool host lays tools out with loose (min-zero) width,
+    // and TabBarView's PageView collapses its pages to unbounded width under
+    // that — throwing "BoxConstraints forces an infinite width" and freezing
+    // the app (release web) / blanking the tool (debug). IndexedStack lays
+    // each tab out like any other tool body, keeps both alive, and avoids the
+    // PageView-vs-InteractiveViewer horizontal-drag conflict.
     return DefaultTabController(
       length: 2,
       child: Column(
@@ -58,11 +65,20 @@ class MapScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: TabBarView(
-              children: [
-                _DungeonTab(oracle: oracle),
-                _HexTab(oracle: oracle),
-              ],
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => IndexedStack(
+                    index: controller.index,
+                    children: [
+                      _DungeonTab(oracle: oracle),
+                      _HexTab(oracle: oracle),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -118,10 +134,17 @@ class _DungeonTabState extends ConsumerState<_DungeonTab> {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       child: Row(
         children: [
-          FilledButton.tonal(
-            key: const Key('new-room'),
-            onPressed: _newRoom,
-            child: const Text('New room'),
+          // Flexible bounds the button's width. As a bare non-flex Row child a
+          // FilledButton is measured with maxWidth:Infinity (RenderFlex sizes
+          // non-flex children against an unbounded main axis) and throws
+          // "BoxConstraints forces an infinite width" — aborting the whole
+          // tab's layout (blank tool / hung release web).
+          Flexible(
+            child: FilledButton.tonal(
+              key: const Key('new-room'),
+              onPressed: _newRoom,
+              child: const Text('New room'),
+            ),
           ),
           const Spacer(),
           IconButton(
@@ -497,10 +520,15 @@ class _HexTabState extends ConsumerState<_HexTab> {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       child: Row(
         children: [
-          FilledButton.tonal(
-            key: const Key('travel'),
-            onPressed: _travel,
-            child: const Text('Travel'),
+          // Flexible bounds the button's width — see the dungeon _controls note:
+          // a bare FilledButton in this Row is measured with infinite width and
+          // throws, aborting the tab layout.
+          Flexible(
+            child: FilledButton.tonal(
+              key: const Key('travel'),
+              onPressed: _travel,
+              child: const Text('Travel'),
+            ),
           ),
           const Spacer(),
           IconButton(
