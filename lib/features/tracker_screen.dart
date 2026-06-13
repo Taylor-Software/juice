@@ -9,11 +9,11 @@ class TrackerScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const DefaultTabController(
+    return DefaultTabController(
       length: 2,
       child: Column(
         children: [
-          Material(
+          const Material(
             child: TabBar(
               tabs: [
                 Tab(text: 'Threads'),
@@ -22,11 +22,22 @@ class TrackerScreen extends ConsumerWidget {
             ),
           ),
           Expanded(
-            child: TabBarView(
-              children: [
-                _ThreadsTab(),
-                _CharactersTab(),
-              ],
+            // IndexedStack (not TabBarView): unbounded page width under the
+            // loose tool host → freeze. Same fix as the Maps tool.
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => IndexedStack(
+                    index: controller.index,
+                    children: const [
+                      _ThreadsTab(),
+                      _CharactersTab(),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],

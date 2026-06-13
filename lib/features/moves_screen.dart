@@ -37,8 +37,8 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
     final datas = asyncs.map((a) => a.value!).toList();
     final categories = <Map<String, dynamic>>[
       for (var i = 0; i < datas.length; i++)
-        for (final cat
-            in (datas[i]['move_categories'] as List).cast<Map<String, dynamic>>())
+        for (final cat in (datas[i]['move_categories'] as List)
+            .cast<Map<String, dynamic>>())
           i == 0
               ? cat
               : {
@@ -88,16 +88,29 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
               ),
             ),
           Expanded(
-            child: TabBarView(children: [
-              _MovesList(
-                  categories: categories,
-                  onRoll: (g) => setState(() => _last = g),
-                  iron: _iron),
-              _OraclesList(
-                  collections: collections,
-                  onRoll: (g) => setState(() => _last = g),
-                  iron: _iron),
-            ]),
+            // IndexedStack (not TabBarView): unbounded page width under the
+            // loose tool host → freeze. Same fix as the Maps tool.
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => IndexedStack(
+                    index: controller.index,
+                    children: [
+                      _MovesList(
+                          categories: categories,
+                          onRoll: (g) => setState(() => _last = g),
+                          iron: _iron),
+                      _OraclesList(
+                          collections: collections,
+                          onRoll: (g) => setState(() => _last = g),
+                          iron: _iron),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(4),
@@ -129,7 +142,8 @@ class _MovesList extends StatelessWidget {
           ExpansionTile(
             title: Text(cat['name'] as String),
             children: [
-              for (final mv in (cat['moves'] as List).cast<Map<String, dynamic>>())
+              for (final mv
+                  in (cat['moves'] as List).cast<Map<String, dynamic>>())
                 ListTile(
                   title: Text(mv['name'] as String),
                   subtitle: Text(
@@ -195,8 +209,7 @@ class _MovesList extends StatelessWidget {
                           ? iron.actionRoll(stat: stat, adds: adds)
                           : iron.progressRoll(score: score);
                       final outcomeText = (mv['outcomes']
-                              as Map<String, dynamic>?)?[
-                          switch (r.outcome) {
+                          as Map<String, dynamic>?)?[switch (r.outcome) {
                         'Strong Hit' => 'strong_hit',
                         'Weak Hit' => 'weak_hit',
                         _ => 'miss',
@@ -224,7 +237,8 @@ class _MovesList extends StatelessWidget {
   }
 }
 
-({int roll, String text}) rollTable(Ironsworn iron, Map<String, dynamic> table) {
+({int roll, String text}) rollTable(
+    Ironsworn iron, Map<String, dynamic> table) {
   final sides = int.parse((table['dice'] as String).split('d').last);
   final rows = table['rows'] as List;
   if (sides == 100) return iron.oracleRoll(rows);

@@ -127,10 +127,15 @@ class VerdantScreen extends ConsumerWidget {
             ),
             if (j.transport == 'mount') ...[
               const SizedBox(width: 8),
-              FilledButton.tonal(
-                key: const Key('verdant-rush'),
-                onPressed: j.rushUsedToday ? null : () => notifier.useRush(),
-                child: Text(j.rushUsedToday ? 'Rushed' : 'Rush'),
+              // Flexible bounds the button: a bare FilledButton as a non-flex
+              // Row child next to the Flexible dropdown above is measured at
+              // maxWidth:Infinity and throws under the loose tool host.
+              Flexible(
+                child: FilledButton.tonal(
+                  key: const Key('verdant-rush'),
+                  onPressed: j.rushUsedToday ? null : () => notifier.useRush(),
+                  child: Text(j.rushUsedToday ? 'Rushed' : 'Rush'),
+                ),
               ),
             ],
           ],
