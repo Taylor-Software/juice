@@ -321,6 +321,30 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         sourceTool: e.sourceTool, payload: r.payload);
   }
 
+  /// Runs a registry command from the palette: rolls against the loaded
+  /// oracle and drops a structured entry. Mythic pulls live chaos.
+  Future<void> _runCommand(CommandDef cmd,
+      {String? odds, String? notation}) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final args = <String, String>{};
+    if (odds != null) args['odds'] = odds;
+    if (notation != null) args['notation'] = notation;
+    if (cmd.id == 'fate-mythic') {
+      args['chaos'] =
+          '${ref.read(crawlProvider).valueOrNull?.chaosFactor ?? 5}';
+    }
+    try {
+      final r = cmd.run(oracle, args);
+      await ref.read(journalProvider.notifier).addResult(r.title, r.body,
+          sourceTool: cmd.toolId, payload: r.payload);
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   /// Card-subtitle suffix lines: the `⤷ thread` link, then the `#a #b` tags.
   List<String> _suffixLines(
           JournalEntry e, String Function(String) threadTitle) =>
