@@ -737,9 +737,10 @@ class _HexPainter extends CustomPainter {
           ? (_verdantTerrainHues[h.terrain] ?? scheme.surfaceContainerHighest)
           : _envHues[h.envRow - 1];
       final isCurrent = h.col == currentCol && h.row == currentRow;
+      // Uniform 0.5 alpha for every hex (current is marked by its primary
+      // border below) — keeps Juice-hex rendering identical to before.
       final fill = Color.alphaBlend(
-          isCurrent ? baseHue : baseHue.withValues(alpha: 0.5),
-          scheme.surfaceContainerHighest);
+          baseHue.withValues(alpha: 0.5), scheme.surfaceContainerHighest);
       canvas.drawPath(path, Paint()..color = fill);
       canvas.drawPath(
           path,
@@ -755,9 +756,9 @@ class _HexPainter extends CustomPainter {
               ..style = PaintingStyle.stroke
               ..strokeWidth = 3);
       }
-      final name = hasTerrain
-          ? (h.terrain![0].toUpperCase() + h.terrain!.substring(1))
-          : envNames[h.envRow - 1];
+      // Only the first letter is drawn (single-glyph hex label), so the bare
+      // key is enough — no need to title-case the whole terrain name.
+      final name = hasTerrain ? h.terrain! : envNames[h.envRow - 1];
       final tp = TextPainter(
         text: TextSpan(
           text: name.isEmpty ? '?' : name[0].toUpperCase(),

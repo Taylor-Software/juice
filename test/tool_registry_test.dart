@@ -145,8 +145,22 @@ void main() {
     expect(ids, isNot(contains('party-emulator')));
     expect(ids, isNot(contains('behavior-tables')));
     expect(ids, isNot(contains('sidekick-dialogue')));
+    // Excluded (verdant not enabled).
+    expect(ids, isNot(contains('verdant')));
     // Moves absent because family is empty.
     expect(ids, isNot(contains('moves')));
+  });
+
+  test('verdant gating: tool present only when the verdant system is enabled',
+      () {
+    expect(
+        buildToolRegistry(family: [], systems: {'juice'})
+            .any((t) => t.id == 'verdant'),
+        isFalse);
+    expect(
+        buildToolRegistry(family: [], systems: {'juice', 'verdant'})
+            .any((t) => t.id == 'verdant'),
+        isTrue);
   });
 
   test('ironsworn disabled: moves absent even with a non-empty family', () {
