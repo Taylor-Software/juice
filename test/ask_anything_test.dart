@@ -180,4 +180,26 @@ void main() {
     // Juice-only option should not appear
     expect(find.byKey(const Key('ask-odds-normal')), findsNothing);
   });
+
+  testWidgets('/ask <question> via Enter runs the picker and logs the entry',
+      (tester) async {
+    await pumpAsk(tester, data);
+
+    await tester.enterText(find.byKey(const Key('journal-composer')),
+        '/ask Is the guard sleeping?');
+    await tester.pump();
+    // Submit via Enter — same path other slash commands use.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('ask-odds-normal')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('ask-odds-normal')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.title, 'Is the guard sleeping?');
+  });
 }
