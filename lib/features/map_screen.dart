@@ -233,8 +233,9 @@ class _DungeonTabState extends ConsumerState<_DungeonTab> {
   Future<void> _newRoom() async {
     final g = widget.oracle.dungeonRoom();
     final title = g.rolls.isEmpty ? g.title : g.rolls.first.value;
-    await ref.read(mapProvider.notifier).addRoom(
-        title: title, detail: g.asText, dice: widget.oracle.dice);
+    await ref
+        .read(mapProvider.notifier)
+        .addRoom(title: title, detail: g.asText, dice: widget.oracle.dice);
   }
 
   Future<void> _linger(DungeonRoom room) async {
@@ -337,9 +338,8 @@ class _DungeonPainter extends CustomPainter {
         text: TextSpan(
           text: r.title.isEmpty ? '?' : r.title[0].toUpperCase(),
           style: TextStyle(
-            color: isCurrent
-                ? scheme.onPrimaryContainer
-                : scheme.onSurfaceVariant,
+            color:
+                isCurrent ? scheme.onPrimaryContainer : scheme.onSurfaceVariant,
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
@@ -418,6 +418,21 @@ const _envHues = [
   Color(0xFFFFD54F),
   Color(0xFFFF8A65),
 ];
+
+/// Fixed hues for the 10 Verdant terrain keys (used when a hex has Verdant
+/// terrain instead of a Juice envRow).
+const Map<String, Color> _verdantTerrainHues = {
+  'caatinga': Color(0xFF8D6E63),
+  'desert': Color(0xFFE0C068),
+  'floodplain': Color(0xFF7CB342),
+  'forest': Color(0xFF2E7D32),
+  'grassland': Color(0xFF9CCC65),
+  'hills': Color(0xFFA1887F),
+  'marsh': Color(0xFF26A69A),
+  'mountain': Color(0xFF78909C),
+  'swamp': Color(0xFF558B2F),
+  'water': Color(0xFF1E88E5),
+};
 
 class _HexTab extends ConsumerStatefulWidget {
   const _HexTab({required this.oracle});
@@ -717,8 +732,13 @@ class _HexPainter extends CustomPainter {
     for (final h in hexes) {
       final c = hexCenterFor(h.col, h.row, minCol, minRow, _hexSize);
       final path = _hexPath(c, _hexSize - 1);
+      final hasTerrain = h.terrain != null;
+      final baseHue = hasTerrain
+          ? (_verdantTerrainHues[h.terrain] ?? scheme.surfaceContainerHighest)
+          : _envHues[h.envRow - 1];
+      final isCurrent = h.col == currentCol && h.row == currentRow;
       final fill = Color.alphaBlend(
-          _envHues[h.envRow - 1].withValues(alpha: 0.5),
+          isCurrent ? baseHue : baseHue.withValues(alpha: 0.5),
           scheme.surfaceContainerHighest);
       canvas.drawPath(path, Paint()..color = fill);
       canvas.drawPath(
@@ -727,7 +747,6 @@ class _HexPainter extends CustomPainter {
             ..color = scheme.outlineVariant
             ..style = PaintingStyle.stroke
             ..strokeWidth = 1);
-      final isCurrent = h.col == currentCol && h.row == currentRow;
       if (isCurrent) {
         canvas.drawPath(
             path,
@@ -736,7 +755,9 @@ class _HexPainter extends CustomPainter {
               ..style = PaintingStyle.stroke
               ..strokeWidth = 3);
       }
-      final name = envNames[h.envRow - 1];
+      final name = hasTerrain
+          ? (h.terrain![0].toUpperCase() + h.terrain!.substring(1))
+          : envNames[h.envRow - 1];
       final tp = TextPainter(
         text: TextSpan(
           text: name.isEmpty ? '?' : name[0].toUpperCase(),
@@ -749,6 +770,16 @@ class _HexPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
+      if (h.pois.isNotEmpty) {
+        final badge = TextPainter(
+          text: TextSpan(
+            text: '★${h.pois.length}',
+            style: TextStyle(color: scheme.tertiary, fontSize: 11),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        badge.paint(canvas, c + Offset(-badge.width / 2, 10));
+      }
       if (h.lost) {
         final badge = TextPainter(
           text: TextSpan(
