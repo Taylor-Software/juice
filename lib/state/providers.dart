@@ -87,6 +87,24 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     ]);
   }
 
+  Future<void> addResult(
+    String title,
+    String body, {
+    String? sourceTool,
+    Map<String, dynamic>? payload,
+  }) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(),
+          timestamp: DateTime.now(),
+          title: title,
+          body: body,
+          sourceTool: sourceTool,
+          payload: payload),
+      ...await _ready,
+    ]);
+  }
+
   Future<void> addText(String body) async {
     await _persist([
       JournalEntry(
