@@ -2,6 +2,7 @@
 /// No Flutter, no clock — `exportedAt` is passed in by the caller.
 library;
 
+import 'mention_parser.dart';
 import 'models.dart';
 
 /// Renders the journal as Markdown, oldest entry first.
@@ -75,22 +76,23 @@ String _entryBlock(
   required bool html,
 }) {
   final lines = <String>[];
+  // Mentions export as their plain display names, not the raw markup token.
+  final plainBody = mentionsToPlain(e.body);
   switch (e.kind) {
     case JournalKind.scene:
       final chaos = e.chaosFactor != null ? ' — Chaos ${e.chaosFactor}' : '';
-      lines.add(html
-          ? '<h2>${_esc(e.title)}$chaos</h2>'
-          : '## ${e.title}$chaos');
+      lines.add(
+          html ? '<h2>${_esc(e.title)}$chaos</h2>' : '## ${e.title}$chaos');
     case JournalKind.result:
       if (html) {
-        final body = e.body.isEmpty ? '' : '<br>${_escBody(e.body)}';
+        final body = plainBody.isEmpty ? '' : '<br>${_escBody(plainBody)}';
         lines.add('<p><strong>${_esc(e.title)}</strong>$body</p>');
       } else {
         lines.add('**${e.title}**');
-        if (e.body.isNotEmpty) lines.add(e.body);
+        if (plainBody.isNotEmpty) lines.add(plainBody);
       }
     case JournalKind.text:
-      lines.add(html ? '<p>${_escBody(e.body)}</p>' : e.body);
+      lines.add(html ? '<p>${_escBody(plainBody)}</p>' : plainBody);
   }
   if (e.threadId != null) {
     final title = threadTitles[e.threadId] ?? '(closed thread)';
@@ -107,8 +109,7 @@ String _entryBlock(
   return lines.join('\n');
 }
 
-String _date(DateTime d) =>
-    '${d.year.toString().padLeft(4, '0')}-'
+String _date(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
 

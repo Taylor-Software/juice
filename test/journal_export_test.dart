@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:juice_oracle/engine/journal_export.dart';
+import 'package:juice_oracle/engine/mention_parser.dart';
 import 'package:juice_oracle/engine/models.dart';
 
 void main() {
@@ -70,7 +71,10 @@ void main() {
   group('scene entries', () {
     test('heading with chaos factor', () {
       final entries = [
-        entry(id: '1', title: 'The burned mill', kind: JournalKind.scene,
+        entry(
+            id: '1',
+            title: 'The burned mill',
+            kind: JournalKind.scene,
             chaosFactor: 6),
       ];
       expect(md(entries), contains('## The burned mill — Chaos 6'));
@@ -116,7 +120,9 @@ void main() {
   group('text entries', () {
     test('plain paragraph of the body only', () {
       final entries = [
-        entry(id: '1', body: 'We crossed the river at dawn.',
+        entry(
+            id: '1',
+            body: 'We crossed the river at dawn.',
             kind: JournalKind.text),
       ];
       expect(md(entries), contains('We crossed the river at dawn.'));
@@ -147,15 +153,21 @@ void main() {
   group('tags', () {
     test('tagged entry gets a tag line after the thread line', () {
       final entries = [
-        entry(id: '1', title: 'Fate Check', body: 'No.', threadId: 't1',
+        entry(
+            id: '1',
+            title: 'Fate Check',
+            body: 'No.',
+            threadId: 't1',
             tags: ['omens', 'mill']),
       ];
       expect(md(entries), contains('⤷ Find the heir\n`#omens` `#mill`'));
       final h = html(entries);
-      expect(h,
-          contains('<p class="thread"><small><em>#omens #mill</em></small></p>'));
-      expect(h.indexOf('#omens #mill'),
-          greaterThan(h.indexOf('Find the heir')));
+      expect(
+          h,
+          contains(
+              '<p class="thread"><small><em>#omens #mill</em></small></p>'));
+      expect(
+          h.indexOf('#omens #mill'), greaterThan(h.indexOf('Find the heir')));
     });
 
     test('tagged entry without a thread still gets its tag line', () {
@@ -203,8 +215,8 @@ void main() {
       expect(out, isNot(contains('<b>"x" & \'y\'</b>')));
       expect(out, isNot(contains('<i>Sly</i>')));
       expect(out, isNot(contains('A & B <Campaign>')));
-      expect(out,
-          contains('&lt;b&gt;&quot;x&quot; &amp; &#39;y&#39;&lt;/b&gt;'));
+      expect(
+          out, contains('&lt;b&gt;&quot;x&quot; &amp; &#39;y&#39;&lt;/b&gt;'));
       expect(out, contains('&lt;i&gt;Sly&lt;/i&gt;'));
       expect(out, contains('A &amp; B &lt;Campaign&gt;'));
     });
@@ -227,6 +239,63 @@ void main() {
       final out = html([entry(id: '1', title: 'T', body: 'b')]);
       expect(out, contains('<style>'));
       expect(out, isNot(contains('http')));
+    });
+  });
+
+  group('mention tokens in exported bodies', () {
+    test('result body: mention token renders as plain name in markdown', () {
+      final entries = [
+        entry(
+            id: '1',
+            title: 'NPC Result',
+            body: 'Met @[Mara](char:c1) at the gate.'),
+      ];
+      final out = md(entries);
+      expect(out, contains('Met Mara at the gate.'));
+      expect(out, isNot(contains('@[')));
+      expect(out, isNot(contains('char:c1')));
+    });
+
+    test('result body: mention token renders as plain name in html', () {
+      final entries = [
+        entry(
+            id: '1',
+            title: 'NPC Result',
+            body: 'Met @[Mara](char:c1) at the gate.'),
+      ];
+      final out = html(entries);
+      expect(out, contains('Met Mara at the gate.'));
+      expect(out, isNot(contains('@[')));
+      expect(out, isNot(contains('char:c1')));
+    });
+
+    test('text body: mention token renders as plain name in markdown', () {
+      final entries = [
+        entry(
+            id: '1',
+            body: 'Spoke with @[The Vow](thread:t9).',
+            kind: JournalKind.text),
+      ];
+      final out = md(entries);
+      expect(out, contains('Spoke with The Vow.'));
+      expect(out, isNot(contains('@[')));
+    });
+
+    test('text body: mention token renders as plain name in html', () {
+      final entries = [
+        entry(
+            id: '1',
+            body: 'Spoke with @[The Vow](thread:t9).',
+            kind: JournalKind.text),
+      ];
+      final out = html(entries);
+      expect(out, contains('Spoke with The Vow.'));
+      expect(out, isNot(contains('@[')));
+    });
+
+    test('plain body (no tokens) unchanged by mentionsToPlain', () {
+      const plain = 'We crossed the river at dawn.';
+      expect(mentionsToPlain(plain), plain);
     });
   });
 }

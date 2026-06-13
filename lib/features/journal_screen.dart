@@ -46,6 +46,7 @@ class JournalScreen extends ConsumerStatefulWidget {
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String? _filterThreadId;
   String? _filterTag;
+  String? _filterCharId;
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final TextEditingController _search = TextEditingController();
@@ -122,6 +123,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               // (oldest at top) while anchoring the viewport at the newest
               // entry, chat-style.
               final tags = allTags(entries);
+              // Characters referenced by mentions anywhere in the journal.
+              final mentionedChars = <String>{
+                for (final e in entries) ...mentionedCharIds(e.body),
+              };
+              final chars = (ref.watch(charactersProvider).valueOrNull ??
+                      const <Character>[])
+                  .where((c) => mentionedChars.contains(c.id))
+                  .toList();
               var visible = _filterThreadId == null
                   ? entries
                   : entries
@@ -131,13 +140,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 visible =
                     visible.where((e) => e.tags.contains(_filterTag)).toList();
               }
+              if (_filterCharId != null) {
+                visible = visible
+                    .where(
+                        (e) => mentionedCharIds(e.body).contains(_filterCharId))
+                    .toList();
+              }
               if (_searching) {
                 visible = searchEntries(visible, _search.text);
               }
               return Column(
                 children: [
                   const _CampaignHeader(),
-                  if (threads.isNotEmpty || tags.isNotEmpty)
+                  if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     SizedBox(
                       height: 48,
                       child: ListView(
@@ -148,11 +163,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
                               label: const Text('All'),
-                              selected:
-                                  _filterThreadId == null && _filterTag == null,
+                              selected: _filterThreadId == null &&
+                                  _filterTag == null &&
+                                  _filterCharId == null,
                               onSelected: (_) => setState(() {
                                 _filterThreadId = null;
                                 _filterTag = null;
+                                _filterCharId = null;
                               }),
                             ),
                           ),
@@ -175,6 +192,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                 selected: _filterTag == tag,
                                 onSelected: (_) => setState(() => _filterTag =
                                     _filterTag == tag ? null : tag),
+                              ),
+                            ),
+                          for (final c in chars)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                key: Key('char-filter-${c.id}'),
+                                avatar: const Icon(Icons.person, size: 16),
+                                label: Text(c.name),
+                                selected: _filterCharId == c.id,
+                                onSelected: (_) => setState(() =>
+                                    _filterCharId =
+                                        _filterCharId == c.id ? null : c.id),
                               ),
                             ),
                         ],
@@ -261,11 +291,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final canInterpret = e.kind == JournalKind.result &&
         ref.read(interpreterServiceProvider).status.value.phase !=
             InterpreterPhase.unsupported;
+    final saveAs = _saveAsKind(e);
     final menu = PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),
       itemBuilder: (_) => [
         if (canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
+        if (saveAs != null)
+          PopupMenuItem(
+              value: 'save-entity',
+              child: Text(saveAs == MentionKind.character
+                  ? 'Save as character'
+                  : 'Save as thread')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
         const PopupMenuItem(value: 'tags', child: Text('Tags…')),
         const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
@@ -730,12 +767,44 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   // -- Entry actions ----------------------------------------------------------
 
+  /// Which entity a result entry can be saved as, or null. NPC results
+  /// become characters; exploration/location results become threads.
+  MentionKind? _saveAsKind(JournalEntry e) {
+    if (e.kind != JournalKind.result) return null;
+    return switch (e.sourceTool) {
+      'gen-npcs' => MentionKind.character,
+      'gen-exploration' => MentionKind.thread,
+      _ => null,
+    };
+  }
+
+  Future<void> _saveAsEntity(JournalEntry entry) async {
+    final kind = _saveAsKind(entry)!;
+    final name = entry.payload?['summary'] as String? ??
+        (entry.payload?['rolls'] as List?)
+            ?.cast<Map<String, dynamic>>()
+            .firstOrNull?['display'] as String? ??
+        entry.title;
+    final id = kind == MentionKind.character
+        ? await ref.read(charactersProvider.notifier).addReturningId(name)
+        : await ref.read(threadsProvider.notifier).addReturningId(name);
+    // Re-read fresh so the backfill can't clobber a concurrent edit.
+    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
+        .where((x) => x.id == entry.id)
+        .firstOrNull;
+    if (fresh == null) return;
+    await ref.read(journalProvider.notifier).replace(
+        fresh.copyWith(body: '${fresh.body}\n${mentionToken(name, kind, id)}'));
+  }
+
   Future<void> _onAction(
       String action, JournalEntry entry, List<Thread> threads) async {
     final notifier = ref.read(journalProvider.notifier);
     switch (action) {
       case 'interpret':
         await _interpret(entry);
+      case 'save-entity':
+        await _saveAsEntity(entry);
       case 'delete':
         await notifier.remove(entry.id);
       case 'link':
