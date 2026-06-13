@@ -1,0 +1,481 @@
+{
+  "license": "CC BY-NC-SA 4.0",
+  "attribution": "Verdant Hexcrawling (c) 2026 Vince Pinton / Ibir Publishing",
+  "source": "https://verdant.ibir.cc",
+  "traits": {
+    "arduous": "Arduous Terrain",
+    "bountiful": "Bountiful",
+    "broken_paths": "Broken Paths",
+    "fast_trajectory": "Fast Trajectory",
+    "foliage": "Foliage",
+    "impassable": "Impassable Terrain",
+    "nighttime": "Nighttime",
+    "raining": "Raining",
+    "reduced_visibility": "Reduced Visibility",
+    "scarcity": "Scarcity",
+    "vantage_point": "Vantage Point",
+    "waterways": "Waterways"
+  },
+  "journey_tasks": [
+    {
+      "name": "Bushwhack",
+      "attribute": "STR",
+      "types": [
+        "T"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [],
+      "harder": [],
+      "dependency": "foliage"
+    },
+    {
+      "name": "Camouflage",
+      "attribute": "DEX",
+      "types": [
+        "S"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [
+        "foliage",
+        "reduced_visibility"
+      ],
+      "harder": [],
+      "dependency": null
+    },
+    {
+      "name": "Entertain",
+      "attribute": "CHA",
+      "types": [
+        "T",
+        "S",
+        "C"
+      ],
+      "success": "Special",
+      "failure": "Riskier",
+      "easier": [],
+      "harder": [],
+      "dependency": null
+    },
+    {
+      "name": "Explore",
+      "attribute": "WIS",
+      "types": [
+        "T",
+        "S",
+        "C"
+      ],
+      "success": "Special",
+      "failure": "Riskier",
+      "easier": [
+        "vantage_point"
+      ],
+      "harder": [
+        "broken_paths",
+        "reduced_visibility"
+      ],
+      "dependency": null
+    },
+    {
+      "name": "Forage",
+      "attribute": "INT",
+      "types": [
+        "T",
+        "S",
+        "C"
+      ],
+      "success": "Special",
+      "failure": "Riskier",
+      "easier": [
+        "bountiful",
+        "foliage"
+      ],
+      "harder": [
+        "scarcity"
+      ],
+      "dependency": null
+    },
+    {
+      "name": "Keep Watch",
+      "attribute": "WIS",
+      "types": [
+        "T",
+        "S"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [
+        "vantage_point"
+      ],
+      "harder": [
+        "foliage",
+        "reduced_visibility"
+      ],
+      "dependency": null
+    },
+    {
+      "name": "Navigate",
+      "attribute": "INT",
+      "types": [
+        "T"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [
+        "vantage_point"
+      ],
+      "harder": [
+        "broken_paths",
+        "reduced_visibility"
+      ],
+      "dependency": null
+    },
+    {
+      "name": "Scout Ahead",
+      "attribute": "DEX",
+      "types": [
+        "T"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [
+        "foliage"
+      ],
+      "harder": [
+        "broken_paths"
+      ],
+      "dependency": null
+    },
+    {
+      "name": "Set Camp",
+      "attribute": "INT",
+      "types": [
+        "S"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [],
+      "harder": [
+        "raining"
+      ],
+      "dependency": "firewood"
+    },
+    {
+      "name": "Sleep",
+      "attribute": "CON",
+      "types": [
+        "S",
+        "C"
+      ],
+      "success": "Rest",
+      "failure": "No Rest",
+      "easier": [],
+      "harder": [],
+      "dependency": null
+    },
+    {
+      "name": "Something Else",
+      "attribute": null,
+      "types": [
+        "T",
+        "S",
+        "C"
+      ],
+      "success": "???",
+      "failure": "???",
+      "easier": [],
+      "harder": [],
+      "dependency": null
+    },
+    {
+      "name": "Use Spyglass",
+      "attribute": "WIS",
+      "types": [
+        "S"
+      ],
+      "success": "Safer",
+      "failure": "Riskier",
+      "easier": [],
+      "harder": [
+        "reduced_visibility"
+      ],
+      "dependency": "Spyglass"
+    }
+  ],
+  "terrain": [
+    {
+      "key": "caatinga",
+      "name": "Caatinga",
+      "traits": [
+        "vantage_point"
+      ],
+      "special": "Blossoms"
+    },
+    {
+      "key": "desert",
+      "name": "Desert",
+      "traits": [
+        "fast_trajectory",
+        "vantage_point",
+        "scarcity"
+      ],
+      "special": null
+    },
+    {
+      "key": "floodplain",
+      "name": "Floodplain",
+      "traits": [
+        "fast_trajectory",
+        "bountiful",
+        "vantage_point"
+      ],
+      "special": "Floods"
+    },
+    {
+      "key": "forest",
+      "name": "Forest",
+      "traits": [
+        "foliage",
+        "bountiful"
+      ],
+      "special": null
+    },
+    {
+      "key": "grassland",
+      "name": "Grassland",
+      "traits": [
+        "fast_trajectory",
+        "bountiful",
+        "vantage_point"
+      ],
+      "special": null
+    },
+    {
+      "key": "hills",
+      "name": "Hills",
+      "traits": [
+        "vantage_point"
+      ],
+      "special": null
+    },
+    {
+      "key": "marsh",
+      "name": "Marsh",
+      "traits": [
+        "bountiful",
+        "vantage_point",
+        "broken_paths",
+        "waterways"
+      ],
+      "special": null
+    },
+    {
+      "key": "mountain",
+      "name": "Mountain",
+      "traits": [
+        "broken_paths",
+        "vantage_point"
+      ],
+      "special": null
+    },
+    {
+      "key": "swamp",
+      "name": "Swamp",
+      "traits": [
+        "foliage",
+        "bountiful",
+        "broken_paths",
+        "waterways"
+      ],
+      "special": null
+    },
+    {
+      "key": "water",
+      "name": "Water",
+      "traits": [
+        "impassable",
+        "waterways"
+      ],
+      "special": null
+    }
+  ],
+  "points_of_interest": [
+    {
+      "n": 1,
+      "name": "Uninhabited Cave",
+      "text": "Makes it Safer to spend the night and protects when it's Raining."
+    },
+    {
+      "n": 2,
+      "name": "Wooden Watchtower",
+      "text": "Gives a Vantage Point. Old and creaky; has a chance of collapsing."
+    },
+    {
+      "n": 3,
+      "name": "Hunting Trail",
+      "text": "Fast Trajectory when traveling through the trail, but is Deadly."
+    },
+    {
+      "n": 4,
+      "name": "Abandoned Chapel",
+      "text": "Dedicated to a random deity. Possibly haunted."
+    },
+    {
+      "n": 5,
+      "name": "Buried Treasure",
+      "text": "Recent rains left the chest partially revealed. Guarded by a will-o'-wisp."
+    },
+    {
+      "n": 6,
+      "name": "Grove of Heart Palms",
+      "text": "Trees with heart-shaped fronds. 1d4 chutes can be foraged; eating one has the effect of a healing potion."
+    },
+    {
+      "n": 7,
+      "name": "Adventurers' Cache",
+      "text": "A rival adventuring party stashed 1d6 torches and 1d6 rations here."
+    },
+    {
+      "n": 8,
+      "name": "Desecrated Monument",
+      "text": "Old statue emanates necromantic energy. Attracts ghouls at night."
+    },
+    {
+      "n": 9,
+      "name": "Fey-Kept Orchard",
+      "text": "Forage automatically succeeds here, but angers a nearby curupira."
+    },
+    {
+      "n": 10,
+      "name": "Stargazer Monoliths",
+      "text": "Sleeping in this henge gives prophetic dreams. Get a Luck Token."
+    },
+    {
+      "n": 11,
+      "name": "Ancient Portals",
+      "text": "Lies inactive. Reactivation connects it to other portals."
+    },
+    {
+      "n": 12,
+      "name": "Earthmote",
+      "text": "Floating over the land. Atop is the cabin of a wizard named Randall, who gives good advice, making it Safer for the next 3 days."
+    }
+  ],
+  "quick_encounters": [
+    {
+      "n": 1,
+      "name": "Dark Clouds",
+      "text": "It will rain soon. Raining and Reduced Visibility next Watch."
+    },
+    {
+      "n": 2,
+      "name": "Hungry Vermin",
+      "text": "A rat got into someone's backpack and ate all their rations."
+    },
+    {
+      "n": 3,
+      "name": "Mosquito Fever",
+      "text": "Easy CON or take 1d4 CON damage (can't heal while sick). Repeat the check once per day; ends on success."
+    },
+    {
+      "n": 4,
+      "name": "Shooting Star",
+      "text": "Make a wish! Someone gets a Luck Token."
+    },
+    {
+      "n": 5,
+      "name": "Landslide",
+      "text": "Soil shifts beneath your feet! Normal DEX or take 2d6 damage."
+    },
+    {
+      "n": 6,
+      "name": "Hole in Backpack",
+      "text": "A character notices their backpack is ruptured. Lose an item."
+    },
+    {
+      "n": 7,
+      "name": "Quicksand",
+      "text": "Someone falls face-first. Hard DEX to exit, Hard STR to be pulled out. CON check each round to hold breath or take 1d6 damage."
+    },
+    {
+      "n": 8,
+      "name": "Bad Omen",
+      "text": "A black cat crosses the path or ominous bird sounds bring bad luck. Roll with disadvantage next Watch."
+    },
+    {
+      "n": 9,
+      "name": "Psychic Crickets",
+      "text": "An unnerving humming sound. Normal CHA or take 2d6 damage."
+    },
+    {
+      "n": 10,
+      "name": "A Coin on the Ground",
+      "text": "1gp. Must be your lucky day!"
+    }
+  ],
+  "terrain_features": [
+    {
+      "name": "Cliff",
+      "text": "Treat as Impassable Terrain. Climbing: the party can try to climb past if all beat a Normal STR check."
+    },
+    {
+      "name": "River",
+      "text": "Treat as Impassable Terrain with Waterways. Crossing: the party can try to swim past if all beat a STR check (Hard for rapids, Easy for slow streams)."
+    },
+    {
+      "name": "Road",
+      "text": "Automatic success on Navigate and Fast Trajectory when keeping to the road. Maintained Roads are usually patrolled: Safer if party members aren't outlaws, otherwise Deadly."
+    }
+  ],
+  "transport_modes": [
+    {
+      "key": "mount",
+      "name": "Mount",
+      "text": "Mounts made for fast transport (e.g. horses) speed up travel. Rush: once per day, gain an additional Journey Round in the same watch. You can't rush from a terrain with Broken Paths."
+    },
+    {
+      "key": "boat",
+      "name": "Boat",
+      "text": "Canoes, sailboats, longships and other vessels travel through Waterways. Boats not powered by the party aren't limited to 2 Watches of travel a day."
+    },
+    {
+      "key": "airship",
+      "name": "Airship",
+      "text": "Airships can travel over Impassable Terrain and ignore Arduous Terrain."
+    }
+  ],
+  "constants": {
+    "erBase": 4,
+    "safer": 2,
+    "riskier": -1,
+    "deadly": -2,
+    "pace": {
+      "slow": 2,
+      "fast": -2
+    },
+    "watches": [
+      {
+        "n": 1,
+        "name": "Morning",
+        "night": false
+      },
+      {
+        "n": 2,
+        "name": "Afternoon",
+        "night": false
+      },
+      {
+        "n": 3,
+        "name": "Evening",
+        "night": true
+      },
+      {
+        "n": 4,
+        "name": "Night",
+        "night": true
+      }
+    ],
+    "encounterRule": "d12 + Safety Level < ER => dangerous encounter; a natural 12 => an encounter with no immediate danger."
+  }
+}
