@@ -337,7 +337,11 @@ String parseVoiceResponse(String raw) {
 
 // -- Journal recap ------------------------------------------------------------
 
-const String summarySystemInstruction =
+/// Recap instruction, baked into [buildSummaryPrompt] (like
+/// [buildVoicePrompt]'s `_voiceInstruction`): the web session is shared and
+/// latch-locked, so the guidance must ride in the prompt, not a per-chat
+/// system instruction.
+const String _summaryInstruction =
     'You recap a solo RPG journal. Given recent entries in order, write a '
     'tight 2-3 sentence "previously on" recap in past tense, plain prose, no '
     'lists or preamble.';
@@ -348,7 +352,8 @@ String buildSummaryPrompt(List<String> entries) {
   final capped =
       entries.length > 20 ? entries.sublist(entries.length - 20) : entries;
   final body = capped.map((e) => '- $e').join('\n');
-  return 'Recent journal entries (oldest first):\n$body\n\nRecap:';
+  return '$_summaryInstruction\n\n'
+      'Recent journal entries (oldest first):\n$body\n\nRecap:';
 }
 
 /// Plain-text parse: strip think-tags, trim (as parseVoiceResponse).
