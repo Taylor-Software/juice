@@ -181,6 +181,13 @@ class ThreadNotifier extends _PersistedList<Thread> {
     ]);
   }
 
+  Future<void> togglePinned(String id) async {
+    await _persist([
+      for (final t in await _ready)
+        if (t.id == id) t.copyWith(pinned: !t.pinned) else t,
+    ]);
+  }
+
   Future<void> remove(String id) async {
     await _persist((await _ready).where((t) => t.id != id).toList());
   }
@@ -209,6 +216,13 @@ class CharacterNotifier extends _PersistedList<Character> {
     await _persist([
       for (final c in await _ready)
         if (c.id == character.id) character else c,
+    ]);
+  }
+
+  Future<void> toggleStarred(String id) async {
+    await _persist([
+      for (final ch in await _ready)
+        if (ch.id == id) ch.copyWith(starred: !ch.starred) else ch,
     ]);
   }
 
@@ -244,6 +258,11 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
   }
 
   Future<void> reset() => save(const CrawlState());
+
+  Future<void> setChaos(int n) async {
+    final cur = state.valueOrNull ?? await future;
+    await save(cur.copyWith(chaosFactor: n.clamp(1, 9)));
+  }
 }
 
 final crawlProvider =
@@ -502,6 +521,16 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
+  }
+
+  Future<void> setDefaultOracle(String oracle) async {
+    final cur = state.valueOrNull ?? await future;
+    await save(cur.copyWith(defaultOracle: oracle));
+  }
+
+  Future<void> setHeaderCollapsed(bool collapsed) async {
+    final cur = state.valueOrNull ?? await future;
+    await save(cur.copyWith(headerCollapsed: collapsed));
   }
 }
 
