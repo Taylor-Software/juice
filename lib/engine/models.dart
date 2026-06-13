@@ -721,16 +721,33 @@ class CrawlState {
       );
 }
 
+/// The optional systems a campaign can enable; dice, encounter, the
+/// tracker, and help are always available (core).
+const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party'};
+
 /// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {
-  const SessionMeta({required this.id, required this.name});
+  const SessionMeta({required this.id, required this.name, this.systems});
   final String id;
   final String name;
 
-  Map<String, dynamic> toJson() => {'id': id, 'name': name};
+  /// Enabled optional systems; null means all (legacy campaigns).
+  final List<String>? systems;
 
-  factory SessionMeta.fromJson(Map<String, dynamic> j) =>
-      SessionMeta(id: j['id'] as String, name: j['name'] as String);
+  /// Resolved set: the declared systems, or every system when unset.
+  Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (systems != null) 'systems': systems,
+      };
+
+  factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        systems: (j['systems'] as List?)?.whereType<String>().toList(),
+      );
 }
 
 /// Registry of sessions plus the active one.
