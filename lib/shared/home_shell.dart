@@ -103,40 +103,21 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _createSession(BuildContext dialogContext) async {
-    final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final result = await showDialog<({String name, Set<String> systems})>(
       context: dialogContext,
-      builder: (context) => AlertDialog(
-        title: const Text('New campaign'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Name'),
-          onSubmitted: (v) => Navigator.of(context).pop(v),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      builder: (context) => const _NewCampaignDialog(),
     );
-    controller.dispose();
-    if (name == null || name.trim().isEmpty) return;
-    await ref.read(sessionsProvider.notifier).create(name.trim());
+    if (result == null || result.name.trim().isEmpty) return;
+    await ref
+        .read(sessionsProvider.notifier)
+        .create(result.name.trim(), systems: result.systems);
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
   Future<void> _exportCampaign(BuildContext dialogContext) async {
-    final content =
-        await ref.read(sessionsProvider.notifier).exportActive();
-    final name = ref.read(sessionsProvider).valueOrNull?.activeMeta.name ??
-        'campaign';
+    final content = await ref.read(sessionsProvider.notifier).exportActive();
+    final name =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
     var slug = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-');
     slug = slug.replaceAll(RegExp(r'^-+|-+$'), '');
     final fileName = '${slug.isEmpty ? 'campaign' : slug}.juice.json';
@@ -177,8 +158,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
       return;
     }
-    final bytes =
-        (result == null || result.files.isEmpty) ? null : result.files.first.bytes;
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
     if (bytes == null) return; // user cancelled
     try {
       await ref
@@ -225,7 +207,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget build(BuildContext context) {
     final sessionName =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.name;
-    final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+    final rulesets =
+        ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
     final family = [
       if (rulesets.contains('classic')) 'classic',
       if (rulesets.contains('delve')) 'delve',
@@ -281,10 +264,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                             : null,
                         value: enabled.contains(id),
                         onChanged: (on) async {
-                          final otherFamily =
-                              (id == 'classic' || id == 'delve')
-                                  ? const {'starforged', 'sundered_isles'}
-                                  : const {'classic', 'delve'};
+                          final otherFamily = (id == 'classic' || id == 'delve')
+                              ? const {'starforged', 'sundered_isles'}
+                              : const {'classic', 'delve'};
                           if (on && enabled.any(otherFamily.contains)) {
                             final ok = await showDialog<bool>(
                               context: context,
@@ -331,6 +313,92 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           child: const JournalScreen(),
         ),
       ),
+    );
+  }
+}
+
+/// Dialog for creating a new campaign: name field + four system checkboxes.
+/// Returns `({String name, Set<String> systems})?`; null on cancel.
+class _NewCampaignDialog extends StatefulWidget {
+  const _NewCampaignDialog();
+
+  @override
+  State<_NewCampaignDialog> createState() => _NewCampaignDialogState();
+}
+
+class _NewCampaignDialogState extends State<_NewCampaignDialog> {
+  final _controller = TextEditingController();
+  bool _juice = true;
+  bool _mythic = true;
+  bool _ironsworn = true;
+  bool _party = true;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final picked = <String>{
+      if (_juice) 'juice',
+      if (_mythic) 'mythic',
+      if (_ironsworn) 'ironsworn',
+      if (_party) 'party',
+    };
+    Navigator.of(context).pop((name: _controller.text, systems: picked));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New campaign'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            key: const Key('new-campaign-name'),
+            controller: _controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Name'),
+            onSubmitted: (_) => _submit(),
+          ),
+          CheckboxListTile(
+            key: const Key('sys-juice'),
+            title: const Text('Juice oracle'),
+            value: _juice,
+            onChanged: (v) => setState(() => _juice = v ?? true),
+          ),
+          CheckboxListTile(
+            key: const Key('sys-mythic'),
+            title: const Text('Mythic GME'),
+            value: _mythic,
+            onChanged: (v) => setState(() => _mythic = v ?? true),
+          ),
+          CheckboxListTile(
+            key: const Key('sys-ironsworn'),
+            title: const Text('Ironsworn family'),
+            value: _ironsworn,
+            onChanged: (v) => setState(() => _ironsworn = v ?? true),
+          ),
+          CheckboxListTile(
+            key: const Key('sys-party'),
+            title: const Text('Party emulator'),
+            value: _party,
+            onChanged: (v) => setState(() => _party = v ?? true),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Create'),
+        ),
+      ],
     );
   }
 }

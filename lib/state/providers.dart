@@ -587,10 +587,11 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     await _save(SessionsState(active: id, sessions: s.sessions));
   }
 
-  Future<void> create(String name) async {
+  Future<void> create(String name, {Set<String>? systems}) async {
     final s = state.valueOrNull;
     if (s == null) return;
-    final meta = SessionMeta(id: _newId(), name: name);
+    final meta =
+        SessionMeta(id: _newId(), name: name, systems: systems?.toList());
     await _save(
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }

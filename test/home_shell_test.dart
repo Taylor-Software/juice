@@ -14,12 +14,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fake_interpreter.dart';
 
 void main() {
-  testWidgets('journal is home; launcher opens grouped tools',
-      (tester) async {
+  testWidgets('journal is home; launcher opens grouped tools', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final data = OracleData(jsonDecode(
-            File('assets/oracle_data.json').readAsStringSync())
-        as Map<String, dynamic>);
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
     await tester.pumpAndSettle();
@@ -37,9 +36,9 @@ void main() {
   testWidgets('rulesets toggle adds and removes the moves tool',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final data = OracleData(jsonDecode(
-            File('assets/oracle_data.json').readAsStringSync())
-        as Map<String, dynamic>);
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
     await tester.pumpAndSettle();
@@ -69,9 +68,9 @@ void main() {
 
   testWidgets('app pause disposes the interpreter service', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    final data = OracleData(jsonDecode(
-            File('assets/oracle_data.json').readAsStringSync())
-        as Map<String, dynamic>);
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
     final fake = FakeInterpreterService();
     await tester.pumpWidget(ProviderScope(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
@@ -80,21 +79,63 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.disposeCalls, 0);
     // AppLifecycleListener asserts on legal transitions, so walk the chain.
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await tester.pump();
     expect(fake.disposeCalls, 1);
     // Restore so the lifecycle state doesn't leak into other tests.
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.hidden);
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.inactive);
-    tester.binding
-        .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
+  });
+
+  testWidgets(
+      'new campaign dialog shows system checkboxes; unchecking party excludes it',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
+    await tester.pumpAndSettle();
+
+    // Open campaigns dialog.
+    await tester.tap(find.byTooltip('Campaigns'));
+    await tester.pumpAndSettle();
+
+    // Tap 'New campaign'.
+    await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
+    await tester.pumpAndSettle();
+
+    // All four system checkboxes are present and checked by default.
+    expect(find.byKey(const Key('sys-juice')), findsOneWidget);
+    expect(find.byKey(const Key('sys-mythic')), findsOneWidget);
+    expect(find.byKey(const Key('sys-ironsworn')), findsOneWidget);
+    expect(find.byKey(const Key('sys-party')), findsOneWidget);
+
+    // Uncheck party.
+    await tester.tap(find.byKey(const Key('sys-party')));
+    await tester.pumpAndSettle();
+
+    // Enter a name (keyed — the journal composer also has a TextField).
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'No Party');
+    await tester.pumpAndSettle();
+
+    // Tap Create.
+    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    await tester.pumpAndSettle();
+
+    // The new campaign is active and excludes party.
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    final s = await container.read(sessionsProvider.future);
+    expect(s.activeMeta.name, 'No Party');
+    expect(s.activeMeta.enabledSystems, isNot(contains('party')));
+    expect(s.activeMeta.enabledSystems,
+        containsAll(['juice', 'mythic', 'ironsworn']));
   });
 }
