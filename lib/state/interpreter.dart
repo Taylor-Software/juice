@@ -57,6 +57,9 @@ abstract class InterpreterService {
   /// lifecycle contract as [interpret]: requires phase == ready.
   Future<String> voiceLine(VoiceSeed seed);
 
+  /// One-shot recap of recent journal entries (plain text). Requires ready.
+  Future<String> summarize(List<String> entries);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }

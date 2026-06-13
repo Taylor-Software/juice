@@ -335,6 +335,28 @@ String parseVoiceResponse(String raw) {
   return out;
 }
 
+// -- Journal recap ------------------------------------------------------------
+
+const String summarySystemInstruction =
+    'You recap a solo RPG journal. Given recent entries in order, write a '
+    'tight 2-3 sentence "previously on" recap in past tense, plain prose, no '
+    'lists or preamble.';
+
+/// Builds the recap prompt from recent entry texts (oldest first), capped
+/// like the other builders.
+String buildSummaryPrompt(List<String> entries) {
+  final capped =
+      entries.length > 20 ? entries.sublist(entries.length - 20) : entries;
+  final body = capped.map((e) => '- $e').join('\n');
+  return 'Recent journal entries (oldest first):\n$body\n\nRecap:';
+}
+
+/// Plain-text parse: strip think-tags, trim (as parseVoiceResponse).
+String parseSummary(String raw) {
+  final s = raw.replaceAll(RegExp(r'<think>.*?</think>', dotAll: true), '');
+  return s.trim();
+}
+
 /// Debug-eval seeds (see spec "Quality bar"). Used by the debug-only
 /// runInterpreterEval in lib/state/interpreter.dart and by live verification.
 const List<OracleSeed> kEvalSeeds = <OracleSeed>[
