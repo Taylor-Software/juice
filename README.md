@@ -45,6 +45,8 @@ to jump back to the tool that produced them.
 
 - Campaign header: a collapsible band over the journal shows the current scene, Mythic chaos, pinned threads, starred characters, and crawl state — each opens its tool. Set the campaign's default oracle here.
 
+- System profiles: pick which systems a campaign uses (Juice, Mythic, Ironsworn, Party) when you create it — the tools, slash commands, and header scope to that set. Existing campaigns keep everything.
+
 - **Oracle interpreter (on-device AI, optional):** any oracle result in the
   journal can be expanded into four short readings — literal, symbolic,
   complication, foreshadow — by a small language model that runs entirely
