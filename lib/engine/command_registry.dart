@@ -75,6 +75,19 @@ const kRollHighOdds = [
   'Almost Impossible',
 ];
 
+/// Juice Fate Check odds, lowercase to match [Likelihood.key].
+const kJuiceOdds = ['unlikely', 'normal', 'likely'];
+
+/// Odds ladder for [oracle] ('juice'/'mythic'/'roll-high'); empty for any
+/// other system. Single source for the ask-anything picker and the slash
+/// palette's odds chips (a fate command's `system` IS its oracle name).
+List<String> oddsForOracle(String oracle) => switch (oracle) {
+      'mythic' => kMythicOdds,
+      'roll-high' => kRollHighOdds,
+      'juice' => kJuiceOdds,
+      _ => const <String>[],
+    };
+
 CommandDef? commandById(List<CommandDef> commands, String id) {
   for (final c in commands) {
     if (c.id == id) return c;

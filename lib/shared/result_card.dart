@@ -42,7 +42,7 @@ class ResultCard extends StatelessWidget {
             ],
             if (result.rolls.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...result.rolls.map((r) => RollRow(roll: r)),
+              ...result.rolls.map((r) => _RollRow(roll: r)),
             ],
           ],
         ),
@@ -51,8 +51,8 @@ class ResultCard extends StatelessWidget {
   }
 }
 
-class RollRow extends StatelessWidget {
-  const RollRow({super.key, required this.roll});
+class _RollRow extends StatelessWidget {
+  const _RollRow({required this.roll});
   final Roll roll;
 
   @override
