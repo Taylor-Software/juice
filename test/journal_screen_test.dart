@@ -22,14 +22,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('We slip inside.'), findsOneWidget);
 
-    final container = ProviderScope.containerOf(
-        tester.element(find.byType(JournalScreen)));
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
     await container
         .read(journalProvider.notifier)
         .addScene('The gatehouse', chaosFactor: 6);
     await tester.pumpAndSettle();
-    expect(find.text('The gatehouse'), findsOneWidget);
-    expect(find.text('Chaos 6'), findsOneWidget);
+    expect(find.text('The gatehouse'), findsWidgets);
+    // 'Chaos 6' appears in both the scene divider and the campaign header.
+    expect(find.text('Chaos 6'), findsWidgets);
   });
 
   testWidgets('entries display oldest first (reverse of storage)',
@@ -39,7 +40,7 @@ void main() {
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default':
           '[{"id":"b","timestamp":"2026-06-11T10:00:00.000","title":"","body":"Second","kind":"text"},'
-          '{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"","body":"First","kind":"text"}]',
+              '{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"","body":"First","kind":"text"}]',
     });
     await tester.pumpWidget(const ProviderScope(
         child: MaterialApp(home: Scaffold(body: JournalScreen()))));
@@ -63,8 +64,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(Card), findsNothing);
-    final container = ProviderScope.containerOf(
-        tester.element(find.byType(JournalScreen)));
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
     expect(container.read(journalProvider).valueOrNull, isEmpty);
   });
 
@@ -77,8 +78,8 @@ void main() {
         child: MaterialApp(home: Scaffold(body: JournalScreen()))));
     await tester.pumpAndSettle();
 
-    final container = ProviderScope.containerOf(
-        tester.element(find.byType(JournalScreen)));
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
     await container.read(journalProvider.notifier).addText('Original note');
     await tester.pumpAndSettle();
     expect(find.text('Original note'), findsOneWidget);

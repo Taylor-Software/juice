@@ -43,6 +43,8 @@ to jump back to the tool that produced them.
 - Slash commands: type `/` in the journal to roll a fate check, dice, or a
   quick generator without opening a tool — the result lands inline.
 
+- Campaign header: a collapsible band over the journal shows the current scene, Mythic chaos, pinned threads, starred characters, and crawl state — each opens its tool. Set the campaign's default oracle here.
+
 - **Oracle interpreter (on-device AI, optional):** any oracle result in the
   journal can be expanded into four short readings — literal, symbolic,
   complication, foreshadow — by a small language model that runs entirely

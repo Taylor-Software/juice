@@ -167,27 +167,37 @@ class Thread {
     required this.title,
     this.note = '',
     this.open = true,
+    this.pinned = false,
   });
   final String id;
   final String title;
   final String note;
   final bool open;
+  final bool pinned;
 
-  Thread copyWith({String? title, String? note, bool? open}) => Thread(
+  Thread copyWith({String? title, String? note, bool? open, bool? pinned}) =>
+      Thread(
         id: id,
         title: title ?? this.title,
         note: note ?? this.note,
         open: open ?? this.open,
+        pinned: pinned ?? this.pinned,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'id': id, 'title': title, 'note': note, 'open': open};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'note': note,
+        'open': open,
+        if (pinned) 'pinned': true,
+      };
 
   factory Thread.fromJson(Map<String, dynamic> j) => Thread(
         id: j['id'] as String,
         title: j['title'] as String,
         note: (j['note'] as String?) ?? '',
         open: (j['open'] as bool?) ?? true,
+        pinned: (j['pinned'] as bool?) ?? false,
       );
 }
 
@@ -587,6 +597,7 @@ class Character {
     this.tracks = const [],
     this.tags = const [],
     this.emulation,
+    this.starred = false,
   });
   final String id;
   final String name;
@@ -598,6 +609,9 @@ class Character {
   /// Party-emulator state; null until the Party tool writes it.
   final CharacterEmulation? emulation;
 
+  /// Whether this character is starred in the campaign header.
+  final bool starred;
+
   /// Lists are replaced wholesale when provided; null keeps the current list.
   Character copyWith({
     String? name,
@@ -607,6 +621,7 @@ class Character {
     List<String>? tags,
     CharacterEmulation? emulation,
     bool clearEmulation = false,
+    bool? starred,
   }) =>
       Character(
         id: id,
@@ -616,10 +631,11 @@ class Character {
         tracks: tracks ?? this.tracks,
         tags: tags ?? this.tags,
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
+        starred: starred ?? this.starred,
       );
 
-  /// 'emulation' is written only when non-null so existing characters and
-  /// campaign files stay byte-stable until the feature is used.
+  /// 'emulation' and 'starred' are written only when non-null/true so existing
+  /// characters and campaign files stay byte-stable until the features are used.
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -628,6 +644,7 @@ class Character {
         'tracks': tracks.map((t) => t.toJson()).toList(),
         'tags': tags,
         if (emulation != null) 'emulation': emulation!.toJson(),
+        if (starred) 'starred': true,
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -644,6 +661,7 @@ class Character {
             .toList(),
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
+        starred: (j['starred'] as bool?) ?? false,
       );
 }
 
@@ -741,17 +759,41 @@ class SessionsState {
 
 // -- Campaign settings (genre/tone for the oracle interpreter) ---------------
 class CampaignSettings {
-  const CampaignSettings({this.genre = '', this.tone = ''});
+  const CampaignSettings({
+    this.genre = '',
+    this.tone = '',
+    this.defaultOracle = 'juice',
+    this.headerCollapsed = false,
+  });
   final String genre;
   final String tone;
+  final String defaultOracle;
+  final bool headerCollapsed;
 
-  CampaignSettings copyWith({String? genre, String? tone}) =>
-      CampaignSettings(genre: genre ?? this.genre, tone: tone ?? this.tone);
+  CampaignSettings copyWith({
+    String? genre,
+    String? tone,
+    String? defaultOracle,
+    bool? headerCollapsed,
+  }) =>
+      CampaignSettings(
+        genre: genre ?? this.genre,
+        tone: tone ?? this.tone,
+        defaultOracle: defaultOracle ?? this.defaultOracle,
+        headerCollapsed: headerCollapsed ?? this.headerCollapsed,
+      );
 
   factory CampaignSettings.fromJson(Map<String, dynamic> j) => CampaignSettings(
         genre: j['genre'] as String? ?? '',
         tone: j['tone'] as String? ?? '',
+        defaultOracle: j['defaultOracle'] as String? ?? 'juice',
+        headerCollapsed: (j['headerCollapsed'] as bool?) ?? false,
       );
 
-  Map<String, dynamic> toJson() => {'genre': genre, 'tone': tone};
+  Map<String, dynamic> toJson() => {
+        'genre': genre,
+        'tone': tone,
+        'defaultOracle': defaultOracle,
+        if (headerCollapsed) 'headerCollapsed': true,
+      };
 }
