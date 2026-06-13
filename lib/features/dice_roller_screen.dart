@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
+import '../engine/models.dart';
 import '../state/providers.dart';
 
 /// Free-form dice roller: notation input, quick chips, breakdown, history.
@@ -155,27 +156,32 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
                         tooltip: 'Add to journal',
                         icon: const Icon(Icons.bookmark_add_outlined),
                         onPressed: () {
-                          // Body is the one-line total so the journal's rich
-                          // payload card reads cleanly; the per-group
-                          // breakdown rides in the payload rolls.
-                          ref.read(journalProvider.notifier).addResult(
-                            'Dice Roll',
-                            '${last.expression} = ${last.total}',
-                            sourceTool: 'dice',
-                            payload: {
-                              'v': 1,
-                              'summary': '${last.expression} = ${last.total}',
-                              'rolls': [
-                                for (final grp in last.groups)
-                                  if (grp.dice.isNotEmpty)
-                                    {
-                                      'label': grp.label,
-                                      'display':
-                                          '${grp.dice.map((d) => d.kept ? d.display : '[${d.display}]').join(', ')} (${grp.subtotal})',
-                                    }
-                              ],
-                            },
+                          // Build a GenResult so body and payload stay
+                          // consistent (body == summary+rolls); the rich card
+                          // then shows no duplicate remainder.
+                          final g = GenResult(
+                            title: 'Dice Roll',
+                            summary: '${last.expression} = ${last.total}',
+                            rolls: [
+                              for (final grp in last.groups)
+                                if (grp.dice.isNotEmpty)
+                                  Roll(
+                                    label: grp.label,
+                                    value: grp.dice
+                                        .map((d) => d.kept
+                                            ? d.display
+                                            : '[${d.display}]')
+                                        .join(', '),
+                                    detail: '${grp.subtotal}',
+                                  ),
+                            ],
                           );
+                          ref.read(journalProvider.notifier).addResult(
+                                g.title,
+                                g.asText,
+                                sourceTool: 'dice',
+                                payload: g.toPayload(),
+                              );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Added to journal')),
                           );
