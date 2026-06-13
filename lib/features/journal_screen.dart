@@ -55,9 +55,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // Active @-mention query (text from the last '@' to the caret), or null.
   String? _mentionQuery;
 
+  // True when the composer text is a question (trailing ?) and slash/mention
+  // are not active.
+  bool _askActive = false;
+
   // Built-in (non-registry) slash commands handled inline.
   static const _builtinScene = 'scene';
   static const _builtinHelp = 'help';
+  static const _builtinAsk = 'ask';
 
   @override
   void initState() {
@@ -79,10 +84,93 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         mention = upToCaret.substring(at + 1);
       }
     }
+    final isQuestion = !slash &&
+        mention == null &&
+        text.trim().endsWith('?') &&
+        text.trim().length > 1;
     setState(() {
       _slashActive = slash;
       _mentionQuery = mention;
+      _askActive = isQuestion;
     });
+  }
+
+  // -- Ask-anything helpers --------------------------------------------------
+
+  String get _defaultOracle =>
+      ref.read(settingsProvider).valueOrNull?.defaultOracle ?? 'juice';
+
+  String _fateCommandId(String oracle) => switch (oracle) {
+        'mythic' => 'fate-mythic',
+        'roll-high' => 'fate-roll-high',
+        _ => 'fate-juice',
+      };
+
+  List<String> _oddsOptions(String oracle) => switch (oracle) {
+        'mythic' => kMythicOdds,
+        'roll-high' => kRollHighOdds,
+        _ => const ['unlikely', 'normal', 'likely'],
+      };
+
+  String _defaultOdds(String oracle) => switch (oracle) {
+        'mythic' => '50/50',
+        'roll-high' => 'Unknown',
+        _ => 'normal',
+      };
+
+  String _oddsLabel(String o) =>
+      o.isEmpty ? o : '${o[0].toUpperCase()}${o.substring(1)}';
+
+  Widget _askChip() => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+          child: ActionChip(
+            key: const Key('ask-chip'),
+            avatar: const Icon(Icons.psychology_alt_outlined, size: 18),
+            label: const Text('Ask the oracle'),
+            onPressed: () => _ask(_composer.text.trim()),
+          ),
+        ),
+      );
+
+  Future<void> _ask(String question) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null || question.isEmpty) return;
+    // Await settings so defaultOracle is available even when called early.
+    final CampaignSettings settings;
+    if (ref.read(settingsProvider).hasValue) {
+      settings = ref.read(settingsProvider).requireValue;
+    } else {
+      settings = await ref.read(settingsProvider.future);
+    }
+    final ora = settings.defaultOracle;
+    final opts = _oddsOptions(ora);
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (_) => SimpleDialog(
+        title: const Text('How likely?'),
+        children: [
+          for (final o in opts)
+            SimpleDialogOption(
+              key: Key('ask-odds-$o'),
+              onPressed: () => Navigator.pop(context, o),
+              child: Text(_oddsLabel(o)),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final cmd = commandById(buildCommandRegistry(), _fateCommandId(ora))!;
+    final args = <String, String>{'odds': picked};
+    if (cmd.id == 'fate-mythic') {
+      args['chaos'] =
+          '${ref.read(crawlProvider).valueOrNull?.chaosFactor ?? 5}';
+    }
+    final r = cmd.run(oracle, args);
+    _composer.clear();
+    await ref.read(journalProvider.notifier).addResult(question, r.body,
+        sourceTool: cmd.toolId, payload: r.payload);
   }
 
   @override
@@ -275,8 +363,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             },
           ),
         ),
-        if (_slashActive) _slashPalette(),
-        if (_mentionQuery != null) _mentionPanel(),
+        if (_slashActive)
+          _slashPalette()
+        else if (_mentionQuery != null)
+          _mentionPanel()
+        else if (_askActive)
+          _askChip(),
         _composerBar(),
       ],
     );
@@ -449,8 +541,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             kAllSystems;
     final registry = commandsForSystems(buildCommandRegistry(), systems);
     // Built-ins surface when their name prefixes the token.
-    final showScene = _builtinScene.startsWith(parsed.token.toLowerCase());
-    final showHelp = _builtinHelp.startsWith(parsed.token.toLowerCase());
+    final tok = parsed.token.toLowerCase();
+    final showScene = _builtinScene.startsWith(tok);
+    final showHelp = _builtinHelp.startsWith(tok);
+    final showAsk = _builtinAsk.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -492,7 +586,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   ToolHost.openToolIfKnown(context, 'help');
                 },
               ),
-            if (matches.isEmpty && !showScene && !showHelp)
+            if (showAsk)
+              ListTile(
+                key: const Key('slash-cmd-ask'),
+                dense: true,
+                leading: const Icon(Icons.psychology_alt_outlined),
+                title: const Text('Ask the oracle'),
+                subtitle: const Text('Type your question after /ask'),
+                onTap: () {
+                  final question = parsed.rest.trim();
+                  if (question.isNotEmpty) {
+                    _ask(question);
+                  }
+                  // If no question typed yet, leave the composer so user can
+                  // type their question.
+                },
+              ),
+            if (matches.isEmpty && !showScene && !showHelp && !showAsk)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text('No matching command'),
@@ -649,6 +759,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinHelp == tok) {
         _composer.clear();
         if (mounted) ToolHost.openToolIfKnown(context, 'help');
+        return;
+      }
+      if (_builtinAsk == tok) {
+        final question = parsed.rest.trim();
+        if (question.isNotEmpty) await _ask(question);
         return;
       }
       final systems =
