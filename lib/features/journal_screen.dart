@@ -97,9 +97,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   // -- Ask-anything helpers --------------------------------------------------
 
-  String get _defaultOracle =>
-      ref.read(settingsProvider).valueOrNull?.defaultOracle ?? 'juice';
-
   String _fateCommandId(String oracle) => switch (oracle) {
         'mythic' => 'fate-mythic',
         'roll-high' => 'fate-roll-high',
@@ -110,12 +107,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         'mythic' => kMythicOdds,
         'roll-high' => kRollHighOdds,
         _ => const ['unlikely', 'normal', 'likely'],
-      };
-
-  String _defaultOdds(String oracle) => switch (oracle) {
-        'mythic' => '50/50',
-        'roll-high' => 'Unknown',
-        _ => 'normal',
       };
 
   String _oddsLabel(String o) =>
@@ -144,17 +135,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     } else {
       settings = await ref.read(settingsProvider.future);
     }
+    if (!mounted) return;
     final ora = settings.defaultOracle;
     final opts = _oddsOptions(ora);
+    // ignore: use_build_context_synchronously — mounted checked above
     final picked = await showDialog<String>(
       context: context,
-      builder: (_) => SimpleDialog(
+      builder: (ctx) => SimpleDialog(
         title: const Text('How likely?'),
         children: [
           for (final o in opts)
             SimpleDialogOption(
               key: Key('ask-odds-$o'),
-              onPressed: () => Navigator.pop(context, o),
+              onPressed: () => Navigator.pop(ctx, o),
               child: Text(_oddsLabel(o)),
             ),
         ],
