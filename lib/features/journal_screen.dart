@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/command_registry.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
+import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../shared/mention_text.dart';
@@ -50,6 +51,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   final TextEditingController _search = TextEditingController();
   bool _slashActive = false;
 
+  // Active @-mention query (text from the last '@' to the caret), or null.
+  String? _mentionQuery;
+
   // Built-in (non-registry) slash commands handled inline.
   static const _builtinScene = 'scene';
   static const _builtinHelp = 'help';
@@ -61,12 +65,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _onComposerChanged() {
-    final isSlash = _composer.text.startsWith('/');
-    if (isSlash != _slashActive) {
-      setState(() => _slashActive = isSlash);
-    } else if (isSlash) {
-      setState(() {}); // refilter as the token changes
+    final text = _composer.text;
+    final slash = text.startsWith('/');
+    // baseOffset is -1 when no explicit selection; treat as end-of-text.
+    final rawSel = _composer.selection.baseOffset;
+    final sel = rawSel < 0 ? text.length : rawSel;
+    String? mention;
+    if (!slash && sel > 0) {
+      final upToCaret = text.substring(0, sel);
+      final at = upToCaret.lastIndexOf('@');
+      if (at >= 0 && !upToCaret.substring(at).contains(' ')) {
+        mention = upToCaret.substring(at + 1);
+      }
     }
+    setState(() {
+      _slashActive = slash;
+      _mentionQuery = mention;
+    });
   }
 
   @override
@@ -83,6 +98,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // Watch the oracle so payload entries gain their re-roll affordance once
     // it finishes loading (re-roll runs a command against it).
     ref.watch(oracleProvider);
+    // Pre-subscribe so _mentionPanel() sees loaded data on first render.
+    ref.watch(charactersProvider);
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
@@ -229,6 +246,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         ),
         if (_slashActive) _slashPalette(),
+        if (_mentionQuery != null) _mentionPanel(),
         _composerBar(),
       ],
     );
@@ -454,6 +472,85 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     await _runCommand(c,
         odds: odds,
         notation: c.arg == CommandArg.notation ? (parsed?.rest ?? '') : null);
+  }
+
+  // -- Mention autocomplete ---------------------------------------------------
+
+  void _insertMention(String display, MentionKind kind, String id) {
+    final text = _composer.text;
+    final rawSel = _composer.selection.baseOffset;
+    final sel = rawSel < 0 ? text.length : rawSel;
+    final at = text.substring(0, sel).lastIndexOf('@');
+    final token = '${mentionToken(display, kind, id)} ';
+    final next = text.replaceRange(at, sel, token);
+    _composer.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: at + token.length),
+    );
+    setState(() => _mentionQuery = null);
+  }
+
+  Widget _mentionPanel() {
+    final query = _mentionQuery ?? '';
+    final lower = query.toLowerCase();
+    final chars =
+        (ref.watch(charactersProvider).valueOrNull ?? const <Character>[])
+            .where((c) => c.name.toLowerCase().contains(lower))
+            .toList();
+    final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
+        .where((t) => t.open && t.title.toLowerCase().contains(lower))
+        .toList();
+    if (chars.isEmpty && threads.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Material(
+      key: const Key('mention-panel'),
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 280),
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: [
+            if (chars.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('Characters',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final c in chars)
+                ListTile(
+                  key: Key('mention-char-${c.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.person_outline, size: 18),
+                  title: Text(c.name),
+                  onTap: () =>
+                      _insertMention(c.name, MentionKind.character, c.id),
+                ),
+            ],
+            if (threads.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('Threads',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final t in threads)
+                ListTile(
+                  key: Key('mention-thread-${t.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.link, size: 18),
+                  title: Text(t.title),
+                  onTap: () =>
+                      _insertMention(t.title, MentionKind.thread, t.id),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // -- Composer ---------------------------------------------------------------
