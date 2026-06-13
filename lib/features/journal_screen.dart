@@ -382,8 +382,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     if (parsed == null) return const SizedBox.shrink();
     final registry = buildCommandRegistry();
     // Built-ins surface when their name prefixes the token.
-    final showScene = _builtinScene.contains(parsed.token.toLowerCase());
-    final showHelp = _builtinHelp.contains(parsed.token.toLowerCase());
+    final showScene = _builtinScene.startsWith(parsed.token.toLowerCase());
+    final showHelp = _builtinHelp.startsWith(parsed.token.toLowerCase());
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -493,6 +493,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       // exactly head the token); otherwise the palette stays open.
       final parsed = parseSlash(text)!;
       final tok = parsed.token.toLowerCase();
+      // A bare '/' with no command typed shouldn't silently fire a roll.
+      if (tok.isEmpty) return;
       if (_builtinScene == tok) {
         _composer.clear();
         await _newScene();

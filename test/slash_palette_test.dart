@@ -192,4 +192,54 @@ void main() {
     expect(entries.first.body, 'just a note');
     expect(entries.first.sourceTool, isNull);
   });
+
+  testWidgets('Enter routes a slash command to the top match', (tester) async {
+    await pumpPalette(tester, data);
+
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/name');
+    await tester.pump();
+    // Submit the field (Enter) — _send should run the top match, not log text.
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.sourceTool, 'gen-details');
+    expect((entries.first.payload?['rolls'] as List?), isNotEmpty);
+    // Composer cleared, palette gone.
+    expect(find.byKey(const Key('slash-palette')), findsNothing);
+  });
+
+  testWidgets('built-in scene row uses prefix match, not substring',
+      (tester) async {
+    await pumpPalette(tester, data);
+
+    // '/e' is a substring of 'scene' but not a prefix — the scene row must
+    // NOT appear (guards the contains-vs-startsWith bug).
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/e');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-scene')), findsNothing);
+
+    // '/sc' IS a prefix of 'scene' — the row appears.
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/sc');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-scene')), findsOneWidget);
+  });
+
+  testWidgets('bare / then Enter does nothing (no silent roll)',
+      (tester) async {
+    await pumpPalette(tester, data);
+
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/');
+    await tester.pump();
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries, isEmpty);
+  });
 }
