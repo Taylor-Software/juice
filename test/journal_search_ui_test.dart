@@ -38,8 +38,8 @@ void main() {
   }
 
   Future<void> openTagsDialog(WidgetTester tester, String entryText) async {
-    final entry = find.ancestor(
-        of: find.text(entryText), matching: find.byType(Card));
+    final entry =
+        find.ancestor(of: find.text(entryText), matching: find.byType(Card));
     await tester.tap(find.descendant(
         of: entry, matching: find.byType(PopupMenuButton<String>)));
     await tester.pumpAndSettle();
@@ -75,7 +75,11 @@ void main() {
     expect(find.text('Omen draw'), findsNothing);
     expect(find.text('Fate Check'), findsNothing);
     // The clear/close affordance empties the query and hides the field.
-    await tester.tap(find.byIcon(Icons.close));
+    // Scope to the search field's own close icon (other close icons —
+    // e.g. the recap banner's dismiss — may also be present).
+    await tester.tap(find.descendant(
+        of: find.byKey(const Key('journal-search-field')),
+        matching: find.byIcon(Icons.close)));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('journal-search-field')), findsNothing);
     expect(find.text('The burned mill looms.'), findsOneWidget);
@@ -126,8 +130,7 @@ void main() {
     expect(find.textContaining('Yes, and…\n#heir'), findsOneWidget);
   });
 
-  testWidgets('Tags… dialog removes a tag via the chip delete',
-      (tester) async {
+  testWidgets('Tags… dialog removes a tag via the chip delete', (tester) async {
     final container = await pump(tester);
     await openTagsDialog(tester, 'Omen draw');
     await tester.tap(find.byTooltip('Delete')); // InputChip delete (×)

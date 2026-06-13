@@ -245,6 +245,11 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   @override
+  Future<String> summarize(List<String> entries) async {
+    return parseSummary(await _generate(buildSummaryPrompt(entries)));
+  }
+
+  @override
   Future<void> dispose() async {
     _disposed = true; // an in-flight warm-up must not resurrect us
     await _model?.close();

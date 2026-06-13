@@ -51,6 +51,8 @@ to jump back to the tool that produced them.
 
 - Mentions: type `@` in the journal to link a character or thread; mentions render as tappable links and filter the journal. Save an NPC or location result as a tracked entity in one tap.
 
+- The journal helps you keep track: it suggests recurring people to track as characters, and (with the model) gives a "previously on" recap of recent play via `/recap`.
+
 - **Oracle interpreter (on-device AI, optional):** any oracle result in the
   journal can be expanded into four short readings — literal, symbolic,
   complication, foreshadow — by a small language model that runs entirely

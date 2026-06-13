@@ -153,6 +153,37 @@ tool, original-wording quick-references for all seven supported systems,
 credits page with every content license + Flutter's package LicensePage),
 plus a per-tool "?" deep link in the tool host.
 
+## Cycle 4: The Living Journal (started 2026-06-12)
+
+Spec: `docs/superpowers/specs/2026-06-12-cycle4-living-journal-design.md`.
+Driven by the 2026-06-12 competitive rescan: RPG Spark v3 and the Mythic GME
+2e app now pair oracles with a journal (@mentions/#tags), iron-vault sets the
+mechanics-in-prose bar, and on-device oracle interpretation remains an empty
+category. Cycle 4 closes the "journal is home but passive" gap and deepens
+both moats — the journal becomes a command surface and a living wiki.
+
+| Phase | Item | Status |
+|---|---|---|
+| 1 | Command registry + structured journal entries (re-roll, open-in-tool) | **Done** — PR #33 |
+| 2 | Slash command palette in the composer | **Done** — PR #34 |
+| 3 | Collapsible campaign header + per-campaign default oracle | **Done** — PR #35 |
+| 4 | Per-campaign system profiles (scope drawer/palette/header) | **Done** — PR #36 |
+| 5 | Entity `@`-mentions + save-NPC/location-as-entity + character filter | **Done** — PR #37 |
+| 6 | Ask-anything (`?`/`/ask`) + voice any dialog-shaped entry (C1, C4) | **Done** — PR #38 |
+| 7 | Heuristic entity suggestions + `/recap` & "previously on" (C3, C2) | **Done** — PR #39 |
+
+**Cycle 4 complete** (2026-06-13, PRs #33–#39). The journal now answers
+questions in one entry, scopes itself to the campaign's systems, links and
+suggests entities, and recaps play on device. Patterns carried forward:
+additive-and-tolerant JSON (every new field omitted at its default, legacy
+campaigns byte-stable), structured payloads with flat fallback, and
+press-time fresh reads on every read-modify-write. Deferred: LLM
+`suggestOdds` pre-selection (manual odds shipped), mention rename
+re-propagation (label frozen, nav by id), B3 scene start/end loop, the
+D-theme pass (typography / genre themes / Cmd-K), and store distribution
+(web-first holds). Open user actions unchanged: web model mirror swap
+(release gate), discoverability submissions, physical-device interpreter pass.
+
 ## Cloud storage stance (BYO cloud, no server)
 
 The app stays standalone with no server component and no network code.

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/command_registry.dart';
+import '../engine/entity_suggestions.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
@@ -63,6 +64,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinScene = 'scene';
   static const _builtinHelp = 'help';
   static const _builtinAsk = 'ask';
+  static const _builtinRecap = 'recap';
 
   @override
   void initState() {
@@ -124,6 +126,167 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         ),
       );
+
+  /// "Track this?" chips for recurring people the journal isn't tracking yet.
+  Widget _suggestionRow() {
+    final entries =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final existingChars = {
+      for (final c
+          in (ref.watch(charactersProvider).valueOrNull ?? const <Character>[]))
+        c.name.toLowerCase()
+    };
+    final existingThreads = {
+      for (final t
+          in (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[]))
+        t.title.toLowerCase()
+    };
+    final dismissed =
+        ref.watch(dismissedSuggestionsProvider).valueOrNull ?? const <String>{};
+    final suggestions = suggestEntities(entries,
+            existingCharNames: existingChars,
+            existingThreadTitles: existingThreads,
+            dismissed: dismissed)
+        .take(3)
+        .toList();
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final s in suggestions)
+            InputChip(
+              key: Key(
+                  'suggest-${s.kind == SuggestionKind.character ? 'character' : 'thread'}-${s.name.toLowerCase()}'),
+              avatar: Icon(
+                  s.kind == SuggestionKind.character
+                      ? Icons.person_add_alt
+                      : Icons.bookmark_add_outlined,
+                  size: 16),
+              label: Text('Track ${s.name}?'),
+              onPressed: () => _acceptSuggestion(s),
+              onDeleted: () => ref
+                  .read(dismissedSuggestionsProvider.notifier)
+                  .dismiss(suggestionKey(s.kind, s.name)),
+              deleteIcon: Icon(Icons.close,
+                  key: Key('suggest-dismiss-${suggestionKey(s.kind, s.name)}'),
+                  size: 16),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _acceptSuggestion(EntitySuggestion s) async {
+    if (s.kind == SuggestionKind.character) {
+      await ref.read(charactersProvider.notifier).addReturningId(s.name);
+    } else {
+      await ref.read(threadsProvider.notifier).addReturningId(s.name);
+    }
+  }
+
+  /// Entries since the last scene divider (oldest first). Storage is
+  /// newest-first; with no scene, the most recent ten entries are used.
+  List<JournalEntry> _entriesSinceLastScene(List<JournalEntry> entries) {
+    final since = <JournalEntry>[];
+    for (final e in entries) {
+      if (e.kind == JournalKind.scene) break;
+      since.add(e);
+    }
+    final slice = since.isEmpty ? entries.take(10).toList() : since;
+    return slice.reversed.toList(); // oldest first
+  }
+
+  Future<void> _recap() async {
+    if (!_canVoice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Recap needs the on-device model.')));
+      return;
+    }
+    final entries = ref.read(journalProvider).valueOrNull ?? const [];
+    if (entries.isEmpty) return;
+    final since = _entriesSinceLastScene(entries);
+    final texts = [
+      for (final e in since) e.title.isEmpty ? e.body : '${e.title}: ${e.body}',
+    ];
+    String summary;
+    try {
+      summary = await ref.read(interpreterServiceProvider).summarize(texts);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Recap failed: $e')));
+      }
+      return;
+    }
+    // Cache against the newest entry so the banner can reuse it, and mark seen.
+    await ref
+        .read(recapCacheProvider.notifier)
+        .cacheSummary(entries.first.id, summary);
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Previously…'),
+        content: Text(summary),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "Previously on…" nudge shown when there are entries the player hasn't
+  /// recapped since last visit (and the model is available to do it).
+  Widget _recapBanner(List<JournalEntry> entries) {
+    if (entries.isEmpty || !_canVoice) return const SizedBox.shrink();
+    final cache = ref.watch(recapCacheProvider).valueOrNull;
+    if (cache != null && cache.lastSeenId == entries.first.id) {
+      return const SizedBox.shrink(); // already seen the latest
+    }
+    final theme = Theme.of(context);
+    return Container(
+      key: const Key('recap-banner'),
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.history_edu_outlined,
+              size: 18, color: theme.colorScheme.onSecondaryContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('Returning to this campaign?',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.onSecondaryContainer)),
+          ),
+          TextButton(
+            key: const Key('recap-action'),
+            onPressed: _recap,
+            child: const Text('Recap'),
+          ),
+          IconButton(
+            key: const Key('recap-dismiss'),
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.close, size: 18),
+            tooltip: 'Dismiss',
+            onPressed: () => ref
+                .read(recapCacheProvider.notifier)
+                .markSeen(entries.first.id),
+          ),
+        ],
+      ),
+    );
+  }
 
   Future<void> _ask(String question) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
@@ -232,6 +395,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               }
               return Column(
                 children: [
+                  _recapBanner(entries),
                   const _CampaignHeader(),
                   if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     SizedBox(
@@ -362,6 +526,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           _mentionPanel()
         else if (_askActive)
           _askChip(),
+        _suggestionRow(),
         _composerBar(),
       ],
     );
@@ -549,6 +714,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showScene = _builtinScene.startsWith(tok);
     final showHelp = _builtinHelp.startsWith(tok);
     final showAsk = _builtinAsk.startsWith(tok);
+    final showRecap = _builtinRecap.startsWith(tok) && _canVoice;
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -606,7 +772,22 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   // type their question.
                 },
               ),
-            if (matches.isEmpty && !showScene && !showHelp && !showAsk)
+            if (showRecap)
+              ListTile(
+                key: const Key('slash-cmd-recap'),
+                dense: true,
+                leading: const Icon(Icons.history_edu_outlined),
+                title: const Text('Recap recent play'),
+                onTap: () {
+                  _composer.clear();
+                  _recap();
+                },
+              ),
+            if (matches.isEmpty &&
+                !showScene &&
+                !showHelp &&
+                !showAsk &&
+                !showRecap)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text('No matching command'),
@@ -763,6 +944,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinHelp == tok) {
         _composer.clear();
         if (mounted) ToolHost.openToolIfKnown(context, 'help');
+        return;
+      }
+      if (_builtinRecap == tok) {
+        _composer.clear();
+        await _recap();
         return;
       }
       if (_builtinAsk == tok) {
