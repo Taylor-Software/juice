@@ -395,21 +395,40 @@ class HexCell {
     required this.row,
     required this.envRow,
     this.lost = false,
+    this.terrain,
+    this.pois = const [],
   });
   final int col;
   final int row;
   final int envRow; // 1..10 -> wilderness_environment table
   final bool lost;
+  final String? terrain; // Verdant terrain key, e.g. 'forest'; null = Juice env
+  final List<int> pois; // Verdant Points of Interest numbers (1..12)
 
-  HexCell copyWith({int? envRow, bool? lost}) => HexCell(
+  HexCell copyWith({
+    int? envRow,
+    bool? lost,
+    String? terrain,
+    bool clearTerrain = false,
+    List<int>? pois,
+  }) =>
+      HexCell(
         col: col,
         row: row,
         envRow: envRow ?? this.envRow,
         lost: lost ?? this.lost,
+        terrain: clearTerrain ? null : (terrain ?? this.terrain),
+        pois: pois ?? this.pois,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'col': col, 'row': row, 'envRow': envRow, 'lost': lost};
+  Map<String, dynamic> toJson() => {
+        'col': col,
+        'row': row,
+        'envRow': envRow,
+        'lost': lost,
+        if (terrain != null) 'terrain': terrain,
+        if (pois.isNotEmpty) 'pois': pois,
+      };
 
   /// Parses one hex entry; null for anything without a map shape and int
   /// coordinates. envRow clamps into the table range 1..10.
@@ -420,6 +439,8 @@ class HexCell {
       row: j['row'] as int,
       envRow: ((j['envRow'] as int?) ?? 1).clamp(1, 10),
       lost: (j['lost'] as bool?) ?? false,
+      terrain: j['terrain'] as String?,
+      pois: ((j['pois'] as List?) ?? const []).whereType<int>().toList(),
     );
   }
 }
@@ -724,7 +745,7 @@ class CrawlState {
 
 /// The optional systems a campaign can enable; dice, encounter, the
 /// tracker, and help are always available (core).
-const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party'};
+const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 
 /// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {

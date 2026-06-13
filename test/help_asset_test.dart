@@ -76,6 +76,7 @@ void main() {
       'threads-characters',
       'encounter',
       'maps',
+      'verdant',
       'moves',
       'interpreter',
     ]);

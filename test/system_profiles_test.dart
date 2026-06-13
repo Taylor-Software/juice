@@ -5,8 +5,8 @@ import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  test('kAllSystems is the four optional systems', () {
-    expect(kAllSystems, {'juice', 'mythic', 'ironsworn', 'party'});
+  test('kAllSystems is the five optional systems', () {
+    expect(kAllSystems, {'juice', 'mythic', 'ironsworn', 'party', 'verdant'});
   });
 
   test('legacy meta (no systems) enables all', () {
