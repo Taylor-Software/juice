@@ -297,10 +297,15 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    OutlinedButton(
-                      onPressed: () => setState(() => _mythicLast =
-                          widget.oracle.mythicMeaning(_meaningId)),
-                      child: const Text('Meaning'),
+                    // Flexible bounds the button: a bare Material button as a
+                    // non-flex Row child next to a flex sibling is measured at
+                    // maxWidth:Infinity and throws under the loose tool host.
+                    Flexible(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => _mythicLast =
+                            widget.oracle.mythicMeaning(_meaningId)),
+                        child: const Text('Meaning'),
+                      ),
                     ),
                   ],
                 ),

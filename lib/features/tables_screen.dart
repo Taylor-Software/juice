@@ -36,14 +36,19 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
               Expanded(
                 child: Text('Tables', style: theme.textTheme.headlineSmall),
               ),
-              SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: -1, label: Text('Dis')),
-                  ButtonSegment(value: 0, label: Text('—')),
-                  ButtonSegment(value: 1, label: Text('Adv')),
-                ],
-                selected: {_skew},
-                onSelectionChanged: (s) => setState(() => _skew = s.first),
+              // Flexible bounds the button: a bare SegmentedButton as a
+              // non-flex Row child next to the Expanded above is measured at
+              // maxWidth:Infinity and throws under the loose tool host.
+              Flexible(
+                child: SegmentedButton<int>(
+                  segments: const [
+                    ButtonSegment(value: -1, label: Text('Dis')),
+                    ButtonSegment(value: 0, label: Text('—')),
+                    ButtonSegment(value: 1, label: Text('Adv')),
+                  ],
+                  selected: {_skew},
+                  onSelectionChanged: (s) => setState(() => _skew = s.first),
+                ),
               ),
             ],
           ),
@@ -62,8 +67,8 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                   subtitle: rolled == null
                       ? null
                       : Text('${rolled.value}  ·  ${rolled.detail}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary)),
+                          style: theme.textTheme.bodyMedium
+                              ?.copyWith(color: theme.colorScheme.primary)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

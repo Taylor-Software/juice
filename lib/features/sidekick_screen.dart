@@ -80,11 +80,23 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
             ),
           ),
           Expanded(
-            child: TabBarView(
-              children: [
-                _dialogueTab(context, data, chars, selected),
-                _hexTab(context, data, selected),
-              ],
+            // IndexedStack (not TabBarView): TabBarView's PageView hands pages
+            // unbounded width under the loose tool host → freeze. Same fix as
+            // the Maps tool.
+            child: Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return AnimatedBuilder(
+                  animation: controller,
+                  builder: (context, _) => IndexedStack(
+                    index: controller.index,
+                    children: [
+                      _dialogueTab(context, data, chars, selected),
+                      _hexTab(context, data, selected),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
         ],
