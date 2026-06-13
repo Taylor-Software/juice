@@ -1,6 +1,14 @@
 # Cycle 4 — The Living Journal (design)
 
-Date: 2026-06-12. Status: approved, in progress.
+Date: 2026-06-12. Status: **shipped** (PRs #33–#39, 2026-06-13).
+
+> Shipped phase→PR map: §1-2 command registry + structured entries → PR #33;
+> §3 slash palette → #34; §5 campaign header + default oracle → #35; §6 system
+> profiles → #36; §4 entity mentions + save-as-entity → #37; §7 C1/C4
+> ask-anything + voice → #38; §7 C3/C2 suggestions + recap → #39. Deferred:
+> LLM `suggestOdds` pre-selection (manual odds shipped); mention rename
+> re-propagation (label frozen, nav by id); B3 scene loop, D-theme
+> (typography/genre themes/Cmd-K), store distribution.
 
 ## Competitive context (2026-06-12 rescan)
 
