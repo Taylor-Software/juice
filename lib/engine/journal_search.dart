@@ -2,6 +2,7 @@
 /// interpreter's recall ranking. No Flutter.
 library;
 
+import 'mention_parser.dart';
 import 'models.dart';
 
 /// Case-insensitive multi-term search. Every whitespace-separated term in
@@ -19,7 +20,8 @@ List<JournalEntry> searchEntries(List<JournalEntry> entries, String query) {
   if (terms.isEmpty) return entries;
   return entries.where((e) {
     final haystack =
-        '${e.title}\n${e.body}\n${e.tags.join('\n')}'.toLowerCase();
+        '${e.title}\n${mentionsToPlain(e.body)}\n${e.tags.join('\n')}'
+            .toLowerCase();
     return terms.every(haystack.contains);
   }).toList();
 }
@@ -36,9 +38,31 @@ List<String> allTags(List<JournalEntry> entries) {
 
 /// Words too common to signal relatedness. Tiny and boring on purpose.
 const Set<String> _stopwords = {
-  'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'on', 'at', 'is', 'was',
-  'are', 'it', 'its', 'with', 'for', 'as', 'but', 'by', 'from', 'this',
-  'that', 'you', 'your',
+  'the',
+  'a',
+  'an',
+  'and',
+  'or',
+  'of',
+  'to',
+  'in',
+  'on',
+  'at',
+  'is',
+  'was',
+  'are',
+  'it',
+  'its',
+  'with',
+  'for',
+  'as',
+  'but',
+  'by',
+  'from',
+  'this',
+  'that',
+  'you',
+  'your',
 };
 
 /// Lowercase alphanumeric words of length >= 3, minus [_stopwords].

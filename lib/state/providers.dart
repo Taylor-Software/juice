@@ -167,6 +167,12 @@ class ThreadNotifier extends _PersistedList<Thread> {
     ]);
   }
 
+  Future<String> addReturningId(String title) async {
+    final id = _newId();
+    await _persist([Thread(id: id, title: title), ...await _ready]);
+    return id;
+  }
+
   Future<void> replace(Thread thread) async {
     await _persist([
       for (final t in await _ready)
@@ -210,6 +216,12 @@ class CharacterNotifier extends _PersistedList<Character> {
       Character(id: _newId(), name: name),
       ...await _ready,
     ]);
+  }
+
+  Future<String> addReturningId(String name) async {
+    final id = _newId();
+    await _persist([Character(id: id, name: name), ...await _ready]);
+    return id;
   }
 
   Future<void> replace(Character character) async {

@@ -9,8 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/command_registry.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
+import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
+import '../shared/mention_text.dart';
 import '../shared/tool_host.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
@@ -44,10 +46,14 @@ class JournalScreen extends ConsumerStatefulWidget {
 class _JournalScreenState extends ConsumerState<JournalScreen> {
   String? _filterThreadId;
   String? _filterTag;
+  String? _filterCharId;
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final TextEditingController _search = TextEditingController();
   bool _slashActive = false;
+
+  // Active @-mention query (text from the last '@' to the caret), or null.
+  String? _mentionQuery;
 
   // Built-in (non-registry) slash commands handled inline.
   static const _builtinScene = 'scene';
@@ -60,12 +66,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _onComposerChanged() {
-    final isSlash = _composer.text.startsWith('/');
-    if (isSlash != _slashActive) {
-      setState(() => _slashActive = isSlash);
-    } else if (isSlash) {
-      setState(() {}); // refilter as the token changes
+    final text = _composer.text;
+    final slash = text.startsWith('/');
+    // baseOffset is -1 when no explicit selection; treat as end-of-text.
+    final rawSel = _composer.selection.baseOffset;
+    final sel = rawSel < 0 ? text.length : rawSel;
+    String? mention;
+    if (!slash && sel > 0) {
+      final upToCaret = text.substring(0, sel);
+      final at = upToCaret.lastIndexOf('@');
+      if (at >= 0 && !upToCaret.substring(at).contains(' ')) {
+        mention = upToCaret.substring(at + 1);
+      }
     }
+    setState(() {
+      _slashActive = slash;
+      _mentionQuery = mention;
+    });
   }
 
   @override
@@ -82,6 +99,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // Watch the oracle so payload entries gain their re-roll affordance once
     // it finishes loading (re-roll runs a command against it).
     ref.watch(oracleProvider);
+    // Pre-subscribe so _mentionPanel() sees loaded data on first render.
+    ref.watch(charactersProvider);
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
@@ -104,6 +123,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               // (oldest at top) while anchoring the viewport at the newest
               // entry, chat-style.
               final tags = allTags(entries);
+              // Characters referenced by mentions anywhere in the journal.
+              final mentionedChars = <String>{
+                for (final e in entries) ...mentionedCharIds(e.body),
+              };
+              final chars = (ref.watch(charactersProvider).valueOrNull ??
+                      const <Character>[])
+                  .where((c) => mentionedChars.contains(c.id))
+                  .toList();
               var visible = _filterThreadId == null
                   ? entries
                   : entries
@@ -113,13 +140,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 visible =
                     visible.where((e) => e.tags.contains(_filterTag)).toList();
               }
+              if (_filterCharId != null) {
+                visible = visible
+                    .where(
+                        (e) => mentionedCharIds(e.body).contains(_filterCharId))
+                    .toList();
+              }
               if (_searching) {
                 visible = searchEntries(visible, _search.text);
               }
               return Column(
                 children: [
                   const _CampaignHeader(),
-                  if (threads.isNotEmpty || tags.isNotEmpty)
+                  if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     SizedBox(
                       height: 48,
                       child: ListView(
@@ -130,11 +163,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
                               label: const Text('All'),
-                              selected:
-                                  _filterThreadId == null && _filterTag == null,
+                              selected: _filterThreadId == null &&
+                                  _filterTag == null &&
+                                  _filterCharId == null,
                               onSelected: (_) => setState(() {
                                 _filterThreadId = null;
                                 _filterTag = null;
+                                _filterCharId = null;
                               }),
                             ),
                           ),
@@ -157,6 +192,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                                 selected: _filterTag == tag,
                                 onSelected: (_) => setState(() => _filterTag =
                                     _filterTag == tag ? null : tag),
+                              ),
+                            ),
+                          for (final c in chars)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: FilterChip(
+                                key: Key('char-filter-${c.id}'),
+                                avatar: const Icon(Icons.person, size: 16),
+                                label: Text(c.name),
+                                selected: _filterCharId == c.id,
+                                onSelected: (_) => setState(() =>
+                                    _filterCharId =
+                                        _filterCharId == c.id ? null : c.id),
                               ),
                             ),
                         ],
@@ -228,6 +276,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         ),
         if (_slashActive) _slashPalette(),
+        if (_mentionQuery != null) _mentionPanel(),
         _composerBar(),
       ],
     );
@@ -242,11 +291,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final canInterpret = e.kind == JournalKind.result &&
         ref.read(interpreterServiceProvider).status.value.phase !=
             InterpreterPhase.unsupported;
+    final saveAs = _saveAsKind(e);
     final menu = PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),
       itemBuilder: (_) => [
         if (canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
+        if (saveAs != null)
+          PopupMenuItem(
+              value: 'save-entity',
+              child: Text(saveAs == MentionKind.character
+                  ? 'Save as character'
+                  : 'Save as thread')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
         const PopupMenuItem(value: 'tags', child: Text('Tags…')),
         const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
@@ -282,7 +338,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         final extras = _suffixLines(e, threadTitle);
         return Card(
           child: ListTile(
-            title: Text(e.body),
+            title: MentionText(e.body,
+                onCharacterTap: _openCharacter, onThreadTap: _openThread),
             subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
             trailing: menu,
           ),
@@ -304,12 +361,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                           const SnackBar(content: Text('Tool not available')));
                     }
                   },
+            onCharacterTap: _openCharacter,
+            onThreadTap: _openThread,
           );
         }
         return Card(
           child: ListTile(
             title: Text(e.title),
-            subtitle: Text([e.body, ...extras].join('\n')),
+            subtitle: MentionText(
+              [e.body, ...extras].join('\n'),
+              onCharacterTap: _openCharacter,
+              onThreadTap: _openThread,
+            ),
             trailing: menu,
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
           ),
@@ -446,6 +509,85 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     await _runCommand(c,
         odds: odds,
         notation: c.arg == CommandArg.notation ? (parsed?.rest ?? '') : null);
+  }
+
+  // -- Mention autocomplete ---------------------------------------------------
+
+  void _insertMention(String display, MentionKind kind, String id) {
+    final text = _composer.text;
+    final rawSel = _composer.selection.baseOffset;
+    final sel = rawSel < 0 ? text.length : rawSel;
+    final at = text.substring(0, sel).lastIndexOf('@');
+    final token = '${mentionToken(display, kind, id)} ';
+    final next = text.replaceRange(at, sel, token);
+    _composer.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: at + token.length),
+    );
+    setState(() => _mentionQuery = null);
+  }
+
+  Widget _mentionPanel() {
+    final query = _mentionQuery ?? '';
+    final lower = query.toLowerCase();
+    final chars =
+        (ref.watch(charactersProvider).valueOrNull ?? const <Character>[])
+            .where((c) => c.name.toLowerCase().contains(lower))
+            .toList();
+    final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
+        .where((t) => t.open && t.title.toLowerCase().contains(lower))
+        .toList();
+    if (chars.isEmpty && threads.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Material(
+      key: const Key('mention-panel'),
+      color: theme.colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        constraints: const BoxConstraints(maxHeight: 280),
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: [
+            if (chars.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('Characters',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final c in chars)
+                ListTile(
+                  key: Key('mention-char-${c.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.person_outline, size: 18),
+                  title: Text(c.name),
+                  onTap: () =>
+                      _insertMention(c.name, MentionKind.character, c.id),
+                ),
+            ],
+            if (threads.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('Threads',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final t in threads)
+                ListTile(
+                  key: Key('mention-thread-${t.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.link, size: 18),
+                  title: Text(t.title),
+                  onTap: () =>
+                      _insertMention(t.title, MentionKind.thread, t.id),
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 
   // -- Composer ---------------------------------------------------------------
@@ -625,12 +767,44 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   // -- Entry actions ----------------------------------------------------------
 
+  /// Which entity a result entry can be saved as, or null. NPC results
+  /// become characters; exploration/location results become threads.
+  MentionKind? _saveAsKind(JournalEntry e) {
+    if (e.kind != JournalKind.result) return null;
+    return switch (e.sourceTool) {
+      'gen-npcs' => MentionKind.character,
+      'gen-exploration' => MentionKind.thread,
+      _ => null,
+    };
+  }
+
+  Future<void> _saveAsEntity(JournalEntry entry) async {
+    final kind = _saveAsKind(entry)!;
+    final name = entry.payload?['summary'] as String? ??
+        (entry.payload?['rolls'] as List?)
+            ?.cast<Map<String, dynamic>>()
+            .firstOrNull?['display'] as String? ??
+        entry.title;
+    final id = kind == MentionKind.character
+        ? await ref.read(charactersProvider.notifier).addReturningId(name)
+        : await ref.read(threadsProvider.notifier).addReturningId(name);
+    // Re-read fresh so the backfill can't clobber a concurrent edit.
+    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
+        .where((x) => x.id == entry.id)
+        .firstOrNull;
+    if (fresh == null) return;
+    await ref.read(journalProvider.notifier).replace(
+        fresh.copyWith(body: '${fresh.body}\n${mentionToken(name, kind, id)}'));
+  }
+
   Future<void> _onAction(
       String action, JournalEntry entry, List<Thread> threads) async {
     final notifier = ref.read(journalProvider.notifier);
     switch (action) {
       case 'interpret':
         await _interpret(entry);
+      case 'save-entity':
+        await _saveAsEntity(entry);
       case 'delete':
         await notifier.remove(entry.id);
       case 'link':
@@ -684,6 +858,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             : entry.copyWith(title: result.title.trim(), body: result.note));
     }
   }
+
+  void _openCharacter(String id) =>
+      ToolHost.openToolIfKnown(context, 'threads-characters');
+
+  void _openThread(String id) => setState(() => _filterThreadId = id);
 
   /// Latest scene entry (storage is newest-first), as model context.
   String _sceneContext() {
@@ -1195,6 +1374,8 @@ class _PayloadCard extends StatelessWidget {
     required this.menu,
     this.onReroll,
     this.onOpenTool,
+    this.onCharacterTap,
+    this.onThreadTap,
   });
 
   final JournalEntry entry;
@@ -1202,6 +1383,8 @@ class _PayloadCard extends StatelessWidget {
   final Widget menu;
   final VoidCallback? onReroll;
   final VoidCallback? onOpenTool;
+  final void Function(String id)? onCharacterTap;
+  final void Function(String id)? onThreadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1278,7 +1461,12 @@ class _PayloadCard extends StatelessWidget {
               ),
             if (remainder.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(remainder, style: theme.textTheme.bodyMedium),
+              MentionText(
+                remainder,
+                style: theme.textTheme.bodyMedium,
+                onCharacterTap: onCharacterTap,
+                onThreadTap: onThreadTap,
+              ),
             ],
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 6),

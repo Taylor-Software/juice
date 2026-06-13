@@ -129,8 +129,8 @@ void main() {
     });
 
     test('scene entries are never candidates', () {
-      final scene = entry(
-          id: 's', title: 'The mill gate', kind: JournalKind.scene);
+      final scene =
+          entry(id: 's', title: 'The mill gate', kind: JournalKind.scene);
       expect(relatedEntries([scene], target), isEmpty);
     });
 
@@ -168,8 +168,8 @@ void main() {
     });
 
     test('stopwords and short words never match', () {
-      final stoppy = entry(
-          id: 'st', title: 'Of an it', body: 'The of an to in is.');
+      final stoppy =
+          entry(id: 'st', title: 'Of an it', body: 'The of an to in is.');
       final shared = entry(id: 'sh', body: 'The of an it ox.');
       // Every word the two share is a stopword or under 3 letters -> score 0.
       expect(relatedEntries([shared], stoppy), isEmpty);
@@ -199,5 +199,16 @@ void main() {
         tags: const ['omens']);
     expect(searchEntries([tagged], '#omens'), [tagged]);
     expect(searchEntries([tagged], '#'), [tagged]); // bare '#' -> no terms
+  });
+
+  test('mention body: searching by display name matches; token noise does not',
+      () {
+    final e = entry(
+        id: 'm',
+        body: 'Met @[Mara](char:c1) at the gate.',
+        kind: JournalKind.text);
+    expect(searchEntries([e], 'Mara').map((x) => x.id), ['m']);
+    // The raw token's id/kind must not be searchable.
+    expect(searchEntries([e], 'char:c1'), isEmpty);
   });
 }
