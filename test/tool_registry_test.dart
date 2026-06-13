@@ -22,8 +22,8 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(17));
-    expect(buildToolRegistry(family: ['classic']), hasLength(18));
+    expect(tools, hasLength(18));
+    expect(buildToolRegistry(family: ['classic']), hasLength(19));
     expect(
         tools.map((t) => t.id),
         containsAll([
@@ -40,6 +40,7 @@ void main() {
           'tables',
           'encounter',
           'maps',
+          'verdant',
           'party-emulator',
           'sidekick-dialogue',
           'behavior-tables',
@@ -103,7 +104,14 @@ void main() {
           reason: 'toolSystem missing entry for $id');
     }
     // All values are in the expected system set.
-    const validSystems = {'juice', 'mythic', 'ironsworn', 'party', 'core'};
+    const validSystems = {
+      'juice',
+      'mythic',
+      'ironsworn',
+      'party',
+      'verdant',
+      'core'
+    };
     for (final v in toolSystem.values) {
       expect(validSystems.contains(v), isTrue, reason: 'unknown system $v');
     }

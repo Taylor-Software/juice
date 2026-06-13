@@ -110,11 +110,12 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
 
-    // All four system checkboxes are present and checked by default.
+    // All five system checkboxes are present and checked by default.
     expect(find.byKey(const Key('sys-juice')), findsOneWidget);
     expect(find.byKey(const Key('sys-mythic')), findsOneWidget);
     expect(find.byKey(const Key('sys-ironsworn')), findsOneWidget);
     expect(find.byKey(const Key('sys-party')), findsOneWidget);
+    expect(find.byKey(const Key('sys-verdant')), findsOneWidget);
 
     // Uncheck party.
     await tester.tap(find.byKey(const Key('sys-party')));
@@ -129,13 +130,13 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
     await tester.pumpAndSettle();
 
-    // The new campaign is active and excludes party.
+    // The new campaign is active, excludes party, and includes verdant.
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
     final s = await container.read(sessionsProvider.future);
     expect(s.activeMeta.name, 'No Party');
     expect(s.activeMeta.enabledSystems, isNot(contains('party')));
     expect(s.activeMeta.enabledSystems,
-        containsAll(['juice', 'mythic', 'ironsworn']));
+        containsAll(['juice', 'mythic', 'ironsworn', 'verdant']));
   });
 }

@@ -14,6 +14,7 @@ import '../features/party_emulator_screen.dart';
 import '../features/sidekick_screen.dart';
 import '../features/tables_screen.dart';
 import '../features/tracker_screen.dart';
+import '../features/verdant_screen.dart';
 
 /// A tool the launcher can summon over the journal.
 class ToolDef {
@@ -67,6 +68,7 @@ const toolSystem = <String, String>{
   'behavior-tables': 'party',
   'gen-exploration': 'juice',
   'maps': 'juice',
+  'verdant': 'verdant',
   'gen-encounters': 'juice',
   'encounter': 'core',
   'gen-details': 'juice',
@@ -94,6 +96,7 @@ const toolHelpPage = <String, String>{
   'threads-characters': 'threads-characters',
   'encounter': 'encounter',
   'maps': 'maps',
+  'verdant': 'verdant',
   'moves': 'moves',
 };
 
@@ -194,6 +197,14 @@ List<ToolDef> buildToolRegistry({
       group: 'Exploration',
       badge: 'Juice',
       builder: (o) => MapScreen(oracle: o!),
+    ),
+    ToolDef(
+      id: 'verdant',
+      label: 'Verdant Journey',
+      icon: Icons.forest_outlined,
+      group: 'Exploration',
+      badge: 'Verdant',
+      builder: (o) => VerdantScreen(oracle: o!),
     ),
     ToolDef(
       id: 'gen-encounters',

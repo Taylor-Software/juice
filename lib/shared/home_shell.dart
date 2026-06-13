@@ -323,7 +323,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 }
 
-/// Dialog for creating a new campaign: name field + four system checkboxes.
+/// Dialog for creating a new campaign: name field + five system checkboxes.
 /// Returns `({String name, Set<String> systems})?`; null on cancel.
 class _NewCampaignDialog extends StatefulWidget {
   const _NewCampaignDialog();
@@ -338,6 +338,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
   bool _mythic = true;
   bool _ironsworn = true;
   bool _party = true;
+  bool _verdant = true;
 
   @override
   void dispose() {
@@ -351,6 +352,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
       if (_mythic) 'mythic',
       if (_ironsworn) 'ironsworn',
       if (_party) 'party',
+      if (_verdant) 'verdant',
     };
     Navigator.of(context).pop((name: _controller.text, systems: picked));
   }
@@ -392,6 +394,12 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
             title: const Text('Party emulator'),
             value: _party,
             onChanged: (v) => setState(() => _party = v ?? true),
+          ),
+          CheckboxListTile(
+            key: const Key('sys-verdant'),
+            title: const Text('Verdant Hexcrawling'),
+            value: _verdant,
+            onChanged: (v) => setState(() => _verdant = v ?? true),
           ),
         ],
       ),

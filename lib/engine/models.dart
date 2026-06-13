@@ -745,7 +745,7 @@ class CrawlState {
 
 /// The optional systems a campaign can enable; dice, encounter, the
 /// tracker, and help are always available (core).
-const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party'};
+const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 
 /// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {
