@@ -11,6 +11,7 @@ import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
+import '../shared/mention_text.dart';
 import '../shared/tool_host.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
@@ -282,7 +283,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         final extras = _suffixLines(e, threadTitle);
         return Card(
           child: ListTile(
-            title: Text(e.body),
+            title: MentionText(e.body,
+                onCharacterTap: _openCharacter, onThreadTap: _openThread),
             subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
             trailing: menu,
           ),
@@ -304,12 +306,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                           const SnackBar(content: Text('Tool not available')));
                     }
                   },
+            onCharacterTap: _openCharacter,
+            onThreadTap: _openThread,
           );
         }
         return Card(
           child: ListTile(
             title: Text(e.title),
-            subtitle: Text([e.body, ...extras].join('\n')),
+            subtitle: MentionText(
+              [e.body, ...extras].join('\n'),
+              onCharacterTap: _openCharacter,
+              onThreadTap: _openThread,
+            ),
             trailing: menu,
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
           ),
@@ -684,6 +692,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             : entry.copyWith(title: result.title.trim(), body: result.note));
     }
   }
+
+  void _openCharacter(String id) =>
+      ToolHost.openToolIfKnown(context, 'threads-characters');
+
+  void _openThread(String id) => setState(() => _filterThreadId = id);
 
   /// Latest scene entry (storage is newest-first), as model context.
   String _sceneContext() {
@@ -1195,6 +1208,8 @@ class _PayloadCard extends StatelessWidget {
     required this.menu,
     this.onReroll,
     this.onOpenTool,
+    this.onCharacterTap,
+    this.onThreadTap,
   });
 
   final JournalEntry entry;
@@ -1202,6 +1217,8 @@ class _PayloadCard extends StatelessWidget {
   final Widget menu;
   final VoidCallback? onReroll;
   final VoidCallback? onOpenTool;
+  final void Function(String id)? onCharacterTap;
+  final void Function(String id)? onThreadTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1278,7 +1295,12 @@ class _PayloadCard extends StatelessWidget {
               ),
             if (remainder.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(remainder, style: theme.textTheme.bodyMedium),
+              MentionText(
+                remainder,
+                style: theme.textTheme.bodyMedium,
+                onCharacterTap: onCharacterTap,
+                onThreadTap: onThreadTap,
+              ),
             ],
             if (extras.isNotEmpty) ...[
               const SizedBox(height: 6),
