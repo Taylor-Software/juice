@@ -53,10 +53,6 @@ Map<String, Object> _prefs({
 const _sceneJson =
     '{"id":"e1","timestamp":"2026-01-01T10:00:00.000Z","title":"The Gatehouse","body":"","kind":"scene","chaosFactor":6,"tags":[]}';
 
-// A plain text entry (no chaosFactor — no Mythic usage).
-const _textJson =
-    '{"id":"e2","timestamp":"2026-01-01T10:01:00.000Z","title":"","body":"Hello world","kind":"text","tags":[]}';
-
 // A pinned open thread.
 const _threadJson =
     '[{"id":"t1","title":"Find the Relic","open":true,"pinned":true}]';
@@ -124,8 +120,9 @@ void main() {
     expect(find.text('The Gatehouse'), findsWidgets);
   });
 
-  testWidgets('header shows Chaos chip when journal has a scene with chaos',
+  testWidgets('header shows Chaos chip when the profile enables Mythic',
       (tester) async {
+    // Default session prefs omit `systems` → all enabled → Mythic on.
     await _pump(
       tester,
       data,
@@ -134,13 +131,14 @@ void main() {
     expect(find.textContaining('Chaos 6'), findsWidgets);
   });
 
-  testWidgets('no chaos chip when journal has only text entries',
-      (tester) async {
-    await _pump(
-      tester,
-      data,
-      _prefs(journalJson: '[$_textJson]'),
-    );
+  testWidgets('no chaos chip when the profile excludes Mythic', (tester) async {
+    // A Juice-only campaign: chaos is a Mythic concept, so the dial hides
+    // even though crawl state carries a chaosFactor.
+    await _pump(tester, data, {
+      'juice.sessions.v1':
+          '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1","systems":["juice"]}]}',
+      'juice.crawl.v1.$_sid': _crawlJson,
+    });
     expect(find.textContaining('Chaos'), findsNothing);
   });
 

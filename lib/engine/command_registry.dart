@@ -119,6 +119,18 @@ List<CommandDef> matchCommands(List<CommandDef> registry, String token) {
       .toList();
 }
 
+/// Commands available under [systems]: core commands always, plus any whose
+/// system is enabled. 'roll-high' rides with the Juice profile (same Fate
+/// surface), matching tool_registry's toolSystem map.
+List<CommandDef> commandsForSystems(
+    List<CommandDef> registry, Set<String> systems) {
+  return registry.where((c) {
+    if (c.system == 'core') return true;
+    if (c.system == 'roll-high') return systems.contains('juice');
+    return systems.contains(c.system);
+  }).toList();
+}
+
 List<CommandDef> buildCommandRegistry() => [
       CommandDef(
         id: 'fate-juice',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/tool_registry.dart';
 
 void main() {
@@ -88,5 +89,66 @@ void main() {
     expect(tool.label, 'Sidekick Dialogue');
     expect(tool.badge, 'PET');
     expect(tool.icon, Icons.forum_outlined);
+  });
+
+  // -- System profile tests (Task 3) ------------------------------------------
+
+  test('toolSystem covers every possible tool id', () {
+    // The set of ids the registry can produce (with all systems + a family).
+    final allIds = buildToolRegistry(family: ['classic'], systems: kAllSystems)
+        .map((t) => t.id)
+        .toSet();
+    for (final id in allIds) {
+      expect(toolSystem.containsKey(id), isTrue,
+          reason: 'toolSystem missing entry for $id');
+    }
+    // All values are in the expected system set.
+    const validSystems = {'juice', 'mythic', 'ironsworn', 'party', 'core'};
+    for (final v in toolSystem.values) {
+      expect(validSystems.contains(v), isTrue, reason: 'unknown system $v');
+    }
+  });
+
+  test(
+      'juice-only profile includes fate-check, roll-high, gen-*, maps, tables '
+      'and core tools but excludes mythic and party tools', () {
+    final tools = buildToolRegistry(family: [], systems: {'juice'});
+    final ids = tools.map((t) => t.id).toSet();
+    // Included (juice + core).
+    expect(
+        ids,
+        containsAll([
+          'fate-check',
+          'roll-high',
+          'gen-story',
+          'gen-npcs',
+          'gen-exploration',
+          'maps',
+          'gen-encounters',
+          'gen-details',
+          'tables',
+          'dice',
+          'encounter',
+          'threads-characters',
+          'help'
+        ]));
+    // Excluded (mythic / party).
+    expect(ids, isNot(contains('mythic')));
+    expect(ids, isNot(contains('party-emulator')));
+    expect(ids, isNot(contains('behavior-tables')));
+    expect(ids, isNot(contains('sidekick-dialogue')));
+    // Moves absent because family is empty.
+    expect(ids, isNot(contains('moves')));
+  });
+
+  test('ironsworn disabled: moves absent even with a non-empty family', () {
+    final tools = buildToolRegistry(family: ['classic'], systems: {'juice'});
+    expect(tools.any((t) => t.id == 'moves'), isFalse);
+  });
+
+  test('ironsworn enabled with family: moves present', () {
+    final tools =
+        buildToolRegistry(family: ['classic'], systems: {'ironsworn', 'juice'});
+    expect(tools.any((t) => t.id == 'moves'), isTrue);
   });
 }

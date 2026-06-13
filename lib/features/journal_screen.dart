@@ -381,7 +381,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Widget _slashPalette() {
     final parsed = parseSlash(_composer.text);
     if (parsed == null) return const SizedBox.shrink();
-    final registry = buildCommandRegistry();
+    final systems =
+        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
+    final registry = commandsForSystems(buildCommandRegistry(), systems);
     // Built-ins surface when their name prefixes the token.
     final showScene = _builtinScene.startsWith(parsed.token.toLowerCase());
     final showHelp = _builtinHelp.startsWith(parsed.token.toLowerCase());
@@ -506,7 +509,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (mounted) ToolHost.openToolIfKnown(context, 'help');
         return;
       }
-      final matches = matchCommands(buildCommandRegistry(), parsed.token);
+      final systems =
+          ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems;
+      final matches = matchCommands(
+          commandsForSystems(buildCommandRegistry(), systems), parsed.token);
       if (matches.isNotEmpty) await _selectCommand(matches.first);
       return;
     }
@@ -966,9 +973,12 @@ class _CampaignHeader extends ConsumerWidget {
     final crawl = ref.watch(crawlProvider).valueOrNull;
     // Current scene: latest scene entry (storage newest-first).
     final scene = entries.where((e) => e.kind == JournalKind.scene).firstOrNull;
-    // Mythic usage signal: any scene entry carries a chaos snapshot.
-    final usesMythic = entries
-        .any((e) => e.kind == JournalKind.scene && e.chaosFactor != null);
+    // Chaos belongs to Mythic — show it only when the campaign's profile
+    // enables that system (phase-4 replaces the old scene-heuristic gate).
+    final systems =
+        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
+    final usesMythic = systems.contains('mythic');
     final theme = Theme.of(context);
     final collapsed = settings.headerCollapsed;
     return Container(

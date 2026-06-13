@@ -26,8 +26,9 @@ const _sessionPrefs = {
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
-Future<void> pumpPalette(WidgetTester tester, OracleData data) async {
-  SharedPreferences.setMockInitialValues(_sessionPrefs);
+Future<void> pumpPalette(WidgetTester tester, OracleData data,
+    {Map<String, Object>? prefs}) async {
+  SharedPreferences.setMockInitialValues(prefs ?? _sessionPrefs);
   final fake = FakeInterpreterService();
   final oracle = Oracle(data, Dice(Random(1)));
   tester.view.physicalSize = const Size(900, 2400);
@@ -226,6 +227,18 @@ void main() {
     await tester.enterText(find.byKey(const Key('journal-composer')), '/sc');
     await tester.pump();
     expect(find.byKey(const Key('slash-cmd-scene')), findsOneWidget);
+  });
+
+  testWidgets('juice-only profile hides the Mythic command', (tester) async {
+    await pumpPalette(tester, data, prefs: const {
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1","systems":["juice"]}]}',
+    });
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/fate');
+    await tester.pump();
+    expect(find.text('Fate Check (Juice)'), findsOneWidget);
+    expect(find.text('Fate Check (Roll High)'), findsOneWidget); // rides juice
+    expect(find.text('Fate Check (Mythic)'), findsNothing); // mythic off
   });
 
   testWidgets('bare / then Enter does nothing (no silent roll)',
