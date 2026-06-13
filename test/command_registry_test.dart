@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/command_registry.dart';
 import 'package:juice_oracle/engine/dice.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 
@@ -155,5 +156,35 @@ void main() {
           : rolls;
       expect(r.body, expected, reason: id);
     }
+  });
+
+  group('commandsForSystems', () {
+    final reg = buildCommandRegistry();
+
+    test('juice profile: juice gens + core + roll-high, no mythic', () {
+      final ids = commandsForSystems(reg, {'juice'}).map((c) => c.id).toSet();
+      expect(ids, containsAll(['fate-juice', 'meaning', 'name', 'detail']));
+      expect(ids, contains('dice')); // core always
+      expect(ids, contains('fate-roll-high')); // rides with juice
+      expect(ids, isNot(contains('fate-mythic')));
+    });
+
+    test('mythic profile: fate-mythic + core only, no juice gens', () {
+      final ids = commandsForSystems(reg, {'mythic'}).map((c) => c.id).toSet();
+      expect(ids, contains('fate-mythic'));
+      expect(ids, contains('dice')); // core
+      expect(ids, isNot(contains('fate-juice')));
+      expect(ids, isNot(contains('fate-roll-high'))); // juice off
+      expect(ids, isNot(contains('meaning')));
+    });
+
+    test('empty profile: only core commands', () {
+      final ids = commandsForSystems(reg, <String>{}).map((c) => c.id).toSet();
+      expect(ids, {'dice'});
+    });
+
+    test('all systems: every command', () {
+      expect(commandsForSystems(reg, kAllSystems).length, reg.length);
+    });
   });
 }
