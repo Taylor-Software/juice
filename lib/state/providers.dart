@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
@@ -743,6 +744,9 @@ final rulesetDataProvider =
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.
 final emulatorDataProvider =
     FutureProvider<EmulatorData>((ref) => EmulatorData.load());
+
+final verdantDataProvider =
+    FutureProvider<VerdantData>((ref) => VerdantData.load());
 
 /// Loads the hand-written help asset once.
 final helpDataProvider = FutureProvider<HelpData>((ref) async {
