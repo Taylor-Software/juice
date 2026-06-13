@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/command_registry.dart';
+import '../engine/entity_suggestions.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
@@ -124,6 +125,67 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         ),
       );
+
+  /// "Track this?" chips for recurring people the journal isn't tracking yet.
+  Widget _suggestionRow() {
+    final entries =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    if (entries.isEmpty) return const SizedBox.shrink();
+    final existingChars = {
+      for (final c
+          in (ref.watch(charactersProvider).valueOrNull ?? const <Character>[]))
+        c.name.toLowerCase()
+    };
+    final existingThreads = {
+      for (final t
+          in (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[]))
+        t.title.toLowerCase()
+    };
+    final dismissed =
+        ref.watch(dismissedSuggestionsProvider).valueOrNull ?? const <String>{};
+    final suggestions = suggestEntities(entries,
+            existingCharNames: existingChars,
+            existingThreadTitles: existingThreads,
+            dismissed: dismissed)
+        .take(3)
+        .toList();
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        children: [
+          for (final s in suggestions)
+            InputChip(
+              key: Key(
+                  'suggest-${s.kind == SuggestionKind.character ? 'character' : 'thread'}-${s.name.toLowerCase()}'),
+              avatar: Icon(
+                  s.kind == SuggestionKind.character
+                      ? Icons.person_add_alt
+                      : Icons.bookmark_add_outlined,
+                  size: 16),
+              label: Text('Track ${s.name}?'),
+              onPressed: () => _acceptSuggestion(s),
+              onDeleted: () => ref
+                  .read(dismissedSuggestionsProvider.notifier)
+                  .dismiss(suggestionKey(s.kind, s.name)),
+              deleteIcon: Icon(Icons.close,
+                  key: Key('suggest-dismiss-${suggestionKey(s.kind, s.name)}'),
+                  size: 16),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _acceptSuggestion(EntitySuggestion s) async {
+    if (s.kind == SuggestionKind.character) {
+      await ref.read(charactersProvider.notifier).addReturningId(s.name);
+    } else {
+      await ref.read(threadsProvider.notifier).addReturningId(s.name);
+    }
+  }
 
   Future<void> _ask(String question) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
@@ -362,6 +424,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           _mentionPanel()
         else if (_askActive)
           _askChip(),
+        _suggestionRow(),
         _composerBar(),
       ],
     );

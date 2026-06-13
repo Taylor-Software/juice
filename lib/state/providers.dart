@@ -753,3 +753,100 @@ final helpDataProvider = FutureProvider<HelpData>((ref) async {
 /// Page id the Help tool should open at (set by the tool-host '?');
 /// consumed once by the Help screen, then reset to null.
 final helpTopicProvider = StateProvider<String?>((ref) => null);
+
+// -- Dismissed suggestions (session-scoped) -----------------------------------
+class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
+  static const _baseKey = 'juice.suggestDismissed';
+
+  late String _scopedKey;
+
+  @override
+  Future<Set<String>> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const <String>{};
+    try {
+      return (jsonDecode(raw) as List).cast<String>().toSet();
+    } catch (_) {
+      return const <String>{};
+    }
+  }
+
+  Future<void> dismiss(String key) async {
+    final current = {...(state.valueOrNull ?? await future)};
+    current.add(key);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(current.toList()));
+    state = AsyncData(current);
+  }
+}
+
+final dismissedSuggestionsProvider =
+    AsyncNotifierProvider<DismissedSuggestionsNotifier, Set<String>>(
+        DismissedSuggestionsNotifier.new);
+
+// -- Recap cache (session-scoped) ---------------------------------------------
+class RecapCacheNotifier extends AsyncNotifier<RecapCache> {
+  static const _baseKey = 'juice.recap';
+
+  late String _scopedKey;
+
+  @override
+  Future<RecapCache> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const RecapCache();
+    try {
+      return RecapCache.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return const RecapCache();
+    }
+  }
+
+  Future<void> _save(RecapCache c) async {
+    state.valueOrNull ?? await future;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(c.toJson()));
+    state = AsyncData(c);
+  }
+
+  Future<void> markSeen(String entryId) async {
+    final cur = state.valueOrNull ?? await future;
+    await _save(cur.copyWith(lastSeenId: entryId));
+  }
+
+  Future<void> cacheSummary(String entryId, String summary) async {
+    await _save(RecapCache(lastSeenId: entryId, summary: summary));
+  }
+}
+
+final recapCacheProvider =
+    AsyncNotifierProvider<RecapCacheNotifier, RecapCache>(
+        RecapCacheNotifier.new);
+
+/// Immutable recap cache value: last-seen entry id + cached summary.
+class RecapCache {
+  const RecapCache({this.lastSeenId, this.summary});
+
+  final String? lastSeenId;
+  final String? summary;
+
+  factory RecapCache.fromJson(Map<String, dynamic> json) => RecapCache(
+        lastSeenId: json['lastSeenId'] as String?,
+        summary: json['summary'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        if (lastSeenId != null) 'lastSeenId': lastSeenId,
+        if (summary != null) 'summary': summary,
+      };
+
+  RecapCache copyWith({String? lastSeenId, String? summary}) => RecapCache(
+        lastSeenId: lastSeenId ?? this.lastSeenId,
+        summary: summary ?? this.summary,
+      );
+}
