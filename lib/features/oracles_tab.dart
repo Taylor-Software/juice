@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import 'fate_screen.dart';
+import 'generators_screen.dart';
+import 'tables_screen.dart';
+import 'moves_screen.dart';
 
 class OraclesTab extends ConsumerWidget {
   const OraclesTab({super.key, required this.oracle, required this.family});
@@ -11,18 +15,22 @@ class OraclesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const SubtabHost(
+    final tabs = <SubtabDef>[
+      const SubtabDef('oracle', 'Oracle'),
+      const SubtabDef('generators', 'Generators'),
+      const SubtabDef('tables', 'Tables'),
+      if (family.isNotEmpty) const SubtabDef('moves', 'Moves'),
+    ];
+    final children = <Widget>[
+      FateScreen(oracle: oracle, initialSection: FateSection.fateCheck),
+      GeneratorsScreen(oracle: oracle, section: GenSection.story),
+      TablesScreen(oracle: oracle),
+      if (family.isNotEmpty) MovesScreen(rulesetIds: family),
+    ];
+    return SubtabHost(
       destination: Destination.oracles,
-      tabs: [
-        SubtabDef('oracle', 'Oracle'),
-        SubtabDef('generators', 'Generators'),
-        SubtabDef('tables', 'Tables'),
-      ],
-      children: [
-        Center(child: Text('Oracle')),
-        Center(child: Text('Generators')),
-        Center(child: Text('Tables')),
-      ],
+      tabs: tabs,
+      children: children,
     );
   }
 }

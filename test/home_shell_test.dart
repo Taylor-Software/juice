@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/emulator_data.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
@@ -27,13 +28,36 @@ final _verdantData = VerdantData(
 final _verdantOverride =
     verdantDataProvider.overrideWith((ref) async => _verdantData);
 
+// Load emulator data synchronously from file (avoids rootBundle which hangs in
+// the headless test runner). PartyTab now embeds the real party screens (via
+// IndexedStack, so they are always built), meaning all HomeShell tests need
+// this override.
+final _emulatorData = EmulatorData(
+    jsonDecode(File('assets/emulator_data.json').readAsStringSync())
+        as Map<String, dynamic>);
+final _emulatorOverride =
+    emulatorDataProvider.overrideWith((ref) async => _emulatorData);
+
+// Load ruleset data synchronously from files (avoids rootBundle which hangs in
+// the headless test runner). OraclesTab now builds MovesScreen eagerly (via
+// IndexedStack) when family is non-empty, so the rulesets toggle test needs
+// these overrides when it enables Ironsworn classic.
+Map<String, dynamic> _rulesetJson(String id) =>
+    jsonDecode(File('assets/ruleset_$id.json').readAsStringSync())
+        as Map<String, dynamic>;
+
+final _rulesetOverrides = [
+  for (final id in ['classic', 'delve', 'starforged', 'sundered_isles'])
+    rulesetDataProvider(id).overrideWith((ref) async => _rulesetJson(id)),
+];
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('shell shows five nav destinations and opens on Journal',
       (t) async {
     await t.pumpWidget(ProviderScope(
-      overrides: [_verdantOverride],
+      overrides: [_verdantOverride, _emulatorOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
@@ -45,7 +69,7 @@ void main() {
 
   testWidgets('tapping Maps switches the body', (t) async {
     await t.pumpWidget(ProviderScope(
-      overrides: [_verdantOverride],
+      overrides: [_verdantOverride, _emulatorOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
@@ -59,7 +83,7 @@ void main() {
 
   testWidgets('journal is home; launcher opens grouped tools', (tester) async {
     await tester.pumpWidget(ProviderScope(
-        overrides: [_verdantOverride],
+        overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
@@ -77,7 +101,7 @@ void main() {
   testWidgets('rulesets toggle adds and removes the moves tool',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
-        overrides: [_verdantOverride],
+        overrides: [_verdantOverride, _emulatorOverride, ..._rulesetOverrides],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     final container =
@@ -109,6 +133,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
       overrides: [
         _verdantOverride,
+        _emulatorOverride,
         interpreterServiceProvider.overrideWithValue(fake),
       ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
@@ -132,7 +157,7 @@ void main() {
       'new campaign dialog shows system checkboxes; unchecking party excludes it',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
-        overrides: [_verdantOverride],
+        overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
 

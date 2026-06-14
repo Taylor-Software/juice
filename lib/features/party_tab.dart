@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import 'party_emulator_screen.dart';
+import 'sidekick_screen.dart';
+import 'behavior_tables_screen.dart';
 
 class PartyTab extends ConsumerWidget {
   const PartyTab({super.key});
@@ -16,9 +19,9 @@ class PartyTab extends ConsumerWidget {
         SubtabDef('behavior', 'Behavior'),
       ],
       children: [
-        Center(child: Text('Emulator')),
-        Center(child: Text('Sidekick')),
-        Center(child: Text('Behavior')),
+        PartyEmulatorScreen(),
+        SidekickScreen(),
+        BehaviorTablesScreen(),
       ],
     );
   }
