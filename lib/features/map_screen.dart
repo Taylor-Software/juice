@@ -860,8 +860,11 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
             Text('Hex (${h.col}, ${h.row})', style: theme.textTheme.titleSmall),
             if (h.terrain != null)
               Text(h.terrain!, style: theme.textTheme.bodyMedium),
-            if (h.site != null)
+            if (h.site != null) ...[
               Text('Site: ${h.site}', style: theme.textTheme.bodyMedium),
+              for (final line in h.siteLines)
+                Text('• $line', style: theme.textTheme.bodySmall),
+            ],
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: [
               if (h.terrain != null)
@@ -870,6 +873,25 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   onPressed: () => setState(() => _zoom = _HexZoom.flower),
                   child: const Text('Zoom in'),
                 ),
+              if (h.site != null) ...[
+                FilledButton.tonal(
+                  key: const Key('site-crawl'),
+                  onPressed: () => _siteCrawl(h),
+                  child: const Text('Crawl site'),
+                ),
+                FilledButton.tonal(
+                  key: const Key('site-full'),
+                  onPressed: () => _siteFull(h),
+                  child: const Text('Full site'),
+                ),
+                if (h.siteLines.isNotEmpty)
+                  OutlinedButton(
+                    key: const Key('site-log'),
+                    onPressed: () =>
+                        _log('Site: ${h.site}', h.siteLines.join('\n')),
+                    child: const Text('Log'),
+                  ),
+              ],
             ]),
           ],
         ),
@@ -891,6 +913,22 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     await ref
         .read(mapProvider.notifier)
         .generateLocal(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _siteCrawl(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .crawlSite(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _siteFull(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .generateSite(h.col, h.row, data, widget.oracle.dice);
   }
 
   Widget _flowerView(BuildContext context, HexCell h) {
