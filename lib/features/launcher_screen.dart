@@ -22,14 +22,14 @@ class LauncherScreen extends ConsumerWidget {
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<({String name, Set<String> systems})>(
+    final result = await showDialog<
+        ({String name, Set<String> systems, String genre, String tone})>(
       context: context,
       builder: (context) => const NewCampaignDialog(),
     );
     if (result == null || result.name.trim().isEmpty) return;
-    await ref
-        .read(sessionsProvider.notifier)
-        .create(result.name.trim(), systems: result.systems);
+    await ref.read(sessionsProvider.notifier).create(result.name.trim(),
+        systems: result.systems, genre: result.genre, tone: result.tone);
     _enter(ref);
   }
 
