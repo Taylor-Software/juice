@@ -76,12 +76,21 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off),
                   title: Text(s.name),
-                  trailing: sessions.sessions.length > 1
-                      ? IconButton(
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.tune),
+                        tooltip: 'Edit systems',
+                        onPressed: () => _editSystems(dialogContext, s),
+                      ),
+                      if (sessions.sessions.length > 1)
+                        IconButton(
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () => _confirmDelete(dialogContext, s),
-                        )
-                      : null,
+                        ),
+                    ],
+                  ),
                   onTap: () {
                     ref.read(sessionsProvider.notifier).switchTo(s.id);
                     Navigator.of(dialogContext).pop();
@@ -120,6 +129,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         .read(sessionsProvider.notifier)
         .create(result.name.trim(), systems: result.systems);
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+  }
+
+  Future<void> _editSystems(
+      BuildContext dialogContext, SessionMeta meta) async {
+    final picked = await showDialog<Set<String>>(
+      context: dialogContext,
+      builder: (context) => _EditSystemsDialog(initial: meta.enabledSystems),
+    );
+    if (picked == null) return;
+    await ref.read(sessionsProvider.notifier).editSystems(meta.id, picked);
   }
 
   Future<void> _exportCampaign(BuildContext dialogContext) async {
@@ -423,6 +442,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
   bool _ironsworn = true;
   bool _party = true;
   bool _verdant = true;
+  bool _lonelog = false;
 
   @override
   void dispose() {
@@ -437,6 +457,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
       if (_ironsworn) 'ironsworn',
       if (_party) 'party',
       if (_verdant) 'verdant',
+      if (_lonelog) 'lonelog',
     };
     Navigator.of(context).pop((name: _controller.text, systems: picked));
   }
@@ -445,47 +466,55 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('New campaign'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            key: const Key('new-campaign-name'),
-            controller: _controller,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Name'),
-            onSubmitted: (_) => _submit(),
-          ),
-          CheckboxListTile(
-            key: const Key('sys-juice'),
-            title: const Text('Juice oracle'),
-            value: _juice,
-            onChanged: (v) => setState(() => _juice = v ?? true),
-          ),
-          CheckboxListTile(
-            key: const Key('sys-mythic'),
-            title: const Text('Mythic GME'),
-            value: _mythic,
-            onChanged: (v) => setState(() => _mythic = v ?? true),
-          ),
-          CheckboxListTile(
-            key: const Key('sys-ironsworn'),
-            title: const Text('Ironsworn family'),
-            value: _ironsworn,
-            onChanged: (v) => setState(() => _ironsworn = v ?? true),
-          ),
-          CheckboxListTile(
-            key: const Key('sys-party'),
-            title: const Text('Party emulator'),
-            value: _party,
-            onChanged: (v) => setState(() => _party = v ?? true),
-          ),
-          CheckboxListTile(
-            key: const Key('sys-verdant'),
-            title: const Text('Verdant Hexcrawling'),
-            value: _verdant,
-            onChanged: (v) => setState(() => _verdant = v ?? true),
-          ),
-        ],
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              key: const Key('new-campaign-name'),
+              controller: _controller,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Name'),
+              onSubmitted: (_) => _submit(),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-juice'),
+              title: const Text('Juice oracle'),
+              value: _juice,
+              onChanged: (v) => setState(() => _juice = v ?? true),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-mythic'),
+              title: const Text('Mythic GME'),
+              value: _mythic,
+              onChanged: (v) => setState(() => _mythic = v ?? true),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-ironsworn'),
+              title: const Text('Ironsworn family'),
+              value: _ironsworn,
+              onChanged: (v) => setState(() => _ironsworn = v ?? true),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-party'),
+              title: const Text('Party emulator'),
+              value: _party,
+              onChanged: (v) => setState(() => _party = v ?? true),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-verdant'),
+              title: const Text('Verdant Hexcrawling'),
+              value: _verdant,
+              onChanged: (v) => setState(() => _verdant = v ?? true),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-lonelog'),
+              title: const Text('Lonelog journaling'),
+              value: _lonelog,
+              onChanged: (v) => setState(() => _lonelog = v ?? false),
+            ),
+          ],
+        ),
       ),
       actions: [
         TextButton(
@@ -495,6 +524,63 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
         FilledButton(
           onPressed: _submit,
           child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Dialog to toggle the optional systems of an existing campaign.
+/// Returns the chosen set, or null on cancel.
+class _EditSystemsDialog extends StatefulWidget {
+  const _EditSystemsDialog({required this.initial});
+  final Set<String> initial;
+
+  @override
+  State<_EditSystemsDialog> createState() => _EditSystemsDialogState();
+}
+
+class _EditSystemsDialogState extends State<_EditSystemsDialog> {
+  late final Set<String> _picked = {...widget.initial};
+
+  Widget _row(String id, String label) => CheckboxListTile(
+        key: Key('edit-sys-$id'),
+        title: Text(label),
+        value: _picked.contains(id),
+        onChanged: (v) => setState(() {
+          if (v ?? false) {
+            _picked.add(id);
+          } else {
+            _picked.remove(id);
+          }
+        }),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Enabled systems'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _row('juice', 'Juice oracle'),
+            _row('mythic', 'Mythic GME'),
+            _row('ironsworn', 'Ironsworn family'),
+            _row('party', 'Party emulator'),
+            _row('verdant', 'Verdant Hexcrawling'),
+            _row('lonelog', 'Lonelog journaling'),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_picked),
+          child: const Text('Save'),
         ),
       ],
     );
