@@ -91,6 +91,7 @@ class LauncherScreen extends ConsumerWidget {
         ],
       ),
     );
+    controller.dispose();
     if (name != null && name.trim().isNotEmpty) {
       await ref.read(sessionsProvider.notifier).rename(m.id, name);
     }
