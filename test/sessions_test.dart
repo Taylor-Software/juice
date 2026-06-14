@@ -147,7 +147,7 @@ void main() {
       final md = await container
           .read(sessionsProvider.notifier)
           .exportActiveAsLonelog();
-      expect(md, contains('title: Lonelog Camp'));
+      expect(md, contains('title: "Lonelog Camp"'));
       expect(md, contains('[Thread:Slay the wyrm|Open]'));
       expect(md, contains('## Session log'));
     });

@@ -41,11 +41,27 @@ void main() {
       () {
     final out = _export(name: 'West Marches', genre: 'sword & sorcery');
     expect(out, startsWith('---\n'));
-    expect(out, contains('title: West Marches'));
-    expect(out, contains('genre: sword & sorcery'));
+    expect(out, contains('title: "West Marches"'));
+    expect(out, contains('genre: "sword & sorcery"'));
     expect(out, isNot(contains('tone:')));
     expect(out, contains('tools: juice-oracle'));
     expect(out, contains('exported: 2026-06-14'));
+  });
+
+  test('sanitizes YAML and tag delimiter chars so output stays parseable', () {
+    final out = _export(
+      name: 'Camp: Alpha',
+      threads: [
+        const Thread(id: 't1', title: 'Rescue | [the] prisoner', open: true),
+      ],
+      characters: [const Character(id: 'c1', name: 'Vance|ally')],
+    );
+    // Colon in the campaign name can't break the YAML key/value structure.
+    expect(out, contains('title: "Camp: Alpha"'));
+    // Pipe and brackets in a thread title are replaced, not emitted raw.
+    expect(out, contains('[Thread:Rescue / (the) prisoner|Open]'));
+    // Pipe in a character name can't fake an extra tag field.
+    expect(out, contains('[N:Vance/ally]'));
   });
 
   test('STATE block lists threads, characters, tracks as tags', () {

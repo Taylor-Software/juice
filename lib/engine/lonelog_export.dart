@@ -20,9 +20,9 @@ String campaignToLonelog({
 }) {
   final buf = StringBuffer()
     ..writeln('---')
-    ..writeln('title: $campaignName');
-  if (genre.isNotEmpty) buf.writeln('genre: $genre');
-  if (tone.isNotEmpty) buf.writeln('tone: $tone');
+    ..writeln('title: ${_yaml(campaignName)}');
+  if (genre.isNotEmpty) buf.writeln('genre: ${_yaml(genre)}');
+  if (tone.isNotEmpty) buf.writeln('tone: ${_yaml(tone)}');
   buf
     ..writeln('tools: juice-oracle')
     ..writeln('exported: ${_date(exportedAt)}')
@@ -30,14 +30,15 @@ String campaignToLonelog({
     ..writeln()
     ..writeln('[STATE]');
   for (final t in threads) {
-    buf.writeln('[Thread:${t.title}|${t.open ? 'Open' : 'Closed'}]');
+    buf.writeln('[Thread:${_tag(t.title)}|${t.open ? 'Open' : 'Closed'}]');
   }
   for (final c in characters) {
-    final tags = c.tags.where((s) => s.trim().isNotEmpty).join(', ');
-    buf.writeln(tags.isEmpty ? '[N:${c.name}]' : '[N:${c.name}|$tags]');
+    final tags = c.tags.where((s) => s.trim().isNotEmpty).map(_tag).join(', ');
+    final name = _tag(c.name);
+    buf.writeln(tags.isEmpty ? '[N:$name]' : '[N:$name|$tags]');
   }
   for (final k in tracks) {
-    buf.writeln('[Track:${k.name} ${k.filled}/${k.max}]');
+    buf.writeln('[Track:${_tag(k.name)} ${k.filled}/${k.max}]');
   }
   buf
     ..writeln('[/STATE]')
@@ -72,17 +73,18 @@ List<String> _beatLines(
   final body = mentionsToPlain(e.body);
   switch (e.kind) {
     case JournalKind.scene:
-      lines.add('### S${nextScene()} *${e.title}*');
+      lines.add('### S${nextScene()} *${_inline(e.title)}*');
       if (e.chaosFactor != null) lines.add('(note: Chaos ${e.chaosFactor})');
     case JournalKind.result:
       final first = body.isEmpty ? '' : body.split('\n').first;
-      lines.add(first.isEmpty ? 'd: ${e.title}' : 'd: ${e.title} -> $first');
+      final title = _inline(e.title);
+      lines.add(first.isEmpty ? 'd: $title' : 'd: $title -> $first');
     case JournalKind.text:
       if (body.isNotEmpty) lines.add(body);
   }
   if (e.threadId != null) {
     final title = threadTitles[e.threadId] ?? '(closed thread)';
-    lines.add('=> [#Thread:$title]');
+    lines.add('=> [#Thread:${_tag(title)}]');
   }
   if (e.tags.isNotEmpty) {
     lines.add('(note: ${e.tags.map((t) => '#$t').join(' ')})');
@@ -93,3 +95,17 @@ List<String> _beatLines(
 String _date(DateTime d) => '${d.year.toString().padLeft(4, '0')}-'
     '${d.month.toString().padLeft(2, '0')}-'
     '${d.day.toString().padLeft(2, '0')}';
+
+/// Collapse internal newlines/runs of whitespace so a value stays on its one
+/// output line.
+String _inline(String s) => s.replaceAll(RegExp(r'\s*\n\s*'), ' ').trim();
+
+/// A YAML scalar value: always double-quoted with `"`/`\` escaped, so colons,
+/// `#`, leading dashes, etc. can never break the front-matter structure.
+String _yaml(String s) =>
+    '"${_inline(s).replaceAll(r'\', r'\\').replaceAll('"', r'\"')}"';
+
+/// A value safe inside a `[Prefix:…|…]` tag: the `[` `]` brackets and `|`
+/// field delimiter cannot appear in a value, so replace them with look-alikes.
+String _tag(String s) =>
+    _inline(s).replaceAll('[', '(').replaceAll(']', ')').replaceAll('|', '/');
