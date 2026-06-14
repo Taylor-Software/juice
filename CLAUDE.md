@@ -53,9 +53,15 @@ Working rules for this repo:
   self-verifies structure (unique terrain keys, weighted rows reference defined
   terrains, non-empty tables); edit the script, rerun `python3 build_hexcrawl.py`,
   copy `hexcrawl_data.json` into `assets/`; never hand-edit the JSON. Gated by an
-  opt-in `hexcrawl` feature flag (NOT in `kAllSystems`). H1 of the generic
-  hexcrawl/mapping toolkit (see `docs/superpowers/specs/2026-06-14-generic-hexcrawl-toolkit-design.md`);
-  H2 region / H3 dungeon / H4 local+site add the two-path (crawl/full) map generation.
+  opt-in `hexcrawl` feature flag (NOT in `kAllSystems`). The generic
+  hexcrawl/mapping toolkit (see `docs/superpowers/specs/2026-06-14-generic-hexcrawl-toolkit-design.md`)
+  is COMPLETE: H1 foundation + H2 region / H3 dungeon / H4 local-zoom flower +
+  site detail + site interior, each with both paths (crawl/full). Region/dungeon
+  maps render on the World/Dungeon panes; local-zoom (7-hex flower), the site
+  writeup card, and the site interior ("Enter") render inline on the World map via
+  a tap-to-select hex detail card + a `_HexZoom` canvas-mode switch — the flower
+  ring, `siteLines`, and `siteAreas` are all stored on `HexCell` (never
+  `MapState.rooms`, so the Dungeon tab stays independent).
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +

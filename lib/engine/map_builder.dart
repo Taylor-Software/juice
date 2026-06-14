@@ -60,6 +60,34 @@ const _roomDirs = [(0, -1), (1, 0), (0, 1), (-1, 0)];
   throw StateError('nextRoomPosition: no free cell found');
 }
 
+/// Next free grid cell for a site interior area (H4c): a free 4-neighbor of a
+/// random existing area, BFS-walking if boxed in. First area -> (0,0). Mirrors
+/// [nextRoomPosition] but carries no ids/corridors (site interiors are simple).
+({int x, int y}) nextSiteAreaPosition(List<SiteArea> areas, Dice dice) {
+  if (areas.isEmpty) return (x: 0, y: 0);
+  final occupied = {for (final a in areas) (a.x, a.y)};
+  final visited = <int>{0};
+  final queue = <SiteArea>[areas.first];
+  while (queue.isNotEmpty) {
+    final a = queue.removeAt(0);
+    final free = [
+      for (final d in _roomDirs)
+        if (!occupied.contains((a.x + d.$1, a.y + d.$2)))
+          (x: a.x + d.$1, y: a.y + d.$2),
+    ];
+    if (free.isNotEmpty) return free[dice.dN(free.length) - 1];
+    for (var i = 0; i < areas.length; i++) {
+      if (visited.contains(i)) continue;
+      final r = areas[i];
+      if (_roomDirs.any((d) => r.x == a.x + d.$1 && r.y == a.y + d.$2)) {
+        visited.add(i);
+        queue.add(r);
+      }
+    }
+  }
+  throw StateError('nextSiteAreaPosition: no free cell found');
+}
+
 /// Odd-q offset hex neighbors (flat-top, odd columns shifted half a hex
 /// DOWN), as 6 (col,row) pairs in fixed clockwise-from-north order.
 ///

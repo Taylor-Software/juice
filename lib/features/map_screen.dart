@@ -511,12 +511,13 @@ class HexMapPane extends ConsumerStatefulWidget {
   ConsumerState<HexMapPane> createState() => HexMapPaneState();
 }
 
-enum _HexZoom { region, flower }
+enum _HexZoom { region, flower, interior }
 
 class HexMapPaneState extends ConsumerState<HexMapPane> {
   GenResult? _last; // latest travel result
   String _hcClimate = 'temperate';
   int _hcCount = 10;
+  int _hcInteriorCount = 6; // site interior "Generate" area count
   int? _selCol, _selRow; // selected revealed hex (null = none)
   _HexZoom _zoom = _HexZoom.region;
 
@@ -615,9 +616,11 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
             _controls(context, s),
             if (_hexcrawlOn()) _hexcrawlControls(context),
             Expanded(
-              child: _zoom == _HexZoom.flower && sel != null
+              child: sel != null && _zoom == _HexZoom.flower
                   ? _flowerView(context, sel)
-                  : (s.hexes.isEmpty ? _empty(context) : _canvas(s)),
+                  : sel != null && _zoom == _HexZoom.interior
+                      ? _interiorView(context, sel)
+                      : (s.hexes.isEmpty ? _empty(context) : _canvas(s)),
             ),
             if (_hexcrawlOn() && sel != null && _zoom == _HexZoom.region)
               _hexDetailCard(context, sel),
@@ -884,6 +887,11 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   onPressed: () => _siteFull(h),
                   child: const Text('Full site'),
                 ),
+                FilledButton.tonal(
+                  key: const Key('site-enter'),
+                  onPressed: () => setState(() => _zoom = _HexZoom.interior),
+                  child: const Text('Enter'),
+                ),
                 if (h.siteLines.isNotEmpty)
                   OutlinedButton(
                     key: const Key('site-log'),
@@ -929,6 +937,112 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     await ref
         .read(mapProvider.notifier)
         .generateSite(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _interiorCrawl(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .crawlSiteArea(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _interiorFull(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref.read(mapProvider.notifier).generateSiteInterior(
+        h.col, h.row, _hcInteriorCount, data, widget.oracle.dice);
+  }
+
+  Widget _interiorView(BuildContext context, HexCell h) {
+    final scheme = Theme.of(context).colorScheme;
+    // Render site areas through the existing dungeon painter (no corridors).
+    final rooms = [
+      for (var i = 0; i < h.siteAreas.length; i++)
+        DungeonRoom(
+            id: '$i',
+            x: h.siteAreas[i].x,
+            y: h.siteAreas[i].y,
+            title: h.siteAreas[i].name),
+    ];
+    Widget canvas;
+    if (rooms.isEmpty) {
+      canvas = Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text('No areas yet. Reveal or generate the interior.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium),
+        ),
+      );
+    } else {
+      final minX = rooms.map((r) => r.x).reduce(math.min);
+      final minY = rooms.map((r) => r.y).reduce(math.min);
+      final maxX = rooms.map((r) => r.x).reduce(math.max);
+      final maxY = rooms.map((r) => r.y).reduce(math.max);
+      final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
+      final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
+      canvas = InteractiveViewer(
+        constrained: false,
+        boundaryMargin: const EdgeInsets.all(400),
+        minScale: 0.5,
+        maxScale: 3,
+        child: SizedBox(
+          width: width,
+          height: height,
+          child: CustomPaint(
+            key: const Key('interior-canvas'),
+            size: Size(width, height),
+            painter: _DungeonPainter(
+                rooms: rooms,
+                corridors: const [],
+                currentRoomId: null,
+                scheme: scheme),
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton(
+                key: const Key('interior-back'),
+                onPressed: () => setState(() => _zoom = _HexZoom.region),
+                child: const Text('Back'),
+              ),
+              FilledButton.tonal(
+                key: const Key('interior-reveal'),
+                onPressed: () => _interiorCrawl(h),
+                child: const Text('Reveal area'),
+              ),
+              FilledButton.tonal(
+                key: const Key('interior-generate'),
+                onPressed: () => _interiorFull(h),
+                child: Text('Generate interior ($_hcInteriorCount)'),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: () => setState(() =>
+                    _hcInteriorCount = (_hcInteriorCount - 1).clamp(3, 12)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () => setState(() =>
+                    _hcInteriorCount = (_hcInteriorCount + 1).clamp(3, 12)),
+              ),
+            ],
+          ),
+        ),
+        Expanded(child: canvas),
+        const SizedBox(height: 8),
+      ],
+    );
   }
 
   Widget _flowerView(BuildContext context, HexCell h) {

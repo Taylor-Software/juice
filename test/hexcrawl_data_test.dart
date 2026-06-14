@@ -25,6 +25,7 @@ void main() {
     expect(data.siteOccupants, isNotEmpty);
     expect(data.siteHooks, isNotEmpty);
     expect(data.siteFeatures, isNotEmpty);
+    expect(data.siteAreaTypes, contains('Entrance'));
   });
 
   test('every weighted row references a defined terrain', () {

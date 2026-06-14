@@ -86,4 +86,5 @@ class HexcrawlData {
   List<String> get siteOccupants => _flat('siteOccupants');
   List<String> get siteHooks => _flat('siteHooks');
   List<String> get siteFeatures => _flat('siteFeatures');
+  List<String> get siteAreaTypes => _flat('siteAreaTypes');
 }
