@@ -420,6 +420,7 @@ class HexCell {
     this.lost = false,
     this.terrain,
     this.pois = const [],
+    this.site,
   });
   final int col;
   final int row;
@@ -427,6 +428,7 @@ class HexCell {
   final bool lost;
   final String? terrain; // Verdant terrain key, e.g. 'forest'; null = Juice env
   final List<int> pois; // Verdant Points of Interest numbers (1..12)
+  final String? site; // hexcrawl site-type on this hex; null = none
 
   HexCell copyWith({
     int? envRow,
@@ -434,6 +436,8 @@ class HexCell {
     String? terrain,
     bool clearTerrain = false,
     List<int>? pois,
+    String? site,
+    bool clearSite = false,
   }) =>
       HexCell(
         col: col,
@@ -442,6 +446,7 @@ class HexCell {
         lost: lost ?? this.lost,
         terrain: clearTerrain ? null : (terrain ?? this.terrain),
         pois: pois ?? this.pois,
+        site: clearSite ? null : (site ?? this.site),
       );
 
   Map<String, dynamic> toJson() => {
@@ -451,6 +456,7 @@ class HexCell {
         'lost': lost,
         if (terrain != null) 'terrain': terrain,
         if (pois.isNotEmpty) 'pois': pois,
+        if (site != null) 'site': site,
       };
 
   /// Parses one hex entry; null for anything without a map shape and int
@@ -464,6 +470,7 @@ class HexCell {
       lost: (j['lost'] as bool?) ?? false,
       terrain: j['terrain'] as String?,
       pois: ((j['pois'] as List?) ?? const []).whereType<int>().toList(),
+      site: j['site'] as String?,
     );
   }
 }

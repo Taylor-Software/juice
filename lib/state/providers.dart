@@ -5,7 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/hexcrawl.dart';
 import '../engine/hexcrawl_data.dart';
+import '../engine/hexcrawl_map.dart';
 import '../engine/lonelog_data.dart';
 import '../engine/lonelog_export.dart';
 import '../engine/lonelog_import.dart';
@@ -650,6 +652,67 @@ class MapNotifier extends AsyncNotifier<MapState> {
     if (s.hexes.any((h) => h.col == col && h.row == row)) return;
     await save(s.copyWith(
         hexes: [...s.hexes, HexCell(col: col, row: row, envRow: envRow)]));
+  }
+
+  /// Hexcrawl crawl-reveal: the next hex's terrain is rolled from the current
+  /// hex's terrain (or a climate seed), plus an optional site. Advances current.
+  Future<void> crawlHexcrawl(
+      HexcrawlData data, String climate, Dice dice) async {
+    final s = await _ready;
+    final pos =
+        nextHexPosition(s.hexes, s.currentHexCol, s.currentHexRow, dice);
+    if (pos.alreadyRevealed) {
+      await save(s.copyWith(currentHexCol: pos.col, currentHexRow: pos.row));
+      return;
+    }
+    HexCell? cur;
+    for (final h in s.hexes) {
+      if (h.col == s.currentHexCol && h.row == s.currentHexRow) {
+        cur = h;
+        break;
+      }
+    }
+    final fromTerrain = cur?.terrain ??
+        rollTerrain(data, climate, dice)?.key ??
+        data.terrains.first.key;
+    final rolled = rollCrawlHex(data, fromTerrain, dice);
+    final cell = HexCell(
+        col: pos.col,
+        row: pos.row,
+        envRow: 1,
+        terrain: rolled.terrain,
+        site: rolled.site);
+    await save(s.copyWith(
+        hexes: [...s.hexes, cell],
+        currentHexCol: pos.col,
+        currentHexRow: pos.row));
+  }
+
+  /// Hexcrawl full-region: place [count] connected hexes (terrain + sites),
+  /// anchored at the current hex (or origin); existing hexes are not overwritten.
+  Future<void> generateRegion(
+      HexcrawlData data, String climate, int count, Dice dice) async {
+    final s = await _ready;
+    final region =
+        growRegion(data: data, climate: climate, count: count, dice: dice);
+    // Anchor at the current hex; if none, an existing hex (so the region
+    // connects to it); else the origin.
+    final (ax, ay) = (s.currentHexCol != null && s.currentHexRow != null)
+        ? (s.currentHexCol!, s.currentHexRow!)
+        : (s.hexes.isNotEmpty
+            ? (s.hexes.first.col, s.hexes.first.row)
+            : (0, 0));
+    final existing = {for (final h in s.hexes) (h.col, h.row)};
+    final added = <HexCell>[];
+    for (final g in region) {
+      final col = ax + g.col;
+      final row = ay + g.row;
+      if (existing.contains((col, row))) continue;
+      added.add(HexCell(
+          col: col, row: row, envRow: 1, terrain: g.terrain, site: g.site));
+    }
+    await save(s.copyWith(
+        hexes: [...s.hexes, ...added], currentHexCol: ax, currentHexRow: ay));
   }
 
   /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
