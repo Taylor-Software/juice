@@ -82,6 +82,10 @@ DUNGEON_DRESSING = ["Rubble-strewn floor", "Dripping water", "Old bones",
                     "Claw marks on the walls", "A faint draft",
                     "A mouldering tapestry", "A cold spot", "Scattered coins",
                     "A strange smell", "Flickering shadows"]
+LOCAL_FEATURES = ["A trickling stream", "A rocky outcrop", "A dense thicket",
+                  "A quiet clearing", "Fresh animal tracks", "A fallen tree",
+                  "A muddy hollow", "A worn game trail", "An old fire-pit",
+                  "A weathered marker"]
 
 
 def build():
@@ -101,6 +105,7 @@ def build():
         "dungeonRoomTypes": DUNGEON_ROOM_TYPES,
         "dungeonContents": DUNGEON_CONTENTS,
         "dungeonDressing": DUNGEON_DRESSING,
+        "localFeatures": LOCAL_FEATURES,
     }
 
 
@@ -129,7 +134,7 @@ def verify(data):
     assert keys <= set(data["neighbouringTerrain"]), "a terrain lacks a neighbouring table"
     for name in ["weather", "hazards", "siteTypes", "regionFeatures",
                  "encounterCategories", "dungeonRoomTypes", "dungeonContents",
-                 "dungeonDressing"]:
+                 "dungeonDressing", "localFeatures"]:
         assert data[name], f"{name} is empty"
         assert len(data[name]) == len(set(data[name])), f"{name} has duplicates"
 
