@@ -130,14 +130,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _createSession(BuildContext dialogContext) async {
-    final result = await showDialog<({String name, Set<String> systems})>(
+    final result = await showDialog<
+        ({String name, Set<String> systems, String genre, String tone})>(
       context: dialogContext,
       builder: (context) => const NewCampaignDialog(),
     );
     if (result == null || result.name.trim().isEmpty) return;
-    await ref
-        .read(sessionsProvider.notifier)
-        .create(result.name.trim(), systems: result.systems);
+    await ref.read(sessionsProvider.notifier).create(result.name.trim(),
+        systems: result.systems, genre: result.genre, tone: result.tone);
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
@@ -508,6 +508,8 @@ class NewCampaignDialog extends StatefulWidget {
 
 class _NewCampaignDialogState extends State<NewCampaignDialog> {
   final _controller = TextEditingController();
+  final _genre = TextEditingController();
+  final _tone = TextEditingController();
   bool _juice = true;
   bool _mythic = true;
   bool _ironsworn = true;
@@ -519,6 +521,8 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   @override
   void dispose() {
     _controller.dispose();
+    _genre.dispose();
+    _tone.dispose();
     super.dispose();
   }
 
@@ -532,7 +536,12 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_lonelog) 'lonelog',
       if (_hexcrawl) 'hexcrawl',
     };
-    Navigator.of(context).pop((name: _controller.text, systems: picked));
+    Navigator.of(context).pop((
+      name: _controller.text,
+      systems: picked,
+      genre: _genre.text.trim(),
+      tone: _tone.text.trim(),
+    ));
   }
 
   @override
@@ -550,6 +559,25 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               decoration: const InputDecoration(labelText: 'Name'),
               onSubmitted: (_) => _submit(),
             ),
+            TextField(
+              key: const Key('new-campaign-genre'),
+              controller: _genre,
+              decoration: const InputDecoration(
+                  labelText: 'Genre (optional)',
+                  hintText: 'e.g. grimdark fantasy'),
+            ),
+            TextField(
+              key: const Key('new-campaign-tone'),
+              controller: _tone,
+              decoration: const InputDecoration(
+                  labelText: 'Tone (optional)',
+                  hintText: 'e.g. tense and dangerous'),
+            ),
+            const Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text('Default systems'))),
             CheckboxListTile(
               key: const Key('sys-juice'),
               title: const Text('Juice oracle'),
@@ -580,6 +608,10 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _verdant,
               onChanged: (v) => setState(() => _verdant = v ?? true),
             ),
+            const Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                    padding: EdgeInsets.only(top: 12), child: Text('Add-ons'))),
             CheckboxListTile(
               key: const Key('sys-lonelog'),
               title: const Text('Lonelog journaling'),

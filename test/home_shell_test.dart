@@ -197,7 +197,8 @@ void main() {
     expect(find.byKey(const Key('sys-party')), findsOneWidget);
     expect(find.byKey(const Key('sys-verdant')), findsOneWidget);
 
-    // Uncheck party.
+    // Uncheck party (scroll it into view — the dialog also has genre/tone).
+    await tester.ensureVisible(find.byKey(const Key('sys-party')));
     await tester.tap(find.byKey(const Key('sys-party')));
     await tester.pumpAndSettle();
 
@@ -207,7 +208,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Tap Create.
-    await tester.tap(find.widgetWithText(FilledButton, 'Create'));
+    final create = find.widgetWithText(FilledButton, 'Create');
+    await tester.ensureVisible(create);
+    await tester.tap(create);
     await tester.pumpAndSettle();
 
     // The new campaign is active, excludes party, and includes verdant.
