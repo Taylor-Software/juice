@@ -17,9 +17,10 @@ import '../features/tracking_tab.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'destination.dart';
+import 'help_nav.dart';
 import 'shell_route.dart';
-import 'tool_host.dart';
 import 'tool_registry.dart';
+import 'tool_search_sheet.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.oracle});
@@ -30,7 +31,6 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  final _hostKey = GlobalKey<ToolHostState>();
   AppLifecycleListener? _lifecycle;
 
   @override
@@ -310,9 +310,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.handyman_outlined),
-            tooltip: 'Tools',
-            onPressed: () => _hostKey.currentState?.openLauncher(),
+            icon: const Icon(Icons.search),
+            tooltip: 'Search tools',
+            onPressed: () => showToolSearchSheet(
+                context, buildToolRegistry(family: family, systems: systems),
+                oracle: widget.oracle),
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Help',
+            onPressed: () => openHelp(context, ref),
           ),
           if (systems.contains('ironsworn'))
             IconButton(
@@ -387,14 +394,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ToolHost(
-          key: _hostKey,
-          tools: buildToolRegistry(family: family, systems: systems),
-          oracle: widget.oracle,
-          child: _shellBody(context, family, systems),
-        ),
-      ),
+      body: SafeArea(child: _shellBody(context, family, systems)),
     );
   }
 }

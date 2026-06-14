@@ -8,7 +8,9 @@ import 'package:juice_oracle/engine/emulator_data.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
+import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -81,21 +83,29 @@ void main() {
     expect(find.text('Journey'), findsWidgets);
   });
 
-  testWidgets('journal is home; launcher opens grouped tools', (tester) async {
+  testWidgets(
+      'journal is home; search sheet opens grouped tools and a tap '
+      'navigates', (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
     // The tabbed shell now has a NavigationBar (narrow) in the tree.
     expect(find.byType(NavigationBar), findsOneWidget);
-    await tester.tap(find.byTooltip('Tools'));
+    await tester.tap(find.byTooltip('Search tools'));
     await tester.pumpAndSettle();
+    // The search sheet is up with the grouped tool list.
+    expect(find.byKey(const Key('tool-search')), findsOneWidget);
     expect(find.text('Ask the Oracle'), findsOneWidget);
     expect(find.text('Fate Check'), findsOneWidget);
+    // Tapping a tool navigates to its destination (no overlay panel).
     await tester.tap(find.widgetWithText(ListTile, 'Fate Check'));
     await tester.pumpAndSettle();
-    expect(find.text('Roll Fate Check'), findsOneWidget);
+    expect(container.read(shellRouteProvider).destination, Destination.oracles);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('rulesets toggle adds and removes the moves tool',
@@ -106,12 +116,18 @@ void main() {
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
-    await tester.tap(find.byTooltip('Tools'));
+    // Without the classic ruleset, the moves tool is absent from the sheet.
+    await tester.tap(find.byTooltip('Search tools'));
     await tester.pumpAndSettle();
     expect(find.text('Ironsworn Moves & Oracles'), findsNothing);
+    // Close the sheet (the tool list is captured when the sheet opens).
+    Navigator.of(tester.element(find.byKey(const Key('tool-search')))).pop();
+    await tester.pumpAndSettle();
     await container.read(rulesetsProvider.notifier).setRuleset('classic', true);
     await tester.pumpAndSettle();
-    // The Reference group sits below the fold of the launcher list.
+    // Reopen: the moves tool now appears (below the fold — drag to reveal).
+    await tester.tap(find.byTooltip('Search tools'));
+    await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text('Ironsworn Moves & Oracles'),
       find.byKey(const Key('launcher-list')),
@@ -120,9 +136,14 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'Ironsworn Moves & Oracles'),
         findsOneWidget);
+    Navigator.of(tester.element(find.byKey(const Key('tool-search')))).pop();
+    await tester.pumpAndSettle();
     await container
         .read(rulesetsProvider.notifier)
         .setRuleset('classic', false);
+    await tester.pumpAndSettle();
+    // Reopen: absent again.
+    await tester.tap(find.byTooltip('Search tools'));
     await tester.pumpAndSettle();
     expect(find.text('Ironsworn Moves & Oracles'), findsNothing);
     expect(tester.takeException(), isNull);
