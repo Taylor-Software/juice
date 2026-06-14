@@ -52,4 +52,20 @@ void main() {
     final tile = t.widget<CheckboxListTile>(lonelog);
     expect(tile.value, isFalse); // opt-in: default off
   });
+
+  testWidgets('Campaigns dialog offers Export as Lonelog', (t) async {
+    await t.pumpWidget(ProviderScope(
+      overrides: [
+        verdantDataProvider.overrideWith((ref) async => _verdant),
+        emulatorDataProvider.overrideWith((ref) async => _emu),
+        lonelogDataProvider.overrideWith((ref) async => _lonelog),
+      ],
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+
+    await t.tap(find.byTooltip('Campaigns'));
+    await t.pumpAndSettle();
+    expect(find.text('Export as Lonelog (.md)'), findsOneWidget);
+  });
 }
