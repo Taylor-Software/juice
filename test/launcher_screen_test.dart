@@ -64,4 +64,36 @@ void main() {
     expect(find.byKey(const Key('launcher-new')), findsOneWidget);
     expect(find.byKey(const Key('launcher-import')), findsOneWidget);
   });
+
+  testWidgets('rename updates the campaign name', (t) async {
+    final c = _container();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+    await t.tap(find.byKey(const Key('launcher-rename-b')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('rename-field')), 'Gamma');
+    await t.tap(find.byKey(const Key('rename-confirm')));
+    await t.pumpAndSettle();
+    expect(
+        c
+            .read(sessionsProvider)
+            .valueOrNull!
+            .sessions
+            .firstWhere((m) => m.id == 'b')
+            .name,
+        'Gamma');
+  });
+
+  testWidgets('delete removes a campaign', (t) async {
+    final c = _container();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+    await t.tap(find.byKey(const Key('launcher-delete-b')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('delete-confirm')));
+    await t.pumpAndSettle();
+    expect(
+        c.read(sessionsProvider).valueOrNull!.sessions.any((m) => m.id == 'b'),
+        isFalse);
+  });
 }

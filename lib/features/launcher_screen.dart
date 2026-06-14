@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/models.dart';
 import '../shared/home_shell.dart' show NewCampaignDialog;
 import '../state/providers.dart';
 
@@ -66,6 +67,57 @@ class LauncherScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _rename(
+      BuildContext context, WidgetRef ref, SessionMeta m) async {
+    final controller = TextEditingController(text: m.name);
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Rename campaign'),
+        content: TextField(
+          key: const Key('rename-field'),
+          controller: controller,
+          autofocus: true,
+          onSubmitted: (v) => Navigator.of(context).pop(v),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('rename-confirm'),
+              onPressed: () => Navigator.of(context).pop(controller.text),
+              child: const Text('Save')),
+        ],
+      ),
+    );
+    if (name != null && name.trim().isNotEmpty) {
+      await ref.read(sessionsProvider.notifier).rename(m.id, name);
+    }
+  }
+
+  Future<void> _delete(
+      BuildContext context, WidgetRef ref, SessionMeta m) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete "${m.name}"?'),
+        content: const Text(
+            'Its journal, threads, characters, and maps are removed permanently.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('delete-confirm'),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (ok == true) await ref.read(sessionsProvider.notifier).remove(m.id);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -104,6 +156,24 @@ class LauncherScreen extends ConsumerWidget {
                         : Icons.radio_button_off),
                     title: Text(s.name),
                     onTap: () => _switch(ref, s.id),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('launcher-rename-${s.id}'),
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Rename',
+                          onPressed: () => _rename(context, ref, s),
+                        ),
+                        if (sessions.sessions.length > 1)
+                          IconButton(
+                            key: Key('launcher-delete-${s.id}'),
+                            icon: const Icon(Icons.delete_outline),
+                            tooltip: 'Delete',
+                            onPressed: () => _delete(context, ref, s),
+                          ),
+                      ],
+                    ),
                   ),
                 const Divider(),
                 ListTile(
