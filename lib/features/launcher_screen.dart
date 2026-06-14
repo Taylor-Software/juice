@@ -69,16 +69,17 @@ class LauncherScreen extends ConsumerWidget {
 
   Future<void> _rename(
       BuildContext context, WidgetRef ref, SessionMeta m) async {
-    final controller = TextEditingController(text: m.name);
+    var draft = m.name;
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Rename campaign'),
-        content: TextField(
+        content: TextFormField(
           key: const Key('rename-field'),
-          controller: controller,
+          initialValue: m.name,
           autofocus: true,
-          onSubmitted: (v) => Navigator.of(context).pop(v),
+          onChanged: (v) => draft = v,
+          onFieldSubmitted: (v) => Navigator.of(context).pop(v),
         ),
         actions: [
           TextButton(
@@ -86,12 +87,11 @@ class LauncherScreen extends ConsumerWidget {
               child: const Text('Cancel')),
           FilledButton(
               key: const Key('rename-confirm'),
-              onPressed: () => Navigator.of(context).pop(controller.text),
+              onPressed: () => Navigator.of(context).pop(draft),
               child: const Text('Save')),
         ],
       ),
     );
-    controller.dispose();
     if (name != null && name.trim().isNotEmpty) {
       await ref.read(sessionsProvider.notifier).rename(m.id, name);
     }
