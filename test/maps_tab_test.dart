@@ -18,7 +18,9 @@ void main() {
 
   testWidgets('Maps tab shows World/Dungeon/Journey subtabs', (t) async {
     await t.pumpWidget(ProviderScope(
-      child: MaterialApp(home: Scaffold(body: MapsTab(oracle: _oracle()))),
+      child: MaterialApp(
+          home: Scaffold(
+              body: MapsTab(oracle: _oracle(), systems: const {'verdant'}))),
     ));
     await t.pumpAndSettle();
     expect(find.text('World'), findsWidgets);

@@ -32,6 +32,7 @@ class HomeShell extends ConsumerStatefulWidget {
 
 class _HomeShellState extends ConsumerState<HomeShell> {
   AppLifecycleListener? _lifecycle;
+  final GlobalKey _bodyKey = GlobalKey();
 
   @override
   void initState() {
@@ -210,15 +211,20 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   List<Destination> _visibleDestinations(
           Set<String> systems, List<String> family) =>
-      Destination
-          .values; // Phase 1: all five. System filtering arrives in a later task.
+      [
+        Destination.journal,
+        Destination.maps,
+        if (systems.contains('party')) Destination.party,
+        Destination.tracking,
+        Destination.oracles,
+      ];
 
   Widget _root(Destination d, Set<String> systems, List<String> family) {
     switch (d) {
       case Destination.journal:
         return const JournalScreen();
       case Destination.maps:
-        return MapsTab(oracle: widget.oracle);
+        return MapsTab(oracle: widget.oracle, systems: systems);
       case Destination.party:
         return const PartyTab();
       case Destination.tracking:
@@ -236,6 +242,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         .indexOf(route.destination)
         .clamp(0, destinations.length - 1);
     final body = IndexedStack(
+      key: _bodyKey,
       index: index,
       children: [for (final d in destinations) _root(d, systems, family)],
     );
