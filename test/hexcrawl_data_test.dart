@@ -18,6 +18,9 @@ void main() {
     expect(data.weather, isNotEmpty);
     expect(data.siteTypes, isNotEmpty);
     expect(data.encounterCategories, contains('Nothing of note'));
+    expect(data.dungeonRoomTypes, contains('Vault'));
+    expect(data.dungeonContents, contains('Treasure'));
+    expect(data.dungeonDressing, isNotEmpty);
   });
 
   test('every weighted row references a defined terrain', () {
