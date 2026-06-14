@@ -713,6 +713,20 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }
 
+  /// Replace the enabled optional systems for session [id].
+  Future<void> editSystems(String id, Set<String> systems) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id)
+          SessionMeta(id: m.id, name: m.name, systems: systems.toList())
+        else
+          m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
+  }
+
   Future<void> remove(String id) async {
     final s = state.valueOrNull;
     if (s == null || s.sessions.length <= 1) return; // keep at least one

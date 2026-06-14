@@ -40,7 +40,8 @@ void main() {
   group('Sessions provider', () {
     test('first run migrates legacy keys into a default session', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.threads.v1': '[{"id":"t1","title":"Old vow","note":"","open":true}]',
+        'juice.threads.v1':
+            '[{"id":"t1","title":"Old vow","note":"","open":true}]',
         'juice.log.v1': '[]',
       });
       final container = ProviderContainer();
@@ -53,7 +54,8 @@ void main() {
       expect(prefs.getString('juice.threads.v1.default'), contains('Old vow'));
     });
 
-    test('fresh install creates the default session with no key shuffling', () async {
+    test('fresh install creates the default session with no key shuffling',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -62,7 +64,8 @@ void main() {
       expect(s.sessions.length, 1);
     });
 
-    test('create switches to the new session; remove purges its keys', () async {
+    test('create switches to the new session; remove purges its keys',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -114,10 +117,24 @@ void main() {
       final s = await container.read(sessionsProvider.future);
       expect(s.sessions.length, 1);
     });
+
+    test('editSystems replaces a session\'s enabled systems', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      final notifier = container.read(sessionsProvider.notifier);
+
+      await notifier.editSystems('default', {'juice', 'lonelog'});
+      final s = await container.read(sessionsProvider.future);
+      final meta = s.sessions.firstWhere((m) => m.id == 'default');
+      expect(meta.enabledSystems, {'juice', 'lonelog'});
+    });
   });
 
   group('Session-scoped stores', () {
-    test('threads are isolated per session and survive switching back', () async {
+    test('threads are isolated per session and survive switching back',
+        () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
