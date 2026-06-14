@@ -410,6 +410,27 @@ class DungeonRoom {
   }
 }
 
+/// One ring sub-hex of a local-zoom flower (H4a).
+class LocalCell {
+  const LocalCell(
+      {required this.slot, required this.terrain, required this.feature});
+  final int slot; // 0..5 ring position
+  final String terrain; // hexcrawl terrain key
+  final String feature; // a localFeatures entry
+
+  Map<String, dynamic> toJson() =>
+      {'slot': slot, 'terrain': terrain, 'feature': feature};
+
+  static LocalCell? maybeFromJson(dynamic j) {
+    if (j is! Map || j['slot'] is! int) return null;
+    return LocalCell(
+      slot: j['slot'] as int,
+      terrain: (j['terrain'] as String?) ?? '',
+      feature: (j['feature'] as String?) ?? '',
+    );
+  }
+}
+
 /// A revealed wilderness hex (flat-top, odd-q offset coordinates: odd
 /// columns are shifted half a hex down).
 class HexCell {
@@ -421,6 +442,7 @@ class HexCell {
     this.terrain,
     this.pois = const [],
     this.site,
+    this.local = const [],
   });
   final int col;
   final int row;
@@ -429,6 +451,7 @@ class HexCell {
   final String? terrain; // Verdant terrain key, e.g. 'forest'; null = Juice env
   final List<int> pois; // Verdant Points of Interest numbers (1..12)
   final String? site; // hexcrawl site-type on this hex; null = none
+  final List<LocalCell> local; // local-zoom flower ring (H4a); [] = not zoomed
 
   HexCell copyWith({
     int? envRow,
@@ -438,6 +461,8 @@ class HexCell {
     List<int>? pois,
     String? site,
     bool clearSite = false,
+    List<LocalCell>? local,
+    bool clearLocal = false,
   }) =>
       HexCell(
         col: col,
@@ -447,6 +472,7 @@ class HexCell {
         terrain: clearTerrain ? null : (terrain ?? this.terrain),
         pois: pois ?? this.pois,
         site: clearSite ? null : (site ?? this.site),
+        local: clearLocal ? const [] : (local ?? this.local),
       );
 
   Map<String, dynamic> toJson() => {
@@ -457,6 +483,7 @@ class HexCell {
         if (terrain != null) 'terrain': terrain,
         if (pois.isNotEmpty) 'pois': pois,
         if (site != null) 'site': site,
+        if (local.isNotEmpty) 'local': local.map((e) => e.toJson()).toList(),
       };
 
   /// Parses one hex entry; null for anything without a map shape and int
@@ -471,6 +498,10 @@ class HexCell {
       terrain: j['terrain'] as String?,
       pois: ((j['pois'] as List?) ?? const []).whereType<int>().toList(),
       site: j['site'] as String?,
+      local: ((j['local'] as List?) ?? const [])
+          .map(LocalCell.maybeFromJson)
+          .whereType<LocalCell>()
+          .toList(),
     );
   }
 }

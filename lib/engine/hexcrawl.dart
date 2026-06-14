@@ -4,6 +4,7 @@ library;
 
 import 'dice.dart';
 import 'hexcrawl_data.dart';
+import 'models.dart';
 
 /// Weighted pick: probability proportional to weight. Returns the terrain key.
 String weightedPick(List<WeightedTerrain> table, Dice dice) {
@@ -40,4 +41,16 @@ HexTerrain? rollNeighbour(HexcrawlData data, String terrainKey, Dice dice) {
   final content = rollFrom(data.dungeonContents, dice);
   final dressing = rollFrom(data.dungeonDressing, dice);
   return (title: type, detail: '$content. $dressing.');
+}
+
+/// One ring sub-hex of a local-zoom flower: finer terrain (from the parent
+/// terrain's neighbour table) + a local feature. [slot] is the ring position.
+LocalCell rollLocalCell(
+    HexcrawlData data, String centerTerrain, int slot, Dice dice) {
+  final terrain =
+      rollNeighbour(data, centerTerrain, dice)?.key ?? centerTerrain;
+  return LocalCell(
+      slot: slot,
+      terrain: terrain,
+      feature: rollFrom(data.localFeatures, dice));
 }
