@@ -230,7 +230,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       case Destination.tracking:
         return const TrackingTab();
       case Destination.oracles:
-        return OraclesTab(oracle: widget.oracle, family: family);
+        return OraclesTab(
+            oracle: widget.oracle, family: family, systems: systems);
     }
   }
 
