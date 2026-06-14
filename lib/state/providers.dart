@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/lonelog_data.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
@@ -712,6 +713,20 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }
 
+  /// Replace the enabled optional systems for session [id].
+  Future<void> editSystems(String id, Set<String> systems) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id)
+          SessionMeta(id: m.id, name: m.name, systems: systems.toList())
+        else
+          m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
+  }
+
   Future<void> remove(String id) async {
     final s = state.valueOrNull;
     if (s == null || s.sessions.length <= 1) return; // keep at least one
@@ -850,6 +865,9 @@ final emulatorDataProvider =
 
 final verdantDataProvider =
     FutureProvider<VerdantData>((ref) => VerdantData.load());
+
+final lonelogDataProvider =
+    FutureProvider<LonelogData>((ref) => LonelogData.load());
 
 /// Loads the hand-written help asset once.
 final helpDataProvider = FutureProvider<HelpData>((ref) async {

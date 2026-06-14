@@ -110,6 +110,7 @@ void main() {
       'ironsworn',
       'party',
       'verdant',
+      'lonelog',
       'core'
     };
     for (final v in toolSystem.values) {
@@ -172,5 +173,18 @@ void main() {
     final tools =
         buildToolRegistry(family: ['classic'], systems: {'ironsworn', 'juice'});
     expect(tools.any((t) => t.id == 'moves'), isTrue);
+  });
+
+  test('lonelog-ref gating: present only when the lonelog system is enabled',
+      () {
+    expect(
+        buildToolRegistry(family: [], systems: {'juice'})
+            .any((t) => t.id == 'lonelog-ref'),
+        isFalse);
+    final tools = buildToolRegistry(family: [], systems: {'juice', 'lonelog'});
+    final tool = tools.singleWhere((t) => t.id == 'lonelog-ref');
+    expect(tool.group, 'Reference');
+    expect(tool.label, 'Lonelog Notation');
+    expect(tool.badge, 'Lonelog');
   });
 }

@@ -18,7 +18,10 @@ void main() {
       jsonDecode(File('assets/oracle_data.json').readAsStringSync())
           as Map<String, dynamic>);
 
-  Future<ProviderContainer> pump(WidgetTester tester, {String? mapJson}) async {
+  // The Dungeon/Hex tab chrome now lives in maps_tab.dart; these tests pump
+  // the public panes directly.
+  Future<ProviderContainer> pumpDungeon(WidgetTester tester,
+      {String? mapJson}) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
@@ -26,15 +29,36 @@ void main() {
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
-            home: Scaffold(body: MapScreen(oracle: Oracle(data))))));
+            home: Scaffold(body: DungeonMapPane(oracle: Oracle(data))))));
     await tester.pumpAndSettle();
-    return ProviderScope.containerOf(tester.element(find.byType(MapScreen)));
+    return ProviderScope.containerOf(
+        tester.element(find.byType(DungeonMapPane)));
+  }
+
+  Future<ProviderContainer> pumpHex(WidgetTester tester,
+      {String? mapJson}) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      if (mapJson != null) 'juice.map.v1.default': mapJson,
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: HexMapPane(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
   }
 
   // Two rooms side by side at known coordinates so taps are deterministic.
   String seededMap({List<Map<String, dynamic>>? hexes}) => jsonEncode({
         'rooms': [
-          {'id': 'a', 'x': 0, 'y': 0, 'title': 'Alpha', 'detail': 'Alpha detail'},
+          {
+            'id': 'a',
+            'x': 0,
+            'y': 0,
+            'title': 'Alpha',
+            'detail': 'Alpha detail'
+          },
           {'id': 'b', 'x': 1, 'y': 0, 'title': 'Beta', 'detail': 'Beta detail'},
         ],
         'corridors': [
@@ -69,9 +93,11 @@ void main() {
 
   testWidgets('New room twice grows a connected dungeon; canvas paints',
       (tester) async {
-    final container = await pump(tester);
-    expect(find.text('No rooms yet. New room rolls the dungeon oracle '
-        'and maps it.'), findsOneWidget);
+    final container = await pumpDungeon(tester);
+    expect(
+        find.text('No rooms yet. New room rolls the dungeon oracle '
+            'and maps it.'),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('new-room')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-room')));
@@ -87,7 +113,7 @@ void main() {
 
   testWidgets('tap selects a room; Linger appends detail and shows result',
       (tester) async {
-    final container = await pump(tester, mapJson: seededMap());
+    final container = await pumpDungeon(tester, mapJson: seededMap());
     // Room a (0,0) with minX 0: cell origin (28,28), center (56,56).
     final origin = tester.getTopLeft(find.byKey(const Key('dungeon-canvas')));
     await tester.tapAt(origin + const Offset(56, 56));
@@ -109,7 +135,7 @@ void main() {
   });
 
   testWidgets('journal snapshot logs room count and titles', (tester) async {
-    final container = await pump(tester, mapJson: seededMap());
+    final container = await pumpDungeon(tester, mapJson: seededMap());
     await tester.tap(find.byKey(const Key('dungeon-journal')));
     await tester.pumpAndSettle();
     final entries = container.read(journalProvider).valueOrNull!;
@@ -122,7 +148,7 @@ void main() {
 
   testWidgets('reset confirm clears rooms but keeps revealed hexes',
       (tester) async {
-    final container = await pump(tester,
+    final container = await pumpDungeon(tester,
         mapJson: seededMap(hexes: [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ]));
@@ -137,12 +163,7 @@ void main() {
     expect(s.hexes.length, 1);
   });
 
-  // -- Hex tab ---------------------------------------------------------------
-
-  Future<void> toHexTab(WidgetTester tester) async {
-    await tester.tap(find.text('Hex'));
-    await tester.pumpAndSettle();
-  }
+  // -- Hex --------------------------------------------------------------------
 
   group('hexAt', () {
     const size = 34.0;
@@ -152,8 +173,7 @@ void main() {
       (col: 1, row: 2),
     ];
 
-    test('cell centers map back to their cell (incl. odd/negative cols)',
-        () {
+    test('cell centers map back to their cell (incl. odd/negative cols)', () {
       for (final c in cells) {
         final p = hexCenterFor(c.col, c.row, -1, 0, size);
         expect(hexAt(p, size, cells, minCol: -1, minRow: 0), c);
@@ -181,23 +201,23 @@ void main() {
       final b = hexCenterFor(0, 0, -1, 0, size);
       final nearA = Offset.lerp(a, b, 0.3)!;
       final nearB = Offset.lerp(a, b, 0.7)!;
-      expect(hexAt(nearA, size, cells, minCol: -1, minRow: 0),
-          (col: -1, row: 0));
-      expect(hexAt(nearB, size, cells, minCol: -1, minRow: 0),
-          (col: 0, row: 0));
+      expect(
+          hexAt(nearA, size, cells, minCol: -1, minRow: 0), (col: -1, row: 0));
+      expect(
+          hexAt(nearB, size, cells, minCol: -1, minRow: 0), (col: 0, row: 0));
     });
 
     test('point outside the 0.9*size radius of every center is null', () {
       expect(hexAt(Offset.zero, size, cells, minCol: -1, minRow: 0), isNull);
-      expect(hexAt(const Offset(5000, 5000), size, cells,
-          minCol: -1, minRow: 0), isNull);
+      expect(
+          hexAt(const Offset(5000, 5000), size, cells, minCol: -1, minRow: 0),
+          isNull);
     });
   });
 
   testWidgets('Travel advances crawl and reveals adjacent hexes',
       (tester) async {
-    final container = await pump(tester);
-    await toHexTab(tester);
+    final container = await pumpHex(tester);
     expect(find.text('No hexes yet. Travel reveals the map as you go.'),
         findsOneWidget);
 
@@ -218,8 +238,7 @@ void main() {
     s = container.read(mapProvider).valueOrNull!;
     // From a single revealed hex all 6 neighbors are free: always a new cell.
     expect(s.hexes.length, 2);
-    final adjacent =
-        hexNeighbors(0, 0).map((n) => (n.col, n.row)).toList();
+    final adjacent = hexNeighbors(0, 0).map((n) => (n.col, n.row)).toList();
     expect(adjacent, contains((s.currentHexCol, s.currentHexRow)));
     final crawl2 = container.read(crawlProvider).valueOrNull!;
     final cur = s.hexes.firstWhere(
@@ -227,9 +246,10 @@ void main() {
     expect(cur.envRow, crawl2.envRow);
   });
 
-  testWidgets('tap on a faint neighbor opens env picker; manual reveal '
+  testWidgets(
+      'tap on a faint neighbor opens env picker; manual reveal '
       'persists without moving current', (tester) async {
-    final container = await pump(tester,
+    final container = await pumpHex(tester,
         mapJson: jsonEncode({
           'hexes': [
             {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
@@ -237,7 +257,6 @@ void main() {
           'currentHexCol': 0,
           'currentHexRow': 0,
         }));
-    await toHexTab(tester);
 
     // Cells = (0,0) + its 6 unrevealed neighbors -> minCol = minRow = -1.
     final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
@@ -259,7 +278,7 @@ void main() {
 
   testWidgets('hex journal snapshot logs count and current env',
       (tester) async {
-    final container = await pump(tester,
+    final container = await pumpHex(tester,
         mapJson: jsonEncode({
           'hexes': [
             {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
@@ -268,7 +287,6 @@ void main() {
           'currentHexCol': 1,
           'currentHexRow': 0,
         }));
-    await toHexTab(tester);
     await tester.tap(find.byKey(const Key('hex-journal')));
     await tester.pumpAndSettle();
     final entries = container.read(journalProvider).valueOrNull!;

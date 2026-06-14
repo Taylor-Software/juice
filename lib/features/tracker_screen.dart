@@ -4,48 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
 
-class TrackerScreen extends ConsumerWidget {
-  const TrackerScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const Material(
-            child: TabBar(
-              tabs: [
-                Tab(text: 'Threads'),
-                Tab(text: 'Characters'),
-              ],
-            ),
-          ),
-          Expanded(
-            // IndexedStack (not TabBarView): unbounded page width under the
-            // loose tool host → freeze. Same fix as the Maps tool.
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return AnimatedBuilder(
-                  animation: controller,
-                  builder: (context, _) => IndexedStack(
-                    index: controller.index,
-                    children: const [
-                      ThreadsPane(),
-                      CharactersPane(),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // -- Threads --------------------------------------------------------------
 class ThreadsPane extends ConsumerWidget {
   const ThreadsPane({super.key});

@@ -10,6 +10,8 @@ void main() {
   const seeded =
       '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[{"label":"HP","current":7,"max":10}],"tags":[]}]';
 
+  // The Threads/Characters tab chrome now lives in tracking_tab.dart; these
+  // tests pump the public panes directly.
   Future<ProviderContainer> pump(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -19,12 +21,10 @@ void main() {
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
             theme: AppTheme.light(),
-            home: const Scaffold(body: TrackerScreen()))));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Characters'));
+            home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
     return ProviderScope.containerOf(
-        tester.element(find.byType(TrackerScreen)));
+        tester.element(find.byType(CharactersPane)));
   }
 
   Future<ProviderContainer> pumpThreads(WidgetTester tester) async {
@@ -37,10 +37,9 @@ void main() {
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
             theme: AppTheme.light(),
-            home: const Scaffold(body: TrackerScreen()))));
+            home: const Scaffold(body: ThreadsPane()))));
     await tester.pumpAndSettle();
-    return ProviderScope.containerOf(
-        tester.element(find.byType(TrackerScreen)));
+    return ProviderScope.containerOf(tester.element(find.byType(ThreadsPane)));
   }
 
   testWidgets('list row shows first-track summary', (tester) async {
@@ -105,9 +104,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
             theme: AppTheme.light(),
-            home: const Scaffold(body: TrackerScreen()))));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Characters'));
+            home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Em'));
     await tester.pumpAndSettle();

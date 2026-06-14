@@ -46,6 +46,7 @@ app.*.map.json
 /oracle_data.json
 /emulator_data.json
 /verdant_data.json
+/lonelog_data.json
 ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 
 # Brainstorm companion sessions

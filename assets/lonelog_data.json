@@ -1,0 +1,379 @@
+{
+  "version": "1.5.0",
+  "license": "CC BY-SA 4.0",
+  "attribution": "Lonelog (c) Roberto Bisceglie",
+  "symbols": [
+    {
+      "symbol": "@",
+      "name": "Action",
+      "role": "Player-character action",
+      "example": "@ Pick the lock"
+    },
+    {
+      "symbol": "@(Name)",
+      "name": "Attributed action",
+      "role": "Action by a named PC, companion, or NPC",
+      "example": "@(Jonah) Keeps watch"
+    },
+    {
+      "symbol": "?",
+      "name": "Oracle question",
+      "role": "Ask the oracle",
+      "example": "? Is the guard asleep"
+    },
+    {
+      "symbol": "d:",
+      "name": "Mechanics roll",
+      "role": "Dice / rule resolution",
+      "example": "d: d20+5=17 vs DC 15"
+    },
+    {
+      "symbol": "->",
+      "name": "Result",
+      "role": "Dice or oracle result",
+      "example": "-> Yes, but..."
+    },
+    {
+      "symbol": "=>",
+      "name": "Consequence",
+      "role": "Narrative outcome",
+      "example": "=> The door creaks open"
+    }
+  ],
+  "comparators": [
+    {
+      "op": ">=",
+      "meaning": "Meets or beats the target number (also written >=)"
+    },
+    {
+      "op": "<=",
+      "meaning": "Fails the target number (also written <=)"
+    },
+    {
+      "op": "vs",
+      "meaning": "Explicit 'versus' a TN/DC"
+    },
+    {
+      "op": "S",
+      "meaning": "Success flag"
+    },
+    {
+      "op": "F",
+      "meaning": "Fail flag"
+    }
+  ],
+  "tagPrefixes": [
+    {
+      "prefix": "N",
+      "name": "NPC",
+      "meaning": "A persistent named NPC",
+      "source": "core"
+    },
+    {
+      "prefix": "L",
+      "name": "Location",
+      "meaning": "A place",
+      "source": "core"
+    },
+    {
+      "prefix": "E",
+      "name": "Event",
+      "meaning": "An event / inline clock",
+      "source": "core"
+    },
+    {
+      "prefix": "PC",
+      "name": "Player character",
+      "meaning": "A PC stat block",
+      "source": "core"
+    },
+    {
+      "prefix": "Thread",
+      "name": "Thread",
+      "meaning": "A story thread / vow",
+      "source": "core"
+    },
+    {
+      "prefix": "Clock",
+      "name": "Clock",
+      "meaning": "Fills up toward a bad outcome",
+      "source": "core"
+    },
+    {
+      "prefix": "Track",
+      "name": "Track",
+      "meaning": "Fills up toward a goal",
+      "source": "core"
+    },
+    {
+      "prefix": "Timer",
+      "name": "Timer",
+      "meaning": "Counts down to zero",
+      "source": "core"
+    },
+    {
+      "prefix": "#",
+      "name": "Reference",
+      "meaning": "Refer to an established element",
+      "source": "core"
+    },
+    {
+      "prefix": "Inv",
+      "name": "Inventory",
+      "meaning": "A concrete item",
+      "source": "resource"
+    },
+    {
+      "prefix": "Wealth",
+      "name": "Wealth",
+      "meaning": "Currency totals",
+      "source": "resource"
+    },
+    {
+      "prefix": "R",
+      "name": "Room",
+      "meaning": "A dungeon room + status",
+      "source": "dungeon"
+    },
+    {
+      "prefix": "F",
+      "name": "Foe",
+      "meaning": "A combat foe stat tag",
+      "source": "combat"
+    },
+    {
+      "prefix": "Unit",
+      "name": "Unit",
+      "meaning": "A wargame unit",
+      "source": "wargaming"
+    },
+    {
+      "prefix": "Force",
+      "name": "Force",
+      "meaning": "A named force / army",
+      "source": "wargaming"
+    },
+    {
+      "prefix": "Scenario",
+      "name": "Scenario",
+      "meaning": "A battle scenario",
+      "source": "wargaming"
+    }
+  ],
+  "blocks": [
+    {
+      "name": "COMBAT",
+      "openTag": "[COMBAT]",
+      "closeTag": "[/COMBAT]",
+      "analogOpen": "--- COMBAT ---",
+      "analogClose": "--- END COMBAT ---",
+      "purpose": "A tactical combat section (Combat addon)"
+    },
+    {
+      "name": "DUNGEON STATUS",
+      "openTag": "[DUNGEON STATUS]",
+      "closeTag": "[/DUNGEON STATUS]",
+      "analogOpen": "--- DUNGEON STATUS ---",
+      "analogClose": "--- END STATUS ---",
+      "purpose": "A snapshot of room states (Dungeon Crawling addon)"
+    },
+    {
+      "name": "RESOURCES",
+      "openTag": "[RESOURCES]",
+      "closeTag": "[/RESOURCES]",
+      "analogOpen": "--- RESOURCES ---",
+      "analogClose": "--- END RESOURCES ---",
+      "purpose": "A resource snapshot at a session boundary (Resource Tracking addon)"
+    },
+    {
+      "name": "BATTLE",
+      "openTag": "[BATTLE]",
+      "closeTag": "[/BATTLE]",
+      "analogOpen": "--- BATTLE ---",
+      "analogClose": "--- END BATTLE ---",
+      "purpose": "One wargame engagement (Wargaming addon)"
+    },
+    {
+      "name": "CAMPAIGN",
+      "openTag": "[CAMPAIGN]",
+      "closeTag": "[/CAMPAIGN]",
+      "analogOpen": "--- CAMPAIGN ---",
+      "analogClose": "--- END CAMPAIGN ---",
+      "purpose": "A campaign-state snapshot (Wargaming addon)"
+    }
+  ],
+  "addons": [
+    {
+      "key": "combat",
+      "title": "Combat",
+      "version": "1.1.0",
+      "summary": "Round markers (Rd#), foe tags [F:], positions, [COMBAT] blocks.",
+      "addsTags": [
+        "F"
+      ],
+      "addsBlocks": [
+        "COMBAT"
+      ],
+      "status": "documented"
+    },
+    {
+      "key": "dungeon",
+      "title": "Dungeon Crawling",
+      "version": "1.1.0",
+      "summary": "Per-room status tags [R:ID|status|exits] and dungeon snapshots.",
+      "addsTags": [
+        "R"
+      ],
+      "addsBlocks": [
+        "DUNGEON STATUS"
+      ],
+      "status": "documented"
+    },
+    {
+      "key": "resource",
+      "title": "Resource Tracking",
+      "version": "1.1.0",
+      "summary": "Inventory [Inv:], wealth [Wealth:], usage dice, resource snapshots.",
+      "addsTags": [
+        "Inv",
+        "Wealth"
+      ],
+      "addsBlocks": [
+        "RESOURCES"
+      ],
+      "status": "documented"
+    },
+    {
+      "key": "dice",
+      "title": "Dice Notation",
+      "version": "1.0.0",
+      "summary": "A full dice-expression grammar (keep/drop, explode, success pools).",
+      "addsTags": [],
+      "addsBlocks": [],
+      "status": "documented"
+    },
+    {
+      "key": "cards",
+      "title": "Cards",
+      "version": "1.0.0",
+      "summary": "Compact tokens for playing-card and tarot draws (Qs, M16r).",
+      "addsTags": [],
+      "addsBlocks": [],
+      "status": "documented"
+    },
+    {
+      "key": "wargaming",
+      "title": "Wargaming",
+      "version": "1.0.0",
+      "summary": "Unit tags [Unit:], turn markers (Tn#), [BATTLE]/[CAMPAIGN] blocks.",
+      "addsTags": [
+        "Unit",
+        "Force",
+        "Scenario"
+      ],
+      "addsBlocks": [
+        "BATTLE",
+        "CAMPAIGN"
+      ],
+      "status": "documented"
+    },
+    {
+      "key": "guidelines",
+      "title": "Addon Guidelines",
+      "version": "1.1.0",
+      "summary": "The authoring contract: shared symbols + reserved prefixes + block syntax.",
+      "addsTags": [],
+      "addsBlocks": [],
+      "status": "documented"
+    }
+  ],
+  "headerFields": [
+    {
+      "field": "title",
+      "meaning": "Campaign title"
+    },
+    {
+      "field": "ruleset",
+      "meaning": "The host RPG system"
+    },
+    {
+      "field": "genre",
+      "meaning": "Genre / setting"
+    },
+    {
+      "field": "player",
+      "meaning": "Player name"
+    },
+    {
+      "field": "pcs",
+      "meaning": "Player characters"
+    },
+    {
+      "field": "start_date",
+      "meaning": "When the campaign began"
+    },
+    {
+      "field": "last_update",
+      "meaning": "Last session date"
+    },
+    {
+      "field": "tools",
+      "meaning": "Oracles / generators in use"
+    },
+    {
+      "field": "themes",
+      "meaning": "Campaign themes"
+    },
+    {
+      "field": "tone",
+      "meaning": "Tone"
+    },
+    {
+      "field": "notes",
+      "meaning": "Freeform notes"
+    }
+  ],
+  "examples": [
+    {
+      "title": "A complete beat",
+      "lines": [
+        "@ Pick the warehouse lock",
+        "d: d20+5=17 vs DC 15",
+        "-> Success",
+        "=> The door swings open [E:AlertClock 1/6]"
+      ]
+    },
+    {
+      "title": "Asking the oracle",
+      "lines": [
+        "? Is the guard asleep",
+        "-> No, but... distracted",
+        "=> I slip past while he yawns"
+      ]
+    },
+    {
+      "title": "Tracking elements",
+      "lines": [
+        "=> [N:Jonah|captured|wounded]",
+        "=> [Thread:Rescue Jonah|Open]",
+        "=> [Clock:Suspicion 3/6]"
+      ]
+    },
+    {
+      "title": "A combat round",
+      "lines": [
+        "[COMBAT]",
+        "@(Goblins) Swarm the doorway",
+        "d: 2d6=8",
+        "=> [F:Goblins x3|Close]",
+        "[/COMBAT]"
+      ]
+    },
+    {
+      "title": "A meta aside",
+      "lines": [
+        "(note: trying a flashback scene here)"
+      ]
+    }
+  ]
+}

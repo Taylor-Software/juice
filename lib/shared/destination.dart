@@ -36,5 +36,6 @@ const toolLocation = <String, (Destination, String)>{
   'gen-encounters': (Destination.oracles, 'generators'),
   'gen-details': (Destination.oracles, 'generators'),
   'tables': (Destination.oracles, 'tables'),
+  'lonelog-ref': (Destination.oracles, 'lonelog'),
   'moves': (Destination.oracles, 'moves'),
 };

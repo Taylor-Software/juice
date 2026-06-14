@@ -37,56 +37,6 @@ String? roomIdAt(List<DungeonRoom> rooms, Offset local, double cell) {
   return null;
 }
 
-/// Maps tool: a dungeon map grown room-by-room from the dungeon oracle and
-/// a wilderness hex map revealed by travel.
-class MapScreen extends StatelessWidget {
-  const MapScreen({super.key, required this.oracle});
-  final Oracle oracle;
-
-  @override
-  Widget build(BuildContext context) {
-    // The body is an IndexedStack driven by the TabController, not a
-    // TabBarView. The tool host lays tools out with loose (min-zero) width,
-    // and TabBarView's PageView collapses its pages to unbounded width under
-    // that — throwing "BoxConstraints forces an infinite width" and freezing
-    // the app (release web) / blanking the tool (debug). IndexedStack lays
-    // each tab out like any other tool body, keeps both alive, and avoids the
-    // PageView-vs-InteractiveViewer horizontal-drag conflict.
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        children: [
-          const Material(
-            child: TabBar(
-              tabs: [
-                Tab(text: 'Dungeon'),
-                Tab(text: 'Hex'),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return AnimatedBuilder(
-                  animation: controller,
-                  builder: (context, _) => IndexedStack(
-                    index: controller.index,
-                    children: [
-                      DungeonMapPane(oracle: oracle),
-                      HexMapPane(oracle: oracle),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
   const DungeonMapPane({super.key, required this.oracle});
