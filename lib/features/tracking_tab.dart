@@ -5,6 +5,7 @@ import '../shared/subtab_host.dart';
 import 'rumors_pane.dart';
 import 'scenes_pane.dart';
 import 'tracker_screen.dart';
+import 'tracks_pane.dart';
 import 'encounter_screen.dart';
 
 class TrackingTab extends ConsumerWidget {
@@ -28,7 +29,7 @@ class TrackingTab extends ConsumerWidget {
         CharactersPane(),
         ThreadsPane(),
         RumorsPane(),
-        Center(child: Text('Tracks')),
+        TracksPane(),
         EncounterScreen(),
       ],
     );
