@@ -52,6 +52,7 @@ const toolSystem = <String, String>{
   'gen-exploration': 'juice',
   'maps': 'juice',
   'verdant': 'verdant',
+  'hexcrawl': 'hexcrawl',
   'gen-encounters': 'juice',
   'encounter': 'core',
   'gen-details': 'juice',
@@ -175,6 +176,13 @@ List<ToolDef> buildToolRegistry({
       icon: Icons.forest_outlined,
       group: 'Exploration',
       badge: 'Verdant',
+    ),
+    const ToolDef(
+      id: 'hexcrawl',
+      label: 'Hexcrawl',
+      icon: Icons.travel_explore_outlined,
+      group: 'Exploration',
+      badge: 'Hexcrawl',
     ),
     const ToolDef(
       id: 'gen-encounters',

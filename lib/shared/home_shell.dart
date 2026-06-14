@@ -514,6 +514,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
   bool _party = true;
   bool _verdant = true;
   bool _lonelog = false;
+  bool _hexcrawl = false;
 
   @override
   void dispose() {
@@ -529,6 +530,7 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
       if (_party) 'party',
       if (_verdant) 'verdant',
       if (_lonelog) 'lonelog',
+      if (_hexcrawl) 'hexcrawl',
     };
     Navigator.of(context).pop((name: _controller.text, systems: picked));
   }
@@ -583,6 +585,12 @@ class _NewCampaignDialogState extends State<_NewCampaignDialog> {
               title: const Text('Lonelog journaling'),
               value: _lonelog,
               onChanged: (v) => setState(() => _lonelog = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const Key('sys-hexcrawl'),
+              title: const Text('Hexcrawl toolkit'),
+              value: _hexcrawl,
+              onChanged: (v) => setState(() => _hexcrawl = v ?? false),
             ),
           ],
         ),
@@ -641,6 +649,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('party', 'Party emulator'),
             _row('verdant', 'Verdant Hexcrawling'),
             _row('lonelog', 'Lonelog journaling'),
+            _row('hexcrawl', 'Hexcrawl toolkit'),
           ],
         ),
       ),

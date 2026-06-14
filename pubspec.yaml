@@ -28,6 +28,7 @@ flutter:
     - assets/help_data.json
     - assets/verdant_data.json
     - assets/lonelog_data.json
+    - assets/hexcrawl_data.json
     - assets/ruleset_starforged.json
     - assets/ruleset_classic.json
     - assets/ruleset_delve.json

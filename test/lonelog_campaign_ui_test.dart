@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
+import 'package:juice_oracle/engine/hexcrawl_data.dart';
 import 'package:juice_oracle/engine/lonelog_data.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
@@ -25,6 +26,9 @@ final _emu = EmulatorData(
 final _lonelog = LonelogData(
     jsonDecode(File('assets/lonelog_data.json').readAsStringSync())
         as Map<String, dynamic>);
+final _hex = HexcrawlData(
+    jsonDecode(File('assets/hexcrawl_data.json').readAsStringSync())
+        as Map<String, dynamic>);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -36,6 +40,7 @@ void main() {
         verdantDataProvider.overrideWith((ref) async => _verdant),
         emulatorDataProvider.overrideWith((ref) async => _emu),
         lonelogDataProvider.overrideWith((ref) async => _lonelog),
+        hexcrawlDataProvider.overrideWith((ref) async => _hex),
       ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
@@ -59,6 +64,7 @@ void main() {
         verdantDataProvider.overrideWith((ref) async => _verdant),
         emulatorDataProvider.overrideWith((ref) async => _emu),
         lonelogDataProvider.overrideWith((ref) async => _lonelog),
+        hexcrawlDataProvider.overrideWith((ref) async => _hex),
       ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
@@ -75,6 +81,7 @@ void main() {
         verdantDataProvider.overrideWith((ref) async => _verdant),
         emulatorDataProvider.overrideWith((ref) async => _emu),
         lonelogDataProvider.overrideWith((ref) async => _lonelog),
+        hexcrawlDataProvider.overrideWith((ref) async => _hex),
       ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
@@ -83,5 +90,27 @@ void main() {
     await t.tap(find.byTooltip('Campaigns'));
     await t.pumpAndSettle();
     expect(find.text('Import Lonelog (.md)'), findsOneWidget);
+  });
+
+  testWidgets('New Campaign dialog offers a Hexcrawl toggle (default off)',
+      (t) async {
+    await t.pumpWidget(ProviderScope(
+      overrides: [
+        verdantDataProvider.overrideWith((ref) async => _verdant),
+        emulatorDataProvider.overrideWith((ref) async => _emu),
+        lonelogDataProvider.overrideWith((ref) async => _lonelog),
+        hexcrawlDataProvider.overrideWith((ref) async => _hex),
+      ],
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+    await t.tap(find.byTooltip('Campaigns'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('New campaign'));
+    await t.pumpAndSettle();
+
+    final hex = find.byKey(const Key('sys-hexcrawl'));
+    expect(hex, findsOneWidget);
+    expect(t.widget<CheckboxListTile>(hex).value, isFalse);
   });
 }

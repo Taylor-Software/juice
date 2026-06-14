@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/hexcrawl_data.dart';
 import '../engine/lonelog_data.dart';
 import '../engine/lonelog_export.dart';
 import '../engine/lonelog_import.dart';
@@ -1002,6 +1003,9 @@ final verdantDataProvider =
 
 final lonelogDataProvider =
     FutureProvider<LonelogData>((ref) => LonelogData.load());
+
+final hexcrawlDataProvider =
+    FutureProvider<HexcrawlData>((ref) => HexcrawlData.load());
 
 /// Loads the hand-written help asset once.
 final helpDataProvider = FutureProvider<HelpData>((ref) async {
