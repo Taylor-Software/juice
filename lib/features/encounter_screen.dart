@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
 
@@ -277,13 +278,23 @@ class EncounterScreen extends ConsumerWidget {
     );
     if (ok != true) return;
     final s = ref.read(encounterProvider).valueOrNull ?? const EncounterState();
-    final defeated = [
-      for (final c in s.combatants)
-        if (c.defeated) c.name,
-    ];
-    final summary = 'Round ${s.round} — ${defeated.isEmpty //
-        ? 'no combatants defeated' : 'defeated: ${defeated.join(', ')}'}';
-    await ref.read(journalProvider.notifier).add('Encounter ended', summary);
+    final lonelog =
+        (ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+                kAllSystems)
+            .contains('lonelog');
+    final String body;
+    if (lonelog) {
+      // Lonelog Combat addon: emit a [COMBAT] block the journal highlights.
+      body = encounterToLonelog(s);
+    } else {
+      final defeated = [
+        for (final c in s.combatants)
+          if (c.defeated) c.name,
+      ];
+      body = 'Round ${s.round} — ${defeated.isEmpty //
+          ? 'no combatants defeated' : 'defeated: ${defeated.join(', ')}'}';
+    }
+    await ref.read(journalProvider.notifier).add('Encounter ended', body);
     await ref.read(encounterProvider.notifier).reset();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
