@@ -590,6 +590,20 @@ class MapNotifier extends AsyncNotifier<MapState> {
     return room;
   }
 
+  /// Hexcrawl crawl: add one dungeon room with generic content.
+  Future<void> crawlDungeon(HexcrawlData data, Dice dice) async {
+    final r = rollDungeonRoom(data, dice);
+    await addRoom(title: r.title, detail: r.detail, dice: dice);
+  }
+
+  /// Hexcrawl full dungeon: add [count] connected rooms with generic content.
+  Future<void> generateDungeon(HexcrawlData data, int count, Dice dice) async {
+    for (var i = 0; i < count; i++) {
+      final r = rollDungeonRoom(data, dice);
+      await addRoom(title: r.title, detail: r.detail, dice: dice);
+    }
+  }
+
   /// Make [id] the current room; no-op for unknown ids.
   Future<void> selectRoom(String id) async {
     final s = await _ready;
