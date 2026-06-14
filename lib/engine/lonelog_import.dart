@@ -27,7 +27,9 @@ class LonelogImport {
 
 final _sceneRe = RegExp(r'^###\s+S\d+\s+(.*?)\s*$');
 final _chaosRe = RegExp(r'^\(note:\s*Chaos\s+(\d+)\)$');
-final _threadRe = RegExp(r'^\[Thread:(.*)\|(Open|Closed)\]$');
+// Title excludes `|` (the field delimiter) — the exporter `_tag`-replaces any
+// `|` in a title, so a well-formed tag has exactly one `|`, before the state.
+final _threadRe = RegExp(r'^\[Thread:([^|]*)\|(Open|Closed)\]$');
 final _trackRe = RegExp(r'^\[Track:(.*)\s(\d+)/(\d+)\]$');
 final _npcRe = RegExp(r'^\[N:([^|\]]*)(?:\|(.*))?\]$');
 
@@ -67,6 +69,9 @@ LonelogImport parseLonelog(String md, {required DateTime importedAt}) {
   final beat = <String>[];
   var inState = false;
 
+  // A beat = the lines between blank-line separators. Known lossy edge: a text
+  // entry whose body contains its own blank line is split into separate entries
+  // on import (the blank line is indistinguishable from a beat separator).
   void flushBeat() {
     final body = beat.join('\n').trim();
     beat.clear();

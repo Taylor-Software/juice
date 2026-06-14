@@ -36,6 +36,19 @@ void main() {
     expect(imp.tracks.single.max, 6);
   });
 
+  test('the first | is the thread delimiter; a malformed pipe-title is skipped',
+      () {
+    // Well-formed: title before the single delimiter pipe.
+    final ok = parseLonelog('[STATE]\n[Thread:A B|Closed]\n[/STATE]\n',
+        importedAt: _t);
+    expect(ok.threads.single.title, 'A B');
+    expect(ok.threads.single.open, isFalse);
+    // Malformed (extra pipe in the title) is tolerated — ignored, no crash.
+    final bad =
+        parseLonelog('[STATE]\n[Thread:A|B|Open]\n[/STATE]\n', importedAt: _t);
+    expect(bad.threads, isEmpty);
+  });
+
   test('scene header becomes a scene entry; chaos note attaches', () {
     const md = '## Session log\n\n### S1 *the ambush*\n(note: Chaos 5)\n';
     final imp = parseLonelog(md, importedAt: _t);
