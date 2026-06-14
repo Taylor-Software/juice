@@ -758,6 +758,43 @@ class MapNotifier extends AsyncNotifier<MapState> {
         s.copyWith(hexes: [...s.hexes]..[idx] = h.copyWith(local: cells)));
   }
 
+  /// Set the hexcrawl site-type on an existing hex; no-op for unknown cells.
+  Future<void> setHexSite(int col, int row, String site) async {
+    final s = await _ready;
+    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
+    await save(s.copyWith(hexes: [
+      for (final h in s.hexes)
+        if (h.col == col && h.row == row) h.copyWith(site: site) else h
+    ]));
+  }
+
+  /// Site crawl: append the next writeup line for the site at (col,row).
+  /// No-op if the hex is absent, has no site, or already has 5 lines.
+  Future<void> crawlSite(int col, int row, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.site == null || h.siteLines.length >= 5) return;
+    final line = rollSiteLine(data, h.siteLines.length, dice);
+    await save(s.copyWith(
+        hexes: [...s.hexes]..[idx] =
+            h.copyWith(siteLines: [...h.siteLines, line])));
+  }
+
+  /// Site full: set the 4-line writeup for the site at (col,row).
+  Future<void> generateSite(
+      int col, int row, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.site == null) return;
+    await save(s.copyWith(
+        hexes: [...s.hexes]..[idx] =
+            h.copyWith(siteLines: rollSiteDetail(data, dice))));
+  }
+
   /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
   Future<void> setHexTerrain(int col, int row, String terrainKey) async {
     final s = await _ready;

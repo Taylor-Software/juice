@@ -54,3 +54,14 @@ LocalCell rollLocalCell(
       terrain: terrain,
       feature: rollFrom(data.localFeatures, dice));
 }
+
+/// One line of a site writeup. index 0 = occupant, 1 = hook, >=2 = a feature.
+String rollSiteLine(HexcrawlData data, int index, Dice dice) {
+  if (index == 0) return 'Held by: ${rollFrom(data.siteOccupants, dice)}';
+  if (index == 1) return 'Hook: ${rollFrom(data.siteHooks, dice)}';
+  return 'Feature: ${rollFrom(data.siteFeatures, dice)}';
+}
+
+/// The full site writeup (occupant, hook, two features) for the Full path.
+List<String> rollSiteDetail(HexcrawlData data, Dice dice) =>
+    [for (var i = 0; i < 4; i++) rollSiteLine(data, i, dice)];
