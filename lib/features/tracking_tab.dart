@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import 'rumors_pane.dart';
 import 'scenes_pane.dart';
 import 'tracker_screen.dart';
 import 'encounter_screen.dart';
@@ -26,7 +27,7 @@ class TrackingTab extends ConsumerWidget {
         ScenesPane(),
         CharactersPane(),
         ThreadsPane(),
-        Center(child: Text('Rumors')),
+        RumorsPane(),
         Center(child: Text('Tracks')),
         EncounterScreen(),
       ],
