@@ -45,15 +45,18 @@ List<GenHex> growRegion(
         GenHex(col: 0, row: 0, terrain: startKey, site: _rollSite(data, dice)),
   };
   while (placed.length < count) {
-    final candidates = <(int, int)>{};
+    // Insertion-ordered list (deterministic from the seeded dice) of empty
+    // neighbours of placed hexes, deduplicated via `seen`.
+    final candidates = <(int, int)>[];
+    final seen = <(int, int)>{};
     for (final h in placed.values) {
       for (final n in hexNeighbors(h.col, h.row)) {
-        if (!placed.containsKey((n.col, n.row))) candidates.add((n.col, n.row));
+        final key = (n.col, n.row);
+        if (!placed.containsKey(key) && seen.add(key)) candidates.add(key);
       }
     }
     if (candidates.isEmpty) break;
-    final list = candidates.toList();
-    final pick = list[dice.dN(list.length) - 1];
+    final pick = candidates[dice.dN(candidates.length) - 1];
     final adj = hexNeighbors(pick.$1, pick.$2)
         .where((n) => placed.containsKey((n.col, n.row)))
         .toList();

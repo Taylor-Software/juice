@@ -667,7 +667,10 @@ class MapNotifier extends AsyncNotifier<MapState> {
     }
     HexCell? cur;
     for (final h in s.hexes) {
-      if (h.col == s.currentHexCol && h.row == s.currentHexRow) cur = h;
+      if (h.col == s.currentHexCol && h.row == s.currentHexRow) {
+        cur = h;
+        break;
+      }
     }
     final fromTerrain = cur?.terrain ??
         rollTerrain(data, climate, dice)?.key ??
@@ -692,8 +695,13 @@ class MapNotifier extends AsyncNotifier<MapState> {
     final s = await _ready;
     final region =
         growRegion(data: data, climate: climate, count: count, dice: dice);
-    final ax = s.currentHexCol ?? 0;
-    final ay = s.currentHexRow ?? 0;
+    // Anchor at the current hex; if none, an existing hex (so the region
+    // connects to it); else the origin.
+    final (ax, ay) = (s.currentHexCol != null && s.currentHexRow != null)
+        ? (s.currentHexCol!, s.currentHexRow!)
+        : (s.hexes.isNotEmpty
+            ? (s.hexes.first.col, s.hexes.first.row)
+            : (0, 0));
     final existing = {for (final h in s.hexes) (h.col, h.row)};
     final added = <HexCell>[];
     for (final g in region) {
