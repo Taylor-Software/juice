@@ -965,13 +965,33 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     await _save(SessionsState(active: id, sessions: s.sessions));
   }
 
-  Future<void> create(String name, {Set<String>? systems}) async {
+  Future<void> create(String name,
+      {Set<String>? systems, String genre = '', String tone = ''}) async {
     final s = state.valueOrNull;
     if (s == null) return;
     final meta =
         SessionMeta(id: _newId(), name: name, systems: systems?.toList());
+    if (genre.isNotEmpty || tone.isNotEmpty) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('juice.settings.v1.${meta.id}',
+          jsonEncode(CampaignSettings(genre: genre, tone: tone).toJson()));
+    }
     await _save(
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
+  }
+
+  /// Rename session [id]; no-op for unknown ids or a blank name.
+  Future<void> rename(String id, String name) async {
+    final s = state.valueOrNull;
+    if (s == null || name.trim().isEmpty) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id)
+          SessionMeta(id: m.id, name: name.trim(), systems: m.systems)
+        else
+          m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
   }
 
   /// Replace the enabled optional systems for session [id].
