@@ -132,7 +132,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Future<void> _createSession(BuildContext dialogContext) async {
     final result = await showDialog<({String name, Set<String> systems})>(
       context: dialogContext,
-      builder: (context) => const _NewCampaignDialog(),
+      builder: (context) => const NewCampaignDialog(),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref
@@ -499,14 +499,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
 /// Dialog for creating a new campaign: name field + five system checkboxes.
 /// Returns `({String name, Set<String> systems})?`; null on cancel.
-class _NewCampaignDialog extends StatefulWidget {
-  const _NewCampaignDialog();
+class NewCampaignDialog extends StatefulWidget {
+  const NewCampaignDialog({super.key});
 
   @override
-  State<_NewCampaignDialog> createState() => _NewCampaignDialogState();
+  State<NewCampaignDialog> createState() => _NewCampaignDialogState();
 }
 
-class _NewCampaignDialogState extends State<_NewCampaignDialog> {
+class _NewCampaignDialogState extends State<NewCampaignDialog> {
   final _controller = TextEditingController();
   bool _juice = true;
   bool _mythic = true;
