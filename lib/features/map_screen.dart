@@ -73,8 +73,8 @@ class MapScreen extends StatelessWidget {
                   builder: (context, _) => IndexedStack(
                     index: controller.index,
                     children: [
-                      _DungeonTab(oracle: oracle),
-                      _HexTab(oracle: oracle),
+                      DungeonMapPane(oracle: oracle),
+                      HexMapPane(oracle: oracle),
                     ],
                   ),
                 );
@@ -88,15 +88,15 @@ class MapScreen extends StatelessWidget {
 }
 
 // -- Dungeon ----------------------------------------------------------------
-class _DungeonTab extends ConsumerStatefulWidget {
-  const _DungeonTab({required this.oracle});
+class DungeonMapPane extends ConsumerStatefulWidget {
+  const DungeonMapPane({super.key, required this.oracle});
   final Oracle oracle;
 
   @override
-  ConsumerState<_DungeonTab> createState() => _DungeonTabState();
+  ConsumerState<DungeonMapPane> createState() => DungeonMapPaneState();
 }
 
-class _DungeonTabState extends ConsumerState<_DungeonTab> {
+class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   GenResult? _last; // latest linger result
 
   @override
@@ -457,15 +457,15 @@ const Map<String, Color> _verdantTerrainHues = {
   'water': Color(0xFF1E88E5),
 };
 
-class _HexTab extends ConsumerStatefulWidget {
-  const _HexTab({required this.oracle});
+class HexMapPane extends ConsumerStatefulWidget {
+  const HexMapPane({super.key, required this.oracle});
   final Oracle oracle;
 
   @override
-  ConsumerState<_HexTab> createState() => _HexTabState();
+  ConsumerState<HexMapPane> createState() => HexMapPaneState();
 }
 
-class _HexTabState extends ConsumerState<_HexTab> {
+class HexMapPaneState extends ConsumerState<HexMapPane> {
   GenResult? _last; // latest travel result
 
   List<String> get _envNames =>

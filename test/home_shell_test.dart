@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/verdant_data.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -17,12 +18,22 @@ Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
         as Map<String, dynamic>));
 
+// Load verdant data synchronously from file (avoids rootBundle which hangs in
+// the headless test runner). MapsTab now embeds VerdantScreen (via IndexedStack,
+// so it's always built), meaning all HomeShell tests need this override.
+final _verdantData = VerdantData(
+    jsonDecode(File('assets/verdant_data.json').readAsStringSync())
+        as Map<String, dynamic>);
+final _verdantOverride =
+    verdantDataProvider.overrideWith((ref) async => _verdantData);
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets('shell shows five nav destinations and opens on Journal',
       (t) async {
     await t.pumpWidget(ProviderScope(
+      overrides: [_verdantOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
@@ -34,6 +45,7 @@ void main() {
 
   testWidgets('tapping Maps switches the body', (t) async {
     await t.pumpWidget(ProviderScope(
+      overrides: [_verdantOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
@@ -46,8 +58,9 @@ void main() {
   });
 
   testWidgets('journal is home; launcher opens grouped tools', (tester) async {
-    await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
     // The tabbed shell now has a NavigationBar (narrow) in the tree.
@@ -63,8 +76,9 @@ void main() {
 
   testWidgets('rulesets toggle adds and removes the moves tool',
       (tester) async {
-    await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
@@ -93,7 +107,10 @@ void main() {
   testWidgets('app pause disposes the interpreter service', (tester) async {
     final fake = FakeInterpreterService();
     await tester.pumpWidget(ProviderScope(
-      overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+      overrides: [
+        _verdantOverride,
+        interpreterServiceProvider.overrideWithValue(fake),
+      ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await tester.pumpAndSettle();
@@ -114,8 +131,9 @@ void main() {
   testWidgets(
       'new campaign dialog shows system checkboxes; unchecking party excludes it',
       (tester) async {
-    await tester.pumpWidget(
-        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
 
     // Open campaigns dialog.

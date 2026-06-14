@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import 'map_screen.dart';
+import 'verdant_screen.dart';
 
 class MapsTab extends ConsumerWidget {
   const MapsTab({super.key, required this.oracle});
@@ -10,17 +12,17 @@ class MapsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const SubtabHost(
+    return SubtabHost(
       destination: Destination.maps,
-      tabs: [
+      tabs: const [
         SubtabDef('world', 'World'),
         SubtabDef('dungeon', 'Dungeon'),
         SubtabDef('journey', 'Journey'),
       ],
       children: [
-        Center(child: Text('World')),
-        Center(child: Text('Dungeon')),
-        Center(child: Text('Journey')),
+        HexMapPane(oracle: oracle),
+        DungeonMapPane(oracle: oracle),
+        VerdantScreen(oracle: oracle),
       ],
     );
   }
