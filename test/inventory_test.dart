@@ -26,7 +26,7 @@ void main() {
     await c.read(inventoryProvider.future);
 
     await n.add('Torch', qty: 2);
-    var items = await c.read(inventoryProvider.future);
+    final items = await c.read(inventoryProvider.future);
     expect(items.single.qty, 2);
     final id = items.single.id;
 

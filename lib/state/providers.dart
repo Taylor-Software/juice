@@ -325,6 +325,37 @@ final inventoryProvider =
     AsyncNotifierProvider<InventoryNotifier, List<InvItem>>(
         InventoryNotifier.new);
 
+// -- Units (Lonelog Wargaming addon) ----------------------------------------
+class UnitNotifier extends _PersistedList<Unit> {
+  @override
+  String get prefsKey => 'juice.units.v1';
+  @override
+  Unit fromJson(Map<String, dynamic> json) => Unit.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(Unit item) => item.toJson();
+
+  Future<void> add(String name, {String size = '', String status = ''}) async {
+    await _persist([
+      Unit(id: _newId(), name: name, size: size, status: status),
+      ...await _ready
+    ]);
+  }
+
+  Future<void> updateUnit(Unit unit) async {
+    await _persist([
+      for (final u in await _ready)
+        if (u.id == unit.id) unit else u,
+    ]);
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((u) => u.id != id).toList());
+  }
+}
+
+final unitsProvider =
+    AsyncNotifierProvider<UnitNotifier, List<Unit>>(UnitNotifier.new);
+
 // -- Tracks -----------------------------------------------------------------
 class TrackNotifier extends _PersistedList<Track> {
   @override
@@ -716,6 +747,7 @@ const sessionScopedKeys = [
   'juice.rumors.v1',
   'juice.tracks.v1',
   'juice.inventory.v1',
+  'juice.units.v1',
   'juice.settings.v1',
 ];
 

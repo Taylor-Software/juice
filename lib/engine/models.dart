@@ -860,6 +860,51 @@ class CampaignSettings {
       };
 }
 
+/// Lonelog Wargaming addon unit-status vocabulary (default; substitutable).
+const kUnitStatuses = [
+  'Fresh',
+  'Steady',
+  'Wavering',
+  'Broken',
+  'Routed',
+  'Rallied',
+  'Pinned',
+  'Engaged',
+  'Exhausted',
+];
+
+/// One wargame unit (Lonelog Wargaming addon `[Unit:Name|size|status]`) — a
+/// group acting as one entity, NOT an individual.
+class Unit {
+  const Unit(
+      {required this.id, required this.name, this.size = '', this.status = ''});
+  final String id;
+  final String name;
+  final String size; // ×N count or full/half/depleted
+  final String status; // from kUnitStatuses (or custom)
+
+  Unit copyWith({String? name, String? size, String? status}) => Unit(
+        id: id,
+        name: name ?? this.name,
+        size: size ?? this.size,
+        status: status ?? this.status,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (size.isNotEmpty) 'size': size,
+        if (status.isNotEmpty) 'status': status,
+      };
+
+  factory Unit.fromJson(Map<String, dynamic> j) => Unit(
+        id: j['id'] as String,
+        name: (j['name'] as String?) ?? '',
+        size: (j['size'] as String?) ?? '',
+        status: (j['status'] as String?) ?? '',
+      );
+}
+
 /// One tracked inventory item (Lonelog Resource Tracking addon `[Inv:…]`).
 class InvItem {
   const InvItem(
