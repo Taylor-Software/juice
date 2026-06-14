@@ -576,5 +576,17 @@
     "Scattered coins",
     "A strange smell",
     "Flickering shadows"
+  ],
+  "localFeatures": [
+    "A trickling stream",
+    "A rocky outcrop",
+    "A dense thicket",
+    "A quiet clearing",
+    "Fresh animal tracks",
+    "A fallen tree",
+    "A muddy hollow",
+    "A worn game trail",
+    "An old fire-pit",
+    "A weathered marker"
   ]
 }

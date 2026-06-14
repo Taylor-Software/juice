@@ -729,6 +729,35 @@ class MapNotifier extends AsyncNotifier<MapState> {
         hexes: [...s.hexes, ...added], currentHexCol: ax, currentHexRow: ay));
   }
 
+  /// Local-zoom crawl: reveal the next ring sub-hex (0..5) of the hex at
+  /// (col,row). No-op if the hex is absent, has no terrain, or is full.
+  Future<void> crawlLocal(
+      int col, int row, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.terrain == null || h.local.length >= 6) return;
+    final cell = rollLocalCell(data, h.terrain!, h.local.length, dice);
+    await save(s.copyWith(
+        hexes: [...s.hexes]..[idx] = h.copyWith(local: [...h.local, cell])));
+  }
+
+  /// Local-zoom full: fill all 6 ring sub-hexes of the hex at (col,row).
+  Future<void> generateLocal(
+      int col, int row, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.terrain == null) return;
+    final cells = [
+      for (var i = 0; i < 6; i++) rollLocalCell(data, h.terrain!, i, dice)
+    ];
+    await save(
+        s.copyWith(hexes: [...s.hexes]..[idx] = h.copyWith(local: cells)));
+  }
+
   /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
   Future<void> setHexTerrain(int col, int row, String terrainKey) async {
     final s = await _ready;

@@ -21,6 +21,7 @@ void main() {
     expect(data.dungeonRoomTypes, contains('Vault'));
     expect(data.dungeonContents, contains('Treasure'));
     expect(data.dungeonDressing, isNotEmpty);
+    expect(data.localFeatures, isNotEmpty);
   });
 
   test('every weighted row references a defined terrain', () {

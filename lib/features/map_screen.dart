@@ -511,10 +511,18 @@ class HexMapPane extends ConsumerStatefulWidget {
   ConsumerState<HexMapPane> createState() => HexMapPaneState();
 }
 
+enum _HexZoom { region, flower }
+
 class HexMapPaneState extends ConsumerState<HexMapPane> {
   GenResult? _last; // latest travel result
   String _hcClimate = 'temperate';
   int _hcCount = 10;
+  int? _selCol, _selRow; // selected revealed hex (null = none)
+  _HexZoom _zoom = _HexZoom.region;
+
+  HexCell? _selectedHex(MapState s) => _selCol == null
+      ? null
+      : s.hexes.where((h) => h.col == _selCol && h.row == _selRow).firstOrNull;
 
   List<String> get _envNames =>
       widget.oracle.data.table('wilderness_environment');
@@ -600,12 +608,19 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (s) {
+        final sel = _selectedHex(s);
         return Column(
           children: [
             if (crawl.envRow != null) _envLine(context, crawl),
             _controls(context, s),
             if (_hexcrawlOn()) _hexcrawlControls(context),
-            Expanded(child: s.hexes.isEmpty ? _empty(context) : _canvas(s)),
+            Expanded(
+              child: _zoom == _HexZoom.flower && sel != null
+                  ? _flowerView(context, sel)
+                  : (s.hexes.isEmpty ? _empty(context) : _canvas(s)),
+            ),
+            if (_hexcrawlOn() && sel != null && _zoom == _HexZoom.region)
+              _hexDetailCard(context, sel),
             if (_last != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -726,8 +741,15 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
             final hit = hexAt(d.localPosition, _hexSize, cells,
                 minCol: minCol, minRow: minRow);
             if (hit == null) return;
-            // Revealed cells are inert in v1; faint neighbors reveal.
-            if (revealed.contains((hit.col, hit.row))) return;
+            // Revealed cells select (for the detail card); faint neighbors reveal.
+            if (revealed.contains((hit.col, hit.row))) {
+              setState(() {
+                _selCol = hit.col;
+                _selRow = hit.row;
+                _zoom = _HexZoom.region;
+              });
+              return;
+            }
             _manualReveal(hit.col, hit.row);
           },
           child: CustomPaint(
@@ -822,6 +844,197 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     await ref.read(mapProvider.notifier).resetHexes();
     if (mounted) setState(() => _last = null);
   }
+
+  // ---- H4a: local-zoom flower ----
+
+  Widget _hexDetailCard(BuildContext context, HexCell h) {
+    final theme = Theme.of(context);
+    return Card(
+      key: const Key('hex-detail-card'),
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Hex (${h.col}, ${h.row})', style: theme.textTheme.titleSmall),
+            if (h.terrain != null)
+              Text(h.terrain!, style: theme.textTheme.bodyMedium),
+            if (h.site != null)
+              Text('Site: ${h.site}', style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              if (h.terrain != null)
+                FilledButton.tonal(
+                  key: const Key('local-zoom-in'),
+                  onPressed: () => setState(() => _zoom = _HexZoom.flower),
+                  child: const Text('Zoom in'),
+                ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _localCrawl(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .crawlLocal(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _localFull(HexCell h) async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .generateLocal(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Widget _flowerView(BuildContext context, HexCell h) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              OutlinedButton(
+                key: const Key('local-back'),
+                onPressed: () => setState(() => _zoom = _HexZoom.region),
+                child: const Text('Back'),
+              ),
+              FilledButton.tonal(
+                key: const Key('local-reveal'),
+                onPressed: () => _localCrawl(h),
+                child: const Text('Reveal sub-hex'),
+              ),
+              FilledButton.tonal(
+                key: const Key('local-fill'),
+                onPressed: () => _localFull(h),
+                child: const Text('Fill hex'),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: InteractiveViewer(
+            constrained: false,
+            boundaryMargin: const EdgeInsets.all(200),
+            minScale: 0.5,
+            maxScale: 3,
+            child: SizedBox(
+              width: 360,
+              height: 360,
+              child: CustomPaint(
+                key: const Key('flower-canvas'),
+                size: const Size(360, 360),
+                painter: _FlowerPainter(
+                    centerTerrain: h.terrain ?? '',
+                    ring: h.local,
+                    scheme: scheme),
+              ),
+            ),
+          ),
+        ),
+        if (h.local.isNotEmpty)
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 96),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final lc in h.local)
+                    Text('• ${lc.terrain}: ${lc.feature}',
+                        style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
+class _FlowerPainter extends CustomPainter {
+  _FlowerPainter(
+      {required this.centerTerrain, required this.ring, required this.scheme});
+  final String centerTerrain;
+  final List<LocalCell> ring;
+  final ColorScheme scheme;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final neighbours = hexNeighbors(0, 0); // 6, fixed order = slot order
+    final cells = <({int col, int row, String terrain, bool center})>[
+      (col: 0, row: 0, terrain: centerTerrain, center: true),
+      for (final lc in ring)
+        if (lc.slot >= 0 && lc.slot < 6)
+          (
+            col: neighbours[lc.slot].col,
+            row: neighbours[lc.slot].row,
+            terrain: lc.terrain,
+            center: false
+          ),
+    ];
+    final minCol = cells.map((c) => c.col).reduce(math.min);
+    final minRow = cells.map((c) => c.row).reduce(math.min);
+    final origin = Offset(size.width / 2, size.height / 2);
+    final ref0 = hexCenterFor(0, 0, minCol, minRow, _hexSize);
+    for (final cell in cells) {
+      final c = origin +
+          (hexCenterFor(cell.col, cell.row, minCol, minRow, _hexSize) - ref0);
+      final path = _FlowerPainter._hexPath(c, _hexSize - 1);
+      final base = _verdantTerrainHues[cell.terrain] ??
+          hexcrawlTerrainHues[cell.terrain] ??
+          scheme.surfaceContainerHighest;
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = Color.alphaBlend(
+                base.withValues(alpha: 0.5), scheme.surfaceContainerHighest));
+      canvas.drawPath(
+          path,
+          Paint()
+            ..color = cell.center ? scheme.primary : scheme.outlineVariant
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = cell.center ? 3 : 1);
+      final label = cell.terrain.isEmpty ? '?' : cell.terrain[0].toUpperCase();
+      final tp = TextPainter(
+        text: TextSpan(
+            text: label,
+            style: TextStyle(
+                color: scheme.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.w600)),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, c - Offset(tp.width / 2, tp.height / 2));
+    }
+  }
+
+  static Path _hexPath(Offset center, double size) {
+    final path = Path();
+    for (var i = 0; i < 6; i++) {
+      final a = math.pi / 3 * i;
+      final v = center + Offset(size * math.cos(a), size * math.sin(a));
+      i == 0 ? path.moveTo(v.dx, v.dy) : path.lineTo(v.dx, v.dy);
+    }
+    return path..close();
+  }
+
+  @override
+  bool shouldRepaint(_FlowerPainter old) =>
+      old.centerTerrain != centerTerrain ||
+      old.ring != ring ||
+      old.scheme != scheme;
 }
 
 class _HexPainter extends CustomPainter {
