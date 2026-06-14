@@ -7,6 +7,7 @@ import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
 import '../engine/lonelog_data.dart';
 import '../engine/lonelog_export.dart';
+import '../engine/lonelog_import.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
@@ -787,6 +788,36 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final meta = SessionMeta(id: _newId(), name: parsed.name);
     final prefs = await SharedPreferences.getInstance();
     for (final e in parsed.rawByKey.entries) {
+      await prefs.setString('${e.key}.${meta.id}', e.value);
+    }
+    await _save(
+        SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
+  }
+
+  /// Import a Lonelog `.md` document as a NEW session and switch to it.
+  /// Throws [FormatException] when the content is not Lonelog-shaped.
+  Future<void> importLonelog(String content) async {
+    if (!content.trimLeft().startsWith('---') &&
+        !content.contains('[STATE]') &&
+        !content.contains('## Session log')) {
+      throw const FormatException('Not a Lonelog file');
+    }
+    final doc = parseLonelog(content, importedAt: DateTime.now());
+    final s = state.valueOrNull ?? await future;
+    final meta = SessionMeta(id: _newId(), name: doc.campaignName);
+    final prefs = await SharedPreferences.getInstance();
+    final rawByKey = <String, String>{
+      'juice.journal.v2':
+          jsonEncode(doc.entries.map((e) => e.toJson()).toList()),
+      'juice.threads.v1':
+          jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
+      'juice.characters.v1':
+          jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
+      'juice.tracks.v1': jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
+      'juice.settings.v1': jsonEncode(
+          CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
+    };
+    for (final e in rawByKey.entries) {
       await prefs.setString('${e.key}.${meta.id}', e.value);
     }
     await _save(

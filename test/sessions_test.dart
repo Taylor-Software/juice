@@ -151,6 +151,37 @@ void main() {
       expect(md, contains('[Thread:Slay the wyrm|Open]'));
       expect(md, contains('## Session log'));
     });
+
+    test('importLonelog creates a new session from the header + STATE',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      const md = '---\ntitle: "Imported Game"\n---\n\n'
+          '[STATE]\n[Thread:Find the heir|Open]\n[/STATE]\n\n'
+          '## Session log\n\n### S1 *opening*\n';
+
+      await container.read(sessionsProvider.notifier).importLonelog(md);
+      final s = await container.read(sessionsProvider.future);
+      expect(s.activeMeta.name, 'Imported Game');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('juice.threads.v1.${s.active}'),
+          contains('Find the heir'));
+    });
+
+    test('importLonelog rejects a non-Lonelog file', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      expect(
+        () => container
+            .read(sessionsProvider.notifier)
+            .importLonelog('just some prose, no markers'),
+        throwsA(isA<FormatException>()),
+      );
+    });
   });
 
   group('Session-scoped stores', () {

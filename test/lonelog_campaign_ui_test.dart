@@ -68,4 +68,20 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('Export as Lonelog (.md)'), findsOneWidget);
   });
+
+  testWidgets('Campaigns dialog offers Import Lonelog', (t) async {
+    await t.pumpWidget(ProviderScope(
+      overrides: [
+        verdantDataProvider.overrideWith((ref) async => _verdant),
+        emulatorDataProvider.overrideWith((ref) async => _emu),
+        lonelogDataProvider.overrideWith((ref) async => _lonelog),
+      ],
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+
+    await t.tap(find.byTooltip('Campaigns'));
+    await t.pumpAndSettle();
+    expect(find.text('Import Lonelog (.md)'), findsOneWidget);
+  });
 }
