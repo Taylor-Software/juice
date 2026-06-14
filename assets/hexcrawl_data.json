@@ -1,0 +1,546 @@
+{
+  "license": "CC0 / authored generic content",
+  "climates": [
+    "cold",
+    "temperate",
+    "hot"
+  ],
+  "terrains": [
+    {
+      "key": "arctic",
+      "name": "Arctic",
+      "climates": [
+        "cold"
+      ],
+      "difficulty": 3,
+      "travelNote": "Slow, exposed; risk of cold.",
+      "features": [
+        "Ice field",
+        "Frozen river",
+        "Snowdrift"
+      ]
+    },
+    {
+      "key": "coast",
+      "name": "Coast",
+      "climates": [
+        "cold",
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 2,
+      "travelNote": "Open shoreline; tidal hazards.",
+      "features": [
+        "Tidal flats",
+        "Sea cliffs",
+        "Driftwood"
+      ]
+    },
+    {
+      "key": "desert",
+      "name": "Desert",
+      "climates": [
+        "hot"
+      ],
+      "difficulty": 3,
+      "travelNote": "Open but harsh; water is scarce.",
+      "features": [
+        "Dunes",
+        "Dry wash",
+        "Rock spire"
+      ]
+    },
+    {
+      "key": "forest",
+      "name": "Forest",
+      "climates": [
+        "temperate"
+      ],
+      "difficulty": 3,
+      "travelNote": "Dense cover slows travel.",
+      "features": [
+        "Old grove",
+        "Game trail",
+        "Fallen timber"
+      ]
+    },
+    {
+      "key": "hills",
+      "name": "Hills",
+      "climates": [
+        "cold",
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 3,
+      "travelNote": "Rolling ground; many vantage points.",
+      "features": [
+        "Rocky knoll",
+        "Hidden vale",
+        "Cairn"
+      ]
+    },
+    {
+      "key": "jungle",
+      "name": "Jungle",
+      "climates": [
+        "hot"
+      ],
+      "difficulty": 4,
+      "travelNote": "Thick, humid, hard going.",
+      "features": [
+        "Vine wall",
+        "Canopy gap",
+        "Mud wallow"
+      ]
+    },
+    {
+      "key": "marsh",
+      "name": "Marsh",
+      "climates": [
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 4,
+      "travelNote": "Boggy, easy to get mired or lost.",
+      "features": [
+        "Reed beds",
+        "Black pool",
+        "Sunken log"
+      ]
+    },
+    {
+      "key": "mountains",
+      "name": "Mountains",
+      "climates": [
+        "cold",
+        "temperate"
+      ],
+      "difficulty": 4,
+      "travelNote": "Steep climbs; thin air.",
+      "features": [
+        "Narrow pass",
+        "Sheer cliff",
+        "Scree slope"
+      ]
+    },
+    {
+      "key": "plains",
+      "name": "Plains",
+      "climates": [
+        "cold",
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 2,
+      "travelNote": "Open and fast.",
+      "features": [
+        "Tall grass",
+        "Lone tree",
+        "Old road"
+      ]
+    },
+    {
+      "key": "taiga",
+      "name": "Taiga",
+      "climates": [
+        "cold"
+      ],
+      "difficulty": 3,
+      "travelNote": "Cold conifer forest.",
+      "features": [
+        "Snowy pines",
+        "Frozen bog",
+        "Logging cut"
+      ]
+    },
+    {
+      "key": "wastes",
+      "name": "Wastes",
+      "climates": [
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 3,
+      "travelNote": "Broken, barren badlands.",
+      "features": [
+        "Cracked earth",
+        "Ash flat",
+        "Twisted rock"
+      ]
+    },
+    {
+      "key": "water",
+      "name": "Open water",
+      "climates": [
+        "cold",
+        "temperate",
+        "hot"
+      ],
+      "difficulty": 2,
+      "travelNote": "Crossed by boat only.",
+      "features": [
+        "Open swell",
+        "Hidden reef",
+        "Floating debris"
+      ]
+    }
+  ],
+  "climateToTerrain": {
+    "cold": [
+      {
+        "terrain": "plains",
+        "weight": 3
+      },
+      {
+        "terrain": "taiga",
+        "weight": 3
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "arctic",
+        "weight": 2
+      },
+      {
+        "terrain": "mountains",
+        "weight": 2
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      }
+    ],
+    "temperate": [
+      {
+        "terrain": "forest",
+        "weight": 3
+      },
+      {
+        "terrain": "plains",
+        "weight": 3
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "marsh",
+        "weight": 2
+      },
+      {
+        "terrain": "mountains",
+        "weight": 1
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      },
+      {
+        "terrain": "wastes",
+        "weight": 1
+      }
+    ],
+    "hot": [
+      {
+        "terrain": "plains",
+        "weight": 3
+      },
+      {
+        "terrain": "desert",
+        "weight": 3
+      },
+      {
+        "terrain": "jungle",
+        "weight": 2
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "wastes",
+        "weight": 1
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      }
+    ]
+  },
+  "neighbouringTerrain": {
+    "arctic": [
+      {
+        "terrain": "arctic",
+        "weight": 3
+      },
+      {
+        "terrain": "taiga",
+        "weight": 2
+      },
+      {
+        "terrain": "mountains",
+        "weight": 2
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      }
+    ],
+    "coast": [
+      {
+        "terrain": "coast",
+        "weight": 2
+      },
+      {
+        "terrain": "plains",
+        "weight": 2
+      },
+      {
+        "terrain": "hills",
+        "weight": 1
+      },
+      {
+        "terrain": "marsh",
+        "weight": 1
+      },
+      {
+        "terrain": "water",
+        "weight": 2
+      }
+    ],
+    "desert": [
+      {
+        "terrain": "desert",
+        "weight": 3
+      },
+      {
+        "terrain": "wastes",
+        "weight": 2
+      },
+      {
+        "terrain": "hills",
+        "weight": 1
+      },
+      {
+        "terrain": "plains",
+        "weight": 1
+      }
+    ],
+    "forest": [
+      {
+        "terrain": "forest",
+        "weight": 3
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "plains",
+        "weight": 2
+      },
+      {
+        "terrain": "marsh",
+        "weight": 1
+      },
+      {
+        "terrain": "mountains",
+        "weight": 1
+      }
+    ],
+    "hills": [
+      {
+        "terrain": "hills",
+        "weight": 3
+      },
+      {
+        "terrain": "plains",
+        "weight": 2
+      },
+      {
+        "terrain": "mountains",
+        "weight": 2
+      },
+      {
+        "terrain": "forest",
+        "weight": 1
+      }
+    ],
+    "jungle": [
+      {
+        "terrain": "jungle",
+        "weight": 3
+      },
+      {
+        "terrain": "marsh",
+        "weight": 2
+      },
+      {
+        "terrain": "hills",
+        "weight": 1
+      },
+      {
+        "terrain": "plains",
+        "weight": 1
+      }
+    ],
+    "marsh": [
+      {
+        "terrain": "marsh",
+        "weight": 2
+      },
+      {
+        "terrain": "plains",
+        "weight": 2
+      },
+      {
+        "terrain": "forest",
+        "weight": 1
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      }
+    ],
+    "mountains": [
+      {
+        "terrain": "mountains",
+        "weight": 3
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "arctic",
+        "weight": 1
+      },
+      {
+        "terrain": "forest",
+        "weight": 1
+      }
+    ],
+    "plains": [
+      {
+        "terrain": "plains",
+        "weight": 3
+      },
+      {
+        "terrain": "hills",
+        "weight": 2
+      },
+      {
+        "terrain": "forest",
+        "weight": 2
+      },
+      {
+        "terrain": "coast",
+        "weight": 1
+      },
+      {
+        "terrain": "wastes",
+        "weight": 1
+      }
+    ],
+    "taiga": [
+      {
+        "terrain": "taiga",
+        "weight": 3
+      },
+      {
+        "terrain": "arctic",
+        "weight": 2
+      },
+      {
+        "terrain": "mountains",
+        "weight": 1
+      },
+      {
+        "terrain": "plains",
+        "weight": 1
+      }
+    ],
+    "wastes": [
+      {
+        "terrain": "wastes",
+        "weight": 3
+      },
+      {
+        "terrain": "desert",
+        "weight": 2
+      },
+      {
+        "terrain": "hills",
+        "weight": 1
+      },
+      {
+        "terrain": "plains",
+        "weight": 1
+      }
+    ],
+    "water": [
+      {
+        "terrain": "water",
+        "weight": 3
+      },
+      {
+        "terrain": "coast",
+        "weight": 3
+      }
+    ]
+  },
+  "weather": [
+    "Clear skies",
+    "Overcast",
+    "Light rain",
+    "Heavy rain / storm",
+    "Fog / mist",
+    "Snow / sleet",
+    "Searing heat",
+    "High winds"
+  ],
+  "hazards": [
+    "Rockfall / slide",
+    "Flash flood",
+    "Mire / quicksand",
+    "Exposure / extreme cold or heat",
+    "Lost the trail",
+    "Path blocked",
+    "Unstable ground",
+    "Sudden drop / crevasse"
+  ],
+  "siteTypes": [
+    "Cave or grotto",
+    "Ruined structure",
+    "Watchtower",
+    "Shrine or altar",
+    "Spring or well",
+    "Abandoned camp",
+    "Standing stones",
+    "Small settlement",
+    "Old battlefield",
+    "Strange landmark"
+  ],
+  "regionFeatures": [
+    "A river crossing",
+    "A commanding vantage point",
+    "Dense, snagging thicket",
+    "A sheltered clearing",
+    "Fresh animal tracks",
+    "A weathered boundary marker",
+    "Signs of recent passage",
+    "An unsettling stillness"
+  ],
+  "encounterCategories": [
+    "Nothing of note",
+    "Predator or beast",
+    "Sapient threat",
+    "Environmental hazard",
+    "Traveller or NPC",
+    "A useful find",
+    "A lair or site"
+  ]
+}
