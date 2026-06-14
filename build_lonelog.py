@@ -61,6 +61,9 @@ TAG_PREFIXES = [
     {"prefix": "Wealth", "name": "Wealth", "meaning": "Currency totals", "source": "resource"},
     {"prefix": "R", "name": "Room", "meaning": "A dungeon room + status", "source": "dungeon"},
     {"prefix": "F", "name": "Foe", "meaning": "A combat foe stat tag", "source": "combat"},
+    {"prefix": "Unit", "name": "Unit", "meaning": "A wargame unit", "source": "wargaming"},
+    {"prefix": "Force", "name": "Force", "meaning": "A named force / army", "source": "wargaming"},
+    {"prefix": "Scenario", "name": "Scenario", "meaning": "A battle scenario", "source": "wargaming"},
 ]
 
 # Structural blocks: digital [NAME]/[/NAME]; analog --- NAME --- / --- END NAME ---.
@@ -179,7 +182,7 @@ def verify(data):
     prefixes = [p["prefix"] for p in data["tagPrefixes"]]
     assert len(prefixes) == len(set(prefixes)), "duplicate reserved prefix"
     for p in data["tagPrefixes"]:
-        assert p["source"] in {"core", "combat", "dungeon", "resource"}, \
+        assert p["source"] in {"core", "combat", "dungeon", "resource", "wargaming"}, \
             f"bad source {p['source']}"
 
     # Block tags are balanced and bracket-wrapped.
@@ -187,12 +190,15 @@ def verify(data):
         assert b["openTag"] == f"[{b['name']}]", f"bad open {b['openTag']}"
         assert b["closeTag"] == f"[/{b['name']}]", f"bad close {b['closeTag']}"
 
-    # Addons reference only declared blocks; status is known.
+    # Addons reference only declared blocks/prefixes; status is known.
     block_names = {b["name"] for b in data["blocks"]}
+    prefix_set = {p["prefix"] for p in data["tagPrefixes"]}
     for a in data["addons"]:
         assert a["status"] in {"documented", "implemented"}, f"bad status {a['status']}"
         for bn in a["addsBlocks"]:
             assert bn in block_names, f"addon {a['key']} unknown block {bn}"
+        for tn in a["addsTags"]:
+            assert tn in prefix_set, f"addon {a['key']} unknown tag {tn}"
 
     # Examples are well-formed: non-empty titles and non-empty lines.
     assert len(data["examples"]) >= 4, "expected several worked examples"

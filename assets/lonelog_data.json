@@ -140,6 +140,24 @@
       "name": "Foe",
       "meaning": "A combat foe stat tag",
       "source": "combat"
+    },
+    {
+      "prefix": "Unit",
+      "name": "Unit",
+      "meaning": "A wargame unit",
+      "source": "wargaming"
+    },
+    {
+      "prefix": "Force",
+      "name": "Force",
+      "meaning": "A named force / army",
+      "source": "wargaming"
+    },
+    {
+      "prefix": "Scenario",
+      "name": "Scenario",
+      "meaning": "A battle scenario",
+      "source": "wargaming"
     }
   ],
   "blocks": [

@@ -39,9 +39,16 @@ const lonelogBlockNames = [
   'CAMPAIGN',
 ];
 
-/// A whole line that is just an upper-case bracket delimiter, e.g. `[COMBAT]`
-/// or `[/DUNGEON STATUS]`.
-final _blockLineRe = RegExp(r'^\s*\[/?[A-Z][A-Z ]*\]\s*$');
+/// A whole line that is just a KNOWN block delimiter, e.g. `[COMBAT]` or
+/// `[/DUNGEON STATUS]`. Matching is restricted to [lonelogBlockNames] so a
+/// colon-less uppercase tag written alone (e.g. `[N]`) is not mistaken for a
+/// block — it falls through to the inline scanner as a tag.
+final _blockLineRe = RegExp(r'^\s*\[/?([A-Z][A-Z ]*)\]\s*$');
+
+bool _isBlockLine(String line) {
+  final m = _blockLineRe.firstMatch(line);
+  return m != null && lonelogBlockNames.contains(m.group(1));
+}
 
 /// Inline tokens: a bracket tag, or a `(keyword: ...)` meta aside.
 final _inlineRe = RegExp(
@@ -49,7 +56,7 @@ final _inlineRe = RegExp(
 
 List<LonelogSpan> highlight(String line) {
   if (line.isEmpty) return const [LonelogSpan('', LonelogSpanKind.text)];
-  if (_blockLineRe.hasMatch(line)) {
+  if (_isBlockLine(line)) {
     return [LonelogSpan(line, LonelogSpanKind.block)];
   }
 

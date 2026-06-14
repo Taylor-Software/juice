@@ -36,6 +36,12 @@ void main() {
     expect(highlight('[/DUNGEON STATUS]').single.kind, LonelogSpanKind.block);
   });
 
+  test('a colon-less uppercase bracket that is not a known block is a tag', () {
+    // [N] is not a block name; it must not be mistaken for a block delimiter.
+    expect(highlight('[N]').single.kind, LonelogSpanKind.tag);
+    expect(highlight('[FOO]').single.kind, LonelogSpanKind.tag);
+  });
+
   test('classifies a standalone tag line and a meta aside', () {
     expect(highlight('[N:Jonah|captured]').single.kind, LonelogSpanKind.tag);
     expect(highlight('(note: trying a flashback)').single.kind,

@@ -13,7 +13,7 @@ void main() {
     expect(data.version, '1.5.0');
     expect(data.symbols.map((s) => s.symbol),
         containsAll(['@', '?', 'd:', '->', '=>']));
-    expect(data.tagPrefixes.length, 13);
+    expect(data.tagPrefixes.length, 16);
     expect(data.blocks.length, 5);
     expect(data.addons.length, 7);
     expect(data.examples.length, greaterThanOrEqualTo(4));

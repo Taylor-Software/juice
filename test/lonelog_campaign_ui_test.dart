@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
+import 'package:juice_oracle/engine/lonelog_data.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
@@ -21,6 +22,9 @@ final _verdant = VerdantData(
 final _emu = EmulatorData(
     jsonDecode(File('assets/emulator_data.json').readAsStringSync())
         as Map<String, dynamic>);
+final _lonelog = LonelogData(
+    jsonDecode(File('assets/lonelog_data.json').readAsStringSync())
+        as Map<String, dynamic>);
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -31,6 +35,7 @@ void main() {
       overrides: [
         verdantDataProvider.overrideWith((ref) async => _verdant),
         emulatorDataProvider.overrideWith((ref) async => _emu),
+        lonelogDataProvider.overrideWith((ref) async => _lonelog),
       ],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
