@@ -457,9 +457,84 @@ class HexMapPane extends ConsumerStatefulWidget {
 
 class HexMapPaneState extends ConsumerState<HexMapPane> {
   GenResult? _last; // latest travel result
+  String _hcClimate = 'temperate';
+  int _hcCount = 10;
 
   List<String> get _envNames =>
       widget.oracle.data.table('wilderness_environment');
+
+  bool _hexcrawlOn() =>
+      (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems)
+          .contains('hexcrawl');
+
+  Future<void> _hcCrawl() async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .crawlHexcrawl(data, _hcClimate, widget.oracle.dice);
+  }
+
+  Future<void> _hcRegion() async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .generateRegion(data, _hcClimate, _hcCount, widget.oracle.dice);
+  }
+
+  Widget _hexcrawlControls(BuildContext context) {
+    final data = ref.watch(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            children: [
+              for (final c in data.climates)
+                ChoiceChip(
+                  label: Text(c),
+                  selected: _hcClimate == c,
+                  onSelected: (_) => setState(() => _hcClimate = c),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FilledButton.tonal(
+                key: const Key('hexcrawl-reveal'),
+                onPressed: _hcCrawl,
+                child: const Text('Reveal next (hexcrawl)'),
+              ),
+              FilledButton.tonal(
+                key: const Key('hexcrawl-generate-region'),
+                onPressed: _hcRegion,
+                child: Text('Generate region ($_hcCount)'),
+              ),
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: () =>
+                    setState(() => _hcCount = (_hcCount - 5).clamp(5, 60)),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add),
+                onPressed: () =>
+                    setState(() => _hcCount = (_hcCount + 5).clamp(5, 60)),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -473,6 +548,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
           children: [
             if (crawl.envRow != null) _envLine(context, crawl),
             _controls(context, s),
+            if (_hexcrawlOn()) _hexcrawlControls(context),
             Expanded(child: s.hexes.isEmpty ? _empty(context) : _canvas(s)),
             if (_last != null)
               Padding(
