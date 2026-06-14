@@ -72,6 +72,16 @@ REGION_FEATURES = ["A river crossing", "A commanding vantage point", "Dense, sna
                    "Signs of recent passage", "An unsettling stillness"]
 ENCOUNTER_CATEGORIES = ["Nothing of note", "Predator or beast", "Sapient threat",
                         "Environmental hazard", "Traveller or NPC", "A useful find", "A lair or site"]
+DUNGEON_ROOM_TYPES = ["Chamber", "Corridor junction", "Great hall", "Cave",
+                      "Vault", "Shrine", "Cell block", "Pit", "Stairway",
+                      "Flooded room"]
+DUNGEON_CONTENTS = ["Empty", "Monster lair", "Trap", "Treasure",
+                    "Puzzle / mechanism", "Denizen / NPC", "Hazard",
+                    "Curious feature"]
+DUNGEON_DRESSING = ["Rubble-strewn floor", "Dripping water", "Old bones",
+                    "Claw marks on the walls", "A faint draft",
+                    "A mouldering tapestry", "A cold spot", "Scattered coins",
+                    "A strange smell", "Flickering shadows"]
 
 
 def build():
@@ -88,6 +98,9 @@ def build():
         "siteTypes": SITE_TYPES,
         "regionFeatures": REGION_FEATURES,
         "encounterCategories": ENCOUNTER_CATEGORIES,
+        "dungeonRoomTypes": DUNGEON_ROOM_TYPES,
+        "dungeonContents": DUNGEON_CONTENTS,
+        "dungeonDressing": DUNGEON_DRESSING,
     }
 
 
@@ -114,7 +127,9 @@ def verify(data):
             assert r["weight"] >= 1, "weight must be >= 1"
     # Every terrain has a neighbouring table.
     assert keys <= set(data["neighbouringTerrain"]), "a terrain lacks a neighbouring table"
-    for name in ["weather", "hazards", "siteTypes", "regionFeatures", "encounterCategories"]:
+    for name in ["weather", "hazards", "siteTypes", "regionFeatures",
+                 "encounterCategories", "dungeonRoomTypes", "dungeonContents",
+                 "dungeonDressing"]:
         assert data[name], f"{name} is empty"
         assert len(data[name]) == len(set(data[name])), f"{name} has duplicates"
 
