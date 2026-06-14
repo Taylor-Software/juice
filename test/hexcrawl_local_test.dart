@@ -17,8 +17,7 @@ HexcrawlData _data() => HexcrawlData(
 
 void main() {
   test('HexCell.local round-trips and omits when empty', () {
-    final h =
-        HexCell(col: 1, row: 2, envRow: 1, terrain: 'forest', local: const [
+    const h = HexCell(col: 1, row: 2, envRow: 1, terrain: 'forest', local: [
       LocalCell(slot: 0, terrain: 'hills', feature: 'A rocky outcrop'),
     ]);
     final j = h.toJson();
@@ -28,7 +27,7 @@ void main() {
     expect(back.local.single.terrain, 'hills');
     expect(back.local.single.feature, 'A rocky outcrop');
 
-    final empty = HexCell(col: 0, row: 0, envRow: 1).toJson();
+    final empty = const HexCell(col: 0, row: 0, envRow: 1).toJson();
     expect(empty.containsKey('local'), isFalse);
   });
 
