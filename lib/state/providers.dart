@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
+import '../engine/lonelog_data.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
@@ -850,6 +851,9 @@ final emulatorDataProvider =
 
 final verdantDataProvider =
     FutureProvider<VerdantData>((ref) => VerdantData.load());
+
+final lonelogDataProvider =
+    FutureProvider<LonelogData>((ref) => LonelogData.load());
 
 /// Loads the hand-written help asset once.
 final helpDataProvider = FutureProvider<HelpData>((ref) async {
