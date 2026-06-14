@@ -1084,6 +1084,17 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   }
 }
 
+/// Transient launcher gate: shown on every cold start (in-memory, not
+/// persisted). Any launcher entry action calls [dismiss] to enter the journal.
+class LauncherGateNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+  void dismiss() => state = false;
+}
+
+final launcherGateProvider =
+    NotifierProvider<LauncherGateNotifier, bool>(LauncherGateNotifier.new);
+
 final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
     SessionsNotifier.new);
 
