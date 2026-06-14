@@ -86,6 +86,20 @@ LOCAL_FEATURES = ["A trickling stream", "A rocky outcrop", "A dense thicket",
                   "A quiet clearing", "Fresh animal tracks", "A fallen tree",
                   "A muddy hollow", "A worn game trail", "An old fire-pit",
                   "A weathered marker"]
+SITE_OCCUPANTS = ["Unoccupied / abandoned", "A lone hermit or hold-out",
+                  "A small band", "A territorial beast", "A larger warband",
+                  "Scavengers", "A guardian", "Pilgrims or travellers",
+                  "Something unnatural", "Recently emptied"]
+SITE_HOOKS = ["Something valuable is hidden here", "A captive needs freeing",
+              "A rival is also seeking it", "It guards a passage onward",
+              "A curse or ill omen hangs over it",
+              "It holds a clue to a larger mystery", "It is not what it appears",
+              "A debt is owed here", "It is slowly being reclaimed",
+              "An old promise binds it"]
+SITE_FEATURES = ["A defensible approach", "Signs of a struggle", "A hidden cache",
+                 "A source of fresh water", "Faded markings or writing",
+                 "A collapsed section", "An unusual smell",
+                 "Evidence of recent use", "A commanding view", "An uneasy quiet"]
 
 
 def build():
@@ -106,6 +120,9 @@ def build():
         "dungeonContents": DUNGEON_CONTENTS,
         "dungeonDressing": DUNGEON_DRESSING,
         "localFeatures": LOCAL_FEATURES,
+        "siteOccupants": SITE_OCCUPANTS,
+        "siteHooks": SITE_HOOKS,
+        "siteFeatures": SITE_FEATURES,
     }
 
 
@@ -134,7 +151,8 @@ def verify(data):
     assert keys <= set(data["neighbouringTerrain"]), "a terrain lacks a neighbouring table"
     for name in ["weather", "hazards", "siteTypes", "regionFeatures",
                  "encounterCategories", "dungeonRoomTypes", "dungeonContents",
-                 "dungeonDressing", "localFeatures"]:
+                 "dungeonDressing", "localFeatures", "siteOccupants",
+                 "siteHooks", "siteFeatures"]:
         assert data[name], f"{name} is empty"
         assert len(data[name]) == len(set(data[name])), f"{name} has duplicates"
 
