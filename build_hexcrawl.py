@@ -100,6 +100,9 @@ SITE_FEATURES = ["A defensible approach", "Signs of a struggle", "A hidden cache
                  "A source of fresh water", "Faded markings or writing",
                  "A collapsed section", "An unusual smell",
                  "Evidence of recent use", "A commanding view", "An uneasy quiet"]
+SITE_AREA_TYPES = ["Entrance", "Antechamber", "Main hall", "Storeroom",
+                   "Inner sanctum", "Collapsed section", "Hidden alcove",
+                   "Well or shaft", "Living quarters", "Lookout"]
 
 
 def build():
@@ -123,6 +126,7 @@ def build():
         "siteOccupants": SITE_OCCUPANTS,
         "siteHooks": SITE_HOOKS,
         "siteFeatures": SITE_FEATURES,
+        "siteAreaTypes": SITE_AREA_TYPES,
     }
 
 
@@ -152,7 +156,7 @@ def verify(data):
     for name in ["weather", "hazards", "siteTypes", "regionFeatures",
                  "encounterCategories", "dungeonRoomTypes", "dungeonContents",
                  "dungeonDressing", "localFeatures", "siteOccupants",
-                 "siteHooks", "siteFeatures"]:
+                 "siteHooks", "siteFeatures", "siteAreaTypes"]:
         assert data[name], f"{name} is empty"
         assert len(data[name]) == len(set(data[name])), f"{name} has duplicates"
 

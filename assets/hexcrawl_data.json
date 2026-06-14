@@ -624,5 +624,17 @@
     "Evidence of recent use",
     "A commanding view",
     "An uneasy quiet"
+  ],
+  "siteAreaTypes": [
+    "Entrance",
+    "Antechamber",
+    "Main hall",
+    "Storeroom",
+    "Inner sanctum",
+    "Collapsed section",
+    "Hidden alcove",
+    "Well or shaft",
+    "Living quarters",
+    "Lookout"
   ]
 }
