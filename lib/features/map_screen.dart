@@ -430,6 +430,23 @@ const Map<String, Color> _verdantTerrainHues = {
   'water': Color(0xFF1E88E5),
 };
 
+/// Fixed hues for the 12 generic hexcrawl terrain keys (used when a hex carries
+/// a hexcrawl-generated terrain instead of a Juice envRow / Verdant terrain).
+const Map<String, Color> hexcrawlTerrainHues = {
+  'arctic': Color(0xFFB3E5FC),
+  'coast': Color(0xFF80DEEA),
+  'desert': Color(0xFFE0C068),
+  'forest': Color(0xFF2E7D32),
+  'hills': Color(0xFFA1887F),
+  'jungle': Color(0xFF1B5E20),
+  'marsh': Color(0xFF26A69A),
+  'mountains': Color(0xFF78909C),
+  'plains': Color(0xFF9CCC65),
+  'taiga': Color(0xFF4DB6AC),
+  'wastes': Color(0xFFBCAAA4),
+  'water': Color(0xFF1E88E5),
+};
+
 class HexMapPane extends ConsumerStatefulWidget {
   const HexMapPane({super.key, required this.oracle});
   final Oracle oracle;
@@ -735,7 +752,9 @@ class _HexPainter extends CustomPainter {
       final path = _hexPath(c, _hexSize - 1);
       final hasTerrain = h.terrain != null;
       final baseHue = hasTerrain
-          ? (_verdantTerrainHues[h.terrain] ?? scheme.surfaceContainerHighest)
+          ? (_verdantTerrainHues[h.terrain] ??
+              hexcrawlTerrainHues[h.terrain] ??
+              scheme.surfaceContainerHighest)
           : _envHues[h.envRow - 1];
       final isCurrent = h.col == currentCol && h.row == currentRow;
       // Uniform 0.5 alpha for every hex (current is marked by its primary
@@ -756,6 +775,10 @@ class _HexPainter extends CustomPainter {
               ..color = scheme.primary
               ..style = PaintingStyle.stroke
               ..strokeWidth = 3);
+      }
+      if (h.site != null) {
+        canvas.drawCircle(c + const Offset(0, -_hexSize * 0.45), 3,
+            Paint()..color = scheme.primary);
       }
       // Only the first letter is drawn (single-glyph hex label), so the bare
       // key is enough — no need to title-case the whole terrain name.
