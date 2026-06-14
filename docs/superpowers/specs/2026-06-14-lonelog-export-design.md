@@ -48,7 +48,8 @@ and the existing pretty markdown.
   ```dart
   String campaignToLonelog({
     required String campaignName,
-    String? ruleset,
+    String genre = '',
+    String tone = '',
     required List<Thread> threads,
     required List<Character> characters,
     required List<Track> tracks,
@@ -59,8 +60,8 @@ and the existing pretty markdown.
   ```
   Mirrors `journal_export.dart`. Reuses `slugify` and `mentionsToPlain`.
 - **Wiring** `SessionsNotifier.exportActiveAsLonelog()` — reads the active session's
-  journal/threads/characters/tracks + name + ruleset (from `CampaignSettings`), calls the
-  engine, returns the string. Mirrors the existing `exportActive()`.
+  journal/threads/characters/tracks + name + genre/tone (from `CampaignSettings` via
+  `settingsProvider`), calls the engine, returns the string. Mirrors `exportActive()`.
 - **Menu** — `_showSessions` in `home_shell.dart` gains an "Export as Lonelog (.md)" tile
   → `FilePicker.saveFile` with `<slug>.lonelog.md`, reusing the `_exportCampaign` pattern.
 
@@ -69,7 +70,8 @@ and the existing pretty markdown.
 ```markdown
 ---
 title: <campaign name>
-ruleset: <settings ruleset, if any — omitted when absent>
+genre: <settings.genre, omitted when empty>
+tone: <settings.tone, omitted when empty>
 tools: juice-oracle
 exported: 2026-06-14
 ---
@@ -90,8 +92,8 @@ The guard hesitates at the gate.
 => [#Thread:Slay the wyrm]
 ```
 
-- **YAML front matter:** `title` (campaign name), `ruleset` (from `CampaignSettings`, omitted
-  when empty), `tools: juice-oracle`, `exported: <date>`.
+- **YAML front matter:** `title` (campaign name), `genre`/`tone` (from `CampaignSettings`,
+  each omitted when empty), `tools: juice-oracle`, `exported: <date>`.
 - **`[STATE]…[/STATE]`** is a **juice-defined** structural block (guidelines-compliant: new
   blocks use `[NAME]/[/NAME]`); there is no canonical core Lonelog block for a generic
   threads/NPCs/tracks snapshot. It lists one tag line per entity.
@@ -117,7 +119,7 @@ The guard hesitates at the gate.
 ## Success criteria / testing
 
 - `lonelog_export_test.dart` (pure, no Flutter, no rootBundle):
-  - YAML header contains title + `tools: juice-oracle` + date; `ruleset` present only when set.
+  - YAML header contains title + `tools: juice-oracle` + date; `genre`/`tone` present only when set.
   - `[STATE]` block opens/closes and lists a tag line for each thread/character/track with
     correct `Open/Closed`, joined tags, and `filled/max`.
   - Scene numbering increments; chaos note rendered when present.
