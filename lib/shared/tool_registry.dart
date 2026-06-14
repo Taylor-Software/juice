@@ -57,6 +57,7 @@ const toolSystem = <String, String>{
   'gen-details': 'juice',
   'threads-characters': 'core',
   'tables': 'juice',
+  'lonelog-ref': 'lonelog',
   'moves': 'ironsworn',
   'help': 'core',
 };
@@ -205,6 +206,13 @@ List<ToolDef> buildToolRegistry({
       icon: Icons.grid_view_outlined,
       group: 'Reference',
       badge: 'Juice',
+    ),
+    const ToolDef(
+      id: 'lonelog-ref',
+      label: 'Lonelog Notation',
+      icon: Icons.notes_outlined,
+      group: 'Reference',
+      badge: 'Lonelog',
     ),
     if (family.isNotEmpty)
       ToolDef(
