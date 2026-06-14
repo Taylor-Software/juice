@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
 import '../engine/lonelog_data.dart';
+import '../engine/lonelog_export.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
@@ -754,6 +755,27 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       name: s.activeMeta.name,
       savedAt: DateTime.now(),
       rawByKey: rawByKey,
+    );
+  }
+
+  /// Serialize the active session to a Lonelog `.md` document.
+  Future<String> exportActiveAsLonelog() async {
+    final s = state.valueOrNull ?? await future;
+    final journal = await ref.read(journalProvider.future);
+    final threads = await ref.read(threadsProvider.future);
+    final characters = await ref.read(charactersProvider.future);
+    final tracks = await ref.read(tracksProvider.future);
+    final settings = await ref.read(settingsProvider.future);
+    return campaignToLonelog(
+      campaignName: s.activeMeta.name,
+      genre: settings.genre,
+      tone: settings.tone,
+      threads: threads,
+      characters: characters,
+      tracks: tracks,
+      entriesNewestFirst: journal,
+      threadTitles: {for (final t in threads) t.id: t.title},
+      exportedAt: DateTime.now(),
     );
   }
 

@@ -130,6 +130,27 @@ void main() {
       final meta = s.sessions.firstWhere((m) => m.id == 'default');
       expect(meta.enabledSystems, {'juice', 'lonelog'});
     });
+
+    test('exportActiveAsLonelog renders title + a thread tag', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"Lonelog Camp"}]}',
+        'juice.threads.v1.default':
+            '[{"id":"t1","title":"Slay the wyrm","note":"","open":true}]',
+        'juice.journal.v2.default':
+            '[{"id":"n","timestamp":"2026-06-11T10:00:00.000","title":"Note","body":"hi","kind":"text"}]',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+
+      final md = await container
+          .read(sessionsProvider.notifier)
+          .exportActiveAsLonelog();
+      expect(md, contains('title: Lonelog Camp'));
+      expect(md, contains('[Thread:Slay the wyrm|Open]'));
+      expect(md, contains('## Session log'));
+    });
   });
 
   group('Session-scoped stores', () {
