@@ -65,3 +65,7 @@ String rollSiteLine(HexcrawlData data, int index, Dice dice) {
 /// The full site writeup (occupant, hook, two features) for the Full path.
 List<String> rollSiteDetail(HexcrawlData data, Dice dice) =>
     [for (var i = 0; i < 4; i++) rollSiteLine(data, i, dice)];
+
+/// A site interior area type (H4c).
+String rollSiteArea(HexcrawlData data, Dice dice) =>
+    rollFrom(data.siteAreaTypes, dice);

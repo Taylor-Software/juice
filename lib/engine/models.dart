@@ -431,6 +431,22 @@ class LocalCell {
   }
 }
 
+/// One interior area of a site (H4c). A minimal grid cell — no corridors.
+class SiteArea {
+  const SiteArea({required this.x, required this.y, required this.name});
+  final int x;
+  final int y;
+  final String name; // a siteAreaTypes entry
+
+  Map<String, dynamic> toJson() => {'x': x, 'y': y, 'name': name};
+
+  static SiteArea? maybeFromJson(dynamic j) {
+    if (j is! Map || j['x'] is! int || j['y'] is! int) return null;
+    return SiteArea(
+        x: j['x'] as int, y: j['y'] as int, name: (j['name'] as String?) ?? '');
+  }
+}
+
 /// A revealed wilderness hex (flat-top, odd-q offset coordinates: odd
 /// columns are shifted half a hex down).
 class HexCell {
@@ -444,6 +460,7 @@ class HexCell {
     this.site,
     this.local = const [],
     this.siteLines = const [],
+    this.siteAreas = const [],
   });
   final int col;
   final int row;
@@ -454,6 +471,7 @@ class HexCell {
   final String? site; // hexcrawl site-type on this hex; null = none
   final List<LocalCell> local; // local-zoom flower ring (H4a); [] = not zoomed
   final List<String> siteLines; // site writeup lines (H4b); [] = none
+  final List<SiteArea> siteAreas; // site interior areas (H4c); [] = none
 
   HexCell copyWith({
     int? envRow,
@@ -467,6 +485,8 @@ class HexCell {
     bool clearLocal = false,
     List<String>? siteLines,
     bool clearSiteLines = false,
+    List<SiteArea>? siteAreas,
+    bool clearSiteAreas = false,
   }) =>
       HexCell(
         col: col,
@@ -478,6 +498,7 @@ class HexCell {
         site: clearSite ? null : (site ?? this.site),
         local: clearLocal ? const [] : (local ?? this.local),
         siteLines: clearSiteLines ? const [] : (siteLines ?? this.siteLines),
+        siteAreas: clearSiteAreas ? const [] : (siteAreas ?? this.siteAreas),
       );
 
   Map<String, dynamic> toJson() => {
@@ -490,6 +511,8 @@ class HexCell {
         if (site != null) 'site': site,
         if (local.isNotEmpty) 'local': local.map((e) => e.toJson()).toList(),
         if (siteLines.isNotEmpty) 'siteLines': siteLines,
+        if (siteAreas.isNotEmpty)
+          'siteAreas': siteAreas.map((e) => e.toJson()).toList(),
       };
 
   /// Parses one hex entry; null for anything without a map shape and int
@@ -510,6 +533,10 @@ class HexCell {
           .toList(),
       siteLines:
           ((j['siteLines'] as List?) ?? const []).whereType<String>().toList(),
+      siteAreas: ((j['siteAreas'] as List?) ?? const [])
+          .map(SiteArea.maybeFromJson)
+          .whereType<SiteArea>()
+          .toList(),
     );
   }
 }

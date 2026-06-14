@@ -795,6 +795,40 @@ class MapNotifier extends AsyncNotifier<MapState> {
             h.copyWith(siteLines: rollSiteDetail(data, dice))));
   }
 
+  /// Site interior crawl: append one area to the site at (col,row).
+  Future<void> crawlSiteArea(
+      int col, int row, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.site == null) return;
+    final pos = nextSiteAreaPosition(h.siteAreas, dice);
+    final area = SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice));
+    await save(s.copyWith(
+        hexes: [...s.hexes]..[idx] =
+            h.copyWith(siteAreas: [...h.siteAreas, area])));
+  }
+
+  /// Site interior full: generate a fresh [count]-area interior (clamp 3..12)
+  /// for the site at (col,row).
+  Future<void> generateSiteInterior(
+      int col, int row, int count, HexcrawlData data, Dice dice) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final h = s.hexes[idx];
+    if (h.site == null) return;
+    final n = count.clamp(3, 12);
+    final areas = <SiteArea>[];
+    for (var i = 0; i < n; i++) {
+      final pos = nextSiteAreaPosition(areas, dice);
+      areas.add(SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice)));
+    }
+    await save(
+        s.copyWith(hexes: [...s.hexes]..[idx] = h.copyWith(siteAreas: areas)));
+  }
+
   /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
   Future<void> setHexTerrain(int col, int row, String terrainKey) async {
     final s = await _ready;
