@@ -533,6 +533,15 @@ class MapNotifier extends AsyncNotifier<MapState> {
     ]));
   }
 
+  /// Set a room's Lonelog status (Dungeon-Crawling addon); '' clears it.
+  Future<void> setRoomStatus(String id, String status) async {
+    final s = await _ready;
+    await save(s.copyWith(rooms: [
+      for (final r in s.rooms)
+        if (r.id == id) r.copyWith(status: status) else r,
+    ]));
+  }
+
   /// Reveal the next hex from travel (engine picks the cell) and move
   /// current onto it. Re-entering a revealed cell keeps its environment
   /// but updates its lost flag.

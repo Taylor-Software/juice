@@ -348,6 +348,18 @@ class EncounterState {
 }
 
 /// A mapped dungeon room on the integer grid (one cell per room).
+/// Lonelog Dungeon-Crawling addon room-status palette (suggested, not closed).
+const kDungeonRoomStatuses = [
+  'unexplored',
+  'active',
+  'cleared',
+  'looted',
+  'locked',
+  'trapped',
+  'safe',
+  'collapsed',
+];
+
 class DungeonRoom {
   const DungeonRoom({
     required this.id,
@@ -355,23 +367,33 @@ class DungeonRoom {
     required this.y,
     required this.title,
     this.detail = '',
+    this.status = '',
   });
   final String id;
   final int x;
   final int y;
   final String title; // e.g. the room's oracle headline
   final String detail; // full GenResult.asText (+ appended linger lines)
+  final String status; // Lonelog room status (cleared/looted/…); '' = unset
 
-  DungeonRoom copyWith({String? title, String? detail}) => DungeonRoom(
+  DungeonRoom copyWith({String? title, String? detail, String? status}) =>
+      DungeonRoom(
         id: id,
         x: x,
         y: y,
         title: title ?? this.title,
         detail: detail ?? this.detail,
+        status: status ?? this.status,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'id': id, 'x': x, 'y': y, 'title': title, 'detail': detail};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'x': x,
+        'y': y,
+        'title': title,
+        'detail': detail,
+        if (status.isNotEmpty) 'status': status,
+      };
 
   /// Parses one room entry; null for anything without a map shape and id
   /// (mirrors CharStat.maybeFromJson tolerance).
@@ -383,6 +405,7 @@ class DungeonRoom {
       y: (j['y'] as int?) ?? 0,
       title: (j['title'] as String?) ?? '',
       detail: (j['detail'] as String?) ?? '',
+      status: (j['status'] as String?) ?? '',
     );
   }
 }
