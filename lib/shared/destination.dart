@@ -22,6 +22,7 @@ const destinationMeta = <Destination, DestinationMeta>{
 const toolLocation = <String, (Destination, String)>{
   'maps': (Destination.maps, 'world'),
   'verdant': (Destination.maps, 'journey'),
+  'hexcrawl': (Destination.maps, 'hexcrawl'),
   'party-emulator': (Destination.party, 'emulator'),
   'sidekick-dialogue': (Destination.party, 'sidekick'),
   'behavior-tables': (Destination.party, 'behavior'),

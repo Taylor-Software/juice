@@ -111,6 +111,7 @@ void main() {
       'party',
       'verdant',
       'lonelog',
+      'hexcrawl',
       'core'
     };
     for (final v in toolSystem.values) {
@@ -210,5 +211,17 @@ void main() {
     expect(tool.group, 'Encounters & Combat');
     expect(tool.label, 'Battle Tracker');
     expect(tool.badge, 'Lonelog');
+  });
+
+  test('hexcrawl gating: present only when the hexcrawl feature is enabled',
+      () {
+    expect(
+        buildToolRegistry(family: [], systems: {'juice'})
+            .any((t) => t.id == 'hexcrawl'),
+        isFalse);
+    final tool = buildToolRegistry(family: [], systems: {'juice', 'hexcrawl'})
+        .singleWhere((t) => t.id == 'hexcrawl');
+    expect(tool.group, 'Exploration');
+    expect(tool.label, 'Hexcrawl');
   });
 }
