@@ -357,6 +357,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     ref.watch(oracleProvider);
     // Pre-subscribe so _mentionPanel() sees loaded data on first render.
     ref.watch(charactersProvider);
+    // Lonelog notation highlighting in entry bodies, when the system is on.
+    final lonelog =
+        (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+                kAllSystems)
+            .contains('lonelog');
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
@@ -524,7 +529,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       itemCount: visible.length,
                       itemBuilder: (context, i) =>
-                          _entry(visible[i], threads, threadTitle),
+                          _entry(visible[i], threads, threadTitle, lonelog),
                     ),
                   ),
                 ],
@@ -556,7 +561,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       InterpreterPhase.unsupported;
 
   Widget _entry(JournalEntry e, List<Thread> threads,
-      String Function(String) threadTitle) {
+      String Function(String) threadTitle, bool lonelog) {
     // Read without listening is safe: `unsupported` is decided once in the
     // GemmaInterpreterService constructor and never flips later.
     final canInterpret = e.kind == JournalKind.result &&
@@ -612,7 +617,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         return Card(
           child: ListTile(
             title: MentionText(e.body,
-                onCharacterTap: _openCharacter, onThreadTap: _openThread),
+                onCharacterTap: _openCharacter,
+                onThreadTap: _openThread,
+                lonelog: lonelog),
             subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
             trailing: menu,
           ),
@@ -630,6 +637,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 e.sourceTool == null ? null : () => _openTool(e.sourceTool!),
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
+            lonelog: lonelog,
           );
         }
         return Card(
@@ -639,6 +647,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               [e.body, ...extras].join('\n'),
               onCharacterTap: _openCharacter,
               onThreadTap: _openThread,
+              lonelog: lonelog,
             ),
             trailing: menu,
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
@@ -1726,6 +1735,7 @@ class _PayloadCard extends StatelessWidget {
     this.onOpenTool,
     this.onCharacterTap,
     this.onThreadTap,
+    this.lonelog = false,
   });
 
   final JournalEntry entry;
@@ -1735,6 +1745,7 @@ class _PayloadCard extends StatelessWidget {
   final VoidCallback? onOpenTool;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
+  final bool lonelog;
 
   @override
   Widget build(BuildContext context) {
@@ -1816,6 +1827,7 @@ class _PayloadCard extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
                 onCharacterTap: onCharacterTap,
                 onThreadTap: onThreadTap,
+                lonelog: lonelog,
               ),
             ],
             if (extras.isNotEmpty) ...[

@@ -73,4 +73,63 @@ void main() {
     final richText = tester.widget<RichText>(find.byType(RichText).first);
     expect(richText.text.toPlainText(), 'just a note');
   });
+
+  // -- Lonelog notation highlighting (P3) -------------------------------------
+
+  Set<Color?> colors(WidgetTester t) {
+    final rt = t.widget<RichText>(find.byType(RichText).first);
+    final out = <Color?>{};
+    void walk(InlineSpan s) {
+      if (s is TextSpan) {
+        out.add(s.style?.color);
+        s.children?.forEach(walk);
+      }
+    }
+
+    walk(rt.text);
+    return out;
+  }
+
+  bool hasRecognizer(WidgetTester t) {
+    final rt = t.widget<RichText>(find.byType(RichText).first);
+    var found = false;
+    void walk(InlineSpan s) {
+      if (s is TextSpan) {
+        if (s.recognizer != null) found = true;
+        s.children?.forEach(walk);
+      }
+    }
+
+    walk(rt.text);
+    return found;
+  }
+
+  testWidgets('lonelog highlighting adds distinct colours vs plain rendering',
+      (tester) async {
+    const body = '@ Pick the lock [N:Bob]';
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: const Scaffold(body: MentionText(body, lonelog: true)),
+    ));
+    final highlighted = colors(tester); // @ symbol, text, [N:Bob] tag distinct
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: const Scaffold(body: MentionText(body, lonelog: false)),
+    ));
+    final plain = colors(tester);
+    expect(highlighted.length, greaterThan(plain.length));
+    expect(highlighted.length, greaterThan(2));
+  });
+
+  testWidgets('a mention stays tappable under lonelog highlighting',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: MentionText('@ Talk to @[Bob](char:c1) now',
+            lonelog: true, onCharacterTap: (_) {}),
+      ),
+    ));
+    expect(hasRecognizer(tester), isTrue);
+  });
 }
