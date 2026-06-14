@@ -9,20 +9,20 @@
           "title": "Getting started",
           "blocks": [
             {
-              "p": "Juice Oracle is a solo-RPG toolkit built around a campaign journal. The journal is your home screen: everything you roll can be kept as an entry, and your own prose goes right in the text field at the bottom."
+              "p": "Juice Oracle is a solo-RPG toolkit built around a campaign journal. The journal is your home tab: everything you roll can be kept as an entry, and your own prose goes in the text field at the bottom — with a dice button beside it for quick rolls."
             },
             {
-              "h": "Open a tool"
+              "h": "Move around"
             },
             {
               "steps": [
-                "Tap the tools icon (crossed hammers) in the app bar.",
-                "Pick a tool from the list, or type in the search field.",
-                "Tools keep their state while the panel is closed — reopen to continue where you left off."
+                "Use the tabs — Journal, Maps, Party, Tracking, and Oracles & Tables — along the bottom (or the side rail on wide screens).",
+                "Each tab has subtabs: Maps holds World, Dungeon and Journey; Tracking holds Scenes, NPCs, Threads, Rumors, Tracks and the Encounter tracker; Oracles & Tables holds the oracles, generators and table browser.",
+                "Tap the search icon in the app bar to jump straight to any tool by name."
               ]
             },
             {
-              "tip": "Recently used tools appear as chips at the top of the launcher."
+              "tip": "Every tool keeps its state as you switch tabs, so you can leave and come back where you left off."
             },
             {
               "p": "Your campaign lives entirely on this device. Use sessions (folder icon) for multiple campaigns, and campaign files to back up or move them."

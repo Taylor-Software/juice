@@ -248,6 +248,80 @@ final charactersProvider =
     AsyncNotifierProvider<CharacterNotifier, List<Character>>(
         CharacterNotifier.new);
 
+// -- Rumors -----------------------------------------------------------------
+class RumorNotifier extends _PersistedList<Rumor> {
+  @override
+  String get prefsKey => 'juice.rumors.v1';
+  @override
+  Rumor fromJson(Map<String, dynamic> json) => Rumor.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(Rumor item) => item.toJson();
+
+  Future<void> add(String text) async {
+    await _persist([Rumor(id: _newId(), text: text), ...await _ready]);
+  }
+
+  Future<void> replace(Rumor rumor) async {
+    await _persist([
+      for (final r in await _ready)
+        if (r.id == rumor.id) rumor else r,
+    ]);
+  }
+
+  Future<void> toggleResolved(String id) async {
+    await _persist([
+      for (final r in await _ready)
+        if (r.id == id) r.copyWith(resolved: !r.resolved) else r,
+    ]);
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((r) => r.id != id).toList());
+  }
+}
+
+final rumorsProvider =
+    AsyncNotifierProvider<RumorNotifier, List<Rumor>>(RumorNotifier.new);
+
+// -- Tracks -----------------------------------------------------------------
+class TrackNotifier extends _PersistedList<Track> {
+  @override
+  String get prefsKey => 'juice.tracks.v1';
+  @override
+  Track fromJson(Map<String, dynamic> json) => Track.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(Track item) => item.toJson();
+
+  Future<void> add(String name, {int max = 10}) async {
+    await _persist(
+        [Track(id: _newId(), name: name, max: max), ...await _ready]);
+  }
+
+  Future<void> adjust(String id, int delta) async {
+    await _persist([
+      for (final t in await _ready)
+        if (t.id == id)
+          t.copyWith(filled: (t.filled + delta).clamp(0, t.max))
+        else
+          t,
+    ]);
+  }
+
+  Future<void> rename(String id, String name) async {
+    await _persist([
+      for (final t in await _ready)
+        if (t.id == id) t.copyWith(name: name) else t,
+    ]);
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((t) => t.id != id).toList());
+  }
+}
+
+final tracksProvider =
+    AsyncNotifierProvider<TrackNotifier, List<Track>>(TrackNotifier.new);
+
 // -- Crawl state (wilderness + dialog marker) -------------------------------
 class CrawlNotifier extends AsyncNotifier<CrawlState> {
   static const _baseKey = 'juice.crawl.v1';
@@ -588,6 +662,8 @@ const sessionScopedKeys = [
   'juice.encounter.v1',
   'juice.map.v1',
   'juice.verdant.v1',
+  'juice.rumors.v1',
+  'juice.tracks.v1',
   'juice.settings.v1',
 ];
 

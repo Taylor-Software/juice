@@ -9,7 +9,9 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -53,7 +55,7 @@ OracleData _loadData() {
   return OracleData(jsonDecode(raw) as Map<String, dynamic>);
 }
 
-/// Pump JournalScreen directly (no ToolHost — for non-tool tests).
+/// Pump JournalScreen directly (no shell — for non-navigation tests).
 Future<void> pumpJournal(WidgetTester tester, Map<String, Object> prefs) async {
   SharedPreferences.setMockInitialValues(prefs);
   await tester.pumpWidget(ProviderScope(
@@ -65,7 +67,8 @@ Future<void> pumpJournal(WidgetTester tester, Map<String, Object> prefs) async {
   await tester.pumpAndSettle();
 }
 
-/// Pump HomeShell with a real Oracle (gives us ToolHost with full registry).
+/// Pump HomeShell with a real Oracle (gives us the tabbed shell + search sheet
+/// with the full registry).
 Future<void> pumpShell(
     WidgetTester tester, Map<String, Object> prefs, OracleData data) async {
   SharedPreferences.setMockInitialValues(prefs);
@@ -162,7 +165,8 @@ void main() {
     expect((newest.payload!['args'] as Map)['odds'], 'likely');
   });
 
-  testWidgets('open-in-tool opens the source tool panel', (tester) async {
+  testWidgets('open-in-tool navigates to the source tool destination',
+      (tester) async {
     final data = _loadData();
     await pumpShell(tester, _journalPrefs(_entryJson), data);
 
@@ -171,8 +175,11 @@ void main() {
     await tester.tap(find.byKey(const Key('entry-open-tool-$_entryId')));
     await tester.pumpAndSettle();
 
-    // The Fate Check tool header is now visible in the panel.
-    expect(find.text('Fate Check'), findsWidgets);
+    // The fate-check source tool homes on the Oracles destination.
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    expect(container.read(shellRouteProvider).destination, Destination.oracles);
+    expect(container.read(shellRouteProvider).subtab, 'oracle');
   });
 
   testWidgets('entry with unknown payload version falls back to flat',

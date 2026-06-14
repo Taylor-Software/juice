@@ -10,10 +10,17 @@ import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
+import '../features/maps_tab.dart';
+import '../features/oracles_tab.dart';
+import '../features/party_tab.dart';
+import '../features/tracking_tab.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
-import 'tool_host.dart';
+import 'destination.dart';
+import 'help_nav.dart';
+import 'shell_route.dart';
 import 'tool_registry.dart';
+import 'tool_search_sheet.dart';
 
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.oracle});
@@ -24,8 +31,8 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  final _hostKey = GlobalKey<ToolHostState>();
   AppLifecycleListener? _lifecycle;
+  final GlobalKey _bodyKey = GlobalKey();
 
   @override
   void initState() {
@@ -202,6 +209,82 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
+  List<Destination> _visibleDestinations(
+          Set<String> systems, List<String> family) =>
+      [
+        Destination.journal,
+        Destination.maps,
+        if (systems.contains('party')) Destination.party,
+        Destination.tracking,
+        Destination.oracles,
+      ];
+
+  Widget _root(Destination d, Set<String> systems, List<String> family) {
+    switch (d) {
+      case Destination.journal:
+        return const JournalScreen();
+      case Destination.maps:
+        return MapsTab(oracle: widget.oracle, systems: systems);
+      case Destination.party:
+        return const PartyTab();
+      case Destination.tracking:
+        return const TrackingTab();
+      case Destination.oracles:
+        return OraclesTab(oracle: widget.oracle, family: family);
+    }
+  }
+
+  Widget _shellBody(
+      BuildContext context, List<String> family, Set<String> systems) {
+    final route = ref.watch(shellRouteProvider);
+    final destinations = _visibleDestinations(systems, family);
+    final index = destinations
+        .indexOf(route.destination)
+        .clamp(0, destinations.length - 1);
+    final body = IndexedStack(
+      key: _bodyKey,
+      index: index,
+      children: [for (final d in destinations) _root(d, systems, family)],
+    );
+    return LayoutBuilder(builder: (context, c) {
+      final wide = c.maxWidth >= 840;
+      if (wide) {
+        return Row(children: [
+          NavigationRail(
+            selectedIndex: index,
+            onDestinationSelected: (i) =>
+                ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              for (final d in destinations)
+                NavigationRailDestination(
+                  icon: Icon(destinationMeta[d]!.icon),
+                  label: Text(destinationMeta[d]!.label),
+                ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(child: body),
+        ]);
+      }
+      return Scaffold(
+        body: body,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (i) =>
+              ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
+          destinations: [
+            for (final d in destinations)
+              NavigationDestination(
+                icon: Icon(destinationMeta[d]!.icon),
+                label: destinationMeta[d]!.label,
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessionName =
@@ -234,9 +317,16 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.handyman_outlined),
-            tooltip: 'Tools',
-            onPressed: () => _hostKey.currentState?.openLauncher(),
+            icon: const Icon(Icons.search),
+            tooltip: 'Search tools',
+            onPressed: () => showToolSearchSheet(
+                context, buildToolRegistry(family: family, systems: systems),
+                oracle: widget.oracle),
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'Help',
+            onPressed: () => openHelp(context, ref),
           ),
           if (systems.contains('ironsworn'))
             IconButton(
@@ -311,14 +401,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: ToolHost(
-          key: _hostKey,
-          tools: buildToolRegistry(family: family, systems: systems),
-          oracle: widget.oracle,
-          child: const JournalScreen(),
-        ),
-      ),
+      body: SafeArea(child: _shellBody(context, family, systems)),
     );
   }
 }

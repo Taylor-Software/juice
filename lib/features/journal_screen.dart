@@ -13,8 +13,11 @@ import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
+import '../shared/destination.dart';
+import '../shared/dice_sheet.dart';
+import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
-import '../shared/tool_host.dart';
+import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'oracle_interpretation_sheet.dart';
@@ -332,6 +335,20 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     super.dispose();
   }
 
+  /// Opens a tool by id: dice gets its sheet, everything else navigates to its
+  /// tab home (snackbar when the tool has no tab).
+  void _openTool(String id) {
+    if (id == 'dice') {
+      final o = ref.read(oracleProvider).valueOrNull;
+      if (o != null) showDiceSheet(context, o.dice);
+      return;
+    }
+    if (!ref.read(shellRouteProvider.notifier).openTool(id)) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Tool not available')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(journalProvider);
@@ -609,14 +626,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             extras: extras,
             menu: menu,
             onReroll: _canReroll(e) ? () => _reroll(e) : null,
-            onOpenTool: e.sourceTool == null
-                ? null
-                : () {
-                    if (!ToolHost.openToolIfKnown(context, e.sourceTool!)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tool not available')));
-                    }
-                  },
+            onOpenTool:
+                e.sourceTool == null ? null : () => _openTool(e.sourceTool!),
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
           );
@@ -748,7 +759,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 title: const Text('Open Help'),
                 onTap: () {
                   _composer.clear();
-                  ToolHost.openToolIfKnown(context, 'help');
+                  openHelp(context, ref);
                 },
               ),
             if (showAsk)
@@ -906,9 +917,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.movie_outlined),
-              tooltip: 'New scene',
-              onPressed: _newScene,
+              key: const Key('composer-dice'),
+              icon: const Icon(Icons.casino_outlined),
+              tooltip: 'Roll dice',
+              onPressed: () {
+                final oracle = ref.read(oracleProvider).valueOrNull;
+                if (oracle != null) showDiceSheet(context, oracle.dice);
+              },
             ),
             IconButton(
               key: const Key('journal-send'),
@@ -938,7 +953,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       }
       if (_builtinHelp == tok) {
         _composer.clear();
-        if (mounted) ToolHost.openToolIfKnown(context, 'help');
+        if (mounted) openHelp(context, ref);
         return;
       }
       if (_builtinRecap == tok) {
@@ -1159,8 +1174,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     }
   }
 
-  void _openCharacter(String id) =>
-      ToolHost.openToolIfKnown(context, 'threads-characters');
+  void _openCharacter(String id) => ref
+      .read(shellRouteProvider.notifier)
+      .goTo(Destination.tracking, subtab: 'npcs');
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
 
@@ -1572,16 +1588,18 @@ class _CampaignHeader extends ConsumerWidget {
                       key: Key('hdr-thread-${t.id}'),
                       avatar: const Icon(Icons.push_pin, size: 14),
                       label: Text(t.title),
-                      onPressed: () => ToolHost.openToolIfKnown(
-                          context, 'threads-characters'),
+                      onPressed: () => ref
+                          .read(shellRouteProvider.notifier)
+                          .goTo(Destination.tracking, subtab: 'threads'),
                     ),
                   for (final c in stars)
                     ActionChip(
                       key: Key('hdr-char-${c.id}'),
                       avatar: const Icon(Icons.star, size: 14),
                       label: Text(c.name),
-                      onPressed: () => ToolHost.openToolIfKnown(
-                          context, 'threads-characters'),
+                      onPressed: () => ref
+                          .read(shellRouteProvider.notifier)
+                          .goTo(Destination.tracking, subtab: 'npcs'),
                     ),
                   if (crawl != null && crawl.envRow != null)
                     ActionChip(
@@ -1589,8 +1607,9 @@ class _CampaignHeader extends ConsumerWidget {
                       avatar: const Icon(Icons.explore, size: 14),
                       label:
                           Text(crawl.lost ? 'Wilderness (lost)' : 'Wilderness'),
-                      onPressed: () =>
-                          ToolHost.openToolIfKnown(context, 'gen-exploration'),
+                      onPressed: () => ref
+                          .read(shellRouteProvider.notifier)
+                          .openTool('gen-exploration'),
                     ),
                 ],
               ),

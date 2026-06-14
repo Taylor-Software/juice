@@ -16,8 +16,10 @@ void main() {
         name: 'West Marches',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.threads.v1': '[{"id":"t1","title":"Vow","note":"","open":true}]',
-          'juice.crawl.v1': '{"envRow":7,"lost":true,"dialogRow":2,"dialogCol":2}',
+          'juice.threads.v1':
+              '[{"id":"t1","title":"Vow","note":"","open":true}]',
+          'juice.crawl.v1':
+              '{"envRow":7,"lost":true,"dialogRow":2,"dialogCol":2}',
         },
       );
       final parsed = parseCampaign(encoded);
@@ -37,7 +39,7 @@ void main() {
       );
       expect(
         () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":3,"name":"x","data":{}}'),
+            '{"app":"juice-oracle","schemaVersion":4,"name":"x","data":{}}'),
         throwsFormatException,
       );
       expect(
@@ -48,9 +50,9 @@ void main() {
     });
 
     test('unknown data keys are ignored on parse', () {
-      final parsed = parseCampaign(
-          '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-          '"data":{"juice.threads.v1":[],"someday.v9":{}}}');
+      final parsed =
+          parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+              '"data":{"juice.threads.v1":[],"someday.v9":{}}}');
       expect(parsed.rawByKey.keys, ['juice.threads.v1']);
     });
 
@@ -62,26 +64,26 @@ void main() {
 
     test('rejects data payloads of the wrong shape', () {
       expect(
-        () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-            '"data":{"juice.threads.v1":"garbage"}}'),
+        () =>
+            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+                '"data":{"juice.threads.v1":"garbage"}}'),
         throwsFormatException,
       );
       expect(
-        () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-            '"data":{"juice.threads.v1":[{"nope":true}]}}'),
+        () =>
+            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+                '"data":{"juice.threads.v1":[{"nope":true}]}}'),
         throwsFormatException,
       );
       expect(
-        () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-            '"data":{"juice.crawl.v1":[1,2,3]}}'),
+        () =>
+            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
+                '"data":{"juice.crawl.v1":[1,2,3]}}'),
         throwsFormatException,
       );
     });
 
-    test('writes schemaVersion 2 and journal data', () {
+    test('writes schemaVersion 3 and journal data', () {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
@@ -91,13 +93,65 @@ void main() {
         },
       );
       final decoded = jsonDecode(out) as Map<String, dynamic>;
-      expect(decoded['schemaVersion'], 2);
+      expect(decoded['schemaVersion'], 3);
       expect(decoded['data'], contains('juice.journal.v2'));
     });
 
+    test('rumors round-trip through campaign files', () {
+      const rumors = '[{"id":"r1","text":"North gate","resolved":true}]';
+      final out = encodeCampaign(
+        name: 'C1',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {'juice.rumors.v1': rumors},
+      );
+      final parsed = parseCampaign(out);
+      expect(parsed.rawByKey, contains('juice.rumors.v1'));
+      final back = (jsonDecode(parsed.rawByKey['juice.rumors.v1']!) as List)
+          .cast<Map<String, dynamic>>()
+          .map(Rumor.fromJson)
+          .single;
+      expect(back.text, 'North gate');
+      expect(back.resolved, isTrue);
+    });
+
+    test('tracks round-trip through campaign files', () {
+      const tracks =
+          '[{"id":"tr1","name":"Find the heir","filled":3,"max":10}]';
+      final out = encodeCampaign(
+        name: 'C1',
+        savedAt: DateTime(2026, 6, 11),
+        rawByKey: {'juice.tracks.v1': tracks},
+      );
+      final parsed = parseCampaign(out);
+      expect(parsed.rawByKey, contains('juice.tracks.v1'));
+      final back = (jsonDecode(parsed.rawByKey['juice.tracks.v1']!) as List)
+          .cast<Map<String, dynamic>>()
+          .map(Track.fromJson)
+          .single;
+      expect(back.name, 'Find the heir');
+      expect(back.filled, 3);
+      expect(back.max, 10);
+    });
+
+    test('v2 file without rumors key imports fine', () {
+      final v2 = jsonEncode({
+        'app': 'juice-oracle',
+        'schemaVersion': 2,
+        'savedAt': '2026-06-11T00:00:00.000',
+        'name': 'Old campaign',
+        'data': {
+          'juice.threads.v1': [
+            {'id': 't1', 'title': 'Vow', 'note': '', 'open': true},
+          ],
+        },
+      });
+      final parsed = parseCampaign(v2);
+      expect(parsed.rawByKey.containsKey('juice.rumors.v1'), isFalse);
+      expect(parsed.rawByKey, contains('juice.threads.v1'));
+    });
+
     test('character sheets round-trip through campaign files', () {
-      const sheet =
-          '[{"id":"c1","name":"Ash","note":"ranger",'
+      const sheet = '[{"id":"c1","name":"Ash","note":"ranger",'
           '"stats":[{"label":"Iron","value":"+2"}],'
           '"tracks":[{"label":"HP","current":7,"max":10}],'
           '"tags":["wounded"]}]';
@@ -107,8 +161,7 @@ void main() {
         rawByKey: {'juice.characters.v1': sheet},
       );
       final parsed = parseCampaign(out);
-      final back = (jsonDecode(parsed.rawByKey['juice.characters.v1']!)
-              as List)
+      final back = (jsonDecode(parsed.rawByKey['juice.characters.v1']!) as List)
           .cast<Map<String, dynamic>>()
           .map(Character.fromJson)
           .single;
@@ -203,7 +256,8 @@ void main() {
         name: 'From File',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.threads.v1': '[{"id":"x","title":"Imported vow","note":"","open":true}]',
+          'juice.threads.v1':
+              '[{"id":"x","title":"Imported vow","note":"","open":true}]',
         },
       );
       await container.read(sessionsProvider.notifier).importCampaign(file);

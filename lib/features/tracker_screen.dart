@@ -32,8 +32,8 @@ class TrackerScreen extends ConsumerWidget {
                   builder: (context, _) => IndexedStack(
                     index: controller.index,
                     children: const [
-                      _ThreadsTab(),
-                      _CharactersTab(),
+                      ThreadsPane(),
+                      CharactersPane(),
                     ],
                   ),
                 );
@@ -47,8 +47,8 @@ class TrackerScreen extends ConsumerWidget {
 }
 
 // -- Threads --------------------------------------------------------------
-class _ThreadsTab extends ConsumerWidget {
-  const _ThreadsTab();
+class ThreadsPane extends ConsumerWidget {
+  const ThreadsPane({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -150,14 +150,14 @@ class _ThreadsTab extends ConsumerWidget {
 }
 
 // -- Characters -----------------------------------------------------------
-class _CharactersTab extends ConsumerStatefulWidget {
-  const _CharactersTab();
+class CharactersPane extends ConsumerStatefulWidget {
+  const CharactersPane({super.key});
 
   @override
-  ConsumerState<_CharactersTab> createState() => _CharactersTabState();
+  ConsumerState<CharactersPane> createState() => CharactersPaneState();
 }
 
-class _CharactersTabState extends ConsumerState<_CharactersTab> {
+class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Id of the character whose sheet is open, or null for the list view.
   String? _editingId;
 
