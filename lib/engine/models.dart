@@ -860,6 +860,37 @@ class CampaignSettings {
       };
 }
 
+/// One tracked inventory item (Lonelog Resource Tracking addon `[Inv:…]`).
+class InvItem {
+  const InvItem(
+      {required this.id, required this.name, this.qty = 1, this.props = ''});
+  final String id;
+  final String name;
+  final int qty;
+  final String props; // freeform: condition, charges x/y, magic, etc.
+
+  InvItem copyWith({String? name, int? qty, String? props}) => InvItem(
+        id: id,
+        name: name ?? this.name,
+        qty: qty ?? this.qty,
+        props: props ?? this.props,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'qty': qty,
+        if (props.isNotEmpty) 'props': props,
+      };
+
+  factory InvItem.fromJson(Map<String, dynamic> j) => InvItem(
+        id: j['id'] as String,
+        name: (j['name'] as String?) ?? '',
+        qty: (j['qty'] as int?) ?? 1,
+        props: (j['props'] as String?) ?? '',
+      );
+}
+
 class Rumor {
   const Rumor({
     required this.id,

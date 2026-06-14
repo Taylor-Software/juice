@@ -187,4 +187,16 @@ void main() {
     expect(tool.label, 'Lonelog Notation');
     expect(tool.badge, 'Lonelog');
   });
+
+  test('resources gating: present only when the lonelog system is enabled', () {
+    expect(
+        buildToolRegistry(family: [], systems: {'juice'})
+            .any((t) => t.id == 'resources'),
+        isFalse);
+    final tool = buildToolRegistry(family: [], systems: {'juice', 'lonelog'})
+        .singleWhere((t) => t.id == 'resources');
+    expect(tool.group, 'Characters & Threads');
+    expect(tool.label, 'Resource Tracker');
+    expect(tool.badge, 'Lonelog');
+  });
 }
