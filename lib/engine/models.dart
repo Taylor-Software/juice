@@ -870,3 +870,42 @@ class Rumor {
         note: (j['note'] as String?) ?? '',
       );
 }
+
+class Track {
+  const Track({
+    required this.id,
+    required this.name,
+    this.filled = 0,
+    this.max = 10,
+    this.note = '',
+  });
+  final String id;
+  final String name;
+  final int filled;
+  final int max;
+  final String note;
+
+  Track copyWith({String? name, int? filled, int? max, String? note}) => Track(
+        id: id,
+        name: name ?? this.name,
+        filled: filled ?? this.filled,
+        max: max ?? this.max,
+        note: note ?? this.note,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'filled': filled,
+        'max': max,
+        if (note.isNotEmpty) 'note': note,
+      };
+
+  factory Track.fromJson(Map<String, dynamic> j) => Track(
+        id: j['id'] as String,
+        name: j['name'] as String,
+        filled: (j['filled'] as int?) ?? 0,
+        max: (j['max'] as int?) ?? 10,
+        note: (j['note'] as String?) ?? '',
+      );
+}
