@@ -23,7 +23,9 @@ class OraclesTab extends ConsumerWidget {
     ];
     final children = <Widget>[
       FateScreen(oracle: oracle, initialSection: FateSection.fateCheck),
-      GeneratorsScreen(oracle: oracle, section: GenSection.story),
+      // section: null shows ALL generator sections (Story/NPCs/Exploration/
+      // Encounters/Details) plus the wilderness-crawl controls in one surface.
+      GeneratorsScreen(oracle: oracle),
       TablesScreen(oracle: oracle),
       if (family.isNotEmpty) MovesScreen(rulesetIds: family),
     ];
