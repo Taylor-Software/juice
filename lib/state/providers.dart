@@ -286,6 +286,45 @@ class RumorNotifier extends _PersistedList<Rumor> {
 final rumorsProvider =
     AsyncNotifierProvider<RumorNotifier, List<Rumor>>(RumorNotifier.new);
 
+// -- Inventory (Lonelog Resource Tracking addon) ----------------------------
+class InventoryNotifier extends _PersistedList<InvItem> {
+  @override
+  String get prefsKey => 'juice.inventory.v1';
+  @override
+  InvItem fromJson(Map<String, dynamic> json) => InvItem.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(InvItem item) => item.toJson();
+
+  Future<void> add(String name, {int qty = 1, String props = ''}) async {
+    await _persist([
+      InvItem(id: _newId(), name: name, qty: qty, props: props),
+      ...await _ready
+    ]);
+  }
+
+  Future<void> adjustQty(String id, int delta) async {
+    await _persist([
+      for (final i in await _ready)
+        if (i.id == id) i.copyWith(qty: (i.qty + delta).clamp(0, 9999)) else i,
+    ]);
+  }
+
+  Future<void> setProps(String id, String props) async {
+    await _persist([
+      for (final i in await _ready)
+        if (i.id == id) i.copyWith(props: props) else i,
+    ]);
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((i) => i.id != id).toList());
+  }
+}
+
+final inventoryProvider =
+    AsyncNotifierProvider<InventoryNotifier, List<InvItem>>(
+        InventoryNotifier.new);
+
 // -- Tracks -----------------------------------------------------------------
 class TrackNotifier extends _PersistedList<Track> {
   @override
@@ -676,6 +715,7 @@ const sessionScopedKeys = [
   'juice.verdant.v1',
   'juice.rumors.v1',
   'juice.tracks.v1',
+  'juice.inventory.v1',
   'juice.settings.v1',
 ];
 

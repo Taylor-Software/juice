@@ -27,6 +27,7 @@ const toolLocation = <String, (Destination, String)>{
   'behavior-tables': (Destination.party, 'behavior'),
   'threads-characters': (Destination.tracking, 'npcs'),
   'encounter': (Destination.tracking, 'encounter'),
+  'resources': (Destination.tracking, 'resources'),
   'fate-check': (Destination.oracles, 'oracle'),
   'roll-high': (Destination.oracles, 'oracle'),
   'mythic': (Destination.oracles, 'oracle'),
