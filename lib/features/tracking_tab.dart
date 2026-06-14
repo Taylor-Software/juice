@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import 'scenes_pane.dart';
+import 'tracker_screen.dart';
+import 'encounter_screen.dart';
 
 class TrackingTab extends ConsumerWidget {
   const TrackingTab({super.key});
@@ -20,12 +23,12 @@ class TrackingTab extends ConsumerWidget {
         SubtabDef('encounter', 'Encounter'),
       ],
       children: [
-        Center(child: Text('Scenes')),
-        Center(child: Text('NPCs')),
-        Center(child: Text('Threads')),
+        ScenesPane(),
+        CharactersPane(),
+        ThreadsPane(),
         Center(child: Text('Rumors')),
         Center(child: Text('Tracks')),
-        Center(child: Text('Encounter')),
+        EncounterScreen(),
       ],
     );
   }
