@@ -108,6 +108,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 onTap: () => _exportCampaign(dialogContext),
               ),
               ListTile(
+                leading: const Icon(Icons.notes_outlined),
+                title: const Text('Export as Lonelog (.md)'),
+                onTap: () => _exportLonelog(dialogContext),
+              ),
+              ListTile(
                 leading: const Icon(Icons.file_download_outlined),
                 title: const Text('Import campaign'),
                 onTap: () => _importCampaign(dialogContext),
@@ -157,6 +162,30 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
       }
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _exportLonelog(BuildContext dialogContext) async {
+    final content =
+        await ref.read(sessionsProvider.notifier).exportActiveAsLonelog();
+    final name =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
+    final fileName = '${slugify(name)}.lonelog.md';
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export as Lonelog',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+        bytes: Uint8List.fromList(utf8.encode(content)),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on PlatformException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
