@@ -33,3 +33,11 @@ HexTerrain? rollNeighbour(HexcrawlData data, String terrainKey, Dice dice) {
   if (table == null || table.isEmpty) return null;
   return data.terrainByKey(weightedPick(table, dice));
 }
+
+/// A generic dungeon room: a room type (title) plus content + dressing (detail).
+({String title, String detail}) rollDungeonRoom(HexcrawlData data, Dice dice) {
+  final type = rollFrom(data.dungeonRoomTypes, dice);
+  final content = rollFrom(data.dungeonContents, dice);
+  final dressing = rollFrom(data.dungeonDressing, dice);
+  return (title: type, detail: '$content. $dressing.');
+}

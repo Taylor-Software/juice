@@ -542,5 +542,39 @@
     "Traveller or NPC",
     "A useful find",
     "A lair or site"
+  ],
+  "dungeonRoomTypes": [
+    "Chamber",
+    "Corridor junction",
+    "Great hall",
+    "Cave",
+    "Vault",
+    "Shrine",
+    "Cell block",
+    "Pit",
+    "Stairway",
+    "Flooded room"
+  ],
+  "dungeonContents": [
+    "Empty",
+    "Monster lair",
+    "Trap",
+    "Treasure",
+    "Puzzle / mechanism",
+    "Denizen / NPC",
+    "Hazard",
+    "Curious feature"
+  ],
+  "dungeonDressing": [
+    "Rubble-strewn floor",
+    "Dripping water",
+    "Old bones",
+    "Claw marks on the walls",
+    "A faint draft",
+    "A mouldering tapestry",
+    "A cold spot",
+    "Scattered coins",
+    "A strange smell",
+    "Flickering shadows"
   ]
 }
