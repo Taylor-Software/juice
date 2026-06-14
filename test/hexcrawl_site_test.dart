@@ -68,8 +68,33 @@ void main() {
     var s = await c.read(mapProvider.future);
     expect(s.hexes.first.siteLines.length, 1);
 
+    // Crawl past the cap: stays at 5.
+    for (var i = 0; i < 6; i++) {
+      await n.crawlSite(0, 0, data, Dice(Random(3)));
+    }
+    s = await c.read(mapProvider.future);
+    expect(s.hexes.first.siteLines.length, 5);
+
     await n.generateSite(0, 0, data, Dice(Random(4)));
     s = await c.read(mapProvider.future);
     expect(s.hexes.first.siteLines.length, 4);
+  });
+
+  test('crawlSite/generateSite no-op on a hex without a site', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    SharedPreferences.setMockInitialValues({});
+    final data = _data();
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    final n = c.read(mapProvider.notifier);
+    await c.read(mapProvider.future);
+    await n.revealHexAt(2, 0, 1); // no site set
+
+    await n.crawlSite(2, 0, data, Dice(Random(3)));
+    await n.generateSite(2, 0, data, Dice(Random(4)));
+    await n.crawlSite(9, 9, data, Dice(Random(3))); // absent hex
+    final s = await c.read(mapProvider.future);
+    expect(s.hexes.firstWhere((h) => h.col == 2).siteLines, isEmpty);
   });
 }
