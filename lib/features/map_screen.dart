@@ -48,6 +48,7 @@ class DungeonMapPane extends ConsumerStatefulWidget {
 
 class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   GenResult? _last; // latest linger result
+  int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +63,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         return Column(
           children: [
             _controls(context, s),
+            if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
             Expanded(child: s.rooms.isEmpty ? _empty(context) : _canvas(s)),
             if (selected != null) _detailCard(context, selected),
             if (_last != null)
@@ -173,6 +175,60 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
               kAllSystems)
           .contains('lonelog');
+
+  bool _hexcrawlOn() =>
+      (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems)
+          .contains('hexcrawl');
+
+  Future<void> _hcRoom() async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref.read(mapProvider.notifier).crawlDungeon(data, widget.oracle.dice);
+  }
+
+  Future<void> _hcDungeon() async {
+    final data = ref.read(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return;
+    await ref
+        .read(mapProvider.notifier)
+        .generateDungeon(data, _hcDungeonCount, widget.oracle.dice);
+  }
+
+  Widget _hexcrawlDungeonControls(BuildContext context) {
+    final data = ref.watch(hexcrawlDataProvider).valueOrNull;
+    if (data == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          FilledButton.tonal(
+            key: const Key('hexcrawl-new-room'),
+            onPressed: _hcRoom,
+            child: const Text('New room (hexcrawl)'),
+          ),
+          FilledButton.tonal(
+            key: const Key('hexcrawl-generate-dungeon'),
+            onPressed: _hcDungeon,
+            child: Text('Generate dungeon ($_hcDungeonCount)'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.remove),
+            onPressed: () => setState(
+                () => _hcDungeonCount = (_hcDungeonCount - 2).clamp(4, 30)),
+          ),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () => setState(
+                () => _hcDungeonCount = (_hcDungeonCount + 2).clamp(4, 30)),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _detailCard(BuildContext context, DungeonRoom room) {
     final theme = Theme.of(context);
