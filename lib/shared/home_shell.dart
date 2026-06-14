@@ -117,6 +117,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: const Text('Import campaign'),
                 onTap: () => _importCampaign(dialogContext),
               ),
+              ListTile(
+                leading: const Icon(Icons.download_outlined),
+                title: const Text('Import Lonelog (.md)'),
+                onTap: () => _importLonelog(dialogContext),
+              ),
             ],
           );
         },
@@ -220,6 +225,43 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException catch (e) {
+      if (!mounted) return;
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+        Navigator.of(dialogContext).pop();
+      }
+    }
+  }
+
+  Future<void> _importLonelog(BuildContext dialogContext) async {
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import Lonelog',
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
+    if (bytes == null) return; // user cancelled
+    try {
+      await ref
+          .read(sessionsProvider.notifier)
+          .importLonelog(utf8.decode(bytes));
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
