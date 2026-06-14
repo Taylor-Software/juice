@@ -836,3 +836,37 @@ class CampaignSettings {
         if (headerCollapsed) 'headerCollapsed': true,
       };
 }
+
+class Rumor {
+  const Rumor({
+    required this.id,
+    required this.text,
+    this.resolved = false,
+    this.note = '',
+  });
+  final String id;
+  final String text;
+  final bool resolved;
+  final String note;
+
+  Rumor copyWith({String? text, bool? resolved, String? note}) => Rumor(
+        id: id,
+        text: text ?? this.text,
+        resolved: resolved ?? this.resolved,
+        note: note ?? this.note,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'text': text,
+        if (resolved) 'resolved': true,
+        if (note.isNotEmpty) 'note': note,
+      };
+
+  factory Rumor.fromJson(Map<String, dynamic> j) => Rumor(
+        id: j['id'] as String,
+        text: j['text'] as String,
+        resolved: (j['resolved'] as bool?) ?? false,
+        note: (j['note'] as String?) ?? '',
+      );
+}
