@@ -99,6 +99,9 @@ def verify(data):
         for c in t["climates"]:
             assert c in data["climates"], f"bad climate {c}"
         assert t["features"], f"terrain {t['key']} has no features"
+    # Every climate must have a starting-terrain table (else rollTerrain -> null).
+    assert set(data["climates"]) <= set(data["climateToTerrain"]), \
+        "a climate is missing from climateToTerrain"
     for c, rows in data["climateToTerrain"].items():
         assert c in data["climates"], f"bad climate key {c}"
         for r in rows:
