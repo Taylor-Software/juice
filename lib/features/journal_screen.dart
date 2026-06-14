@@ -917,9 +917,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.movie_outlined),
-              tooltip: 'New scene',
-              onPressed: _newScene,
+              key: const Key('composer-dice'),
+              icon: const Icon(Icons.casino_outlined),
+              tooltip: 'Roll dice',
+              onPressed: () {
+                final oracle = ref.read(oracleProvider).valueOrNull;
+                if (oracle != null) showDiceSheet(context, oracle.dice);
+              },
             ),
             IconButton(
               key: const Key('journal-send'),
