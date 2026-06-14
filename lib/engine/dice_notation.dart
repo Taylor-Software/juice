@@ -17,7 +17,8 @@ import 'dice.dart';
 
 /// One physical die in a rolled group.
 class RolledDie {
-  const RolledDie({required this.value, required this.kept, required this.display});
+  const RolledDie(
+      {required this.value, required this.kept, required this.display});
 
   /// Face value (for dF: -1, 0, or +1).
   final int value;
@@ -31,7 +32,11 @@ class RolledDie {
 
 /// One term of the expression after rolling: a dice group or a flat modifier.
 class RolledGroup {
-  const RolledGroup({required this.label, required this.sign, required this.dice, required this.subtotal});
+  const RolledGroup(
+      {required this.label,
+      required this.sign,
+      required this.dice,
+      required this.subtotal});
 
   /// Normalized label. Dice groups exclude their sign ('4d6kh3'); modifier
   /// groups include it ('+3', '-2').
@@ -49,7 +54,8 @@ class RolledGroup {
 
 /// Result of evaluating a parsed expression.
 class DiceRollResult {
-  const DiceRollResult({required this.expression, required this.total, required this.groups});
+  const DiceRollResult(
+      {required this.expression, required this.total, required this.groups});
 
   /// Normalized whole expression, e.g. '4d6kh3+2'.
   final String expression;
@@ -80,7 +86,9 @@ class DiceRollResult {
         b
           ..write(g.label)
           ..write(': ')
-          ..write(g.dice.map((d) => d.kept ? d.display : '[${d.display}]').join(', '))
+          ..write(g.dice
+              .map((d) => d.kept ? d.display : '[${d.display}]')
+              .join(', '))
           ..write(' (${g.subtotal})');
       }
     }
@@ -132,15 +140,30 @@ class DiceExpression {
   }
 
   RolledGroup _rollDice(_DiceTerm t, Dice dice) {
-    final values = [for (var i = 0; i < t.count; i++) t.fate ? dice.fate() : dice.dN(t.sides)];
-    final kept = List<bool>.filled(t.count, true);
+    final values = [
+      for (var i = 0; i < t.count; i++) t.fate ? dice.fate() : dice.dN(t.sides)
+    ];
+    // Exploding ('!'): a die showing the max re-rolls and is appended; the new
+    // die can itself explode. Runs BEFORE keep (spec modifier order). Guarded
+    // against runaway loops. Not applicable to dF.
+    if (t.explode && !t.fate) {
+      var idx = 0;
+      var guard = 0;
+      while (idx < values.length && guard < 1000) {
+        if (values[idx] == t.sides) values.add(dice.dN(t.sides));
+        idx++;
+        guard++;
+      }
+    }
+    final n = values.length;
+    final kept = List<bool>.filled(n, true);
     final k = t.keep;
     if (k != null) {
       // Normalize to "drop m highest/lowest"; ties drop later-rolled dice
       // (i.e. prefer keeping earlier-rolled dice).
       final dropHighest = k.op == 'dh' || k.op == 'kl';
-      final dropCount = k.op.startsWith('d') ? k.n : t.count - k.n;
-      final order = List<int>.generate(t.count, (i) => i)
+      final dropCount = (k.op.startsWith('d') ? k.n : n - k.n).clamp(0, n);
+      final order = List<int>.generate(n, (i) => i)
         ..sort((a, b) {
           if (values[a] != values[b]) {
             return dropHighest ? values[b] - values[a] : values[a] - values[b];
@@ -152,15 +175,18 @@ class DiceExpression {
       }
     }
     var subtotal = 0;
-    for (var i = 0; i < t.count; i++) {
+    for (var i = 0; i < n; i++) {
       if (kept[i]) subtotal += values[i];
     }
     return RolledGroup(
       label: t.bareLabel,
       sign: t.sign,
       dice: [
-        for (var i = 0; i < t.count; i++)
-          RolledDie(value: values[i], kept: kept[i], display: _display(values[i], t.fate)),
+        for (var i = 0; i < n; i++)
+          RolledDie(
+              value: values[i],
+              kept: kept[i],
+              display: _display(values[i], t.fate)),
       ],
       subtotal: subtotal,
     );
@@ -196,17 +222,20 @@ class _Keep {
 }
 
 class _DiceTerm extends _Term {
-  _DiceTerm(super.sign, this.count, this.sides, {required this.fate, this.keep});
+  _DiceTerm(super.sign, this.count, this.sides,
+      {required this.fate, this.keep, this.explode = false});
   final int count;
   final int sides; // unused when fate
   final bool fate;
   final _Keep? keep;
+  final bool
+      explode; // '!' — a die at max re-rolls and adds (Lonelog Dice addon)
   @override
   String get bareLabel {
     final c = count > 1 ? '$count' : '';
     final s = fate ? 'F' : '$sides';
     final k = keep == null ? '' : '${keep!.op}${keep!.n}';
-    return '${c}d$s$k';
+    return '${c}d$s$k${explode ? '!' : ''}';
   }
 }
 
@@ -243,7 +272,8 @@ class _Parser {
     while (pos < src.length && _isDigit(src[pos])) {
       pos++;
     }
-    return int.tryParse(src.substring(start, pos)) ?? _fail(start, 'number too large');
+    return int.tryParse(src.substring(start, pos)) ??
+        _fail(start, 'number too large');
   }
 
   DiceExpression parse() {
@@ -287,7 +317,10 @@ class _Parser {
   }
 
   /// [pos] is at the 'd' on entry.
-  _DiceTerm _dice(int sign, {required int count, required int countStart, required bool explicitCount}) {
+  _DiceTerm _dice(int sign,
+      {required int count,
+      required int countStart,
+      required bool explicitCount}) {
     if (explicitCount && (count < 1 || count > 100)) {
       _fail(countStart, 'dice count must be 1-100');
     }
@@ -312,36 +345,61 @@ class _Parser {
     }
 
     _ws();
-    if (pos >= src.length || !_isLetter(src[pos])) {
-      return _DiceTerm(sign, count, sides, fate: fate);
+    // Leading explode ('5d10!' or '5d10!kh2'). Not for dF.
+    var explode = false;
+    if (!fate && pos < src.length && src[pos] == '!') {
+      explode = true;
+      pos++;
+      _ws();
     }
 
-    final sufStart = pos;
-    final rest = src.substring(pos).toLowerCase();
-    if (rest.startsWith('adv') || rest.startsWith('dis')) {
-      if (explicitCount && count != 1) {
-        _fail(sufStart, "'adv'/'dis' requires a single die");
-      }
-      pos += 3;
-      final keep = _Keep(rest.startsWith('adv') ? 'kh' : 'kl', 1);
-      return _DiceTerm(sign, 2, sides, fate: fate, keep: keep);
-    }
-    const ops = ['kh', 'kl', 'dh', 'dl'];
-    if (rest.length >= 2 && ops.contains(rest.substring(0, 2))) {
-      final op = rest.substring(0, 2);
-      pos += 2;
-      _ws();
-      if (pos >= src.length || !_isDigit(src[pos])) {
-        _fail(pos, 'expected a number after $op');
-      }
-      final n = _int();
-      if (op.startsWith('k')) {
-        if (n < 1 || n > count) _fail(sufStart, 'keep must be 1-$count for $count dice');
+    _Keep? keep;
+    var rolled = count;
+    if (pos < src.length && _isLetter(src[pos])) {
+      final sufStart = pos;
+      final rest = src.substring(pos).toLowerCase();
+      if (rest.startsWith('adv') || rest.startsWith('dis')) {
+        if (explicitCount && count != 1) {
+          _fail(sufStart, "'adv'/'dis' requires a single die");
+        }
+        pos += 3;
+        keep = _Keep(rest.startsWith('adv') ? 'kh' : 'kl', 1);
+        rolled = 2;
       } else {
-        if (n < 1 || n > count - 1) _fail(sufStart, 'drop must be 1-${count - 1} for $count dice');
+        const ops = ['kh', 'kl', 'dh', 'dl'];
+        if (rest.length >= 2 && ops.contains(rest.substring(0, 2))) {
+          final op = rest.substring(0, 2);
+          pos += 2;
+          _ws();
+          if (pos >= src.length || !_isDigit(src[pos])) {
+            _fail(pos, 'expected a number after $op');
+          }
+          final n = _int();
+          if (op.startsWith('k')) {
+            if (n < 1 || n > count) {
+              _fail(sufStart, 'keep must be 1-$count for $count dice');
+            }
+          } else {
+            if (n < 1 || n > count - 1) {
+              _fail(sufStart, 'drop must be 1-${count - 1} for $count dice');
+            }
+          }
+          keep = _Keep(op, n);
+        } else {
+          _fail(sufStart,
+              "unknown suffix (expected kh/kl/dh/dl N, 'adv', 'dis', or '!')");
+        }
       }
-      return _DiceTerm(sign, count, sides, fate: fate, keep: _Keep(op, n));
     }
-    _fail(sufStart, "unknown suffix (expected kh/kl/dh/dl N, 'adv', or 'dis')");
+
+    // Trailing explode ('5d10kh2!').
+    _ws();
+    if (!fate && !explode && pos < src.length && src[pos] == '!') {
+      explode = true;
+      pos++;
+    }
+
+    return _DiceTerm(sign, rolled, sides,
+        fate: fate, keep: keep, explode: explode);
   }
 }
