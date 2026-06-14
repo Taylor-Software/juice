@@ -199,4 +199,16 @@ void main() {
     expect(tool.label, 'Resource Tracker');
     expect(tool.badge, 'Lonelog');
   });
+
+  test('battle gating: present only when the lonelog system is enabled', () {
+    expect(
+        buildToolRegistry(family: [], systems: {'juice'})
+            .any((t) => t.id == 'battle'),
+        isFalse);
+    final tool = buildToolRegistry(family: [], systems: {'juice', 'lonelog'})
+        .singleWhere((t) => t.id == 'battle');
+    expect(tool.group, 'Encounters & Combat');
+    expect(tool.label, 'Battle Tracker');
+    expect(tool.badge, 'Lonelog');
+  });
 }

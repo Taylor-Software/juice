@@ -28,6 +28,7 @@ const toolLocation = <String, (Destination, String)>{
   'threads-characters': (Destination.tracking, 'npcs'),
   'encounter': (Destination.tracking, 'encounter'),
   'resources': (Destination.tracking, 'resources'),
+  'battle': (Destination.tracking, 'battle'),
   'fate-check': (Destination.oracles, 'oracle'),
   'roll-high': (Destination.oracles, 'oracle'),
   'mythic': (Destination.oracles, 'oracle'),

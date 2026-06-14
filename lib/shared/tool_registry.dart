@@ -57,6 +57,7 @@ const toolSystem = <String, String>{
   'gen-details': 'juice',
   'threads-characters': 'core',
   'resources': 'lonelog',
+  'battle': 'lonelog',
   'tables': 'juice',
   'lonelog-ref': 'lonelog',
   'moves': 'ironsworn',
@@ -206,6 +207,13 @@ List<ToolDef> buildToolRegistry({
       label: 'Resource Tracker',
       icon: Icons.backpack_outlined,
       group: 'Characters & Threads',
+      badge: 'Lonelog',
+    ),
+    const ToolDef(
+      id: 'battle',
+      label: 'Battle Tracker',
+      icon: Icons.military_tech_outlined,
+      group: 'Encounters & Combat',
       badge: 'Lonelog',
     ),
     const ToolDef(

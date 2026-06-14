@@ -98,6 +98,10 @@ CampaignImport parseCampaign(String raw) {
         (value as List)
             .map((e) => InvItem.fromJson(e as Map<String, dynamic>))
             .toList();
+      } else if (key == 'juice.units.v1') {
+        (value as List)
+            .map((e) => Unit.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else if (key == 'juice.settings.v1') {
         CampaignSettings.fromJson(value as Map<String, dynamic>);
       }

@@ -10,6 +10,7 @@ import 'tracker_screen.dart';
 import 'tracks_pane.dart';
 import 'encounter_screen.dart';
 import 'resources_pane.dart';
+import 'battle_pane.dart';
 
 class TrackingTab extends ConsumerWidget {
   const TrackingTab({super.key});
@@ -31,6 +32,7 @@ class TrackingTab extends ConsumerWidget {
         const SubtabDef('tracks', 'Tracks'),
         const SubtabDef('encounter', 'Encounter'),
         if (lonelog) const SubtabDef('resources', 'Resources'),
+        if (lonelog) const SubtabDef('battle', 'Battle'),
       ],
       children: [
         const ScenesPane(),
@@ -40,6 +42,7 @@ class TrackingTab extends ConsumerWidget {
         const TracksPane(),
         const EncounterScreen(),
         if (lonelog) const ResourcesPane(),
+        if (lonelog) const BattlePane(),
       ],
     );
   }
