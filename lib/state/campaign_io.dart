@@ -90,6 +90,10 @@ CampaignImport parseCampaign(String raw) {
         (value as List)
             .map((e) => Rumor.fromJson(e as Map<String, dynamic>))
             .toList();
+      } else if (key == 'juice.tracks.v1') {
+        (value as List)
+            .map((e) => Track.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else if (key == 'juice.settings.v1') {
         CampaignSettings.fromJson(value as Map<String, dynamic>);
       }
