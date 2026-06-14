@@ -10,8 +10,14 @@ import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
+import '../features/maps_tab.dart';
+import '../features/oracles_tab.dart';
+import '../features/party_tab.dart';
+import '../features/tracking_tab.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
+import 'destination.dart';
+import 'shell_route.dart';
 import 'tool_host.dart';
 import 'tool_registry.dart';
 
@@ -202,6 +208,76 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
+  List<Destination> _visibleDestinations(
+          Set<String> systems, List<String> family) =>
+      Destination
+          .values; // Phase 1: all five. System filtering arrives in a later task.
+
+  Widget _root(Destination d, Set<String> systems, List<String> family) {
+    switch (d) {
+      case Destination.journal:
+        return const JournalScreen();
+      case Destination.maps:
+        return MapsTab(oracle: widget.oracle);
+      case Destination.party:
+        return const PartyTab();
+      case Destination.tracking:
+        return const TrackingTab();
+      case Destination.oracles:
+        return OraclesTab(oracle: widget.oracle, family: family);
+    }
+  }
+
+  Widget _shellBody(
+      BuildContext context, List<String> family, Set<String> systems) {
+    final route = ref.watch(shellRouteProvider);
+    final destinations = _visibleDestinations(systems, family);
+    final index = destinations
+        .indexOf(route.destination)
+        .clamp(0, destinations.length - 1);
+    final body = IndexedStack(
+      index: index,
+      children: [for (final d in destinations) _root(d, systems, family)],
+    );
+    return LayoutBuilder(builder: (context, c) {
+      final wide = c.maxWidth >= 840;
+      if (wide) {
+        return Row(children: [
+          NavigationRail(
+            selectedIndex: index,
+            onDestinationSelected: (i) =>
+                ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              for (final d in destinations)
+                NavigationRailDestination(
+                  icon: Icon(destinationMeta[d]!.icon),
+                  label: Text(destinationMeta[d]!.label),
+                ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(child: body),
+        ]);
+      }
+      return Scaffold(
+        body: body,
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: index,
+          onDestinationSelected: (i) =>
+              ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
+          destinations: [
+            for (final d in destinations)
+              NavigationDestination(
+                icon: Icon(destinationMeta[d]!.icon),
+                label: destinationMeta[d]!.label,
+              ),
+          ],
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final sessionName =
@@ -316,7 +392,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           key: _hostKey,
           tools: buildToolRegistry(family: family, systems: systems),
           oracle: widget.oracle,
-          child: const JournalScreen(),
+          child: _shellBody(context, family, systems),
         ),
       ),
     );

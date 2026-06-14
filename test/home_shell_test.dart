@@ -13,17 +13,45 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
 
+Oracle _oracle() => Oracle(OracleData(
+    jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+        as Map<String, dynamic>));
+
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('shell shows five nav destinations and opens on Journal',
+      (t) async {
+    await t.pumpWidget(ProviderScope(
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+    for (final label in ['Journal', 'Maps', 'Party', 'Tracking', 'Oracles']) {
+      expect(find.text(label), findsWidgets);
+    }
+    expect(find.byKey(const Key('journal-composer')), findsOneWidget);
+  });
+
+  testWidgets('tapping Maps switches the body', (t) async {
+    await t.pumpWidget(ProviderScope(
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Maps').first);
+    await t.pumpAndSettle();
+    // The Maps subtab bar is now visible (stub panes echo these labels too,
+    // so assert presence, not a unique count).
+    expect(find.text('World'), findsWidgets);
+    expect(find.text('Journey'), findsWidgets);
+  });
+
   testWidgets('journal is home; launcher opens grouped tools', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final data = OracleData(
-        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
-            as Map<String, dynamic>);
-    await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    // The tabbed shell now has a NavigationBar (narrow) in the tree.
+    expect(find.byType(NavigationBar), findsOneWidget);
     await tester.tap(find.byTooltip('Tools'));
     await tester.pumpAndSettle();
     expect(find.text('Ask the Oracle'), findsOneWidget);
@@ -35,12 +63,8 @@ void main() {
 
   testWidgets('rulesets toggle adds and removes the moves tool',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final data = OracleData(
-        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
-            as Map<String, dynamic>);
-    await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
@@ -67,14 +91,10 @@ void main() {
   });
 
   testWidgets('app pause disposes the interpreter service', (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final data = OracleData(
-        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
-            as Map<String, dynamic>);
     final fake = FakeInterpreterService();
     await tester.pumpWidget(ProviderScope(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
-      child: MaterialApp(home: HomeShell(oracle: Oracle(data))),
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await tester.pumpAndSettle();
     expect(fake.disposeCalls, 0);
@@ -94,12 +114,8 @@ void main() {
   testWidgets(
       'new campaign dialog shows system checkboxes; unchecking party excludes it',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
-    final data = OracleData(
-        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
-            as Map<String, dynamic>);
-    await tester.pumpWidget(ProviderScope(
-        child: MaterialApp(home: HomeShell(oracle: Oracle(data)))));
+    await tester.pumpWidget(
+        ProviderScope(child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
 
     // Open campaigns dialog.
