@@ -169,6 +169,11 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     );
   }
 
+  bool _lonelogOn() =>
+      (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems)
+          .contains('lonelog');
+
   Widget _detailCard(BuildContext context, DungeonRoom room) {
     final theme = Theme.of(context);
     return Card(
@@ -188,6 +193,24 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               ),
             ),
             const SizedBox(height: 8),
+            if (_lonelogOn()) ...[
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final st in kDungeonRoomStatuses)
+                    ChoiceChip(
+                      label: Text(st),
+                      visualDensity: VisualDensity.compact,
+                      selected: room.status == st,
+                      onSelected: (sel) => ref
+                          .read(mapProvider.notifier)
+                          .setRoomStatus(room.id, sel ? st : ''),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
             Row(
               children: [
                 OutlinedButton(
