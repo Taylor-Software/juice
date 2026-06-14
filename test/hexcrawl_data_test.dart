@@ -22,6 +22,9 @@ void main() {
     expect(data.dungeonContents, contains('Treasure'));
     expect(data.dungeonDressing, isNotEmpty);
     expect(data.localFeatures, isNotEmpty);
+    expect(data.siteOccupants, isNotEmpty);
+    expect(data.siteHooks, isNotEmpty);
+    expect(data.siteFeatures, isNotEmpty);
   });
 
   test('every weighted row references a defined terrain', () {

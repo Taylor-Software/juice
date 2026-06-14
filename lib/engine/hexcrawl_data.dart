@@ -83,4 +83,7 @@ class HexcrawlData {
   List<String> get dungeonContents => _flat('dungeonContents');
   List<String> get dungeonDressing => _flat('dungeonDressing');
   List<String> get localFeatures => _flat('localFeatures');
+  List<String> get siteOccupants => _flat('siteOccupants');
+  List<String> get siteHooks => _flat('siteHooks');
+  List<String> get siteFeatures => _flat('siteFeatures');
 }

@@ -443,6 +443,7 @@ class HexCell {
     this.pois = const [],
     this.site,
     this.local = const [],
+    this.siteLines = const [],
   });
   final int col;
   final int row;
@@ -452,6 +453,7 @@ class HexCell {
   final List<int> pois; // Verdant Points of Interest numbers (1..12)
   final String? site; // hexcrawl site-type on this hex; null = none
   final List<LocalCell> local; // local-zoom flower ring (H4a); [] = not zoomed
+  final List<String> siteLines; // site writeup lines (H4b); [] = none
 
   HexCell copyWith({
     int? envRow,
@@ -463,6 +465,8 @@ class HexCell {
     bool clearSite = false,
     List<LocalCell>? local,
     bool clearLocal = false,
+    List<String>? siteLines,
+    bool clearSiteLines = false,
   }) =>
       HexCell(
         col: col,
@@ -473,6 +477,7 @@ class HexCell {
         pois: pois ?? this.pois,
         site: clearSite ? null : (site ?? this.site),
         local: clearLocal ? const [] : (local ?? this.local),
+        siteLines: clearSiteLines ? const [] : (siteLines ?? this.siteLines),
       );
 
   Map<String, dynamic> toJson() => {
@@ -484,6 +489,7 @@ class HexCell {
         if (pois.isNotEmpty) 'pois': pois,
         if (site != null) 'site': site,
         if (local.isNotEmpty) 'local': local.map((e) => e.toJson()).toList(),
+        if (siteLines.isNotEmpty) 'siteLines': siteLines,
       };
 
   /// Parses one hex entry; null for anything without a map shape and int
@@ -502,6 +508,8 @@ class HexCell {
           .map(LocalCell.maybeFromJson)
           .whereType<LocalCell>()
           .toList(),
+      siteLines:
+          ((j['siteLines'] as List?) ?? const []).whereType<String>().toList(),
     );
   }
 }
