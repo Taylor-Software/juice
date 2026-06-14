@@ -42,11 +42,11 @@ void main() {
     expect(blocks[0].kind, HelpBlockKind.p);
     expect(blocks[0].text, contains('campaign journal'));
     expect(blocks[1].kind, HelpBlockKind.h);
-    expect(blocks[1].text, 'Open a tool');
+    expect(blocks[1].text, 'Move around');
     expect(blocks[2].kind, HelpBlockKind.steps);
     expect(blocks[2].items, hasLength(3));
     expect(blocks[3].kind, HelpBlockKind.tip);
-    expect(blocks[3].text, contains('Recently used'));
+    expect(blocks[3].text, contains('keeps its state'));
   });
 
   test('unknown block keys are skipped', () {
