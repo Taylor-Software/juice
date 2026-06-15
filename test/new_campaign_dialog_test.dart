@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
+  test('kSystemBlurbs describes every system', () {
+    for (final id in {...kAllSystems, 'lonelog', 'hexcrawl'}) {
+      expect(kSystemBlurbs[id], isNotNull, reason: id);
+    }
+  });
+
   testWidgets('returns name + systems + genre + tone', (t) async {
     ({String name, Set<String> systems, String genre, String tone})? out;
     await t.pumpWidget(MaterialApp(
@@ -28,6 +35,8 @@ void main() {
     ));
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
+    // System checkboxes carry their description as a subtitle.
+    expect(find.text(kSystemBlurbs['juice']!), findsOneWidget);
     await t.enterText(find.byKey(const Key('new-campaign-name')), 'My');
     await t.enterText(find.byKey(const Key('new-campaign-genre')), 'grimdark');
     await t.enterText(find.byKey(const Key('new-campaign-tone')), 'tense');
