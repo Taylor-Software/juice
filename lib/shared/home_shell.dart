@@ -380,7 +380,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 onDelta: (dx) => setState(() => _journalWidth =
                     (_journalWidth - dx).clamp(320.0, maxJournal)),
               ),
-              SizedBox(width: journalW, child: const JournalScreen()),
+              SizedBox(
+                key: const Key('split-journal'),
+                width: journalW,
+                child: const JournalScreen(),
+              ),
             ]),
           ),
         ]);

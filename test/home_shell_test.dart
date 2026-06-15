@@ -237,9 +237,28 @@ void main() {
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
     await tester.pumpAndSettle();
+    // The pinned journal panel (its key exists ONLY in the split branch — the
+    // single-pane IndexedStack builds JournalScreen too, so byType is not a
+    // discriminating check).
+    expect(find.byKey(const Key('split-journal')), findsOneWidget);
     expect(find.byType(MapsTab), findsOneWidget);
     expect(find.byType(JournalScreen), findsOneWidget);
     expect(find.byKey(const Key('split-toggle')), findsOneWidget);
+  });
+
+  testWidgets('wide screen with split off shows a single pane', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({}); // split defaults off
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('split-journal')), findsNothing);
+    expect(find.byKey(const Key('split-toggle')),
+        findsOneWidget); // still offerable
   });
 
   testWidgets('no split toggle on a narrow screen', (tester) async {
