@@ -580,6 +580,18 @@ class _DragHandle extends StatelessWidget {
 
 /// Dialog for creating a new campaign: name field + five system checkboxes.
 /// Returns `({String name, Set<String> systems})?`; null on cancel.
+/// One-line description of what each system adds, shown as the checkbox
+/// subtitle in the New-campaign and Edit-systems dialogs.
+const kSystemBlurbs = <String, String>{
+  'juice': 'Core yes/no oracle, base maps, and most generators.',
+  'mythic': 'Mythic GME oracle (Fate Chart + meaning tables).',
+  'ironsworn': 'Ironsworn / Starforged Moves (also pick a ruleset).',
+  'party': 'Solo-party tools, plus the Party tab.',
+  'verdant': 'Book-based Journey map: terrain, points of interest, travel.',
+  'lonelog': 'Lonelog notation: Resources + Battle trackers, .md export.',
+  'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
+};
+
 class NewCampaignDialog extends StatefulWidget {
   const NewCampaignDialog({super.key});
 
@@ -662,30 +674,35 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
             CheckboxListTile(
               key: const Key('sys-juice'),
               title: const Text('Juice oracle'),
+              subtitle: Text(kSystemBlurbs['juice']!),
               value: _juice,
               onChanged: (v) => setState(() => _juice = v ?? true),
             ),
             CheckboxListTile(
               key: const Key('sys-mythic'),
               title: const Text('Mythic GME'),
+              subtitle: Text(kSystemBlurbs['mythic']!),
               value: _mythic,
               onChanged: (v) => setState(() => _mythic = v ?? true),
             ),
             CheckboxListTile(
               key: const Key('sys-ironsworn'),
               title: const Text('Ironsworn family'),
+              subtitle: Text(kSystemBlurbs['ironsworn']!),
               value: _ironsworn,
               onChanged: (v) => setState(() => _ironsworn = v ?? true),
             ),
             CheckboxListTile(
               key: const Key('sys-party'),
               title: const Text('Party emulator'),
+              subtitle: Text(kSystemBlurbs['party']!),
               value: _party,
               onChanged: (v) => setState(() => _party = v ?? true),
             ),
             CheckboxListTile(
               key: const Key('sys-verdant'),
               title: const Text('Verdant Hexcrawling'),
+              subtitle: Text(kSystemBlurbs['verdant']!),
               value: _verdant,
               onChanged: (v) => setState(() => _verdant = v ?? true),
             ),
@@ -696,12 +713,14 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
             CheckboxListTile(
               key: const Key('sys-lonelog'),
               title: const Text('Lonelog journaling'),
+              subtitle: Text(kSystemBlurbs['lonelog']!),
               value: _lonelog,
               onChanged: (v) => setState(() => _lonelog = v ?? false),
             ),
             CheckboxListTile(
               key: const Key('sys-hexcrawl'),
               title: const Text('Hexcrawl toolkit'),
+              subtitle: Text(kSystemBlurbs['hexcrawl']!),
               value: _hexcrawl,
               onChanged: (v) => setState(() => _hexcrawl = v ?? false),
             ),
@@ -738,6 +757,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
   Widget _row(String id, String label) => CheckboxListTile(
         key: Key('edit-sys-$id'),
         title: Text(label),
+        subtitle: Text(kSystemBlurbs[id]!),
         value: _picked.contains(id),
         onChanged: (v) => setState(() {
           if (v ?? false) {
