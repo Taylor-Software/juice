@@ -33,6 +33,7 @@ class HomeShell extends ConsumerStatefulWidget {
 class _HomeShellState extends ConsumerState<HomeShell> {
   AppLifecycleListener? _lifecycle;
   final GlobalKey _bodyKey = GlobalKey();
+  double _journalWidth = 400; // split-view journal panel width (draggable)
 
   @override
   void initState() {
@@ -328,6 +329,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget _shellBody(
       BuildContext context, List<String> family, Set<String> systems) {
     final route = ref.watch(shellRouteProvider);
+    final split = ref.watch(splitViewProvider).valueOrNull ?? false;
     final destinations = _visibleDestinations(systems, family);
     final index = destinations
         .indexOf(route.destination)
@@ -339,6 +341,54 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     );
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth >= 840;
+      final canSplit = c.maxWidth >= 1000;
+      if (split && canSplit) {
+        final leftDest = [
+          for (final d in destinations)
+            if (d != Destination.journal) d
+        ];
+        final leftIndex =
+            leftDest.indexOf(route.destination).clamp(0, leftDest.length - 1);
+        final maxJournal = c.maxWidth * 0.6;
+        final journalW = _journalWidth.clamp(320.0, maxJournal);
+        return Row(children: [
+          NavigationRail(
+            selectedIndex: leftIndex,
+            onDestinationSelected: (i) =>
+                ref.read(shellRouteProvider.notifier).goTo(leftDest[i]),
+            labelType: NavigationRailLabelType.all,
+            destinations: [
+              for (final d in leftDest)
+                NavigationRailDestination(
+                  icon: Icon(destinationMeta[d]!.icon),
+                  label: Text(destinationMeta[d]!.label),
+                ),
+            ],
+          ),
+          const VerticalDivider(width: 1),
+          Expanded(
+            child: Row(children: [
+              Expanded(
+                child: IndexedStack(
+                  index: leftIndex,
+                  children: [
+                    for (final d in leftDest) _root(d, systems, family)
+                  ],
+                ),
+              ),
+              _DragHandle(
+                onDelta: (dx) => setState(() => _journalWidth =
+                    (_journalWidth - dx).clamp(320.0, maxJournal)),
+              ),
+              SizedBox(
+                key: const Key('split-journal'),
+                width: journalW,
+                child: const JournalScreen(),
+              ),
+            ]),
+          ),
+        ]);
+      }
       if (wide) {
         return Row(children: [
           NavigationRail(
@@ -378,6 +428,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final split = ref.watch(splitViewProvider).valueOrNull ?? false;
+    final wideEnough = MediaQuery.sizeOf(context).width >= 1000;
     final sessionName =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.name;
     final rulesets =
@@ -485,6 +537,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 }),
               ),
             ),
+          if (wideEnough)
+            IconButton(
+              key: const Key('split-toggle'),
+              icon: Icon(
+                  split ? Icons.view_sidebar : Icons.view_sidebar_outlined),
+              tooltip: split ? 'Single pane' : 'Split with journal',
+              onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
+            ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',
@@ -493,6 +553,27 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ],
       ),
       body: SafeArea(child: _shellBody(context, family, systems)),
+    );
+  }
+}
+
+/// A thin, draggable vertical divider for resizing the split-view journal.
+class _DragHandle extends StatelessWidget {
+  const _DragHandle({required this.onDelta});
+  final void Function(double dx) onDelta;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragUpdate: (d) => onDelta(d.delta.dx),
+        child: const SizedBox(
+          width: 8,
+          child: Center(child: VerticalDivider(width: 1)),
+        ),
+      ),
     );
   }
 }
