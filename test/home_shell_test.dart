@@ -8,6 +8,8 @@ import 'package:juice_oracle/engine/emulator_data.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
+import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/features/maps_tab.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
@@ -221,5 +223,35 @@ void main() {
     expect(s.activeMeta.enabledSystems, isNot(contains('party')));
     expect(s.activeMeta.enabledSystems,
         containsAll(['juice', 'mythic', 'ironsworn', 'verdant']));
+  });
+
+  testWidgets('split view shows Maps + Journal side by side (wide)',
+      (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues(
+        {'flutter.juice.splitview.v1': true});
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    expect(find.byType(MapsTab), findsOneWidget);
+    expect(find.byType(JournalScreen), findsOneWidget);
+    expect(find.byKey(const Key('split-toggle')), findsOneWidget);
+  });
+
+  testWidgets('no split toggle on a narrow screen', (tester) async {
+    tester.view.physicalSize = const Size(500, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('split-toggle')), findsNothing);
   });
 }
