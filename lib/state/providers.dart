@@ -1162,6 +1162,26 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
 final rulesetsProvider =
     AsyncNotifierProvider<RulesetsNotifier, Set<String>>(RulesetsNotifier.new);
 
+// -- Split view (global layout preference, not session-scoped) ---------------
+class SplitViewNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.splitview.v1';
+  @override
+  Future<bool> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_key) ?? false;
+  }
+
+  Future<void> toggle() async {
+    final next = !(state.valueOrNull ?? false);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_key, next);
+    state = AsyncData(next);
+  }
+}
+
+final splitViewProvider =
+    AsyncNotifierProvider<SplitViewNotifier, bool>(SplitViewNotifier.new);
+
 // -- Tool MRU (global, not session-scoped) ----------------------------------
 class ToolMruNotifier extends AsyncNotifier<List<String>> {
   static const _key = 'juice.tools.mru.v1';
