@@ -54,4 +54,20 @@ void main() {
     final cats = defs.map((d) => d.category).toSet();
     expect(cats, containsAll(<String>['Path', 'Module', 'Companion', 'Deed']));
   });
+
+  test('real ruleset_sundered_isles.json parses into 60 well-formed asset defs',
+      () {
+    final raw = File('assets/ruleset_sundered_isles.json').readAsStringSync();
+    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final defs = IronswornAssetDef.listFromRuleset(data);
+    expect(defs.length, 60,
+        reason: 'sundered isles has 60 assets across 6 categories');
+    for (final d in defs) {
+      expect(d.id, isNotEmpty);
+      expect(d.name, isNotEmpty);
+      expect(d.abilityEnabled.length, d.abilities.length);
+    }
+    final cats = defs.map((d) => d.category).toSet();
+    expect(cats, containsAll(<String>['Path', 'Module', 'Companion']));
+  });
 }
