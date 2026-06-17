@@ -354,6 +354,30 @@ void main() {
     });
   });
 
+  group('Character.dnd', () {
+    test('round-trips and is omitted when null', () {
+      const plain = Character(id: 'p', name: 'Plain');
+      expect(plain.toJson().containsKey('dnd'), isFalse);
+      final c = Character(id: 'd', name: 'Tarin', dnd: DndSheet.premade());
+      final back = Character.fromJson(c.toJson());
+      expect(back.dnd!.className, 'Fighter');
+      expect(back.dnd!.score('str'), 15);
+    });
+
+    test('copyWith sets and clears dnd', () {
+      const c = Character(id: 'd2', name: 'L');
+      final set = c.copyWith(dnd: DndSheet.premade());
+      expect(set.dnd, isNotNull);
+      expect(set.copyWith().dnd, isNotNull);
+      expect(set.copyWith(clearDnd: true).dnd, isNull);
+    });
+
+    test('junk dnd block tolerated as null', () {
+      expect(Character.fromJson({'id': 'd3', 'name': 'J', 'dnd': 'junk'}).dnd,
+          isNull);
+    });
+  });
+
   group('IronswornAssetDef.listFromRuleset', () {
     test('flattens asset_collections and seeds default ability flags', () {
       final ruleset = {

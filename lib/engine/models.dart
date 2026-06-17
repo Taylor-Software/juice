@@ -1598,6 +1598,7 @@ class Character {
     this.emulation,
     this.ironsworn,
     this.starforged,
+    this.dnd,
     this.starred = false,
   });
   final String id;
@@ -1616,6 +1617,9 @@ class Character {
   /// Bespoke Starforged sheet; null unless this is a Starforged PC.
   final StarforgedSheet? starforged;
 
+  /// Bespoke D&D 5e sheet; null unless this is a D&D PC.
+  final DndSheet? dnd;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -1632,6 +1636,8 @@ class Character {
     bool clearIronsworn = false,
     StarforgedSheet? starforged,
     bool clearStarforged = false,
+    DndSheet? dnd,
+    bool clearDnd = false,
     bool? starred,
   }) =>
       Character(
@@ -1644,6 +1650,7 @@ class Character {
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
         ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
         starforged: clearStarforged ? null : (starforged ?? this.starforged),
+        dnd: clearDnd ? null : (dnd ?? this.dnd),
         starred: starred ?? this.starred,
       );
 
@@ -1659,6 +1666,7 @@ class Character {
         if (emulation != null) 'emulation': emulation!.toJson(),
         if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
         if (starforged != null) 'starforged': starforged!.toJson(),
+        if (dnd != null) 'dnd': dnd!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -1678,6 +1686,7 @@ class Character {
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
         ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
         starforged: StarforgedSheet.maybeFromJson(j['starforged']),
+        dnd: DndSheet.maybeFromJson(j['dnd']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }
