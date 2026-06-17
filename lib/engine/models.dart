@@ -1922,6 +1922,7 @@ class Character {
     this.ironsworn,
     this.starforged,
     this.dnd,
+    this.shadowdark,
     this.starred = false,
   });
   final String id;
@@ -1943,6 +1944,9 @@ class Character {
   /// Bespoke D&D 5e sheet; null unless this is a D&D PC.
   final DndSheet? dnd;
 
+  /// Bespoke Shadowdark sheet; null unless this is a Shadowdark PC.
+  final ShadowdarkSheet? shadowdark;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -1961,6 +1965,8 @@ class Character {
     bool clearStarforged = false,
     DndSheet? dnd,
     bool clearDnd = false,
+    ShadowdarkSheet? shadowdark,
+    bool clearShadowdark = false,
     bool? starred,
   }) =>
       Character(
@@ -1974,6 +1980,7 @@ class Character {
         ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
         starforged: clearStarforged ? null : (starforged ?? this.starforged),
         dnd: clearDnd ? null : (dnd ?? this.dnd),
+        shadowdark: clearShadowdark ? null : (shadowdark ?? this.shadowdark),
         starred: starred ?? this.starred,
       );
 
@@ -1990,6 +1997,7 @@ class Character {
         if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
         if (starforged != null) 'starforged': starforged!.toJson(),
         if (dnd != null) 'dnd': dnd!.toJson(),
+        if (shadowdark != null) 'shadowdark': shadowdark!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -2010,6 +2018,7 @@ class Character {
         ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
         starforged: StarforgedSheet.maybeFromJson(j['starforged']),
         dnd: DndSheet.maybeFromJson(j['dnd']),
+        shadowdark: ShadowdarkSheet.maybeFromJson(j['shadowdark']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }

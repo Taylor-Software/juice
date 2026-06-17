@@ -378,6 +378,33 @@ void main() {
     });
   });
 
+  group('Character.shadowdark', () {
+    test('round-trips and is omitted when null', () {
+      const plain = Character(id: 'p', name: 'Plain');
+      expect(plain.toJson().containsKey('shadowdark'), isFalse);
+      final c = Character(
+          id: 'sd', name: 'Mort', shadowdark: ShadowdarkSheet.premade());
+      final back = Character.fromJson(c.toJson());
+      expect(back.shadowdark!.className, 'Fighter');
+      expect(back.shadowdark!.ancestry, 'Human');
+    });
+
+    test('copyWith sets and clears shadowdark', () {
+      const c = Character(id: 'sd2', name: 'L');
+      final set = c.copyWith(shadowdark: ShadowdarkSheet.premade());
+      expect(set.shadowdark, isNotNull);
+      expect(set.copyWith().shadowdark, isNotNull);
+      expect(set.copyWith(clearShadowdark: true).shadowdark, isNull);
+    });
+
+    test('junk shadowdark block tolerated as null', () {
+      expect(
+          Character.fromJson({'id': 'x', 'name': 'J', 'shadowdark': 'junk'})
+              .shadowdark,
+          isNull);
+    });
+  });
+
   group('IronswornAssetDef.listFromRuleset', () {
     test('flattens asset_collections and seeds default ability flags', () {
       final ruleset = {
