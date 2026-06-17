@@ -586,6 +586,98 @@ void main() {
     expect(asset.enabledAbilities, [true, true]);
   });
 
+  Future<ProviderContainer> pumpDnd(WidgetTester tester,
+      {String dnd = '{"abilities":{"str":15,"dex":13,"con":14,"int":8,"wis":12,'
+          '"cha":10},"className":"Fighter","level":1,"ac":16,"currentHp":12,'
+          '"maxHp":12,"hitDiceRemaining":1,"speed":30,'
+          '"saveProficiencies":["str","con"],'
+          '"skillProficiencies":["athletics","perception"]}'}) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["dnd"]}]}',
+      'juice.characters.v1.default':
+          '[{"id":"dd","name":"Tarin","note":"","stats":[],"tracks":[],'
+              '"tags":[],"dnd":$dnd}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(CharactersPane)));
+  }
+
+  testWidgets('opening a D&D character shows the bespoke sheet',
+      (tester) async {
+    await pumpDnd(tester);
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('dnd-sheet')), findsOneWidget);
+    expect(find.text('STR'), findsOneWidget);
+    expect(find.text('Saving Throws'), findsOneWidget);
+  });
+
+  testWidgets('ability stepper updates the modifier and persists',
+      (tester) async {
+    final c = await pumpDnd(tester);
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    // STR 15 (+2). Bump to 16 (+3).
+    await tester.tap(find.byKey(const Key('dnd-ability-str-plus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.dnd!.score('str'), 16);
+    expect(find.text('+3'), findsWidgets); // STR mod now +3
+  });
+
+  testWidgets('save proficiency toggle changes the shown save bonus',
+      (tester) async {
+    final c = await pumpDnd(tester);
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+        find.byKey(const Key('dnd-sheet')), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('dnd-save-dex')));
+    await tester.pumpAndSettle();
+    // DEX save starts +1 (mod only). Toggle proficiency -> +3 (mod +1 + prof +2).
+    await tester.tap(find.byKey(const Key('dnd-save-dex')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .dnd!
+            .saveProficiencies
+            .contains('dex'),
+        isTrue);
+  });
+
+  testWidgets('create flow makes a premade D&D character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["dnd"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-dnd')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('dnd-sheet')), findsOneWidget);
+    expect((await c.read(charactersProvider.future)).single.dnd!.className,
+        'Fighter');
+  });
+
   testWidgets('create flow makes a Sundered Isles character with SI label',
       (tester) async {
     SharedPreferences.setMockInitialValues({
