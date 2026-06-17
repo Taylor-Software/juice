@@ -218,4 +218,85 @@ void main() {
       expect(a.enabledAbilities, [false, true, false]);
     });
   });
+
+  group('IronswornSheet', () {
+    test('premade defaults match the standard starting sheet', () {
+      final s = IronswornSheet.premade();
+      expect([s.edge, s.heart, s.iron, s.shadow, s.wits], [3, 2, 2, 1, 1]);
+      expect([s.health, s.spirit, s.supply], [5, 5, 5]);
+      expect(s.momentum, 2);
+      expect(s.momentumMax, 10);
+      expect(s.momentumReset, 2);
+    });
+
+    test('debilities lower max + reset and re-clamp momentum via copyWith', () {
+      final s = const IronswornSheet(momentum: 10)
+          .copyWith(debilities: {'wounded', 'shaken'});
+      expect(s.momentumMax, 8);
+      expect(s.momentumReset, 0);
+      expect(s.momentum, 8); // re-clamped down to the new max
+    });
+
+    test('values are clamped to legal ranges', () {
+      final s = const IronswornSheet().copyWith(
+        edge: 9,
+        health: 99,
+        supply: -2,
+        momentum: 99,
+        bonds: 50,
+        xpSpent: -3,
+      );
+      expect(s.edge, 3);
+      expect(s.health, 5);
+      expect(s.supply, 0);
+      expect(s.momentum, 10);
+      expect(s.bonds, 10);
+      expect(s.xpSpent, 0);
+    });
+
+    test('round-trips with vows, assets, debilities', () {
+      const s = IronswornSheet(
+        edge: 3,
+        heart: 2,
+        iron: 2,
+        shadow: 1,
+        wits: 1,
+        health: 4,
+        spirit: 3,
+        supply: 5,
+        momentum: -2,
+        xpEarned: 6,
+        xpSpent: 4,
+        bonds: 3,
+        debilities: {'shaken'},
+        vows: [
+          ProgressTrack(name: 'Avenge', rank: ProgressRank.dangerous, ticks: 8)
+        ],
+        assets: [AssetState(assetId: 'a/assets/b/c', name: 'Wolf')],
+      );
+      final back = IronswornSheet.maybeFromJson(s.toJson())!;
+      expect(back.health, 4);
+      expect(back.momentum, -2);
+      expect(back.debilities, {'shaken'});
+      expect(back.vows.single.ticks, 8);
+      expect(back.assets.single.name, 'Wolf');
+      expect(back.momentumMax, 9);
+    });
+
+    test('tolerates junk and unknown debility ids', () {
+      expect(IronswornSheet.maybeFromJson('x'), isNull);
+      final s = IronswornSheet.maybeFromJson({
+        'edge': 'three',
+        'momentum': 'fast',
+        'debilities': ['wounded', 'bogus', 7],
+        'vows': ['junk'],
+        'assets': 'nope',
+      })!;
+      expect(s.edge, 1); // default
+      expect(s.momentum, 2); // default
+      expect(s.debilities, {'wounded'}); // unknown id dropped
+      expect(s.vows, isEmpty);
+      expect(s.assets, isEmpty);
+    });
+  });
 }

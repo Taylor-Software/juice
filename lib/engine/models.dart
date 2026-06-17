@@ -348,6 +348,161 @@ class AssetState {
   }
 }
 
+/// Classic Ironsworn debilities (conditions, banes, burdens). Each marked
+/// debility lowers max momentum and the burn-reset value by 1.
+const kIronswornDebilities = <String, String>{
+  'wounded': 'Wounded',
+  'shaken': 'Shaken',
+  'unprepared': 'Unprepared',
+  'encumbered': 'Encumbered',
+  'maimed': 'Maimed',
+  'corrupted': 'Corrupted',
+  'cursed': 'Cursed',
+  'tormented': 'Tormented',
+};
+
+/// Bespoke Classic Ironsworn sheet. Additive on [Character] like
+/// [CharacterEmulation]: null until "New Ironsworn character" writes it.
+class IronswornSheet {
+  const IronswornSheet({
+    this.edge = 1,
+    this.heart = 1,
+    this.iron = 1,
+    this.shadow = 1,
+    this.wits = 1,
+    this.health = 5,
+    this.spirit = 5,
+    this.supply = 5,
+    this.momentum = 2,
+    this.xpEarned = 0,
+    this.xpSpent = 0,
+    this.bonds = 0,
+    this.debilities = const {},
+    this.vows = const [],
+    this.assets = const [],
+  });
+
+  final int edge, heart, iron, shadow, wits; // 1..3
+  final int health, spirit, supply; // 0..5
+  final int momentum; // -6..momentumMax
+  final int xpEarned, xpSpent; // >=0
+  final int bonds; // 0..10 progress boxes
+  final Set<String> debilities; // ids from kIronswornDebilities
+  final List<ProgressTrack> vows;
+  final List<AssetState> assets;
+
+  int get momentumMax => 10 - debilities.length;
+  int get momentumReset => (2 - debilities.length).clamp(0, 2);
+
+  /// Standard pre-made starting character (3/2/2/1/1, full meters, +2 momentum).
+  factory IronswornSheet.premade() => const IronswornSheet(
+        edge: 3,
+        heart: 2,
+        iron: 2,
+        shadow: 1,
+        wits: 1,
+        health: 5,
+        spirit: 5,
+        supply: 5,
+        momentum: 2,
+      );
+
+  IronswornSheet copyWith({
+    int? edge,
+    int? heart,
+    int? iron,
+    int? shadow,
+    int? wits,
+    int? health,
+    int? spirit,
+    int? supply,
+    int? momentum,
+    int? xpEarned,
+    int? xpSpent,
+    int? bonds,
+    Set<String>? debilities,
+    List<ProgressTrack>? vows,
+    List<AssetState>? assets,
+  }) {
+    final dbs = debilities ?? this.debilities;
+    final maxM = 10 - dbs.length;
+    return IronswornSheet(
+      edge: (edge ?? this.edge).clamp(1, 3),
+      heart: (heart ?? this.heart).clamp(1, 3),
+      iron: (iron ?? this.iron).clamp(1, 3),
+      shadow: (shadow ?? this.shadow).clamp(1, 3),
+      wits: (wits ?? this.wits).clamp(1, 3),
+      health: (health ?? this.health).clamp(0, 5),
+      spirit: (spirit ?? this.spirit).clamp(0, 5),
+      supply: (supply ?? this.supply).clamp(0, 5),
+      momentum: (momentum ?? this.momentum).clamp(-6, maxM),
+      xpEarned: (xpEarned ?? this.xpEarned).clamp(0, 1 << 31),
+      xpSpent: (xpSpent ?? this.xpSpent).clamp(0, 1 << 31),
+      bonds: (bonds ?? this.bonds).clamp(0, 10),
+      debilities: dbs,
+      vows: vows ?? this.vows,
+      assets: assets ?? this.assets,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'edge': edge,
+        'heart': heart,
+        'iron': iron,
+        'shadow': shadow,
+        'wits': wits,
+        'health': health,
+        'spirit': spirit,
+        'supply': supply,
+        'momentum': momentum,
+        'xpEarned': xpEarned,
+        'xpSpent': xpSpent,
+        'bonds': bonds,
+        if (debilities.isNotEmpty) 'debilities': debilities.toList(),
+        if (vows.isNotEmpty) 'vows': vows.map((v) => v.toJson()).toList(),
+        if (assets.isNotEmpty) 'assets': assets.map((a) => a.toJson()).toList(),
+      };
+
+  static IronswornSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int intOr(dynamic v, int d) => v is int ? v : d;
+    final dbs = j['debilities'] is List
+        ? (j['debilities'] as List)
+            .whereType<String>()
+            .where(kIronswornDebilities.containsKey)
+            .toSet()
+        : <String>{};
+    final maxM = 10 - dbs.length;
+    return IronswornSheet(
+      edge: intOr(j['edge'], 1).clamp(1, 3),
+      heart: intOr(j['heart'], 1).clamp(1, 3),
+      iron: intOr(j['iron'], 1).clamp(1, 3),
+      shadow: intOr(j['shadow'], 1).clamp(1, 3),
+      wits: intOr(j['wits'], 1).clamp(1, 3),
+      health: intOr(j['health'], 5).clamp(0, 5),
+      spirit: intOr(j['spirit'], 5).clamp(0, 5),
+      supply: intOr(j['supply'], 5).clamp(0, 5),
+      momentum: intOr(j['momentum'], 2).clamp(-6, maxM),
+      xpEarned: intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
+      xpSpent: intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
+      bonds: intOr(j['bonds'], 0).clamp(0, 10),
+      debilities: dbs,
+      vows: j['vows'] is List
+          ? (j['vows'] as List)
+              .map(ProgressTrack.maybeFromJson)
+              .whereType<ProgressTrack>()
+              .toList()
+          : const [],
+      assets: j['assets'] is List
+          ? (j['assets'] as List)
+              .map(AssetState.maybeFromJson)
+              .whereType<AssetState>()
+              .toList()
+          : const [],
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {
