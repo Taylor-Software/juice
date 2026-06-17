@@ -170,4 +170,98 @@ void main() {
     expect(
         (await container.read(threadsProvider.future)).single.pinned, isFalse);
   });
+
+  // A character that already carries an Ironsworn sheet (skips create flow).
+  Future<ProviderContainer> pumpIronsworn(WidgetTester tester,
+      {String iron = '{"edge":3,"heart":2,"iron":2,"shadow":1,"wits":1,'
+          '"health":5,"spirit":5,"supply":5,"momentum":2,'
+          '"xpEarned":0,"xpSpent":0,"bonds":0}'}) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default':
+          '[{"id":"iw","name":"Ulla","note":"","stats":[],"tracks":[],'
+              '"tags":[],"ironsworn":$iron}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(CharactersPane)));
+  }
+
+  testWidgets('opening an Ironsworn character shows the bespoke sheet',
+      (tester) async {
+    await pumpIronsworn(tester);
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('ironsworn-sheet')), findsOneWidget);
+    expect(find.text('EDGE'), findsOneWidget);
+    expect(find.text('Health'), findsOneWidget);
+  });
+
+  testWidgets('meter and momentum steppers adjust and persist', (tester) async {
+    final c = await pumpIronsworn(tester);
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-health-minus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.ironsworn!.health, 4);
+    await tester.tap(find.byKey(const Key('iw-mom-minus')));
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.ironsworn!.momentum,
+        1);
+  });
+
+  testWidgets('Burn sets momentum to reset; debility lowers max',
+      (tester) async {
+    final c = await pumpIronsworn(tester,
+        iron: '{"edge":3,"heart":2,"iron":2,"shadow":1,"wits":1,"health":5,'
+            '"spirit":5,"supply":5,"momentum":9,"xpEarned":0,"xpSpent":0,'
+            '"bonds":0}');
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-burn')));
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.ironsworn!.momentum,
+        2);
+    // Mark a debility: max drops to 9.
+    await tester.drag(
+        find.byKey(const Key('ironsworn-sheet')), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-deb-shaken')));
+    await tester.pumpAndSettle();
+    final s = (await c.read(charactersProvider.future)).single.ironsworn!;
+    expect(s.debilities, {'shaken'});
+    expect(s.momentumMax, 9);
+  });
+
+  testWidgets('create flow makes a pre-made Ironsworn character',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-ironsworn')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('ironsworn-sheet')), findsOneWidget);
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.single.ironsworn!.edge, 3);
+  });
 }
