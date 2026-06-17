@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../state/providers.dart';
+import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
 import 'starforged_sheet.dart';
 
@@ -143,6 +144,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   onBack: () => setState(() => _editingId = null),
                 );
               }
+              if (c.dnd != null) {
+                return DndSheetView(
+                  character: c,
+                  onBack: () => setState(() => _editingId = null),
+                );
+              }
               if (c.ironsworn != null) {
                 return IronswornSheetView(
                   character: c,
@@ -228,7 +235,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     final systems =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    if (!systems.contains('ironsworn')) {
+    if (!systems.contains('ironsworn') && !systems.contains('dnd')) {
       await _addCharacter(context);
       return;
     }
@@ -258,6 +265,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             onPressed: () => Navigator.pop(context, 'sundered'),
             child: const Text('Sundered Isles'),
           ),
+          if (systems.contains('dnd'))
+            FilledButton(
+              key: const Key('new-dnd'),
+              onPressed: () => Navigator.pop(context, 'dnd'),
+              child: const Text('D&D 5e'),
+            ),
         ],
       ),
     );
@@ -270,6 +283,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newStarforged();
     } else if (choice == 'sundered') {
       await _newSundered();
+    } else if (choice == 'dnd') {
+      await _newDnd();
     }
   }
 
@@ -292,6 +307,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await ref.read(rulesetsProvider.notifier).setRuleset('starforged', true);
     }
     final id = await ref.read(charactersProvider.notifier).addStarforged();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newDnd() async {
+    final id = await ref.read(charactersProvider.notifier).addDnd();
     if (mounted) setState(() => _editingId = id);
   }
 

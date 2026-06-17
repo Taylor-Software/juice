@@ -260,6 +260,16 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  /// Creates a pre-made D&D 5e PC at the top and returns its id.
+  Future<String> addDnd() async {
+    final id = _newId();
+    await _persist([
+      Character(id: id, name: 'New D&D character', dnd: DndSheet.premade()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)
