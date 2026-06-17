@@ -246,6 +246,65 @@ class CharTrack {
   }
 }
 
+/// Progress-track rank; mark size (ticks per progress mark) per Ironsworn.
+enum ProgressRank { troublesome, dangerous, formidable, extreme, epic }
+
+extension ProgressRankX on ProgressRank {
+  /// Ticks added per progress mark (4 ticks = one filled box).
+  int get markTicks => switch (this) {
+        ProgressRank.troublesome => 12,
+        ProgressRank.dangerous => 8,
+        ProgressRank.formidable => 4,
+        ProgressRank.extreme => 2,
+        ProgressRank.epic => 1,
+      };
+
+  /// Capitalised display label ('Dangerous').
+  String get label => name[0].toUpperCase() + name.substring(1);
+}
+
+ProgressRank _progressRankFromName(String? s) => ProgressRank.values
+    .firstWhere((r) => r.name == s, orElse: () => ProgressRank.dangerous);
+
+/// A named progress track (vow, later: legacy track). 10 boxes × 4 ticks = 40.
+class ProgressTrack {
+  const ProgressTrack({
+    required this.name,
+    this.rank = ProgressRank.dangerous,
+    this.ticks = 0,
+  });
+  final String name;
+  final ProgressRank rank;
+  final int ticks; // 0..40
+
+  int get boxes => ticks ~/ 4; // filled boxes 0..10
+  int get markTicks => rank.markTicks;
+
+  /// New track with [marks] progress marks applied (negative un-marks).
+  ProgressTrack marked(int marks) =>
+      copyWith(ticks: ticks + marks * rank.markTicks);
+
+  ProgressTrack copyWith({String? name, ProgressRank? rank, int? ticks}) =>
+      ProgressTrack(
+        name: name ?? this.name,
+        rank: rank ?? this.rank,
+        ticks: (ticks ?? this.ticks).clamp(0, 40),
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'name': name, 'rank': rank.name, 'ticks': ticks};
+
+  static ProgressTrack? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    return ProgressTrack(
+      name: j['name'] is String ? j['name'] as String : '',
+      rank: _progressRankFromName(
+          j['rank'] is String ? j['rank'] as String : null),
+      ticks: ((j['ticks'] is int ? j['ticks'] as int : 0)).clamp(0, 40),
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {

@@ -165,4 +165,31 @@ void main() {
       expect(set.copyWith(clearEmulation: true).emulation, isNull);
     });
   });
+
+  group('ProgressTrack', () {
+    test('marks advance ticks by rank size and clamp at 40', () {
+      const t = ProgressTrack(name: 'Vow', rank: ProgressRank.formidable);
+      expect(t.markTicks, 4); // convenience getter on the track
+      final once = t.marked(1);
+      expect(once.ticks, 4);
+      expect(once.boxes, 1);
+      expect(t.marked(20).ticks, 40); // clamped
+      expect(t.marked(-1).ticks, 0); // clamped
+    });
+
+    test('round-trips and tolerates junk', () {
+      const t =
+          ProgressTrack(name: 'Avenge', rank: ProgressRank.epic, ticks: 7);
+      final back = ProgressTrack.maybeFromJson(t.toJson())!;
+      expect(back.name, 'Avenge');
+      expect(back.rank, ProgressRank.epic);
+      expect(back.ticks, 7);
+      expect(ProgressTrack.maybeFromJson('nope'), isNull);
+      final j = ProgressTrack.maybeFromJson(
+          {'name': 42, 'rank': 'bogus', 'ticks': 99})!;
+      expect(j.name, '');
+      expect(j.rank, ProgressRank.dangerous); // default
+      expect(j.ticks, 40); // clamped
+    });
+  });
 }
