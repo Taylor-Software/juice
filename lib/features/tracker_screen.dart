@@ -5,6 +5,7 @@ import '../engine/models.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
+import 'shadowdark_sheet.dart';
 import 'starforged_sheet.dart';
 
 // -- Threads --------------------------------------------------------------
@@ -144,6 +145,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   onBack: () => setState(() => _editingId = null),
                 );
               }
+              if (c.shadowdark != null) {
+                return ShadowdarkSheetView(
+                  character: c,
+                  onBack: () => setState(() => _editingId = null),
+                );
+              }
               if (c.dnd != null) {
                 return DndSheetView(
                   character: c,
@@ -235,7 +242,9 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     final systems =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    if (!systems.contains('ironsworn') && !systems.contains('dnd')) {
+    if (!systems.contains('ironsworn') &&
+        !systems.contains('dnd') &&
+        !systems.contains('shadowdark')) {
       await _addCharacter(context);
       return;
     }
@@ -271,6 +280,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               onPressed: () => Navigator.pop(context, 'dnd'),
               child: const Text('D&D 5e'),
             ),
+          if (systems.contains('shadowdark'))
+            FilledButton(
+              key: const Key('new-shadowdark'),
+              onPressed: () => Navigator.pop(context, 'shadowdark'),
+              child: const Text('Shadowdark'),
+            ),
         ],
       ),
     );
@@ -285,6 +300,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newSundered();
     } else if (choice == 'dnd') {
       await _newDnd();
+    } else if (choice == 'shadowdark') {
+      await _newShadowdark();
     }
   }
 
@@ -312,6 +329,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newDnd() async {
     final id = await ref.read(charactersProvider.notifier).addDnd();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newShadowdark() async {
+    final id = await ref.read(charactersProvider.notifier).addShadowdark();
     if (mounted) setState(() => _editingId = id);
   }
 

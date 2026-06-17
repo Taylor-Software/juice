@@ -752,6 +752,97 @@ void main() {
     expect(chars.single.starforged!.assetRuleset, 'sundered_isles');
   });
 
+  Future<ProviderContainer> pumpShadowdark(WidgetTester tester,
+      {String sd = '{"abilities":{"str":13,"dex":12,"con":14,"int":8,"wis":10,'
+          '"cha":10},"className":"Fighter","ancestry":"Human",'
+          '"alignment":"Neutral","level":1,"ac":13,"currentHp":8,"maxHp":8}'}) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["shadowdark"]}]}',
+      'juice.characters.v1.default':
+          '[{"id":"sd","name":"Mort","note":"","stats":[],"tracks":[],'
+              '"tags":[],"shadowdark":$sd}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(CharactersPane)));
+  }
+
+  testWidgets('opening a Shadowdark character shows the bespoke sheet',
+      (tester) async {
+    await pumpShadowdark(tester);
+    await tester.tap(find.text('Mort'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shadowdark-sheet')), findsOneWidget);
+    expect(find.text('STR'), findsOneWidget);
+    expect(find.textContaining('Gear'), findsWidgets);
+  });
+
+  testWidgets('SD ability stepper + luck toggle persist', (tester) async {
+    final c = await pumpShadowdark(tester);
+    await tester.tap(find.text('Mort'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sd-ability-str-plus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .shadowdark!
+            .score('str'),
+        14);
+    await tester.scrollUntilVisible(find.byKey(const Key('sd-luck')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sd-luck')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.shadowdark!.luckToken,
+        isTrue);
+  });
+
+  testWidgets('Wizard shows Spells section; Fighter does not', (tester) async {
+    await pumpShadowdark(tester,
+        sd: '{"abilities":{"str":8,"dex":12,"con":10,"int":16,"wis":10,'
+            '"cha":10},"className":"Wizard","ancestry":"Elf",'
+            '"alignment":"Neutral","level":1,"ac":11,"currentHp":4,"maxHp":4}');
+    await tester.tap(find.text('Mort'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('sd-spells')), 300,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.byKey(const Key('sd-spells')), findsOneWidget);
+  });
+
+  testWidgets('create flow makes a premade Shadowdark character',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["shadowdark"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-shadowdark')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shadowdark-sheet')), findsOneWidget);
+    expect(
+        (await c.read(charactersProvider.future)).single.shadowdark!.className,
+        'Fighter');
+  });
+
   testWidgets('D&D Combat rows do not overflow at 360px width', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;
