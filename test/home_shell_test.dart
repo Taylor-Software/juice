@@ -298,4 +298,29 @@ void main() {
     expect(s.activeMeta.name, 'Dungeon');
     expect(s.activeMeta.enabledSystems, contains('dnd'));
   });
+
+  testWidgets('new campaign dialog can enable the shadowdark add-on',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Campaigns'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Gloomhold');
+    await tester.ensureVisible(find.byKey(const Key('sys-shadowdark')));
+    await tester.tap(find.byKey(const Key('sys-shadowdark')));
+    await tester.pumpAndSettle();
+    final create = find.widgetWithText(FilledButton, 'Create');
+    await tester.ensureVisible(create);
+    await tester.tap(create);
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    final s = await container.read(sessionsProvider.future);
+    expect(s.activeMeta.enabledSystems, contains('shadowdark'));
+  });
 }

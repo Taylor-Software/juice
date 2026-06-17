@@ -591,6 +591,7 @@ const kSystemBlurbs = <String, String>{
   'lonelog': 'Lonelog notation: Resources + Battle trackers, .md export.',
   'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
   'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
+  'shadowdark': 'Shadowdark character sheet: stats, HP, AC, gear, luck.',
 };
 
 class NewCampaignDialog extends StatefulWidget {
@@ -612,6 +613,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _lonelog = false;
   bool _hexcrawl = false;
   bool _dnd = false;
+  bool _shadowdark = false;
 
   @override
   void dispose() {
@@ -631,6 +633,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_lonelog) 'lonelog',
       if (_hexcrawl) 'hexcrawl',
       if (_dnd) 'dnd',
+      if (_shadowdark) 'shadowdark',
     };
     Navigator.of(context).pop((
       name: _controller.text,
@@ -734,6 +737,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _dnd,
               onChanged: (v) => setState(() => _dnd = v ?? false),
             ),
+            CheckboxListTile(
+              key: const Key('sys-shadowdark'),
+              title: const Text('Shadowdark'),
+              subtitle: Text(kSystemBlurbs['shadowdark']!),
+              value: _shadowdark,
+              onChanged: (v) => setState(() => _shadowdark = v ?? false),
+            ),
           ],
         ),
       ),
@@ -794,6 +804,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('lonelog', 'Lonelog journaling'),
             _row('hexcrawl', 'Hexcrawl toolkit'),
             _row('dnd', 'D&D 5e'),
+            _row('shadowdark', 'Shadowdark'),
           ],
         ),
       ),
