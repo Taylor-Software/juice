@@ -21,7 +21,7 @@ const Map<String, String> kSystemPrimers = {
   'dnd':
       'D&D 5e: heroic high fantasy. Resolution: d20 + modifier vs DC or AC; advantage/disadvantage; saving throws; conditions; hit points and death saves.',
   'shadowdark':
-      'Shadowdark: lethal, gritty old-school dungeon-crawling where light and time are deadly resources. Resolution: d20 + modifier vs DC or AC; real-time torches; luck tokens; swift death.',
+      'Shadowdark: lethal, gritty old-school dungeon-crawling where light and time are deadly resources. Resolution: d20 + modifier vs DC or AC; luck tokens; swift death.',
 };
 
 /// Resolves a campaign's enabled [systems] + [rulesets] to one primer, or ''
