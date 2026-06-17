@@ -799,6 +799,51 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  String wizardDnd({int level = 5}) =>
+      '{"abilities":{"str":8,"dex":14,"con":12,"int":16,"wis":10,"cha":10},'
+      '"className":"Wizard","level":$level,"ac":12,"currentHp":20,"maxHp":20,'
+      '"hitDiceRemaining":$level,"speed":30}';
+
+  testWidgets('caster sheet shows Spellcasting with derived DC + slot stepper',
+      (tester) async {
+    final c = await pumpDnd(tester, dnd: wizardDnd());
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('dnd-slot-1-plus')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Spellcasting'), findsOneWidget);
+    expect(find.textContaining('DC 14'), findsOneWidget); // 8 + prof3 + int+3
+    // Expend a level-1 slot.
+    await tester.tap(find.byKey(const Key('dnd-slot-1-plus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.dnd!.spellSlotsUsed[0],
+        1);
+  });
+
+  testWidgets('Warlock shows a Pact Magic row', (tester) async {
+    await pumpDnd(tester,
+        dnd: '{"abilities":{"str":10,"dex":14,"con":12,"int":10,"wis":10,'
+            '"cha":16},"className":"Warlock","level":5,"ac":12,"currentHp":20,'
+            '"maxHp":20,"hitDiceRemaining":5,"speed":30}');
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('dnd-pact-plus')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Pact'), findsOneWidget);
+  });
+
+  testWidgets('non-caster (Fighter) shows no Spellcasting section',
+      (tester) async {
+    await pumpDnd(tester); // premade Fighter
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    expect(find.text('Spellcasting'), findsNothing);
+  });
+
   testWidgets('Sundered Isles picker lists SI assets', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':

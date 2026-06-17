@@ -513,6 +513,87 @@ void main() {
     });
   });
 
+  group('DndSheet spell slots', () {
+    test('slot tables match the SRD full/half/pact tables', () {
+      DndSheet caster(String c, int lvl) => DndSheet(className: c, level: lvl);
+      // Full caster (Wizard)
+      expect(caster('Wizard', 1).slotMax(1), 2);
+      expect(caster('Wizard', 1).slotMax(2), 0);
+      expect([for (var l = 1; l <= 9; l++) caster('Wizard', 5).slotMax(l)],
+          [4, 3, 2, 0, 0, 0, 0, 0, 0]);
+      expect([for (var l = 1; l <= 9; l++) caster('Wizard', 20).slotMax(l)],
+          [4, 3, 3, 3, 3, 2, 2, 1, 1]);
+      // Half caster (Paladin): none at L1, 5th-level slots at L19+
+      expect(caster('Paladin', 1).slotMax(1), 0);
+      expect(caster('Paladin', 2).slotMax(1), 2);
+      expect(caster('Paladin', 20).slotMax(5), 2);
+      expect(caster('Paladin', 20).slotMax(6), 0); // half casters cap at 5th
+      // Warlock pact magic
+      expect(caster('Warlock', 1).pactSlotCount, 1);
+      expect(caster('Warlock', 1).pactSlotLevel, 1);
+      expect(caster('Warlock', 11).pactSlotCount, 3);
+      expect(caster('Warlock', 20).pactSlotCount, 4);
+      expect(caster('Warlock', 20).pactSlotLevel, 5);
+      expect(
+          caster('Warlock', 5).slotMax(1), 0); // warlock uses pact, not slotMax
+    });
+
+    test('isCaster + derived DC/attack/ability', () {
+      const w = DndSheet(
+        className: 'Wizard',
+        level: 5,
+        abilities: {
+          'str': 8,
+          'dex': 14,
+          'con': 12,
+          'int': 16,
+          'wis': 10,
+          'cha': 10
+        },
+      );
+      expect(w.isCaster, isTrue);
+      expect(w.spellcastingAbility, 'int');
+      expect(w.spellcastingMod, 3); // int 16 -> +3
+      expect(w.proficiencyBonus, 3); // level 5
+      expect(w.spellSaveDC, 14); // 8 + 3 + 3
+      expect(w.spellAttackBonus, 6); // 3 + 3
+      const f = DndSheet(className: 'Fighter', level: 5);
+      expect(f.isCaster, isFalse);
+      expect(f.spellcastingAbility, isNull);
+      expect(f.spellSaveDC, isNull);
+    });
+
+    test('round-trips; normalizes spellSlotsUsed to length 9; omits defaults',
+        () {
+      const s = DndSheet(
+        className: 'Wizard',
+        level: 3,
+        spellSlotsUsed: [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        pactSlotsUsed: 0,
+        preparedSpells: 'Mage Hand, Shield',
+      );
+      final back = DndSheet.maybeFromJson(s.toJson())!;
+      expect(back.spellSlotsUsed.length, 9);
+      expect(back.spellSlotsUsed[0], 1);
+      expect(back.preparedSpells, 'Mage Hand, Shield');
+      // defaults omitted
+      expect(
+          DndSheet.premade().toJson().containsKey('spellSlotsUsed'), isFalse);
+      expect(
+          DndSheet.premade().toJson().containsKey('preparedSpells'), isFalse);
+      // tolerant: short/junk list normalized to length 9, negatives floored to 0
+      final j = DndSheet.maybeFromJson({
+        'className': 'Wizard',
+        'spellSlotsUsed': [-3, 'x', 2],
+        'pactSlotsUsed': -1,
+      })!;
+      expect(j.spellSlotsUsed.length, 9);
+      expect(j.spellSlotsUsed[0], 0); // -3 floored
+      expect(j.spellSlotsUsed[2], 2);
+      expect(j.pactSlotsUsed, 0);
+    });
+  });
+
   group('StarforgedSheet.assetRuleset', () {
     test('defaults to starforged; premade can set sundered_isles', () {
       expect(const StarforgedSheet().assetRuleset, 'starforged');
