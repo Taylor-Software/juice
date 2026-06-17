@@ -305,6 +305,49 @@ class ProgressTrack {
   }
 }
 
+/// A persisted asset on an Ironsworn sheet. [enabledAbilities] parallels the
+/// asset definition's abilities[]; only the toggled-on flags are play state.
+class AssetState {
+  const AssetState({
+    required this.assetId,
+    required this.name,
+    this.category = '',
+    this.enabledAbilities = const [],
+  });
+  final String assetId; // datasworn _id
+  final String name;
+  final String category;
+  final List<bool> enabledAbilities;
+
+  AssetState copyWith({List<bool>? enabledAbilities}) => AssetState(
+        assetId: assetId,
+        name: name,
+        category: category,
+        enabledAbilities: enabledAbilities ?? this.enabledAbilities,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'assetId': assetId,
+        'name': name,
+        if (category.isNotEmpty) 'category': category,
+        'enabledAbilities': enabledAbilities,
+      };
+
+  static AssetState? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final id = j['assetId'];
+    if (id is! String || id.isEmpty) return null;
+    return AssetState(
+      assetId: id,
+      name: j['name'] is String ? j['name'] as String : '',
+      category: j['category'] is String ? j['category'] as String : '',
+      enabledAbilities: j['enabledAbilities'] is List
+          ? (j['enabledAbilities'] as List).map((e) => e == true).toList()
+          : const [],
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {

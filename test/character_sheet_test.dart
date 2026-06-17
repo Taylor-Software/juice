@@ -192,4 +192,30 @@ void main() {
       expect(j.ticks, 40); // clamped
     });
   });
+
+  group('AssetState', () {
+    test('round-trips with ability flags', () {
+      const a = AssetState(
+        assetId: 'classic/assets/combat_talent/swordmaster',
+        name: 'Swordmaster',
+        category: 'Combat Talent',
+        enabledAbilities: [true, false, false],
+      );
+      final back = AssetState.maybeFromJson(a.toJson())!;
+      expect(back.assetId, a.assetId);
+      expect(back.name, 'Swordmaster');
+      expect(back.category, 'Combat Talent');
+      expect(back.enabledAbilities, [true, false, false]);
+    });
+
+    test('rejects entries with no id; coerces junk flags', () {
+      expect(AssetState.maybeFromJson({'name': 'x'}), isNull);
+      final a = AssetState.maybeFromJson({
+        'assetId': 'id/assets/x/y',
+        'enabledAbilities': [1, true, 'no'],
+      })!;
+      expect(a.name, '');
+      expect(a.enabledAbilities, [false, true, false]);
+    });
+  });
 }
