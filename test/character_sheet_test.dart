@@ -363,4 +363,98 @@ void main() {
       expect(IronswornAssetDef.listFromRuleset({'meta': {}}), isEmpty);
     });
   });
+
+  group('StarforgedSheet', () {
+    test('premade defaults match the standard starting sheet', () {
+      final s = StarforgedSheet.premade();
+      expect([s.edge, s.heart, s.iron, s.shadow, s.wits], [3, 2, 2, 1, 1]);
+      expect([s.health, s.spirit, s.supply], [5, 5, 5]);
+      expect(s.momentum, 2);
+      expect(s.momentumMax, 10);
+      expect(s.momentumReset, 2);
+      expect([s.questsLegacy, s.bondsLegacy, s.discoveriesLegacy], [0, 0, 0]);
+    });
+
+    test('impacts lower max + reset and re-clamp momentum via copyWith', () {
+      final s = const StarforgedSheet(momentum: 10)
+          .copyWith(impacts: {'wounded', 'doomed'});
+      expect(s.momentumMax, 8);
+      expect(s.momentumReset, 0);
+      expect(s.momentum, 8);
+    });
+
+    test('values are clamped to legal ranges', () {
+      final s = const StarforgedSheet().copyWith(
+        edge: 9,
+        health: 99,
+        supply: -2,
+        momentum: 99,
+        questsLegacy: 50,
+        discoveriesLegacy: -3,
+        xpSpent: -1,
+      );
+      expect(s.edge, 3);
+      expect(s.health, 5);
+      expect(s.supply, 0);
+      expect(s.momentum, 10);
+      expect(s.questsLegacy, 10);
+      expect(s.discoveriesLegacy, 0);
+      expect(s.xpSpent, 0);
+    });
+
+    test('round-trips with legacy, impacts, vows, connections, assets', () {
+      const s = StarforgedSheet(
+        edge: 3,
+        heart: 2,
+        iron: 2,
+        shadow: 1,
+        wits: 1,
+        health: 4,
+        spirit: 3,
+        supply: 5,
+        momentum: -2,
+        xpEarned: 6,
+        xpSpent: 4,
+        questsLegacy: 3,
+        bondsLegacy: 1,
+        discoveriesLegacy: 2,
+        impacts: {'shaken'},
+        vows: [
+          ProgressTrack(
+              name: 'Reach the Forge', rank: ProgressRank.formidable, ticks: 4)
+        ],
+        connections: [
+          ProgressTrack(name: 'Lara', rank: ProgressRank.dangerous, ticks: 8)
+        ],
+        assets: [
+          AssetState(assetId: 'starforged/assets/path/ace', name: 'Ace')
+        ],
+      );
+      final back = StarforgedSheet.maybeFromJson(s.toJson())!;
+      expect(back.health, 4);
+      expect(back.momentum, -2);
+      expect(back.questsLegacy, 3);
+      expect(back.impacts, {'shaken'});
+      expect(back.vows.single.ticks, 4);
+      expect(back.connections.single.name, 'Lara');
+      expect(back.assets.single.name, 'Ace');
+      expect(back.momentumMax, 9);
+    });
+
+    test('tolerates junk and unknown impact ids', () {
+      expect(StarforgedSheet.maybeFromJson('x'), isNull);
+      final s = StarforgedSheet.maybeFromJson({
+        'edge': 'three',
+        'momentum': 'fast',
+        'impacts': ['wounded', 'bogus', 7],
+        'connections': ['junk'],
+        'assets': 'nope',
+      })!;
+      expect(s.edge, 1);
+      expect(s.momentum, 2);
+      expect(s.impacts, {'wounded'});
+      expect(s.connections, isEmpty);
+      expect(s.assets, isEmpty);
+    });
+  });
 }
