@@ -1277,6 +1277,179 @@ class DndSheet {
   }
 }
 
+// --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
+
+const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
+const kShadowdarkAncestries = <String>[
+  'Dwarf',
+  'Elf',
+  'Goblin',
+  'Half-Orc',
+  'Halfling',
+  'Human',
+];
+const kShadowdarkAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
+const kShadowdarkClassHitDie = <String, int>{
+  'Fighter': 8,
+  'Priest': 6,
+  'Thief': 4,
+  'Wizard': 4,
+};
+const kShadowdarkCastingAbility = <String, String>{
+  'Priest': 'wis',
+  'Wizard': 'int',
+};
+
+/// Bespoke lean Shadowdark sheet. Authors only game-mechanic facts; title,
+/// deity, talents, and spells are freeform (no rulebook text shipped).
+class ShadowdarkSheet {
+  const ShadowdarkSheet({
+    this.abilities = const {
+      'str': 10,
+      'dex': 10,
+      'con': 10,
+      'int': 10,
+      'wis': 10,
+      'cha': 10
+    },
+    this.className = 'Fighter',
+    this.ancestry = 'Human',
+    this.alignment = 'Neutral',
+    this.level = 1,
+    this.xp = 0,
+    this.ac = 10,
+    this.currentHp = 1,
+    this.maxHp = 1,
+    this.gearSlotsUsed = 0,
+    this.luckToken = false,
+    this.title = '',
+    this.deity = '',
+    this.background = '',
+    this.talentsText = '',
+    this.spellsText = '',
+  });
+
+  final Map<String, int> abilities; // keys = kDndAbilities, each 1..20
+  final String className, ancestry, alignment;
+  final int level; // 1..10
+  final int xp, ac, currentHp, maxHp, gearSlotsUsed;
+  final bool luckToken;
+  final String title, deity, background, talentsText, spellsText;
+
+  int score(String a) => abilities[a] ?? 10;
+  int abilityMod(String a) => ((score(a) - 10) / 2).floor();
+  int get gearSlotCapacity => score('str') > 10 ? score('str') : 10;
+  int get hitDie => kShadowdarkClassHitDie[className] ?? 8;
+  bool get isCaster => kShadowdarkCastingAbility.containsKey(className);
+  String? get castingAbility => kShadowdarkCastingAbility[className];
+  int? get castingMod => isCaster ? abilityMod(castingAbility!) : null;
+
+  factory ShadowdarkSheet.premade() => const ShadowdarkSheet(
+        className: 'Fighter',
+        ancestry: 'Human',
+        alignment: 'Neutral',
+        level: 1,
+        ac: 10,
+        currentHp: 8, // Fighter d8
+        maxHp: 8,
+      );
+
+  ShadowdarkSheet copyWith({
+    Map<String, int>? abilities,
+    String? className,
+    String? ancestry,
+    String? alignment,
+    int? level,
+    int? xp,
+    int? ac,
+    int? currentHp,
+    int? maxHp,
+    int? gearSlotsUsed,
+    bool? luckToken,
+    String? title,
+    String? deity,
+    String? background,
+    String? talentsText,
+    String? spellsText,
+  }) {
+    final ab = abilities ?? this.abilities;
+    final cls = className ?? this.className;
+    final anc = ancestry ?? this.ancestry;
+    final al = alignment ?? this.alignment;
+    return ShadowdarkSheet(
+      abilities: {
+        for (final a in kDndAbilities) a: (ab[a] ?? 10).clamp(1, 20),
+      },
+      className: kShadowdarkClassHitDie.containsKey(cls) ? cls : 'Fighter',
+      ancestry: kShadowdarkAncestries.contains(anc) ? anc : 'Human',
+      alignment: kShadowdarkAlignments.contains(al) ? al : 'Neutral',
+      level: (level ?? this.level).clamp(1, 10),
+      xp: (xp ?? this.xp).clamp(0, 1 << 31),
+      ac: (ac ?? this.ac).clamp(0, 99),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
+      gearSlotsUsed: (gearSlotsUsed ?? this.gearSlotsUsed).clamp(0, 999),
+      luckToken: luckToken ?? this.luckToken,
+      title: title ?? this.title,
+      deity: deity ?? this.deity,
+      background: background ?? this.background,
+      talentsText: talentsText ?? this.talentsText,
+      spellsText: spellsText ?? this.spellsText,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'abilities': abilities,
+        'className': className,
+        'ancestry': ancestry,
+        'alignment': alignment,
+        'level': level,
+        if (xp != 0) 'xp': xp,
+        'ac': ac,
+        'currentHp': currentHp,
+        'maxHp': maxHp,
+        if (gearSlotsUsed != 0) 'gearSlotsUsed': gearSlotsUsed,
+        if (luckToken) 'luckToken': true,
+        if (title.isNotEmpty) 'title': title,
+        if (deity.isNotEmpty) 'deity': deity,
+        if (background.isNotEmpty) 'background': background,
+        if (talentsText.isNotEmpty) 'talentsText': talentsText,
+        if (spellsText.isNotEmpty) 'spellsText': spellsText,
+      };
+
+  static ShadowdarkSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int intOr(dynamic v, int d) => v is int ? v : d;
+    String strOr(dynamic v) => v is String ? v : '';
+    final rawAb = j['abilities'];
+    final ab = <String, int>{
+      for (final a in kDndAbilities)
+        a: (rawAb is Map ? intOr(rawAb[a], 10) : 10).clamp(1, 20),
+    };
+    final cls = strOr(j['className']);
+    final anc = strOr(j['ancestry']);
+    final al = strOr(j['alignment']);
+    return ShadowdarkSheet(
+      abilities: ab,
+      className: kShadowdarkClassHitDie.containsKey(cls) ? cls : 'Fighter',
+      ancestry: kShadowdarkAncestries.contains(anc) ? anc : 'Human',
+      alignment: kShadowdarkAlignments.contains(al) ? al : 'Neutral',
+      level: intOr(j['level'], 1).clamp(1, 10),
+      xp: intOr(j['xp'], 0).clamp(0, 1 << 31),
+      ac: intOr(j['ac'], 10).clamp(0, 99),
+      currentHp: intOr(j['currentHp'], 1).clamp(0, 1 << 20),
+      maxHp: intOr(j['maxHp'], 1).clamp(0, 1 << 20),
+      gearSlotsUsed: intOr(j['gearSlotsUsed'], 0).clamp(0, 999),
+      luckToken: j['luckToken'] == true,
+      title: strOr(j['title']),
+      deity: strOr(j['deity']),
+      background: strOr(j['background']),
+      talentsText: strOr(j['talentsText']),
+      spellsText: strOr(j['spellsText']),
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {

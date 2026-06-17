@@ -594,6 +594,91 @@ void main() {
     });
   });
 
+  group('ShadowdarkSheet', () {
+    test('abilityMod floors; gearSlotCapacity = max(STR,10)', () {
+      ShadowdarkSheet s(Map<String, int> a) => ShadowdarkSheet(abilities: a);
+      expect(s({'str': 3}).abilityMod('str'), -4);
+      expect(s({'str': 7}).abilityMod('str'), -2);
+      expect(s({'str': 10}).abilityMod('str'), 0);
+      expect(s({'str': 18}).abilityMod('str'), 4);
+      expect(s({'str': 8}).gearSlotCapacity, 10);
+      expect(s({'str': 15}).gearSlotCapacity, 15);
+    });
+
+    test('hit die + caster derivations', () {
+      const w = ShadowdarkSheet(className: 'Wizard', abilities: {
+        'str': 8,
+        'dex': 12,
+        'con': 10,
+        'int': 16,
+        'wis': 10,
+        'cha': 10
+      });
+      expect(w.hitDie, 4);
+      expect(w.isCaster, isTrue);
+      expect(w.castingAbility, 'int');
+      expect(w.castingMod, 3);
+      const f = ShadowdarkSheet(className: 'Fighter');
+      expect(f.hitDie, 8);
+      expect(f.isCaster, isFalse);
+      expect(f.castingAbility, isNull);
+      expect(f.castingMod, isNull);
+    });
+
+    test('premade is a level-1 Human Fighter', () {
+      final s = ShadowdarkSheet.premade();
+      expect(s.className, 'Fighter');
+      expect(s.ancestry, 'Human');
+      expect(s.alignment, 'Neutral');
+      expect(s.level, 1);
+      expect(s.maxHp, 8);
+    });
+
+    test('round-trips; tolerant; coerces unknown enums + clamps', () {
+      const s = ShadowdarkSheet(
+        className: 'Priest',
+        ancestry: 'Elf',
+        alignment: 'Lawful',
+        level: 3,
+        xp: 12,
+        ac: 15,
+        currentHp: 14,
+        maxHp: 18,
+        gearSlotsUsed: 5,
+        luckToken: true,
+        title: 'Crusader',
+        deity: 'Saint Terragnis',
+        talentsText: '+1 atk',
+        spellsText: 'Cure Wounds',
+        abilities: {'wis': 14},
+      );
+      final back = ShadowdarkSheet.maybeFromJson(s.toJson())!;
+      expect(back.className, 'Priest');
+      expect(back.ancestry, 'Elf');
+      expect(back.alignment, 'Lawful');
+      expect(back.luckToken, isTrue);
+      expect(back.title, 'Crusader');
+      expect(back.deity, 'Saint Terragnis');
+      expect(back.score('wis'), 14);
+
+      expect(ShadowdarkSheet.maybeFromJson('x'), isNull);
+      final j = ShadowdarkSheet.maybeFromJson({
+        'className': 'Bard',
+        'ancestry': 'Orc',
+        'alignment': 'Good',
+        'level': 99,
+        'abilities': {'str': 99},
+        'gearSlotsUsed': -2,
+      })!;
+      expect(j.className, 'Fighter'); // unknown -> default
+      expect(j.ancestry, 'Human');
+      expect(j.alignment, 'Neutral');
+      expect(j.level, 10); // clamped 1..10
+      expect(j.score('str'), 20); // clamped 1..20
+      expect(j.gearSlotsUsed, 0);
+    });
+  });
+
   group('StarforgedSheet.assetRuleset', () {
     test('defaults to starforged; premade can set sundered_isles', () {
       expect(const StarforgedSheet().assetRuleset, 'starforged');
