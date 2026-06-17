@@ -327,4 +327,40 @@ void main() {
       expect(c.ironsworn, isNull);
     });
   });
+
+  group('IronswornAssetDef.listFromRuleset', () {
+    test('flattens asset_collections and seeds default ability flags', () {
+      final ruleset = {
+        'asset_collections': [
+          {
+            'name': 'Combat Talent',
+            'assets': [
+              {
+                'id': 'classic/assets/combat_talent/swordmaster',
+                'name': 'Swordmaster',
+                'category': 'Combat Talent',
+                'abilities': [
+                  {'text': 'A', 'enabled': true},
+                  {'text': 'B', 'enabled': false},
+                ],
+              },
+            ],
+          },
+          {'name': 'Junk', 'assets': 'not a list'},
+        ],
+      };
+      final defs = IronswornAssetDef.listFromRuleset(ruleset);
+      expect(defs, hasLength(1));
+      expect(defs.single.name, 'Swordmaster');
+      expect(defs.single.abilities, ['A', 'B']);
+      expect(defs.single.abilityEnabled, [true, false]);
+      final st = defs.single.toState();
+      expect(st.assetId, 'classic/assets/combat_talent/swordmaster');
+      expect(st.enabledAbilities, [true, false]);
+    });
+
+    test('returns empty for a map with no asset_collections', () {
+      expect(IronswornAssetDef.listFromRuleset({'meta': {}}), isEmpty);
+    });
+  });
 }

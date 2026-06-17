@@ -503,6 +503,67 @@ class IronswornSheet {
   }
 }
 
+/// Read-only asset definition parsed from a loaded ruleset map's
+/// `asset_collections` block (emitted by build_datasworn.py).
+class IronswornAssetDef {
+  const IronswornAssetDef({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.abilities,
+    required this.abilityEnabled,
+  });
+  final String id;
+  final String name;
+  final String category;
+  final List<String> abilities; // ability text
+  final List<bool> abilityEnabled; // default-on flags
+
+  /// A fresh persisted [AssetState] with the definition's default flags.
+  AssetState toState() => AssetState(
+        assetId: id,
+        name: name,
+        category: category,
+        enabledAbilities: List<bool>.of(abilityEnabled),
+      );
+
+  static List<IronswornAssetDef> listFromRuleset(Map<String, dynamic> ruleset) {
+    final out = <IronswornAssetDef>[];
+    final colls = ruleset['asset_collections'];
+    if (colls is! List) return out;
+    for (final coll in colls) {
+      if (coll is! Map) continue;
+      final assets = coll['assets'];
+      if (assets is! List) continue;
+      final collName = coll['name'] is String ? coll['name'] as String : '';
+      for (final a in assets) {
+        if (a is! Map) continue;
+        final id = a['id'];
+        final name = a['name'];
+        if (id is! String || name is! String) continue;
+        final abilities = <String>[];
+        final enabled = <bool>[];
+        if (a['abilities'] is List) {
+          for (final ab in a['abilities'] as List) {
+            if (ab is! Map) continue;
+            abilities.add(ab['text'] is String ? ab['text'] as String : '');
+            enabled.add(ab['enabled'] == true);
+          }
+        }
+        out.add(IronswornAssetDef(
+          id: id,
+          name: name,
+          category:
+              a['category'] is String ? a['category'] as String : collName,
+          abilities: abilities,
+          abilityEnabled: enabled,
+        ));
+      }
+    }
+    return out;
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {
