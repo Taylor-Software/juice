@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
 import 'ironsworn_sheet.dart';
+import 'starforged_sheet.dart';
 
 // -- Threads --------------------------------------------------------------
 class ThreadsPane extends ConsumerWidget {
@@ -136,6 +137,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               _editingId = null;
             } else {
               final c = match.first;
+              if (c.starforged != null) {
+                return StarforgedSheetView(
+                  character: c,
+                  onBack: () => setState(() => _editingId = null),
+                );
+              }
               if (c.ironsworn != null) {
                 return IronswornSheetView(
                   character: c,
@@ -241,6 +248,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             onPressed: () => Navigator.pop(context, 'ironsworn'),
             child: const Text('Ironsworn'),
           ),
+          FilledButton(
+            key: const Key('new-starforged'),
+            onPressed: () => Navigator.pop(context, 'starforged'),
+            child: const Text('Starforged'),
+          ),
         ],
       ),
     );
@@ -249,6 +261,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _addCharacter(context);
     } else if (choice == 'ironsworn') {
       await _newIronsworn();
+    } else if (choice == 'starforged') {
+      await _newStarforged();
     }
   }
 
@@ -259,6 +273,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await ref.read(rulesetsProvider.notifier).setRuleset('classic', true);
     }
     final id = await ref.read(charactersProvider.notifier).addIronsworn();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newStarforged() async {
+    // Enable the Starforged ruleset for Moves-tool parity (asset picker reads
+    // the bundled JSON regardless). This drops the classic toggle; existing
+    // Classic sheets are unaffected (each sheet pins its own asset ruleset).
+    final rs = ref.read(rulesetsProvider).valueOrNull ?? const <String>{};
+    if (!rs.contains('starforged')) {
+      await ref.read(rulesetsProvider.notifier).setRuleset('starforged', true);
+    }
+    final id = await ref.read(charactersProvider.notifier).addStarforged();
     if (mounted) setState(() => _editingId = id);
   }
 
