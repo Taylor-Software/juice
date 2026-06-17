@@ -122,6 +122,63 @@ class DndSheetView extends ConsumerWidget {
         ]),
         sheetSection(context, 'Saving Throws'),
         for (final a in kDndAbilities) _saveRow(ref, s, a),
+        sheetSection(context, 'Skills'),
+        for (final sk in kDndSkills) _skillRow(ref, s, sk),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('Passive Perception ${s.passivePerception}',
+              style: Theme.of(context).textTheme.bodySmall),
+        ),
+        sheetSection(context, 'Conditions'),
+        toggleChips(
+          chipPrefix: 'dnd-cond',
+          labels: kDndConditions,
+          selected: s.conditions,
+          onChanged: (c) => _save(ref, s.copyWith(conditions: c)),
+        ),
+        Row(children: [
+          const SizedBox(width: 96, child: Text('Exhaustion')),
+          intStepper(
+              prefix: 'dnd',
+              fieldKey: 'exhaustion',
+              value: s.exhaustionLevel,
+              onSet: (v) => _save(ref, s.copyWith(exhaustionLevel: v))),
+          Text('/ 6', style: Theme.of(context).textTheme.bodySmall),
+        ]),
+        Row(children: [
+          const SizedBox(width: 96, child: Text('Death saves')),
+          const Text('✓'),
+          intStepper(
+              prefix: 'dnd',
+              fieldKey: 'death-ok',
+              value: s.deathSaveSuccesses,
+              onSet: (v) => _save(ref, s.copyWith(deathSaveSuccesses: v))),
+          const SizedBox(width: 8),
+          const Text('✗'),
+          intStepper(
+              prefix: 'dnd',
+              fieldKey: 'death-bad',
+              value: s.deathSaveFailures,
+              onSet: (v) => _save(ref, s.copyWith(deathSaveFailures: v))),
+        ]),
+        CheckboxListTile(
+          key: const Key('dnd-inspiration'),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          value: s.inspiration,
+          title: const Text('Inspiration'),
+          onChanged: (on) => _save(ref, s.copyWith(inspiration: on ?? false)),
+        ),
+        sheetSection(context, 'Features & Traits'),
+        TextFormField(
+          key: const Key('dnd-features'),
+          initialValue: s.featuresText,
+          maxLines: null,
+          decoration: const InputDecoration(
+              hintText: 'Class features, racial traits, feats, attacks…'),
+          onChanged: (v) => _save(ref, s.copyWith(featuresText: v)),
+        ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
       ],
@@ -171,8 +228,48 @@ class DndSheetView extends ConsumerWidget {
           _save(ref, s.copyWith(saveProficiencies: next));
         },
       ),
-      SizedBox(width: 48, child: Text(kDndAbilityLabels[a]!.toLowerCase())),
+      SizedBox(width: 48, child: Text(kDndAbilityLabels[a]!)),
       Text(_fmt(s.saveBonus(a))),
+    ]);
+  }
+
+  Widget _skillRow(WidgetRef ref, DndSheet s, (String, String, String) sk) {
+    final (id, label, ability) = sk;
+    final prof = s.skillProficiencies.contains(id);
+    final exp = s.skillExpertise.contains(id);
+    return Row(children: [
+      Checkbox(
+        key: Key('dnd-skill-$id-prof'),
+        value: prof,
+        onChanged: (on) {
+          final p = {...s.skillProficiencies};
+          final e = {...s.skillExpertise};
+          if (on ?? false) {
+            p.add(id);
+          } else {
+            p.remove(id);
+            e.remove(id); // expertise requires proficiency
+          }
+          _save(ref, s.copyWith(skillProficiencies: p, skillExpertise: e));
+        },
+      ),
+      Checkbox(
+        key: Key('dnd-skill-$id-exp'),
+        value: exp,
+        onChanged: (on) {
+          final p = {...s.skillProficiencies};
+          final e = {...s.skillExpertise};
+          if (on ?? false) {
+            e.add(id);
+            p.add(id); // expertise implies proficiency
+          } else {
+            e.remove(id);
+          }
+          _save(ref, s.copyWith(skillProficiencies: p, skillExpertise: e));
+        },
+      ),
+      Expanded(child: Text('$label (${kDndAbilityLabels[ability]})')),
+      Text(_fmt(s.skillBonus(id))),
     ]);
   }
 }

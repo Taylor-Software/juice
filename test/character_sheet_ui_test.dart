@@ -615,7 +615,7 @@ void main() {
     await tester.tap(find.text('Tarin'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('dnd-sheet')), findsOneWidget);
-    expect(find.text('STR'), findsOneWidget);
+    expect(find.byKey(const Key('dnd-ability-str-plus')), findsOneWidget);
     expect(find.text('Saving Throws'), findsOneWidget);
   });
 
@@ -676,6 +676,54 @@ void main() {
     expect(find.byKey(const Key('dnd-sheet')), findsOneWidget);
     expect((await c.read(charactersProvider.future)).single.dnd!.className,
         'Fighter');
+  });
+
+  testWidgets('skill proficiency + expertise change the skill bonus',
+      (tester) async {
+    final c = await pumpDnd(tester);
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    // Stealth (DEX +1), not proficient. Scroll the lazy list until built.
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('dnd-skill-stealth-prof')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('dnd-skill-stealth-prof')));
+    await tester.pumpAndSettle();
+    var sheet = (await c.read(charactersProvider.future)).single.dnd!;
+    expect(sheet.skillProficiencies.contains('stealth'), isTrue);
+    expect(sheet.skillBonus('stealth'), 3); // dex +1 + prof +2
+    // Expertise doubles proficiency.
+    await tester.tap(find.byKey(const Key('dnd-skill-stealth-exp')));
+    await tester.pumpAndSettle();
+    sheet = (await c.read(charactersProvider.future)).single.dnd!;
+    expect(sheet.skillExpertise.contains('stealth'), isTrue);
+    expect(sheet.skillBonus('stealth'), 5); // dex +1 + prof*2 (+4)
+  });
+
+  testWidgets('condition toggle and exhaustion stepper persist',
+      (tester) async {
+    final c = await pumpDnd(tester);
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('dnd-cond-poisoned')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('dnd-cond-poisoned')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .dnd!
+            .conditions
+            .contains('poisoned'),
+        isTrue);
+    await tester.tap(find.byKey(const Key('dnd-exhaustion-plus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.dnd!.exhaustionLevel,
+        1);
   });
 
   testWidgets('create flow makes a Sundered Isles character with SI label',
