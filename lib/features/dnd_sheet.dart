@@ -183,6 +183,38 @@ class DndSheetView extends ConsumerWidget {
           title: const Text('Inspiration'),
           onChanged: (on) => _save(ref, s.copyWith(inspiration: on ?? false)),
         ),
+        if (s.isCaster) ...[
+          sheetSection(context, 'Spellcasting'),
+          Text(
+              'Spell save DC ${s.spellSaveDC}  ·  Attack ${_fmt(s.spellAttackBonus!)}'
+              '  ·  ${kDndAbilityLabels[s.spellcastingAbility]}',
+              style: theme.textTheme.bodySmall),
+          if (s.className == 'Warlock')
+            Row(children: [
+              SizedBox(
+                  width: 120,
+                  child: Text('Pact slots (lv ${s.pactSlotLevel})')),
+              intStepper(
+                  prefix: 'dnd',
+                  fieldKey: 'pact',
+                  value: s.pactSlotsUsed,
+                  onSet: (v) => _save(ref, s.copyWith(pactSlotsUsed: v))),
+              Text(
+                  '${(s.pactSlotCount - s.pactSlotsUsed).clamp(0, s.pactSlotCount)}'
+                  ' / ${s.pactSlotCount} left'),
+            ])
+          else
+            for (var lvl = 1; lvl <= 9; lvl++)
+              if (s.slotMax(lvl) > 0) _slotRow(ref, s, lvl),
+          TextFormField(
+            key: const Key('dnd-prepared'),
+            initialValue: s.preparedSpells,
+            maxLines: null,
+            decoration: const InputDecoration(
+                labelText: 'Prepared / known', hintText: 'Spell names…'),
+            onChanged: (v) => _save(ref, s.copyWith(preparedSpells: v)),
+          ),
+        ],
         sheetSection(context, 'Features & Traits'),
         TextFormField(
           key: const Key('dnd-features'),
@@ -283,6 +315,29 @@ class DndSheetView extends ConsumerWidget {
       ),
       Expanded(child: Text('$label (${kDndAbilityLabels[ability]})')),
       Text(_fmt(s.skillBonus(id))),
+    ]);
+  }
+
+  Widget _slotRow(WidgetRef ref, DndSheet s, int lvl) {
+    final max = s.slotMax(lvl);
+    final used =
+        lvl - 1 < s.spellSlotsUsed.length ? s.spellSlotsUsed[lvl - 1] : 0;
+    return Row(children: [
+      SizedBox(width: 64, child: Text('Lv $lvl')),
+      intStepper(
+        prefix: 'dnd',
+        fieldKey: 'slot-$lvl',
+        value: used,
+        onSet: (v) {
+          final next = [...s.spellSlotsUsed];
+          while (next.length < 9) {
+            next.add(0);
+          }
+          next[lvl - 1] = v.clamp(0, max);
+          _save(ref, s.copyWith(spellSlotsUsed: next));
+        },
+      ),
+      Text('${(max - used).clamp(0, max)} / $max left'),
     ]);
   }
 }
