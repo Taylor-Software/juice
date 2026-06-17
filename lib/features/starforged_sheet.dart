@@ -59,7 +59,8 @@ class StarforgedSheetView extends ConsumerWidget {
             },
           ),
         ]),
-        Text('Starforged', style: theme.textTheme.labelSmall),
+        Text(s.isSundered ? 'Sundered Isles' : 'Starforged',
+            style: theme.textTheme.labelSmall),
         sheetSection(context, 'Stats'),
         Row(children: [
           statStepper(
@@ -211,7 +212,7 @@ class StarforgedSheetView extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: const Text('Add asset'),
           onPressed: () async {
-            final def = await addAssetDialog(context, ref, 'starforged');
+            final def = await addAssetDialog(context, ref, _s.assetRuleset);
             if (def != null) {
               _save(ref, _s.copyWith(assets: [..._s.assets, def.toState()]));
             }

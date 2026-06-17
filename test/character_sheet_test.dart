@@ -390,6 +390,47 @@ void main() {
     });
   });
 
+  group('StarforgedSheet.assetRuleset', () {
+    test('defaults to starforged; premade can set sundered_isles', () {
+      expect(const StarforgedSheet().assetRuleset, 'starforged');
+      expect(StarforgedSheet.premade().assetRuleset, 'starforged');
+      expect(StarforgedSheet.premade().isSundered, isFalse);
+      final si = StarforgedSheet.premade(assetRuleset: 'sundered_isles');
+      expect(si.assetRuleset, 'sundered_isles');
+      expect(si.isSundered, isTrue);
+    });
+
+    test('round-trips; omitted from toJson when default', () {
+      expect(StarforgedSheet.premade().toJson().containsKey('assetRuleset'),
+          isFalse);
+      final si = StarforgedSheet.premade(assetRuleset: 'sundered_isles');
+      expect(si.toJson()['assetRuleset'], 'sundered_isles');
+      expect(StarforgedSheet.maybeFromJson(si.toJson())!.assetRuleset,
+          'sundered_isles');
+    });
+
+    test('legacy JSON and junk values resolve to starforged', () {
+      // No key (existing Starforged characters).
+      final legacy = StarforgedSheet.maybeFromJson({'edge': 2})!;
+      expect(legacy.assetRuleset, 'starforged');
+      // Junk / unknown.
+      expect(
+          StarforgedSheet.maybeFromJson({'assetRuleset': 'bogus'})!
+              .assetRuleset,
+          'starforged');
+      expect(StarforgedSheet.maybeFromJson({'assetRuleset': 42})!.assetRuleset,
+          'starforged');
+    });
+
+    test('copyWith passes through and sanitizes', () {
+      final si =
+          const StarforgedSheet().copyWith(assetRuleset: 'sundered_isles');
+      expect(si.assetRuleset, 'sundered_isles');
+      expect(si.copyWith().assetRuleset, 'sundered_isles');
+      expect(si.copyWith(assetRuleset: 'nope').assetRuleset, 'starforged');
+    });
+  });
+
   group('StarforgedSheet', () {
     test('premade defaults match the standard starting sheet', () {
       final s = StarforgedSheet.premade();

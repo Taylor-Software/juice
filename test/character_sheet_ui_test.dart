@@ -585,4 +585,86 @@ void main() {
         .single;
     expect(asset.enabledAbilities, [true, true]);
   });
+
+  testWidgets('create flow makes a Sundered Isles character with SI label',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-sundered')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('starforged-sheet')), findsOneWidget);
+    expect(find.text('Sundered Isles'), findsOneWidget);
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.single.starforged!.assetRuleset, 'sundered_isles');
+  });
+
+  testWidgets('Sundered Isles picker lists SI assets', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.rulesets.v1': '["starforged","sundered_isles"]',
+      'juice.characters.v1.default':
+          '[{"id":"si","name":"Mara","note":"","stats":[],"tracks":[],'
+              '"tags":[],"starforged":{"edge":3,"heart":2,"iron":2,"shadow":1,'
+              '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
+              '"xpEarned":0,"xpSpent":0,"questsLegacy":0,"bondsLegacy":0,'
+              '"discoveriesLegacy":0,"assetRuleset":"sundered_isles"}}]',
+    });
+    final fixture = {
+      'asset_collections': [
+        {
+          'name': 'Path',
+          'assets': [
+            {
+              'id': 'asset:sundered_isles/path/corsair',
+              'name': 'Corsair',
+              'category': 'Path',
+              'abilities': [
+                {'text': 'Sail hard', 'enabled': true},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('sundered_isles')
+          .overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mara'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sundered Isles'), findsOneWidget);
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    expect(
+        find.byKey(const Key('pick-asset-asset:sundered_isles/path/corsair')),
+        findsOneWidget);
+  });
 }

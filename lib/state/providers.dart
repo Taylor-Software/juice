@@ -244,14 +244,17 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
-  /// Creates a pre-made Starforged PC at the top and returns its id.
-  Future<String> addStarforged() async {
+  /// Creates a pre-made Starforged (or Sundered Isles) PC and returns its id.
+  Future<String> addStarforged({String assetRuleset = 'starforged'}) async {
     final id = _newId();
+    final name = assetRuleset == 'sundered_isles'
+        ? 'New Sundered Isles character'
+        : 'New Starforged character';
     await _persist([
       Character(
           id: id,
-          name: 'New Starforged character',
-          starforged: StarforgedSheet.premade()),
+          name: name,
+          starforged: StarforgedSheet.premade(assetRuleset: assetRuleset)),
       ...await _ready,
     ]);
     return id;

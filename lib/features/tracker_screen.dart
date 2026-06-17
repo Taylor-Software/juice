@@ -253,6 +253,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             onPressed: () => Navigator.pop(context, 'starforged'),
             child: const Text('Starforged'),
           ),
+          FilledButton(
+            key: const Key('new-sundered'),
+            onPressed: () => Navigator.pop(context, 'sundered'),
+            child: const Text('Sundered Isles'),
+          ),
         ],
       ),
     );
@@ -263,6 +268,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newIronsworn();
     } else if (choice == 'starforged') {
       await _newStarforged();
+    } else if (choice == 'sundered') {
+      await _newSundered();
     }
   }
 
@@ -285,6 +292,20 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await ref.read(rulesetsProvider.notifier).setRuleset('starforged', true);
     }
     final id = await ref.read(charactersProvider.notifier).addStarforged();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newSundered() async {
+    // Enabling sundered_isles pulls in base starforged per the family rules.
+    final rs = ref.read(rulesetsProvider).valueOrNull ?? const <String>{};
+    if (!rs.contains('sundered_isles')) {
+      await ref
+          .read(rulesetsProvider.notifier)
+          .setRuleset('sundered_isles', true);
+    }
+    final id = await ref
+        .read(charactersProvider.notifier)
+        .addStarforged(assetRuleset: 'sundered_isles');
     if (mounted) setState(() => _editingId = id);
   }
 
