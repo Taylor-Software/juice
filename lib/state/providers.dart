@@ -231,6 +231,19 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  /// Creates a pre-made Classic Ironsworn PC at the top and returns its id.
+  Future<String> addIronsworn() async {
+    final id = _newId();
+    await _persist([
+      Character(
+          id: id,
+          name: 'New Ironsworn character',
+          ironsworn: IronswornSheet.premade()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)

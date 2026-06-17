@@ -79,6 +79,38 @@ def flatten_oracles(collections, prefix=""):
     return out
 
 
+def transform_assets(assets):
+    """Flatten datasworn asset collections into [{name, assets:[...]}].
+
+    Captures options/controls verbatim for forward-compat (the UI ignores
+    them this phase); ability `enabled` is the default-on flag.
+    """
+    colls = []
+    for coll in assets.values():
+        entries = []
+        for a in (coll.get("contents") or {}).values():
+            abilities = [
+                {"text": ab.get("text", ""),
+                 "enabled": bool(ab.get("enabled", False))}
+                for ab in (a.get("abilities") or [])
+            ]
+            entry = {
+                "id": a["_id"],
+                "name": a["name"],
+                "category": a.get("category", coll["name"]),
+                "requirement": a.get("requirement") or "",
+                "abilities": abilities,
+            }
+            if a.get("options"):
+                entry["options"] = a["options"]
+            if a.get("controls"):
+                entry["controls"] = a["controls"]
+            entries.append(entry)
+        if entries:
+            colls.append({"name": coll["name"], "assets": entries})
+    return colls
+
+
 def verify(ruleset_id, data):
     failures = []
     if not data["move_categories"]:
@@ -98,6 +130,16 @@ def verify(ruleset_id, data):
                 if not (1 <= mn <= mx <= sides):
                     failures.append(
                         f"{ruleset_id}: bad row [{mn},{mx}] in {table['name']}")
+    for coll in data["asset_collections"]:
+        for a in coll["assets"]:
+            if not a["id"]:
+                failures.append(f"{ruleset_id}: bad asset id {a['id']!r}")
+            if not a["name"]:
+                failures.append(f"{ruleset_id}: unnamed asset")
+            for ab in a["abilities"]:
+                if not ab["text"]:
+                    failures.append(
+                        f"{ruleset_id}: empty ability text in {a['name']}")
     return failures
 
 
@@ -116,6 +158,7 @@ def main():
             },
             "move_categories": transform_moves(src.get("moves") or {}),
             "oracle_collections": flatten_oracles(src.get("oracles") or {}),
+            "asset_collections": transform_assets(src.get("assets") or {}),
         }
         all_failures += verify(rid, data)
         out = f"assets/ruleset_{rid}.json"
@@ -123,7 +166,9 @@ def main():
             json.dump(data, f, ensure_ascii=False)
         n_moves = sum(len(c["moves"]) for c in data["move_categories"])
         n_tables = sum(len(c["tables"]) for c in data["oracle_collections"])
-        print(f"{out}: {n_moves} moves, {n_tables} oracle tables")
+        n_assets = sum(len(c["assets"]) for c in data["asset_collections"])
+        print(f"{out}: {n_moves} moves, {n_tables} oracle tables, "
+              f"{n_assets} assets")
     if all_failures:
         print("VERIFICATION FAILED:")
         for f_ in all_failures:

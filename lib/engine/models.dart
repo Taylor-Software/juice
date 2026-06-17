@@ -246,6 +246,324 @@ class CharTrack {
   }
 }
 
+/// Progress-track rank; mark size (ticks per progress mark) per Ironsworn.
+enum ProgressRank { troublesome, dangerous, formidable, extreme, epic }
+
+extension ProgressRankX on ProgressRank {
+  /// Ticks added per progress mark (4 ticks = one filled box).
+  int get markTicks => switch (this) {
+        ProgressRank.troublesome => 12,
+        ProgressRank.dangerous => 8,
+        ProgressRank.formidable => 4,
+        ProgressRank.extreme => 2,
+        ProgressRank.epic => 1,
+      };
+
+  /// Capitalised display label ('Dangerous').
+  String get label => name[0].toUpperCase() + name.substring(1);
+}
+
+ProgressRank _progressRankFromName(String? s) => ProgressRank.values
+    .firstWhere((r) => r.name == s, orElse: () => ProgressRank.dangerous);
+
+/// A named progress track (vow, later: legacy track). 10 boxes × 4 ticks = 40.
+class ProgressTrack {
+  const ProgressTrack({
+    required this.name,
+    this.rank = ProgressRank.dangerous,
+    this.ticks = 0,
+  });
+  final String name;
+  final ProgressRank rank;
+  final int ticks; // 0..40
+
+  int get boxes => ticks ~/ 4; // filled boxes 0..10
+  int get markTicks => rank.markTicks;
+
+  /// New track with [marks] progress marks applied (negative un-marks).
+  ProgressTrack marked(int marks) =>
+      copyWith(ticks: ticks + marks * rank.markTicks);
+
+  ProgressTrack copyWith({String? name, ProgressRank? rank, int? ticks}) =>
+      ProgressTrack(
+        name: name ?? this.name,
+        rank: rank ?? this.rank,
+        ticks: (ticks ?? this.ticks).clamp(0, 40),
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'name': name, 'rank': rank.name, 'ticks': ticks};
+
+  static ProgressTrack? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    return ProgressTrack(
+      name: j['name'] is String ? j['name'] as String : '',
+      rank: _progressRankFromName(
+          j['rank'] is String ? j['rank'] as String : null),
+      ticks: ((j['ticks'] is int ? j['ticks'] as int : 0)).clamp(0, 40),
+    );
+  }
+}
+
+/// A persisted asset on an Ironsworn sheet. [enabledAbilities] parallels the
+/// asset definition's abilities[]; only the toggled-on flags are play state.
+class AssetState {
+  const AssetState({
+    required this.assetId,
+    required this.name,
+    this.category = '',
+    this.enabledAbilities = const [],
+  });
+  final String assetId; // datasworn _id
+  final String name;
+  final String category;
+  final List<bool> enabledAbilities;
+
+  AssetState copyWith({List<bool>? enabledAbilities}) => AssetState(
+        assetId: assetId,
+        name: name,
+        category: category,
+        enabledAbilities: enabledAbilities ?? this.enabledAbilities,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'assetId': assetId,
+        'name': name,
+        if (category.isNotEmpty) 'category': category,
+        'enabledAbilities': enabledAbilities,
+      };
+
+  static AssetState? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final id = j['assetId'];
+    if (id is! String || id.isEmpty) return null;
+    return AssetState(
+      assetId: id,
+      name: j['name'] is String ? j['name'] as String : '',
+      category: j['category'] is String ? j['category'] as String : '',
+      enabledAbilities: j['enabledAbilities'] is List
+          ? (j['enabledAbilities'] as List).map((e) => e == true).toList()
+          : const [],
+    );
+  }
+}
+
+/// Classic Ironsworn debilities (conditions, banes, burdens). Each marked
+/// debility lowers max momentum and the burn-reset value by 1.
+const kIronswornDebilities = <String, String>{
+  'wounded': 'Wounded',
+  'shaken': 'Shaken',
+  'unprepared': 'Unprepared',
+  'encumbered': 'Encumbered',
+  'maimed': 'Maimed',
+  'corrupted': 'Corrupted',
+  'cursed': 'Cursed',
+  'tormented': 'Tormented',
+};
+
+/// Bespoke Classic Ironsworn sheet. Additive on [Character] like
+/// [CharacterEmulation]: null until "New Ironsworn character" writes it.
+class IronswornSheet {
+  const IronswornSheet({
+    this.edge = 1,
+    this.heart = 1,
+    this.iron = 1,
+    this.shadow = 1,
+    this.wits = 1,
+    this.health = 5,
+    this.spirit = 5,
+    this.supply = 5,
+    this.momentum = 2,
+    this.xpEarned = 0,
+    this.xpSpent = 0,
+    this.bonds = 0,
+    this.debilities = const {},
+    this.vows = const [],
+    this.assets = const [],
+  });
+
+  final int edge, heart, iron, shadow, wits; // 1..3
+  final int health, spirit, supply; // 0..5
+  final int momentum; // -6..momentumMax
+  final int xpEarned, xpSpent; // >=0
+  final int bonds; // 0..10 progress boxes
+  final Set<String> debilities; // ids from kIronswornDebilities
+  final List<ProgressTrack> vows;
+  final List<AssetState> assets;
+
+  int get momentumMax => 10 - debilities.length;
+  int get momentumReset => (2 - debilities.length).clamp(0, 2);
+
+  /// Standard pre-made starting character (3/2/2/1/1, full meters, +2 momentum).
+  factory IronswornSheet.premade() => const IronswornSheet(
+        edge: 3,
+        heart: 2,
+        iron: 2,
+        shadow: 1,
+        wits: 1,
+        health: 5,
+        spirit: 5,
+        supply: 5,
+        momentum: 2,
+      );
+
+  IronswornSheet copyWith({
+    int? edge,
+    int? heart,
+    int? iron,
+    int? shadow,
+    int? wits,
+    int? health,
+    int? spirit,
+    int? supply,
+    int? momentum,
+    int? xpEarned,
+    int? xpSpent,
+    int? bonds,
+    Set<String>? debilities,
+    List<ProgressTrack>? vows,
+    List<AssetState>? assets,
+  }) {
+    final dbs = debilities ?? this.debilities;
+    final maxM = 10 - dbs.length;
+    return IronswornSheet(
+      edge: (edge ?? this.edge).clamp(1, 3),
+      heart: (heart ?? this.heart).clamp(1, 3),
+      iron: (iron ?? this.iron).clamp(1, 3),
+      shadow: (shadow ?? this.shadow).clamp(1, 3),
+      wits: (wits ?? this.wits).clamp(1, 3),
+      health: (health ?? this.health).clamp(0, 5),
+      spirit: (spirit ?? this.spirit).clamp(0, 5),
+      supply: (supply ?? this.supply).clamp(0, 5),
+      momentum: (momentum ?? this.momentum).clamp(-6, maxM),
+      xpEarned: (xpEarned ?? this.xpEarned).clamp(0, 1 << 31),
+      xpSpent: (xpSpent ?? this.xpSpent).clamp(0, 1 << 31),
+      bonds: (bonds ?? this.bonds).clamp(0, 10),
+      debilities: dbs,
+      vows: vows ?? this.vows,
+      assets: assets ?? this.assets,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'edge': edge,
+        'heart': heart,
+        'iron': iron,
+        'shadow': shadow,
+        'wits': wits,
+        'health': health,
+        'spirit': spirit,
+        'supply': supply,
+        'momentum': momentum,
+        'xpEarned': xpEarned,
+        'xpSpent': xpSpent,
+        'bonds': bonds,
+        if (debilities.isNotEmpty) 'debilities': debilities.toList(),
+        if (vows.isNotEmpty) 'vows': vows.map((v) => v.toJson()).toList(),
+        if (assets.isNotEmpty) 'assets': assets.map((a) => a.toJson()).toList(),
+      };
+
+  static IronswornSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int intOr(dynamic v, int d) => v is int ? v : d;
+    final dbs = j['debilities'] is List
+        ? (j['debilities'] as List)
+            .whereType<String>()
+            .where(kIronswornDebilities.containsKey)
+            .toSet()
+        : <String>{};
+    final maxM = 10 - dbs.length;
+    return IronswornSheet(
+      edge: intOr(j['edge'], 1).clamp(1, 3),
+      heart: intOr(j['heart'], 1).clamp(1, 3),
+      iron: intOr(j['iron'], 1).clamp(1, 3),
+      shadow: intOr(j['shadow'], 1).clamp(1, 3),
+      wits: intOr(j['wits'], 1).clamp(1, 3),
+      health: intOr(j['health'], 5).clamp(0, 5),
+      spirit: intOr(j['spirit'], 5).clamp(0, 5),
+      supply: intOr(j['supply'], 5).clamp(0, 5),
+      momentum: intOr(j['momentum'], 2).clamp(-6, maxM),
+      xpEarned: intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
+      xpSpent: intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
+      bonds: intOr(j['bonds'], 0).clamp(0, 10),
+      debilities: dbs,
+      vows: j['vows'] is List
+          ? (j['vows'] as List)
+              .map(ProgressTrack.maybeFromJson)
+              .whereType<ProgressTrack>()
+              .toList()
+          : const [],
+      assets: j['assets'] is List
+          ? (j['assets'] as List)
+              .map(AssetState.maybeFromJson)
+              .whereType<AssetState>()
+              .toList()
+          : const [],
+    );
+  }
+}
+
+/// Read-only asset definition parsed from a loaded ruleset map's
+/// `asset_collections` block (emitted by build_datasworn.py).
+class IronswornAssetDef {
+  const IronswornAssetDef({
+    required this.id,
+    required this.name,
+    required this.category,
+    required this.abilities,
+    required this.abilityEnabled,
+  });
+  final String id;
+  final String name;
+  final String category;
+  final List<String> abilities; // ability text
+  final List<bool> abilityEnabled; // default-on flags
+
+  /// A fresh persisted [AssetState] with the definition's default flags.
+  AssetState toState() => AssetState(
+        assetId: id,
+        name: name,
+        category: category,
+        enabledAbilities: List<bool>.of(abilityEnabled),
+      );
+
+  static List<IronswornAssetDef> listFromRuleset(Map<String, dynamic> ruleset) {
+    final out = <IronswornAssetDef>[];
+    final colls = ruleset['asset_collections'];
+    if (colls is! List) return out;
+    for (final coll in colls) {
+      if (coll is! Map) continue;
+      final assets = coll['assets'];
+      if (assets is! List) continue;
+      final collName = coll['name'] is String ? coll['name'] as String : '';
+      for (final a in assets) {
+        if (a is! Map) continue;
+        final id = a['id'];
+        final name = a['name'];
+        if (id is! String || name is! String) continue;
+        final abilities = <String>[];
+        final enabled = <bool>[];
+        if (a['abilities'] is List) {
+          for (final ab in a['abilities'] as List) {
+            if (ab is! Map) continue;
+            abilities.add(ab['text'] is String ? ab['text'] as String : '');
+            enabled.add(ab['enabled'] == true);
+          }
+        }
+        out.add(IronswornAssetDef(
+          id: id,
+          name: name,
+          category:
+              a['category'] is String ? a['category'] as String : collName,
+          abilities: abilities,
+          abilityEnabled: enabled,
+        ));
+      }
+    }
+    return out;
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {
@@ -715,6 +1033,7 @@ class Character {
     this.tracks = const [],
     this.tags = const [],
     this.emulation,
+    this.ironsworn,
     this.starred = false,
   });
   final String id;
@@ -726,6 +1045,9 @@ class Character {
 
   /// Party-emulator state; null until the Party tool writes it.
   final CharacterEmulation? emulation;
+
+  /// Bespoke Classic Ironsworn sheet; null unless this is an Ironsworn PC.
+  final IronswornSheet? ironsworn;
 
   /// Whether this character is starred in the campaign header.
   final bool starred;
@@ -739,6 +1061,8 @@ class Character {
     List<String>? tags,
     CharacterEmulation? emulation,
     bool clearEmulation = false,
+    IronswornSheet? ironsworn,
+    bool clearIronsworn = false,
     bool? starred,
   }) =>
       Character(
@@ -749,6 +1073,7 @@ class Character {
         tracks: tracks ?? this.tracks,
         tags: tags ?? this.tags,
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
+        ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
         starred: starred ?? this.starred,
       );
 
@@ -762,6 +1087,7 @@ class Character {
         'tracks': tracks.map((t) => t.toJson()).toList(),
         'tags': tags,
         if (emulation != null) 'emulation': emulation!.toJson(),
+        if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -779,6 +1105,7 @@ class Character {
             .toList(),
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
+        ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }

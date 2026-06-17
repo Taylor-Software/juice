@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../state/providers.dart';
+import 'ironsworn_sheet.dart';
 
 // -- Threads --------------------------------------------------------------
 class ThreadsPane extends ConsumerWidget {
@@ -134,7 +135,14 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             if (match.isEmpty) {
               _editingId = null;
             } else {
-              return _buildSheet(context, match.first);
+              final c = match.first;
+              if (c.ironsworn != null) {
+                return IronswornSheetView(
+                  character: c,
+                  onBack: () => setState(() => _editingId = null),
+                );
+              }
+              return _buildSheet(context, c);
             }
           }
           if (chars.isEmpty) {
@@ -180,7 +188,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       ),
       floatingActionButton: _editingId == null
           ? FloatingActionButton(
-              onPressed: () => _addCharacter(context),
+              onPressed: () => _onAdd(context),
               child: const Icon(Icons.add),
             )
           : null,
@@ -207,6 +215,51 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await notifier.replace(added.copyWith(note: result.note.trim()));
     }
     if (mounted) setState(() => _editingId = added.id);
+  }
+
+  Future<void> _onAdd(BuildContext context) async {
+    final systems =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
+    if (!systems.contains('ironsworn')) {
+      await _addCharacter(context);
+      return;
+    }
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('New character'),
+        content: const Text('Choose a sheet type.'),
+        actions: [
+          TextButton(
+            key: const Key('new-generic'),
+            onPressed: () => Navigator.pop(context, 'generic'),
+            child: const Text('Generic'),
+          ),
+          FilledButton(
+            key: const Key('new-ironsworn'),
+            onPressed: () => Navigator.pop(context, 'ironsworn'),
+            child: const Text('Ironsworn'),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'generic') {
+      await _addCharacter(context);
+    } else if (choice == 'ironsworn') {
+      await _newIronsworn();
+    }
+  }
+
+  Future<void> _newIronsworn() async {
+    // Ensure a base Ironsworn ruleset is active so the asset picker has data.
+    final rs = ref.read(rulesetsProvider).valueOrNull ?? const <String>{};
+    if (!rs.contains('classic') && !rs.contains('starforged')) {
+      await ref.read(rulesetsProvider.notifier).setRuleset('classic', true);
+    }
+    final id = await ref.read(charactersProvider.notifier).addIronsworn();
+    if (mounted) setState(() => _editingId = id);
   }
 
   Future<void> _editNameNote(BuildContext context, Character c) async {
