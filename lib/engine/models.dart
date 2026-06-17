@@ -892,6 +892,101 @@ const kDndProfBonusByLevel = <int>[
   6,
 ];
 
+/// SRD caster classes → spellcasting ability id. Non-casters (Fighter,
+/// Barbarian, Monk, Rogue) are absent.
+const kDndSpellcastingAbility = <String, String>{
+  'Bard': 'cha',
+  'Sorcerer': 'cha',
+  'Warlock': 'cha',
+  'Paladin': 'cha',
+  'Cleric': 'wis',
+  'Druid': 'wis',
+  'Ranger': 'wis',
+  'Wizard': 'int',
+};
+const kDndFullCasterClasses = <String>{
+  'Bard',
+  'Cleric',
+  'Druid',
+  'Sorcerer',
+  'Wizard',
+};
+const kDndHalfCasterClasses = <String>{'Paladin', 'Ranger'};
+
+/// Full-caster spell slots: row = character level 1..20, columns = spell
+/// levels 1..9.
+const kDndFullCasterSlots = <List<int>>[
+  [2, 0, 0, 0, 0, 0, 0, 0, 0],
+  [3, 0, 0, 0, 0, 0, 0, 0, 0],
+  [4, 2, 0, 0, 0, 0, 0, 0, 0],
+  [4, 3, 0, 0, 0, 0, 0, 0, 0],
+  [4, 3, 2, 0, 0, 0, 0, 0, 0],
+  [4, 3, 3, 0, 0, 0, 0, 0, 0],
+  [4, 3, 3, 1, 0, 0, 0, 0, 0],
+  [4, 3, 3, 2, 0, 0, 0, 0, 0],
+  [4, 3, 3, 3, 1, 0, 0, 0, 0],
+  [4, 3, 3, 3, 2, 0, 0, 0, 0],
+  [4, 3, 3, 3, 2, 1, 0, 0, 0],
+  [4, 3, 3, 3, 2, 1, 0, 0, 0],
+  [4, 3, 3, 3, 2, 1, 1, 0, 0],
+  [4, 3, 3, 3, 2, 1, 1, 0, 0],
+  [4, 3, 3, 3, 2, 1, 1, 1, 0],
+  [4, 3, 3, 3, 2, 1, 1, 1, 0],
+  [4, 3, 3, 3, 2, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 1, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 1, 1, 1],
+  [4, 3, 3, 3, 3, 2, 2, 1, 1],
+];
+
+/// Half-caster spell slots (Paladin/Ranger): row = level 1..20, columns =
+/// spell levels 1..5.
+const kDndHalfCasterSlots = <List<int>>[
+  [0, 0, 0, 0, 0],
+  [2, 0, 0, 0, 0],
+  [3, 0, 0, 0, 0],
+  [3, 0, 0, 0, 0],
+  [4, 2, 0, 0, 0],
+  [4, 2, 0, 0, 0],
+  [4, 3, 0, 0, 0],
+  [4, 3, 0, 0, 0],
+  [4, 3, 2, 0, 0],
+  [4, 3, 2, 0, 0],
+  [4, 3, 3, 0, 0],
+  [4, 3, 3, 0, 0],
+  [4, 3, 3, 1, 0],
+  [4, 3, 3, 1, 0],
+  [4, 3, 3, 2, 0],
+  [4, 3, 3, 2, 0],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 2],
+  [4, 3, 3, 3, 2],
+];
+
+/// Warlock Pact Magic: row = level 1..20 → (slot count, slot spell-level).
+const kDndPactSlots = <(int, int)>[
+  (1, 1),
+  (2, 1),
+  (2, 2),
+  (2, 2),
+  (2, 3),
+  (2, 3),
+  (2, 4),
+  (2, 4),
+  (2, 5),
+  (2, 5),
+  (3, 5),
+  (3, 5),
+  (3, 5),
+  (3, 5),
+  (3, 5),
+  (3, 5),
+  (4, 5),
+  (4, 5),
+  (4, 5),
+  (4, 5),
+];
+
 /// Bespoke D&D 5e (P1) sheet. Additive on [Character] like [IronswornSheet].
 class DndSheet {
   const DndSheet({
@@ -926,6 +1021,9 @@ class DndSheet {
     this.inspiration = false,
     this.xp = 0,
     this.featuresText = '',
+    this.spellSlotsUsed = const [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    this.pactSlotsUsed = 0,
+    this.preparedSpells = '',
   });
 
   final Map<String, int> abilities; // keys = kDndAbilities, each 1..30
@@ -940,6 +1038,9 @@ class DndSheet {
   final bool inspiration;
   final int xp;
   final String featuresText;
+  final List<int> spellSlotsUsed; // length 9, expended per spell level
+  final int pactSlotsUsed; // Warlock Pact Magic
+  final String preparedSpells; // freeform
 
   int score(String a) => abilities[a] ?? 10;
   int abilityMod(String a) => ((score(a) - 10) / 2).floor();
@@ -958,6 +1059,41 @@ class DndSheet {
   }
 
   int get passivePerception => 10 + skillBonus('perception');
+
+  bool get isCaster => kDndSpellcastingAbility.containsKey(className);
+  String? get spellcastingAbility => kDndSpellcastingAbility[className];
+  int? get spellcastingMod =>
+      isCaster ? abilityMod(spellcastingAbility!) : null;
+  int? get spellSaveDC =>
+      isCaster ? 8 + proficiencyBonus + spellcastingMod! : null;
+  int? get spellAttackBonus =>
+      isCaster ? proficiencyBonus + spellcastingMod! : null;
+
+  /// Max slots at [spellLevel] (1..9) from the class's table; 0 if none.
+  /// Warlock uses pact magic instead and returns 0 here.
+  int slotMax(int spellLevel) {
+    final row = (level - 1).clamp(0, 19);
+    if (kDndFullCasterClasses.contains(className)) {
+      return (spellLevel >= 1 && spellLevel <= 9)
+          ? kDndFullCasterSlots[row][spellLevel - 1]
+          : 0;
+    }
+    if (kDndHalfCasterClasses.contains(className)) {
+      return (spellLevel >= 1 && spellLevel <= 5)
+          ? kDndHalfCasterSlots[row][spellLevel - 1]
+          : 0;
+    }
+    return 0;
+  }
+
+  int get pactSlotCount =>
+      className == 'Warlock' ? kDndPactSlots[(level - 1).clamp(0, 19)].$1 : 0;
+  int get pactSlotLevel =>
+      className == 'Warlock' ? kDndPactSlots[(level - 1).clamp(0, 19)].$2 : 0;
+
+  /// Normalize an expended-slots list to exactly 9 non-negative ints.
+  static List<int> _normSlots(List<int> v) =>
+      [for (var i = 0; i < 9; i++) (i < v.length ? v[i] : 0).clamp(0, 1 << 20)];
 
   factory DndSheet.premade() => const DndSheet(
         abilities: {
@@ -1004,6 +1140,9 @@ class DndSheet {
     bool? inspiration,
     int? xp,
     String? featuresText,
+    List<int>? spellSlotsUsed,
+    int? pactSlotsUsed,
+    String? preparedSpells,
   }) {
     final lvl = (level ?? this.level).clamp(1, 20);
     final ab = abilities ?? this.abilities;
@@ -1046,6 +1185,9 @@ class DndSheet {
       inspiration: inspiration ?? this.inspiration,
       xp: (xp ?? this.xp).clamp(0, 1 << 31),
       featuresText: featuresText ?? this.featuresText,
+      spellSlotsUsed: _normSlots(spellSlotsUsed ?? this.spellSlotsUsed),
+      pactSlotsUsed: (pactSlotsUsed ?? this.pactSlotsUsed).clamp(0, 1 << 20),
+      preparedSpells: preparedSpells ?? this.preparedSpells,
     );
   }
 
@@ -1077,6 +1219,9 @@ class DndSheet {
         if (inspiration) 'inspiration': true,
         if (xp != 0) 'xp': xp,
         if (featuresText.isNotEmpty) 'featuresText': featuresText,
+        if (spellSlotsUsed.any((x) => x != 0)) 'spellSlotsUsed': spellSlotsUsed,
+        if (pactSlotsUsed != 0) 'pactSlotsUsed': pactSlotsUsed,
+        if (preparedSpells.isNotEmpty) 'preparedSpells': preparedSpells,
       };
 
   static DndSheet? maybeFromJson(dynamic j) {
@@ -1123,6 +1268,11 @@ class DndSheet {
       inspiration: j['inspiration'] == true,
       xp: intOr(j['xp'], 0).clamp(0, 1 << 31),
       featuresText: strOr(j['featuresText']),
+      spellSlotsUsed: _normSlots(j['spellSlotsUsed'] is List
+          ? [for (final x in j['spellSlotsUsed'] as List) x is int ? x : 0]
+          : const []),
+      pactSlotsUsed: intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
+      preparedSpells: strOr(j['preparedSpells']),
     );
   }
 }
