@@ -511,4 +511,78 @@ void main() {
     final sf = (await c.read(charactersProvider.future)).single.starforged!;
     expect(sf.connections.single.name, 'Lara');
   });
+
+  testWidgets('SF pick an asset and toggle an ability', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.rulesets.v1': '["starforged"]',
+      'juice.characters.v1.default':
+          '[{"id":"sf","name":"Nova","note":"","stats":[],"tracks":[],'
+              '"tags":[],"starforged":{"edge":3,"heart":2,"iron":2,"shadow":1,'
+              '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
+              '"xpEarned":0,"xpSpent":0,"questsLegacy":0,"bondsLegacy":0,'
+              '"discoveriesLegacy":0}}]',
+    });
+    final fixture = {
+      'asset_collections': [
+        {
+          'name': 'Path',
+          'assets': [
+            {
+              'id': 'starforged/assets/path/ace',
+              'name': 'Ace',
+              'category': 'Path',
+              'abilities': [
+                {'text': 'Reroll a die', 'enabled': true},
+                {'text': 'Push your luck', 'enabled': false},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('starforged').overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    // Assets section is deep in the sheet (after vows/connections); pre-scroll
+    // so the lazy ListView builds the widget before ensureVisible.
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('pick-asset-starforged/assets/path/ace')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Ace'), findsOneWidget);
+    var asset = (await c.read(charactersProvider.future))
+        .single
+        .starforged!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, false]);
+    await tester.ensureVisible(find.byKey(const Key('sf-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    asset = (await c.read(charactersProvider.future))
+        .single
+        .starforged!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, true]);
+  });
 }

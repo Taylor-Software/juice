@@ -192,6 +192,31 @@ class StarforgedSheetView extends ConsumerWidget {
             }
           },
         ),
+        sheetSection(context, 'Assets'),
+        for (var i = 0; i < s.assets.length; i++)
+          assetCard(
+            prefix: 'sf',
+            index: i,
+            asset: s.assets[i],
+            onAbilitiesChanged: (flags) => _save(
+                ref,
+                s.copyWith(
+                    assets: [...s.assets]..[i] =
+                        s.assets[i].copyWith(enabledAbilities: flags))),
+            onDelete: () =>
+                _save(ref, s.copyWith(assets: [...s.assets]..removeAt(i))),
+          ),
+        OutlinedButton.icon(
+          key: const Key('sf-add-asset'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add asset'),
+          onPressed: () async {
+            final def = await addAssetDialog(context, ref, 'starforged');
+            if (def != null) {
+              _save(ref, _s.copyWith(assets: [..._s.assets, def.toState()]));
+            }
+          },
+        ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
       ],
