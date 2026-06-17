@@ -299,4 +299,32 @@ void main() {
       expect(s.assets, isEmpty);
     });
   });
+
+  group('Character.ironsworn', () {
+    test('round-trips and is omitted when null', () {
+      const plain = Character(id: 'p', name: 'Plain');
+      expect(plain.toJson().containsKey('ironsworn'), isFalse);
+      expect(Character.fromJson(plain.toJson()).ironsworn, isNull);
+
+      final c =
+          Character(id: 'i', name: 'Ulla', ironsworn: IronswornSheet.premade());
+      final back = Character.fromJson(c.toJson());
+      expect(back.ironsworn!.edge, 3);
+      expect(back.ironsworn!.momentum, 2);
+    });
+
+    test('copyWith sets and clears ironsworn', () {
+      const c = Character(id: 'i2', name: 'L');
+      final set = c.copyWith(ironsworn: IronswornSheet.premade());
+      expect(set.ironsworn, isNotNull);
+      expect(set.copyWith().ironsworn, isNotNull);
+      expect(set.copyWith(clearIronsworn: true).ironsworn, isNull);
+    });
+
+    test('junk ironsworn block is tolerated as null', () {
+      final c =
+          Character.fromJson({'id': 'i3', 'name': 'J', 'ironsworn': 'junk'});
+      expect(c.ironsworn, isNull);
+    });
+  });
 }

@@ -972,6 +972,7 @@ class Character {
     this.tracks = const [],
     this.tags = const [],
     this.emulation,
+    this.ironsworn,
     this.starred = false,
   });
   final String id;
@@ -983,6 +984,9 @@ class Character {
 
   /// Party-emulator state; null until the Party tool writes it.
   final CharacterEmulation? emulation;
+
+  /// Bespoke Classic Ironsworn sheet; null unless this is an Ironsworn PC.
+  final IronswornSheet? ironsworn;
 
   /// Whether this character is starred in the campaign header.
   final bool starred;
@@ -996,6 +1000,8 @@ class Character {
     List<String>? tags,
     CharacterEmulation? emulation,
     bool clearEmulation = false,
+    IronswornSheet? ironsworn,
+    bool clearIronsworn = false,
     bool? starred,
   }) =>
       Character(
@@ -1006,6 +1012,7 @@ class Character {
         tracks: tracks ?? this.tracks,
         tags: tags ?? this.tags,
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
+        ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
         starred: starred ?? this.starred,
       );
 
@@ -1019,6 +1026,7 @@ class Character {
         'tracks': tracks.map((t) => t.toJson()).toList(),
         'tags': tags,
         if (emulation != null) 'emulation': emulation!.toJson(),
+        if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -1036,6 +1044,7 @@ class Character {
             .toList(),
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
+        ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }
