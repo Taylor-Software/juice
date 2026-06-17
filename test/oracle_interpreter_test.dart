@@ -261,6 +261,26 @@ result: Fate Check (Likely) — Yes, and…
       expect(p, endsWith('OUTPUT:'));
     });
 
+    test('systemPrimer renders a system: line after tone', () {
+      const seed = VoiceSeed(
+        line: 'Hold the line!',
+        mood: 'default',
+        systemPrimer: 'Shadowdark: lethal old-school dungeon-crawling.',
+      );
+      final lines = buildVoicePrompt(seed).split('\n');
+      final toneIdx = lines.indexWhere((l) => l.startsWith('tone:'));
+      expect(lines[toneIdx + 1],
+          'system: Shadowdark: lethal old-school dungeon-crawling.');
+      expect(lines.last, 'OUTPUT:');
+    });
+
+    test('empty systemPrimer emits no system: line in the INPUT block', () {
+      const seed = VoiceSeed(line: 'Hi', mood: 'default');
+      final p = buildVoicePrompt(seed);
+      final input = p.substring(p.indexOf('INPUT:'));
+      expect(input, isNot(contains('system:')));
+    });
+
     test('optional fields are omitted; empty settings get placeholders', () {
       const seed = VoiceSeed(line: 'Duck.', mood: 'taciturn');
       final p = buildVoicePrompt(seed);
