@@ -590,6 +590,7 @@ const kSystemBlurbs = <String, String>{
   'verdant': 'Book-based Journey map: terrain, points of interest, travel.',
   'lonelog': 'Lonelog notation: Resources + Battle trackers, .md export.',
   'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
+  'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
 };
 
 class NewCampaignDialog extends StatefulWidget {
@@ -610,6 +611,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _verdant = true;
   bool _lonelog = false;
   bool _hexcrawl = false;
+  bool _dnd = false;
 
   @override
   void dispose() {
@@ -628,6 +630,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_verdant) 'verdant',
       if (_lonelog) 'lonelog',
       if (_hexcrawl) 'hexcrawl',
+      if (_dnd) 'dnd',
     };
     Navigator.of(context).pop((
       name: _controller.text,
@@ -724,6 +727,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _hexcrawl,
               onChanged: (v) => setState(() => _hexcrawl = v ?? false),
             ),
+            CheckboxListTile(
+              key: const Key('sys-dnd'),
+              title: const Text('D&D 5e'),
+              subtitle: Text(kSystemBlurbs['dnd']!),
+              value: _dnd,
+              onChanged: (v) => setState(() => _dnd = v ?? false),
+            ),
           ],
         ),
       ),
@@ -783,6 +793,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('verdant', 'Verdant Hexcrawling'),
             _row('lonelog', 'Lonelog journaling'),
             _row('hexcrawl', 'Hexcrawl toolkit'),
+            _row('dnd', 'D&D 5e'),
           ],
         ),
       ),
