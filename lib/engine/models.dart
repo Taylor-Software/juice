@@ -602,6 +602,7 @@ class StarforgedSheet {
     this.vows = const [],
     this.connections = const [],
     this.assets = const [],
+    this.assetRuleset = 'starforged',
   });
 
   final int edge, heart, iron, shadow, wits; // 1..3
@@ -613,11 +614,18 @@ class StarforgedSheet {
   final List<ProgressTrack> vows;
   final List<ProgressTrack> connections;
   final List<AssetState> assets;
+  final String assetRuleset; // 'starforged' | 'sundered_isles'
+
+  bool get isSundered => assetRuleset == 'sundered_isles';
+
+  static String _validRuleset(String s) =>
+      s == 'sundered_isles' ? 'sundered_isles' : 'starforged';
 
   int get momentumMax => 10 - impacts.length;
   int get momentumReset => (2 - impacts.length).clamp(0, 2);
 
-  factory StarforgedSheet.premade() => const StarforgedSheet(
+  factory StarforgedSheet.premade({String assetRuleset = 'starforged'}) =>
+      StarforgedSheet(
         edge: 3,
         heart: 2,
         iron: 2,
@@ -627,6 +635,7 @@ class StarforgedSheet {
         spirit: 5,
         supply: 5,
         momentum: 2,
+        assetRuleset: assetRuleset,
       );
 
   StarforgedSheet copyWith({
@@ -648,6 +657,7 @@ class StarforgedSheet {
     List<ProgressTrack>? vows,
     List<ProgressTrack>? connections,
     List<AssetState>? assets,
+    String? assetRuleset,
   }) {
     final imp = impacts ?? this.impacts;
     final maxM = 10 - imp.length;
@@ -671,6 +681,7 @@ class StarforgedSheet {
       vows: vows ?? this.vows,
       connections: connections ?? this.connections,
       assets: assets ?? this.assets,
+      assetRuleset: _validRuleset(assetRuleset ?? this.assetRuleset),
     );
   }
 
@@ -694,6 +705,7 @@ class StarforgedSheet {
         if (connections.isNotEmpty)
           'connections': connections.map((c) => c.toJson()).toList(),
         if (assets.isNotEmpty) 'assets': assets.map((a) => a.toJson()).toList(),
+        if (assetRuleset != 'starforged') 'assetRuleset': assetRuleset,
       };
 
   static StarforgedSheet? maybeFromJson(dynamic j) {
@@ -733,6 +745,9 @@ class StarforgedSheet {
               .whereType<AssetState>()
               .toList()
           : const [],
+      assetRuleset: _validRuleset(j['assetRuleset'] is String
+          ? j['assetRuleset'] as String
+          : 'starforged'),
     );
   }
 }
