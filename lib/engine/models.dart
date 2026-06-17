@@ -564,6 +564,179 @@ class IronswornAssetDef {
   }
 }
 
+/// Starforged impacts (replace Classic debilities). Each marked impact lowers
+/// max momentum and the burn-reset value by 1. Ordered by datasworn category:
+/// misfortunes, vehicle troubles, burdens, lasting effects.
+const kStarforgedImpacts = <String, String>{
+  'wounded': 'Wounded',
+  'shaken': 'Shaken',
+  'unprepared': 'Unprepared',
+  'battered': 'Battered',
+  'cursed': 'Cursed',
+  'doomed': 'Doomed',
+  'tormented': 'Tormented',
+  'indebted': 'Indebted',
+  'permanently_harmed': 'Permanently Harmed',
+  'traumatized': 'Traumatized',
+};
+
+/// Bespoke Starforged sheet. Additive on [Character] like [IronswornSheet]:
+/// null until "New Starforged character" writes it.
+class StarforgedSheet {
+  const StarforgedSheet({
+    this.edge = 1,
+    this.heart = 1,
+    this.iron = 1,
+    this.shadow = 1,
+    this.wits = 1,
+    this.health = 5,
+    this.spirit = 5,
+    this.supply = 5,
+    this.momentum = 2,
+    this.xpEarned = 0,
+    this.xpSpent = 0,
+    this.questsLegacy = 0,
+    this.bondsLegacy = 0,
+    this.discoveriesLegacy = 0,
+    this.impacts = const {},
+    this.vows = const [],
+    this.connections = const [],
+    this.assets = const [],
+  });
+
+  final int edge, heart, iron, shadow, wits; // 1..3
+  final int health, spirit, supply; // 0..5
+  final int momentum; // -6..momentumMax
+  final int xpEarned, xpSpent; // >=0
+  final int questsLegacy, bondsLegacy, discoveriesLegacy; // 0..10 boxes
+  final Set<String> impacts; // ids from kStarforgedImpacts
+  final List<ProgressTrack> vows;
+  final List<ProgressTrack> connections;
+  final List<AssetState> assets;
+
+  int get momentumMax => 10 - impacts.length;
+  int get momentumReset => (2 - impacts.length).clamp(0, 2);
+
+  factory StarforgedSheet.premade() => const StarforgedSheet(
+        edge: 3,
+        heart: 2,
+        iron: 2,
+        shadow: 1,
+        wits: 1,
+        health: 5,
+        spirit: 5,
+        supply: 5,
+        momentum: 2,
+      );
+
+  StarforgedSheet copyWith({
+    int? edge,
+    int? heart,
+    int? iron,
+    int? shadow,
+    int? wits,
+    int? health,
+    int? spirit,
+    int? supply,
+    int? momentum,
+    int? xpEarned,
+    int? xpSpent,
+    int? questsLegacy,
+    int? bondsLegacy,
+    int? discoveriesLegacy,
+    Set<String>? impacts,
+    List<ProgressTrack>? vows,
+    List<ProgressTrack>? connections,
+    List<AssetState>? assets,
+  }) {
+    final imp = impacts ?? this.impacts;
+    final maxM = 10 - imp.length;
+    return StarforgedSheet(
+      edge: (edge ?? this.edge).clamp(1, 3),
+      heart: (heart ?? this.heart).clamp(1, 3),
+      iron: (iron ?? this.iron).clamp(1, 3),
+      shadow: (shadow ?? this.shadow).clamp(1, 3),
+      wits: (wits ?? this.wits).clamp(1, 3),
+      health: (health ?? this.health).clamp(0, 5),
+      spirit: (spirit ?? this.spirit).clamp(0, 5),
+      supply: (supply ?? this.supply).clamp(0, 5),
+      momentum: (momentum ?? this.momentum).clamp(-6, maxM),
+      xpEarned: (xpEarned ?? this.xpEarned).clamp(0, 1 << 31),
+      xpSpent: (xpSpent ?? this.xpSpent).clamp(0, 1 << 31),
+      questsLegacy: (questsLegacy ?? this.questsLegacy).clamp(0, 10),
+      bondsLegacy: (bondsLegacy ?? this.bondsLegacy).clamp(0, 10),
+      discoveriesLegacy:
+          (discoveriesLegacy ?? this.discoveriesLegacy).clamp(0, 10),
+      impacts: imp,
+      vows: vows ?? this.vows,
+      connections: connections ?? this.connections,
+      assets: assets ?? this.assets,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'edge': edge,
+        'heart': heart,
+        'iron': iron,
+        'shadow': shadow,
+        'wits': wits,
+        'health': health,
+        'spirit': spirit,
+        'supply': supply,
+        'momentum': momentum,
+        'xpEarned': xpEarned,
+        'xpSpent': xpSpent,
+        'questsLegacy': questsLegacy,
+        'bondsLegacy': bondsLegacy,
+        'discoveriesLegacy': discoveriesLegacy,
+        if (impacts.isNotEmpty) 'impacts': impacts.toList(),
+        if (vows.isNotEmpty) 'vows': vows.map((v) => v.toJson()).toList(),
+        if (connections.isNotEmpty)
+          'connections': connections.map((c) => c.toJson()).toList(),
+        if (assets.isNotEmpty) 'assets': assets.map((a) => a.toJson()).toList(),
+      };
+
+  static StarforgedSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int intOr(dynamic v, int d) => v is int ? v : d;
+    List<ProgressTrack> tracks(dynamic v) => v is List
+        ? v.map(ProgressTrack.maybeFromJson).whereType<ProgressTrack>().toList()
+        : const [];
+    final imp = j['impacts'] is List
+        ? (j['impacts'] as List)
+            .whereType<String>()
+            .where(kStarforgedImpacts.containsKey)
+            .toSet()
+        : <String>{};
+    final maxM = 10 - imp.length;
+    return StarforgedSheet(
+      edge: intOr(j['edge'], 1).clamp(1, 3),
+      heart: intOr(j['heart'], 1).clamp(1, 3),
+      iron: intOr(j['iron'], 1).clamp(1, 3),
+      shadow: intOr(j['shadow'], 1).clamp(1, 3),
+      wits: intOr(j['wits'], 1).clamp(1, 3),
+      health: intOr(j['health'], 5).clamp(0, 5),
+      spirit: intOr(j['spirit'], 5).clamp(0, 5),
+      supply: intOr(j['supply'], 5).clamp(0, 5),
+      momentum: intOr(j['momentum'], 2).clamp(-6, maxM),
+      xpEarned: intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
+      xpSpent: intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
+      questsLegacy: intOr(j['questsLegacy'], 0).clamp(0, 10),
+      bondsLegacy: intOr(j['bondsLegacy'], 0).clamp(0, 10),
+      discoveriesLegacy: intOr(j['discoveriesLegacy'], 0).clamp(0, 10),
+      impacts: imp,
+      vows: tracks(j['vows']),
+      connections: tracks(j['connections']),
+      assets: j['assets'] is List
+          ? (j['assets'] as List)
+              .map(AssetState.maybeFromJson)
+              .whereType<AssetState>()
+              .toList()
+          : const [],
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {
@@ -1034,6 +1207,7 @@ class Character {
     this.tags = const [],
     this.emulation,
     this.ironsworn,
+    this.starforged,
     this.starred = false,
   });
   final String id;
@@ -1049,6 +1223,9 @@ class Character {
   /// Bespoke Classic Ironsworn sheet; null unless this is an Ironsworn PC.
   final IronswornSheet? ironsworn;
 
+  /// Bespoke Starforged sheet; null unless this is a Starforged PC.
+  final StarforgedSheet? starforged;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -1063,6 +1240,8 @@ class Character {
     bool clearEmulation = false,
     IronswornSheet? ironsworn,
     bool clearIronsworn = false,
+    StarforgedSheet? starforged,
+    bool clearStarforged = false,
     bool? starred,
   }) =>
       Character(
@@ -1074,6 +1253,7 @@ class Character {
         tags: tags ?? this.tags,
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
         ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
+        starforged: clearStarforged ? null : (starforged ?? this.starforged),
         starred: starred ?? this.starred,
       );
 
@@ -1088,6 +1268,7 @@ class Character {
         'tags': tags,
         if (emulation != null) 'emulation': emulation!.toJson(),
         if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
+        if (starforged != null) 'starforged': starforged!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -1106,6 +1287,7 @@ class Character {
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
         ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
+        starforged: StarforgedSheet.maybeFromJson(j['starforged']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }

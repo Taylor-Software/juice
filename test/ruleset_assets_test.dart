@@ -38,4 +38,20 @@ void main() {
     expect(
         withAbilities.first.abilities.any((t) => t.trim().isNotEmpty), isTrue);
   });
+
+  test('real ruleset_starforged.json parses into 87 well-formed asset defs',
+      () {
+    final raw = File('assets/ruleset_starforged.json').readAsStringSync();
+    final data = jsonDecode(raw) as Map<String, dynamic>;
+    final defs = IronswornAssetDef.listFromRuleset(data);
+    expect(defs.length, 87,
+        reason: 'starforged has 87 assets across 6 categories');
+    for (final d in defs) {
+      expect(d.id, isNotEmpty);
+      expect(d.name, isNotEmpty);
+      expect(d.abilityEnabled.length, d.abilities.length);
+    }
+    final cats = defs.map((d) => d.category).toSet();
+    expect(cats, containsAll(<String>['Path', 'Module', 'Companion', 'Deed']));
+  });
 }

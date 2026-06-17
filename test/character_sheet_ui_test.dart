@@ -358,4 +358,231 @@ void main() {
     final chars = await c.read(charactersProvider.future);
     expect(chars.single.ironsworn!.edge, 3);
   });
+
+  Future<ProviderContainer> pumpStarforged(WidgetTester tester,
+      {String sf = '{"edge":3,"heart":2,"iron":2,"shadow":1,"wits":1,'
+          '"health":5,"spirit":5,"supply":5,"momentum":2,"xpEarned":0,'
+          '"xpSpent":0,"questsLegacy":0,"bondsLegacy":0,"discoveriesLegacy":0}'}) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default':
+          '[{"id":"sf","name":"Nova","note":"","stats":[],"tracks":[],'
+              '"tags":[],"starforged":$sf}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(CharactersPane)));
+  }
+
+  testWidgets('opening a Starforged character shows the bespoke sheet',
+      (tester) async {
+    await pumpStarforged(tester);
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('starforged-sheet')), findsOneWidget);
+    expect(find.text('EDGE'), findsOneWidget);
+    // 'Quests' label is in Legacy Tracks section, below the 600px test viewport;
+    // drag to scroll it into view so the lazy ListView builds the widget.
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(find.text('Quests'), findsOneWidget);
+  });
+
+  testWidgets('SF meter/momentum/legacy steppers persist', (tester) async {
+    final c = await pumpStarforged(tester);
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-health-minus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.starforged!.health, 4);
+    await tester.tap(find.byKey(const Key('sf-mom-minus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.starforged!.momentum,
+        1);
+    // sf-quests-plus is below the 600px test viewport; drag to scroll it into
+    // view before ensureVisible (lazy ListView won't build it until near-visible).
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-quests-plus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-quests-plus')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .starforged!
+            .questsLegacy,
+        1);
+  });
+
+  testWidgets('SF Burn resets; impact lowers max', (tester) async {
+    final c = await pumpStarforged(tester,
+        sf: '{"edge":3,"heart":2,"iron":2,"shadow":1,"wits":1,"health":5,'
+            '"spirit":5,"supply":5,"momentum":9,"xpEarned":0,"xpSpent":0,'
+            '"questsLegacy":0,"bondsLegacy":0,"discoveriesLegacy":0}');
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-burn')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future)).single.starforged!.momentum,
+        2);
+    await tester.ensureVisible(find.byKey(const Key('sf-imp-doomed')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-imp-doomed')));
+    await tester.pumpAndSettle();
+    final s = (await c.read(charactersProvider.future)).single.starforged!;
+    expect(s.impacts, {'doomed'});
+    expect(s.momentumMax, 9);
+  });
+
+  testWidgets('create flow offers Starforged and makes a premade SF character',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-starforged')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('starforged-sheet')), findsOneWidget);
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.single.starforged!.edge, 3);
+  });
+
+  testWidgets('SF add a vow and a connection, then mark progress',
+      (tester) async {
+    final c = await pumpStarforged(tester);
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    // Vow — drag first so the lazy ListView builds items below the fold.
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -800));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-add-vow')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-vow')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('vow-name')), 'Reach the Forge');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-vow-0-mark')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-vow-0-mark')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .starforged!
+            .vows
+            .single
+            .ticks,
+        8);
+    // Connection
+    await tester.ensureVisible(find.byKey(const Key('sf-add-conn')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-conn')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('conn-name')), 'Lara');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    final sf = (await c.read(charactersProvider.future)).single.starforged!;
+    expect(sf.connections.single.name, 'Lara');
+  });
+
+  testWidgets('SF pick an asset and toggle an ability', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.rulesets.v1': '["starforged"]',
+      'juice.characters.v1.default':
+          '[{"id":"sf","name":"Nova","note":"","stats":[],"tracks":[],'
+              '"tags":[],"starforged":{"edge":3,"heart":2,"iron":2,"shadow":1,'
+              '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
+              '"xpEarned":0,"xpSpent":0,"questsLegacy":0,"bondsLegacy":0,'
+              '"discoveriesLegacy":0}}]',
+    });
+    final fixture = {
+      'asset_collections': [
+        {
+          'name': 'Path',
+          'assets': [
+            {
+              'id': 'starforged/assets/path/ace',
+              'name': 'Ace',
+              'category': 'Path',
+              'abilities': [
+                {'text': 'Reroll a die', 'enabled': true},
+                {'text': 'Push your luck', 'enabled': false},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('starforged').overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    // Assets section is deep in the sheet (after vows/connections); pre-scroll
+    // so the lazy ListView builds the widget before ensureVisible.
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -1200));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-asset')));
+    await tester.pumpAndSettle();
+    await tester
+        .tap(find.byKey(const Key('pick-asset-starforged/assets/path/ace')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Ace'), findsOneWidget);
+    var asset = (await c.read(charactersProvider.future))
+        .single
+        .starforged!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, false]);
+    await tester.ensureVisible(find.byKey(const Key('sf-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    asset = (await c.read(charactersProvider.future))
+        .single
+        .starforged!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, true]);
+  });
 }
