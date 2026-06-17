@@ -752,6 +752,381 @@ class StarforgedSheet {
   }
 }
 
+// --- D&D 5e (SRD 5.1 game-mechanic facts only; no SRD prose) ---------------
+
+const kDndClasses = <String>[
+  'Barbarian',
+  'Bard',
+  'Cleric',
+  'Druid',
+  'Fighter',
+  'Monk',
+  'Paladin',
+  'Ranger',
+  'Rogue',
+  'Sorcerer',
+  'Warlock',
+  'Wizard',
+];
+
+const kDndClassHitDie = <String, int>{
+  'Barbarian': 12,
+  'Fighter': 10,
+  'Paladin': 10,
+  'Ranger': 10,
+  'Bard': 8,
+  'Cleric': 8,
+  'Druid': 8,
+  'Monk': 8,
+  'Rogue': 8,
+  'Warlock': 8,
+  'Sorcerer': 6,
+  'Wizard': 6,
+};
+
+const kDndClassSaves = <String, Set<String>>{
+  'Barbarian': {'str', 'con'},
+  'Fighter': {'str', 'con'},
+  'Cleric': {'wis', 'cha'},
+  'Paladin': {'wis', 'cha'},
+  'Warlock': {'wis', 'cha'},
+  'Sorcerer': {'con', 'cha'},
+  'Bard': {'dex', 'cha'},
+  'Monk': {'str', 'dex'},
+  'Ranger': {'str', 'dex'},
+  'Rogue': {'dex', 'int'},
+  'Druid': {'int', 'wis'},
+  'Wizard': {'int', 'wis'},
+};
+
+const kDndAbilities = <String>['str', 'dex', 'con', 'int', 'wis', 'cha'];
+const kDndAbilityLabels = <String, String>{
+  'str': 'STR',
+  'dex': 'DEX',
+  'con': 'CON',
+  'int': 'INT',
+  'wis': 'WIS',
+  'cha': 'CHA',
+};
+
+/// 18 skills as (id, label, governing-ability) in sheet order.
+const kDndSkills = <(String, String, String)>[
+  ('athletics', 'Athletics', 'str'),
+  ('acrobatics', 'Acrobatics', 'dex'),
+  ('sleight_of_hand', 'Sleight of Hand', 'dex'),
+  ('stealth', 'Stealth', 'dex'),
+  ('arcana', 'Arcana', 'int'),
+  ('history', 'History', 'int'),
+  ('investigation', 'Investigation', 'int'),
+  ('nature', 'Nature', 'int'),
+  ('religion', 'Religion', 'int'),
+  ('animal_handling', 'Animal Handling', 'wis'),
+  ('insight', 'Insight', 'wis'),
+  ('medicine', 'Medicine', 'wis'),
+  ('perception', 'Perception', 'wis'),
+  ('survival', 'Survival', 'wis'),
+  ('deception', 'Deception', 'cha'),
+  ('intimidation', 'Intimidation', 'cha'),
+  ('performance', 'Performance', 'cha'),
+  ('persuasion', 'Persuasion', 'cha'),
+];
+
+const kDndSkillAbility = <String, String>{
+  'athletics': 'str',
+  'acrobatics': 'dex',
+  'sleight_of_hand': 'dex',
+  'stealth': 'dex',
+  'arcana': 'int',
+  'history': 'int',
+  'investigation': 'int',
+  'nature': 'int',
+  'religion': 'int',
+  'animal_handling': 'wis',
+  'insight': 'wis',
+  'medicine': 'wis',
+  'perception': 'wis',
+  'survival': 'wis',
+  'deception': 'cha',
+  'intimidation': 'cha',
+  'performance': 'cha',
+  'persuasion': 'cha',
+};
+
+const kDndConditions = <String, String>{
+  'blinded': 'Blinded',
+  'charmed': 'Charmed',
+  'deafened': 'Deafened',
+  'frightened': 'Frightened',
+  'grappled': 'Grappled',
+  'incapacitated': 'Incapacitated',
+  'invisible': 'Invisible',
+  'paralyzed': 'Paralyzed',
+  'petrified': 'Petrified',
+  'poisoned': 'Poisoned',
+  'prone': 'Prone',
+  'restrained': 'Restrained',
+  'stunned': 'Stunned',
+  'unconscious': 'Unconscious',
+};
+
+const kDndProfBonusByLevel = <int>[
+  2,
+  2,
+  2,
+  2,
+  3,
+  3,
+  3,
+  3,
+  4,
+  4,
+  4,
+  4,
+  5,
+  5,
+  5,
+  5,
+  6,
+  6,
+  6,
+  6,
+];
+
+/// Bespoke D&D 5e (P1) sheet. Additive on [Character] like [IronswornSheet].
+class DndSheet {
+  const DndSheet({
+    this.abilities = const {
+      'str': 10,
+      'dex': 10,
+      'con': 10,
+      'int': 10,
+      'wis': 10,
+      'cha': 10
+    },
+    this.className = 'Fighter',
+    this.subclass = '',
+    this.level = 1,
+    this.race = '',
+    this.background = '',
+    this.alignment = '',
+    this.ac = 10,
+    this.currentHp = 1,
+    this.maxHp = 1,
+    this.tempHp = 0,
+    this.hitDiceRemaining = 1,
+    this.speed = 30,
+    this.initiativeOverride = 0,
+    this.saveProficiencies = const {},
+    this.skillProficiencies = const {},
+    this.skillExpertise = const {},
+    this.conditions = const {},
+    this.exhaustionLevel = 0,
+    this.deathSaveSuccesses = 0,
+    this.deathSaveFailures = 0,
+    this.inspiration = false,
+    this.xp = 0,
+    this.featuresText = '',
+  });
+
+  final Map<String, int> abilities; // keys = kDndAbilities, each 1..30
+  final String className, subclass, race, background, alignment;
+  final int level; // 1..20
+  final int ac, currentHp, maxHp, tempHp, hitDiceRemaining, speed;
+  final int initiativeOverride; // 0 = use DEX mod
+  final Set<String> saveProficiencies, skillProficiencies, skillExpertise;
+  final Set<String> conditions;
+  final int exhaustionLevel; // 0..6
+  final int deathSaveSuccesses, deathSaveFailures; // 0..3
+  final bool inspiration;
+  final int xp;
+  final String featuresText;
+
+  int score(String a) => abilities[a] ?? 10;
+  int abilityMod(String a) => ((score(a) - 10) / 2).floor();
+  int get proficiencyBonus => kDndProfBonusByLevel[(level - 1).clamp(0, 19)];
+  int get hitDie => kDndClassHitDie[className] ?? 8;
+  int get initiative =>
+      initiativeOverride != 0 ? initiativeOverride : abilityMod('dex');
+  int saveBonus(String a) =>
+      abilityMod(a) + (saveProficiencies.contains(a) ? proficiencyBonus : 0);
+  int skillBonus(String id) {
+    final ab = kDndSkillAbility[id] ?? 'str';
+    final mult = skillExpertise.contains(id)
+        ? 2
+        : (skillProficiencies.contains(id) ? 1 : 0);
+    return abilityMod(ab) + proficiencyBonus * mult;
+  }
+
+  int get passivePerception => 10 + skillBonus('perception');
+
+  factory DndSheet.premade() => const DndSheet(
+        abilities: {
+          'str': 15,
+          'dex': 13,
+          'con': 14,
+          'int': 8,
+          'wis': 12,
+          'cha': 10
+        },
+        className: 'Fighter',
+        level: 1,
+        ac: 16,
+        currentHp: 12, // d10 max (10) + CON mod (+2)
+        maxHp: 12,
+        hitDiceRemaining: 1,
+        speed: 30,
+        saveProficiencies: {'str', 'con'},
+        skillProficiencies: {'athletics', 'perception'},
+      );
+
+  DndSheet copyWith({
+    Map<String, int>? abilities,
+    String? className,
+    String? subclass,
+    String? race,
+    String? background,
+    String? alignment,
+    int? level,
+    int? ac,
+    int? currentHp,
+    int? maxHp,
+    int? tempHp,
+    int? hitDiceRemaining,
+    int? speed,
+    int? initiativeOverride,
+    Set<String>? saveProficiencies,
+    Set<String>? skillProficiencies,
+    Set<String>? skillExpertise,
+    Set<String>? conditions,
+    int? exhaustionLevel,
+    int? deathSaveSuccesses,
+    int? deathSaveFailures,
+    bool? inspiration,
+    int? xp,
+    String? featuresText,
+  }) {
+    final lvl = (level ?? this.level).clamp(1, 20);
+    final ab = abilities ?? this.abilities;
+    final cls = (className ?? this.className);
+    return DndSheet(
+      abilities: {
+        for (final a in kDndAbilities) a: (ab[a] ?? 10).clamp(1, 30),
+      },
+      className: kDndClassHitDie.containsKey(cls) ? cls : 'Fighter',
+      subclass: subclass ?? this.subclass,
+      race: race ?? this.race,
+      background: background ?? this.background,
+      alignment: alignment ?? this.alignment,
+      level: lvl,
+      ac: (ac ?? this.ac).clamp(0, 99),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
+      tempHp: (tempHp ?? this.tempHp).clamp(0, 1 << 20),
+      hitDiceRemaining:
+          (hitDiceRemaining ?? this.hitDiceRemaining).clamp(0, lvl),
+      speed: (speed ?? this.speed).clamp(0, 999),
+      initiativeOverride: initiativeOverride ?? this.initiativeOverride,
+      saveProficiencies: (saveProficiencies ?? this.saveProficiencies)
+          .where(kDndAbilities.contains)
+          .toSet(),
+      skillProficiencies: (skillProficiencies ?? this.skillProficiencies)
+          .where(kDndSkillAbility.containsKey)
+          .toSet(),
+      skillExpertise: (skillExpertise ?? this.skillExpertise)
+          .where(kDndSkillAbility.containsKey)
+          .toSet(),
+      conditions: (conditions ?? this.conditions)
+          .where(kDndConditions.containsKey)
+          .toSet(),
+      exhaustionLevel: (exhaustionLevel ?? this.exhaustionLevel).clamp(0, 6),
+      deathSaveSuccesses:
+          (deathSaveSuccesses ?? this.deathSaveSuccesses).clamp(0, 3),
+      deathSaveFailures:
+          (deathSaveFailures ?? this.deathSaveFailures).clamp(0, 3),
+      inspiration: inspiration ?? this.inspiration,
+      xp: (xp ?? this.xp).clamp(0, 1 << 31),
+      featuresText: featuresText ?? this.featuresText,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'abilities': abilities,
+        'className': className,
+        if (subclass.isNotEmpty) 'subclass': subclass,
+        'level': level,
+        if (race.isNotEmpty) 'race': race,
+        if (background.isNotEmpty) 'background': background,
+        if (alignment.isNotEmpty) 'alignment': alignment,
+        'ac': ac,
+        'currentHp': currentHp,
+        'maxHp': maxHp,
+        if (tempHp != 0) 'tempHp': tempHp,
+        'hitDiceRemaining': hitDiceRemaining,
+        'speed': speed,
+        if (initiativeOverride != 0) 'initiativeOverride': initiativeOverride,
+        if (saveProficiencies.isNotEmpty)
+          'saveProficiencies': saveProficiencies.toList(),
+        if (skillProficiencies.isNotEmpty)
+          'skillProficiencies': skillProficiencies.toList(),
+        if (skillExpertise.isNotEmpty)
+          'skillExpertise': skillExpertise.toList(),
+        if (conditions.isNotEmpty) 'conditions': conditions.toList(),
+        if (exhaustionLevel != 0) 'exhaustionLevel': exhaustionLevel,
+        if (deathSaveSuccesses != 0) 'deathSaveSuccesses': deathSaveSuccesses,
+        if (deathSaveFailures != 0) 'deathSaveFailures': deathSaveFailures,
+        if (inspiration) 'inspiration': true,
+        if (xp != 0) 'xp': xp,
+        if (featuresText.isNotEmpty) 'featuresText': featuresText,
+      };
+
+  static DndSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    int intOr(dynamic v, int d) => v is int ? v : d;
+    String strOr(dynamic v) => v is String ? v : '';
+    Set<String> strSet(dynamic v) =>
+        v is List ? v.whereType<String>().toSet() : const {};
+    final rawAb = j['abilities'];
+    final ab = <String, int>{
+      for (final a in kDndAbilities)
+        a: (rawAb is Map ? intOr(rawAb[a], 10) : 10).clamp(1, 30),
+    };
+    final cls = strOr(j['className']);
+    return DndSheet(
+      abilities: ab,
+      className: kDndClassHitDie.containsKey(cls) ? cls : 'Fighter',
+      subclass: strOr(j['subclass']),
+      race: strOr(j['race']),
+      background: strOr(j['background']),
+      alignment: strOr(j['alignment']),
+      level: intOr(j['level'], 1).clamp(1, 20),
+      ac: intOr(j['ac'], 10).clamp(0, 99),
+      currentHp: intOr(j['currentHp'], 1).clamp(0, 1 << 20),
+      maxHp: intOr(j['maxHp'], 1).clamp(0, 1 << 20),
+      tempHp: intOr(j['tempHp'], 0).clamp(0, 1 << 20),
+      hitDiceRemaining: intOr(j['hitDiceRemaining'], 1)
+          .clamp(0, intOr(j['level'], 1).clamp(1, 20)),
+      speed: intOr(j['speed'], 30).clamp(0, 999),
+      initiativeOverride: intOr(j['initiativeOverride'], 0),
+      saveProficiencies:
+          strSet(j['saveProficiencies']).where(kDndAbilities.contains).toSet(),
+      skillProficiencies: strSet(j['skillProficiencies'])
+          .where(kDndSkillAbility.containsKey)
+          .toSet(),
+      skillExpertise: strSet(j['skillExpertise'])
+          .where(kDndSkillAbility.containsKey)
+          .toSet(),
+      conditions:
+          strSet(j['conditions']).where(kDndConditions.containsKey).toSet(),
+      exhaustionLevel: intOr(j['exhaustionLevel'], 0).clamp(0, 6),
+      deathSaveSuccesses: intOr(j['deathSaveSuccesses'], 0).clamp(0, 3),
+      deathSaveFailures: intOr(j['deathSaveFailures'], 0).clamp(0, 3),
+      inspiration: j['inspiration'] == true,
+      xp: intOr(j['xp'], 0).clamp(0, 1 << 31),
+      featuresText: strOr(j['featuresText']),
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {

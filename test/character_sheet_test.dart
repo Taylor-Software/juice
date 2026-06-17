@@ -390,6 +390,105 @@ void main() {
     });
   });
 
+  group('DndSheet', () {
+    test('ability modifier floors correctly (incl. odd low scores)', () {
+      DndSheet s(int v) => DndSheet(abilities: {'str': v});
+      expect(s(1).abilityMod('str'), -5);
+      expect(s(7).abilityMod('str'), -2); // ~/ would wrongly give -1
+      expect(s(8).abilityMod('str'), -1);
+      expect(s(10).abilityMod('str'), 0);
+      expect(s(15).abilityMod('str'), 2);
+      expect(s(20).abilityMod('str'), 5);
+    });
+
+    test('derived stats: prof bonus, saves, skills, passive perception', () {
+      const s = DndSheet(
+        abilities: {
+          'str': 16,
+          'dex': 14,
+          'con': 12,
+          'int': 8,
+          'wis': 13,
+          'cha': 10
+        },
+        level: 5, // prof +3
+        saveProficiencies: {'str', 'con'},
+        skillProficiencies: {'athletics', 'perception'},
+        skillExpertise: {'athletics'},
+      );
+      expect(s.proficiencyBonus, 3);
+      expect(s.saveBonus('str'), 6); // +3 mod + 3 prof
+      expect(s.saveBonus('dex'), 2); // +2 mod, not proficient
+      expect(s.skillBonus('athletics'), 9); // str +3, expertise => +3*2
+      expect(s.skillBonus('perception'), 4); // wis +1 + prof 3
+      expect(s.skillBonus('stealth'), 2); // dex +2, not proficient
+      expect(s.passivePerception, 14); // 10 + 4
+      expect(s.hitDie, 10); // Fighter
+      expect(s.initiative, 2); // dex mod
+    });
+
+    test('premade is a level-1 Fighter with the standard array', () {
+      final s = DndSheet.premade();
+      expect(s.className, 'Fighter');
+      expect(s.score('str'), 15);
+      expect(s.maxHp, 12);
+      expect(s.saveProficiencies, {'str', 'con'});
+      expect(s.proficiencyBonus, 2);
+    });
+
+    test('round-trips and clamps; tolerant of junk', () {
+      const s = DndSheet(
+        abilities: {
+          'str': 16,
+          'dex': 14,
+          'con': 12,
+          'int': 8,
+          'wis': 13,
+          'cha': 10
+        },
+        className: 'Wizard',
+        level: 7,
+        race: 'Elf',
+        ac: 15,
+        currentHp: 30,
+        maxHp: 38,
+        hitDiceRemaining: 4,
+        saveProficiencies: {'int', 'wis'},
+        skillProficiencies: {'arcana'},
+        conditions: {'poisoned'},
+        exhaustionLevel: 2,
+        deathSaveSuccesses: 1,
+        featuresText: 'Spellcasting',
+      );
+      final back = DndSheet.maybeFromJson(s.toJson())!;
+      expect(back.className, 'Wizard');
+      expect(back.level, 7);
+      expect(back.score('str'), 16);
+      expect(back.conditions, {'poisoned'});
+      expect(back.exhaustionLevel, 2);
+      expect(back.featuresText, 'Spellcasting');
+
+      expect(DndSheet.maybeFromJson('x'), isNull);
+      final j = DndSheet.maybeFromJson({
+        'abilities': {'str': 99, 'dex': 'big'},
+        'className': 'Bogus',
+        'level': 50,
+        'saveProficiencies': ['str', 'nope'],
+        'skillProficiencies': ['arcana', 'junk'],
+        'conditions': ['poisoned', 'invented'],
+        'exhaustionLevel': 9,
+      })!;
+      expect(j.score('str'), 30); // clamped 1..30
+      expect(j.score('dex'), 10); // junk -> default
+      expect(j.className, 'Fighter'); // unknown -> default
+      expect(j.level, 20); // clamped
+      expect(j.saveProficiencies, {'str'}); // unknown ability dropped
+      expect(j.skillProficiencies, {'arcana'}); // unknown skill dropped
+      expect(j.conditions, {'poisoned'}); // unknown condition dropped
+      expect(j.exhaustionLevel, 6); // clamped 0..6
+    });
+  });
+
   group('StarforgedSheet.assetRuleset', () {
     test('defaults to starforged; premade can set sundered_isles', () {
       expect(const StarforgedSheet().assetRuleset, 'starforged');
