@@ -470,4 +470,45 @@ void main() {
     final chars = await c.read(charactersProvider.future);
     expect(chars.single.starforged!.edge, 3);
   });
+
+  testWidgets('SF add a vow and a connection, then mark progress',
+      (tester) async {
+    final c = await pumpStarforged(tester);
+    await tester.tap(find.text('Nova'));
+    await tester.pumpAndSettle();
+    // Vow — drag first so the lazy ListView builds items below the fold.
+    await tester.drag(
+        find.byKey(const Key('starforged-sheet')), const Offset(0, -800));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-add-vow')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-vow')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('vow-name')), 'Reach the Forge');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('sf-vow-0-mark')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-vow-0-mark')));
+    await tester.pumpAndSettle();
+    expect(
+        (await c.read(charactersProvider.future))
+            .single
+            .starforged!
+            .vows
+            .single
+            .ticks,
+        8);
+    // Connection
+    await tester.ensureVisible(find.byKey(const Key('sf-add-conn')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sf-add-conn')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('conn-name')), 'Lara');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    final sf = (await c.read(charactersProvider.future)).single.starforged!;
+    expect(sf.connections.single.name, 'Lara');
+  });
 }

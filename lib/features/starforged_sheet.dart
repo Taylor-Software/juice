@@ -146,6 +146,52 @@ class StarforgedSheetView extends ConsumerWidget {
               value: s.xpSpent,
               onSet: (v) => _save(ref, s.copyWith(xpSpent: v))),
         ]),
+        sheetSection(context, 'Vows'),
+        for (var i = 0; i < s.vows.length; i++)
+          progressTrackRow(
+            context: context,
+            prefix: 'sf-vow',
+            index: i,
+            track: s.vows[i],
+            onChanged: (t) =>
+                _save(ref, s.copyWith(vows: [...s.vows]..[i] = t)),
+            onDelete: () =>
+                _save(ref, s.copyWith(vows: [...s.vows]..removeAt(i))),
+          ),
+        OutlinedButton.icon(
+          key: const Key('sf-add-vow'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add vow'),
+          onPressed: () async {
+            final t = await addProgressTrackDialog(context,
+                nameKey: 'vow-name', label: 'Vow');
+            if (t != null) _save(ref, _s.copyWith(vows: [..._s.vows, t]));
+          },
+        ),
+        sheetSection(context, 'Connections'),
+        for (var i = 0; i < s.connections.length; i++)
+          progressTrackRow(
+            context: context,
+            prefix: 'sf-conn',
+            index: i,
+            track: s.connections[i],
+            onChanged: (t) => _save(
+                ref, s.copyWith(connections: [...s.connections]..[i] = t)),
+            onDelete: () => _save(
+                ref, s.copyWith(connections: [...s.connections]..removeAt(i))),
+          ),
+        OutlinedButton.icon(
+          key: const Key('sf-add-conn'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add connection'),
+          onPressed: () async {
+            final t = await addProgressTrackDialog(context,
+                nameKey: 'conn-name', label: 'Connection');
+            if (t != null) {
+              _save(ref, _s.copyWith(connections: [..._s.connections, t]));
+            }
+          },
+        ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
       ],
