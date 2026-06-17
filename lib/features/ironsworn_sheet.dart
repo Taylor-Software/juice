@@ -117,21 +117,26 @@ class IronswornSheetView extends ConsumerWidget {
           onChanged: (d) => _save(ref, s.copyWith(debilities: d)),
         ),
         sheetSection(context, 'Experience & Bonds'),
-        Row(children: [
-          const Text('XP earned'),
-          intStepper(
-              prefix: 'iw',
-              fieldKey: 'xpEarned',
-              value: s.xpEarned,
-              onSet: (v) => _save(ref, s.copyWith(xpEarned: v))),
-          const SizedBox(width: 16),
-          const Text('spent'),
-          intStepper(
-              prefix: 'iw',
-              fieldKey: 'xpSpent',
-              value: s.xpSpent,
-              onSet: (v) => _save(ref, s.copyWith(xpSpent: v))),
-        ]),
+        // Wrap (not Row): the two XP steppers reflow to a second line on a
+        // narrow phone instead of throwing a RenderFlex overflow.
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const Text('XP earned'),
+            intStepper(
+                prefix: 'iw',
+                fieldKey: 'xpEarned',
+                value: s.xpEarned,
+                onSet: (v) => _save(ref, s.copyWith(xpEarned: v))),
+            const SizedBox(width: 16),
+            const Text('spent'),
+            intStepper(
+                prefix: 'iw',
+                fieldKey: 'xpSpent',
+                value: s.xpSpent,
+                onSet: (v) => _save(ref, s.copyWith(xpSpent: v))),
+          ],
+        ),
         Row(children: [
           const Text('Bonds'),
           intStepper(

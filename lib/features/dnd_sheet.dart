@@ -91,26 +91,34 @@ class DndSheetView extends ConsumerWidget {
               fieldKey: 'ac',
               value: s.ac,
               onSet: (v) => _save(ref, s.copyWith(ac: v))),
-          const Spacer(),
-          Text('Init ${_fmt(s.initiative)}   Speed ${s.speed}',
-              style: theme.textTheme.bodySmall),
+          // Expanded (not Spacer + fixed Text): the info text right-aligns and
+          // wraps on a narrow phone instead of throwing a RenderFlex overflow.
+          Expanded(
+            child: Text('Init ${_fmt(s.initiative)}   Speed ${s.speed}',
+                textAlign: TextAlign.end, style: theme.textTheme.bodySmall),
+          ),
         ]),
-        Row(children: [
-          const SizedBox(width: 64, child: Text('HP')),
-          intStepper(
-              prefix: 'dnd',
-              fieldKey: 'hp-cur',
-              value: s.currentHp,
-              onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          Text(' / ${s.maxHp}'),
-          const SizedBox(width: 12),
-          const Text('Max'),
-          intStepper(
-              prefix: 'dnd',
-              fieldKey: 'hp-max',
-              value: s.maxHp,
-              onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
-        ]),
+        // Wrap (not Row): the two steppers + labels reflow to a second line on
+        // a narrow phone instead of throwing a RenderFlex overflow.
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const SizedBox(width: 64, child: Text('HP')),
+            intStepper(
+                prefix: 'dnd',
+                fieldKey: 'hp-cur',
+                value: s.currentHp,
+                onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
+            Text(' / ${s.maxHp}'),
+            const SizedBox(width: 12),
+            const Text('Max'),
+            intStepper(
+                prefix: 'dnd',
+                fieldKey: 'hp-max',
+                value: s.maxHp,
+                onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
+          ],
+        ),
         Row(children: [
           const SizedBox(width: 64, child: Text('Hit dice')),
           intStepper(
@@ -118,7 +126,7 @@ class DndSheetView extends ConsumerWidget {
               fieldKey: 'hd',
               value: s.hitDiceRemaining,
               onSet: (v) => _save(ref, s.copyWith(hitDiceRemaining: v))),
-          Text(' / ${s.level} (d${s.hitDie})'),
+          Flexible(child: Text(' / ${s.level} (d${s.hitDie})')),
         ]),
         sheetSection(context, 'Saving Throws'),
         for (final a in kDndAbilities) _saveRow(ref, s, a),
@@ -145,22 +153,27 @@ class DndSheetView extends ConsumerWidget {
               onSet: (v) => _save(ref, s.copyWith(exhaustionLevel: v))),
           Text('/ 6', style: Theme.of(context).textTheme.bodySmall),
         ]),
-        Row(children: [
-          const SizedBox(width: 96, child: Text('Death saves')),
-          const Text('✓'),
-          intStepper(
-              prefix: 'dnd',
-              fieldKey: 'death-ok',
-              value: s.deathSaveSuccesses,
-              onSet: (v) => _save(ref, s.copyWith(deathSaveSuccesses: v))),
-          const SizedBox(width: 8),
-          const Text('✗'),
-          intStepper(
-              prefix: 'dnd',
-              fieldKey: 'death-bad',
-              value: s.deathSaveFailures,
-              onSet: (v) => _save(ref, s.copyWith(deathSaveFailures: v))),
-        ]),
+        // Wrap (not Row): the two death-save steppers reflow to a second line
+        // on a narrow phone instead of throwing a RenderFlex overflow.
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            const SizedBox(width: 96, child: Text('Death saves')),
+            const Text('✓'),
+            intStepper(
+                prefix: 'dnd',
+                fieldKey: 'death-ok',
+                value: s.deathSaveSuccesses,
+                onSet: (v) => _save(ref, s.copyWith(deathSaveSuccesses: v))),
+            const SizedBox(width: 8),
+            const Text('✗'),
+            intStepper(
+                prefix: 'dnd',
+                fieldKey: 'death-bad',
+                value: s.deathSaveFailures,
+                onSet: (v) => _save(ref, s.copyWith(deathSaveFailures: v))),
+          ],
+        ),
         CheckboxListTile(
           key: const Key('dnd-inspiration'),
           dense: true,

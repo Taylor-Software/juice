@@ -24,16 +24,23 @@ Widget statStepper({
         Text('$value',
             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 10)),
+        // Minimum density + zero padding + tight constraints shrink the tap
+        // target (the 48px Material default, not the icon) so the two buttons
+        // fit a ~1/5-width stat column on a ~360px phone instead of overflowing.
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           IconButton(
             key: Key('$prefix-stat-${label.toLowerCase()}-minus'),
-            visualDensity: VisualDensity.compact,
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             icon: const Icon(Icons.remove, size: 16),
             onPressed: () => onSet(value - 1),
           ),
           IconButton(
             key: Key('$prefix-stat-${label.toLowerCase()}-plus'),
-            visualDensity: VisualDensity.compact,
+            visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             icon: const Icon(Icons.add, size: 16),
             onPressed: () => onSet(value + 1),
           ),

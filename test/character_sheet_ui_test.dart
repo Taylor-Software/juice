@@ -752,6 +752,53 @@ void main() {
     expect(chars.single.starforged!.assetRuleset, 'sundered_isles');
   });
 
+  testWidgets('D&D Combat rows do not overflow at 360px width', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    // High-level fixture: 3-digit HP and a long hit-dice label stress the
+    // Combat HP + hit-dice rows hardest.
+    await pumpDnd(tester,
+        dnd: '{"abilities":{"str":15,"dex":13,"con":14,"int":8,"wis":12,'
+            '"cha":10},"className":"Fighter","level":20,"ac":18,'
+            '"currentHp":188,"maxHp":188,"hitDiceRemaining":20,"speed":30,'
+            '"saveProficiencies":["str","con"],'
+            '"skillProficiencies":["athletics","perception"]}');
+    await tester.tap(find.text('Tarin'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('dnd-sheet')), findsOneWidget);
+    // Scroll the whole sheet so the lazy ListView builds (and lays out) every
+    // fixed-width row — AC/HP/hit-dice near the top and the death-saves row
+    // below the fold. Any RenderFlex overflow is captured during the scroll.
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('dnd-death-ok-plus')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Ironsworn XP row does not overflow at 360px width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpIronsworn(tester,
+        iron: '{"edge":3,"heart":2,"iron":2,"shadow":1,"wits":1,"health":5,'
+            '"spirit":5,"supply":5,"momentum":2,"xpEarned":30,"xpSpent":28,'
+            '"bonds":0}');
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    // The XP row lives in the Experience & Bonds section below the fold; scroll
+    // it into view so the lazy ListView lays it out.
+    await tester.scrollUntilVisible(
+        find.byKey(const Key('iw-xpEarned-plus')), 200,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Sundered Isles picker lists SI assets', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
