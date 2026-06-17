@@ -20,6 +20,24 @@ void main() {
       expect(p, endsWith('OUTPUT:'));
     });
 
+    test('systemPrimer renders a system: line between tone and result', () {
+      const seed = OracleSeed(
+        resultText: 'Fate Check — Yes',
+        systemPrimer: 'D&D 5e: heroic high fantasy.',
+      );
+      final lines = buildOraclePrompt(seed).split('\n');
+      final toneIdx = lines.indexWhere((l) => l.startsWith('tone:'));
+      expect(lines[toneIdx + 1], 'system: D&D 5e: heroic high fantasy.');
+      expect(lines.indexWhere((l) => l.startsWith('result:')),
+          greaterThan(toneIdx + 1));
+      expect(lines.last, 'OUTPUT:');
+    });
+
+    test('empty systemPrimer emits no system: line', () {
+      const seed = OracleSeed(resultText: 'Story: Betrayal / Ally');
+      expect(buildOraclePrompt(seed), isNot(contains('system:')));
+    });
+
     test('empty fields become explicit placeholders', () {
       const seed = OracleSeed(resultText: 'Story: Betrayal / Ally');
       final p = buildOraclePrompt(seed);
