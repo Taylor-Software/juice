@@ -1207,6 +1207,7 @@ class Character {
     this.tags = const [],
     this.emulation,
     this.ironsworn,
+    this.starforged,
     this.starred = false,
   });
   final String id;
@@ -1222,6 +1223,9 @@ class Character {
   /// Bespoke Classic Ironsworn sheet; null unless this is an Ironsworn PC.
   final IronswornSheet? ironsworn;
 
+  /// Bespoke Starforged sheet; null unless this is a Starforged PC.
+  final StarforgedSheet? starforged;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -1236,6 +1240,8 @@ class Character {
     bool clearEmulation = false,
     IronswornSheet? ironsworn,
     bool clearIronsworn = false,
+    StarforgedSheet? starforged,
+    bool clearStarforged = false,
     bool? starred,
   }) =>
       Character(
@@ -1247,6 +1253,7 @@ class Character {
         tags: tags ?? this.tags,
         emulation: clearEmulation ? null : (emulation ?? this.emulation),
         ironsworn: clearIronsworn ? null : (ironsworn ?? this.ironsworn),
+        starforged: clearStarforged ? null : (starforged ?? this.starforged),
         starred: starred ?? this.starred,
       );
 
@@ -1261,6 +1268,7 @@ class Character {
         'tags': tags,
         if (emulation != null) 'emulation': emulation!.toJson(),
         if (ironsworn != null) 'ironsworn': ironsworn!.toJson(),
+        if (starforged != null) 'starforged': starforged!.toJson(),
         if (starred) 'starred': true,
       };
 
@@ -1279,6 +1287,7 @@ class Character {
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         emulation: CharacterEmulation.maybeFromJson(j['emulation']),
         ironsworn: IronswornSheet.maybeFromJson(j['ironsworn']),
+        starforged: StarforgedSheet.maybeFromJson(j['starforged']),
         starred: (j['starred'] as bool?) ?? false,
       );
 }

@@ -328,6 +328,32 @@ void main() {
     });
   });
 
+  group('Character.starforged', () {
+    test('round-trips and is omitted when null', () {
+      const plain = Character(id: 'p', name: 'Plain');
+      expect(plain.toJson().containsKey('starforged'), isFalse);
+      final c = Character(
+          id: 's', name: 'Nova', starforged: StarforgedSheet.premade());
+      final back = Character.fromJson(c.toJson());
+      expect(back.starforged!.edge, 3);
+      expect(back.starforged!.momentum, 2);
+    });
+
+    test('copyWith sets and clears starforged', () {
+      const c = Character(id: 's2', name: 'L');
+      final set = c.copyWith(starforged: StarforgedSheet.premade());
+      expect(set.starforged, isNotNull);
+      expect(set.copyWith().starforged, isNotNull);
+      expect(set.copyWith(clearStarforged: true).starforged, isNull);
+    });
+
+    test('junk starforged block is tolerated as null', () {
+      final c =
+          Character.fromJson({'id': 's3', 'name': 'J', 'starforged': 'junk'});
+      expect(c.starforged, isNull);
+    });
+  });
+
   group('IronswornAssetDef.listFromRuleset', () {
     test('flattens asset_collections and seeds default ability flags', () {
       final ruleset = {
