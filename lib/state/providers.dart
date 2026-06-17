@@ -270,6 +270,19 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  /// Creates a pre-made Shadowdark PC at the top and returns its id.
+  Future<String> addShadowdark() async {
+    final id = _newId();
+    await _persist([
+      Character(
+          id: id,
+          name: 'New Shadowdark character',
+          shadowdark: ShadowdarkSheet.premade()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)
