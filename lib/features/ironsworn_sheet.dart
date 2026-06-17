@@ -22,6 +22,8 @@ class IronswornSheetView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final s = _s;
+    final rs = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+    final assetRid = rs.contains('starforged') ? 'starforged' : 'classic';
     Widget section(String t) => Padding(
           padding: const EdgeInsets.only(top: 18, bottom: 6),
           child: Text(t, style: theme.textTheme.titleMedium),
@@ -135,6 +137,14 @@ class IronswornSheetView extends ConsumerWidget {
           icon: const Icon(Icons.add),
           label: const Text('Add vow'),
           onPressed: () => _addVow(context, ref),
+        ),
+        section('Assets'),
+        for (var i = 0; i < s.assets.length; i++) _assetCard(ref, s, i),
+        OutlinedButton.icon(
+          key: const Key('iw-add-asset'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add asset'),
+          onPressed: () => _addAsset(context, ref, assetRid),
         ),
         section('Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
@@ -321,5 +331,72 @@ class IronswornSheetView extends ConsumerWidget {
           ..._s.vows,
           ProgressTrack(name: name.trim(), rank: rank),
         ]));
+  }
+
+  Widget _assetCard(WidgetRef ref, IronswornSheet s, int i) {
+    final a = s.assets[i];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+              child: Text('${a.name}  ·  ${a.category}',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () =>
+                  _save(ref, s.copyWith(assets: [...s.assets]..removeAt(i))),
+            ),
+          ]),
+          for (var k = 0; k < a.enabledAbilities.length; k++)
+            CheckboxListTile(
+              key: Key('iw-asset-$i-ability-$k'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              value: a.enabledAbilities[k],
+              title: Text('Ability ${k + 1}'),
+              onChanged: (on) {
+                final flags = [...a.enabledAbilities]..[k] = on ?? false;
+                final assets = [...s.assets]..[i] =
+                    a.copyWith(enabledAbilities: flags);
+                _save(ref, s.copyWith(assets: assets));
+              },
+            ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _addAsset(
+      BuildContext context, WidgetRef ref, String rulesetId) async {
+    final data = await ref.read(rulesetDataProvider(rulesetId).future);
+    final defs = IronswornAssetDef.listFromRuleset(data);
+    if (!context.mounted) return;
+    final def = await showDialog<IronswornAssetDef>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Add asset'),
+        children: [
+          SizedBox(
+            width: 320,
+            height: 420,
+            child: ListView(children: [
+              for (final d in defs)
+                ListTile(
+                  key: Key('pick-asset-${d.id}'),
+                  title: Text(d.name),
+                  subtitle: Text(d.category),
+                  onTap: () => Navigator.pop(context, d),
+                ),
+            ]),
+          ),
+        ],
+      ),
+    );
+    if (def == null) return;
+    _save(ref, _s.copyWith(assets: [..._s.assets, def.toState()]));
   }
 }

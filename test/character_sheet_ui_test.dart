@@ -263,6 +263,77 @@ void main() {
     expect(vow.boxes, 2);
   });
 
+  testWidgets('pick an asset from the ruleset and toggle an ability',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.rulesets.v1': '["classic"]',
+      'juice.characters.v1.default':
+          '[{"id":"iw","name":"Ulla","note":"","stats":[],"tracks":[],'
+              '"tags":[],"ironsworn":{"edge":3,"heart":2,"iron":2,"shadow":1,'
+              '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
+              '"xpEarned":0,"xpSpent":0,"bonds":0}}]',
+    });
+    final fixture = {
+      'asset_collections': [
+        {
+          'name': 'Combat Talent',
+          'assets': [
+            {
+              'id': 'classic/assets/combat_talent/swordmaster',
+              'name': 'Swordmaster',
+              'category': 'Combat Talent',
+              'abilities': [
+                {'text': 'Strike harder', 'enabled': true},
+                {'text': 'Press the attack', 'enabled': false},
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('classic').overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+        find.byKey(const Key('ironsworn-sheet')), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-add-asset')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(
+        const Key('pick-asset-classic/assets/combat_talent/swordmaster')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Swordmaster'), findsOneWidget);
+    var asset = (await c.read(charactersProvider.future))
+        .single
+        .ironsworn!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, false]);
+    // Toggle the second ability on.
+    await tester.ensureVisible(find.byKey(const Key('iw-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-asset-0-ability-1')));
+    await tester.pumpAndSettle();
+    asset = (await c.read(charactersProvider.future))
+        .single
+        .ironsworn!
+        .assets
+        .single;
+    expect(asset.enabledAbilities, [true, true]);
+  });
+
   testWidgets('create flow makes a pre-made Ironsworn character',
       (tester) async {
     SharedPreferences.setMockInitialValues({
