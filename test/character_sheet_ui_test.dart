@@ -240,6 +240,29 @@ void main() {
     expect(s.momentumMax, 9);
   });
 
+  testWidgets('add a vow then mark progress', (tester) async {
+    final c = await pumpIronsworn(tester);
+    await tester.tap(find.text('Ulla'));
+    await tester.pumpAndSettle();
+    await tester.drag(
+        find.byKey(const Key('ironsworn-sheet')), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('iw-add-vow')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('vow-name')), 'Avenge');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    expect(find.text('Avenge'), findsOneWidget);
+    // Mark one progress (default rank dangerous => +8 ticks => 2 boxes).
+    await tester.tap(find.byKey(const Key('iw-vow-0-mark')));
+    await tester.pumpAndSettle();
+    final vow =
+        (await c.read(charactersProvider.future)).single.ironsworn!.vows.single;
+    expect(vow.name, 'Avenge');
+    expect(vow.ticks, 8);
+    expect(vow.boxes, 2);
+  });
+
   testWidgets('create flow makes a pre-made Ironsworn character',
       (tester) async {
     SharedPreferences.setMockInitialValues({

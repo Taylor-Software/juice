@@ -128,6 +128,14 @@ class IronswornSheetView extends ConsumerWidget {
               ref, 'bonds', s.bonds, (v) => _save(ref, s.copyWith(bonds: v))),
           Text('/ 10', style: theme.textTheme.bodySmall),
         ]),
+        section('Vows'),
+        for (var i = 0; i < s.vows.length; i++) _vowRow(context, ref, s, i),
+        OutlinedButton.icon(
+          key: const Key('iw-add-vow'),
+          icon: const Icon(Icons.add),
+          label: const Text('Add vow'),
+          onPressed: () => _addVow(context, ref),
+        ),
         section('Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
       ],
@@ -219,5 +227,99 @@ class IronswornSheetView extends ConsumerWidget {
     await ref
         .read(charactersProvider.notifier)
         .replace(character.copyWith(name: name.trim()));
+  }
+
+  Widget _vowRow(BuildContext context, WidgetRef ref, IronswornSheet s, int i) {
+    final v = s.vows[i];
+    IronswornSheet withVows(List<ProgressTrack> vows) => s.copyWith(vows: vows);
+    void replaceVow(ProgressTrack nv) =>
+        _save(ref, withVows([...s.vows]..[i] = nv));
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+                child: Text(v.name,
+                    style: const TextStyle(fontWeight: FontWeight.bold))),
+            DropdownButton<ProgressRank>(
+              key: Key('iw-vow-$i-rank'),
+              value: v.rank,
+              underline: const SizedBox.shrink(),
+              items: [
+                for (final r in ProgressRank.values)
+                  DropdownMenuItem(value: r, child: Text(r.label)),
+              ],
+              onChanged: (r) => replaceVow(v.copyWith(rank: r)),
+            ),
+            IconButton(
+              key: Key('iw-vow-$i-unmark'),
+              icon: const Icon(Icons.remove_circle_outline),
+              tooltip: 'Un-mark',
+              onPressed: () => replaceVow(v.marked(-1)),
+            ),
+            IconButton(
+              key: Key('iw-vow-$i-mark'),
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Mark progress',
+              onPressed: () => replaceVow(v.marked(1)),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _save(ref, withVows([...s.vows]..removeAt(i))),
+            ),
+          ]),
+          Text('${v.boxes}/10 boxes · ${v.rank.label}',
+              style: Theme.of(context).textTheme.bodySmall),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _addVow(BuildContext context, WidgetRef ref) async {
+    final ctrl = TextEditingController();
+    var rank = ProgressRank.dangerous;
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: const Text('Add vow'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('vow-name'),
+              controller: ctrl,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Vow'),
+            ),
+            const SizedBox(height: 12),
+            DropdownButton<ProgressRank>(
+              key: const Key('vow-rank'),
+              value: rank,
+              isExpanded: true,
+              items: [
+                for (final r in ProgressRank.values)
+                  DropdownMenuItem(value: r, child: Text(r.label)),
+              ],
+              onChanged: (r) => setLocal(() => rank = r ?? rank),
+            ),
+          ]),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, ctrl.text),
+                child: const Text('Add')),
+          ],
+        ),
+      ),
+    );
+    if (name == null || name.trim().isEmpty) return;
+    _save(
+        ref,
+        _s.copyWith(vows: [
+          ..._s.vows,
+          ProgressTrack(name: name.trim(), rank: rank),
+        ]));
   }
 }
