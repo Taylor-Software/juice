@@ -843,6 +843,29 @@ void main() {
         'Fighter');
   });
 
+  testWidgets('Shadowdark Combat/HP rows do not overflow at 360px width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    // Stress: a Priest (caster + deity field), 4-digit XP, 2-digit AC/HP.
+    await pumpShadowdark(tester,
+        sd: '{"abilities":{"str":15,"dex":12,"con":14,"int":8,"wis":16,'
+            '"cha":10},"className":"Priest","ancestry":"Dwarf",'
+            '"alignment":"Lawful","level":10,"xp":1234,"ac":18,'
+            '"currentHp":88,"maxHp":88}');
+    await tester.tap(find.text('Mort'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shadowdark-sheet')), findsOneWidget);
+    // Scroll through the sheet so every fixed-width row lays out; a RenderFlex
+    // overflow would throw during the scroll.
+    await tester.scrollUntilVisible(find.byKey(const Key('sd-luck')), 300,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('D&D Combat rows do not overflow at 360px width', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1.0;

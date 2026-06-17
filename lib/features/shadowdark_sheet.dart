@@ -109,7 +109,9 @@ class ShadowdarkSheetView extends ConsumerWidget {
           for (final a in kDndAbilities) _abilityBox(ref, s, a),
         ]),
         sheetSection(context, 'Combat'),
-        Row(children: [
+        // Wrap (not Row): steppers reflow to a second line on a narrow phone
+        // instead of throwing a RenderFlex overflow.
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
           const SizedBox(width: 64, child: Text('AC')),
           intStepper(
               prefix: 'sd',
@@ -124,7 +126,7 @@ class ShadowdarkSheetView extends ConsumerWidget {
               value: s.xp,
               onSet: (v) => _save(ref, s.copyWith(xp: v))),
         ]),
-        Row(children: [
+        Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
           const SizedBox(width: 64, child: Text('HP')),
           intStepper(
               prefix: 'sd',
