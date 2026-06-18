@@ -1226,6 +1226,14 @@ final systemPrimerProvider = Provider<String>((ref) {
   return resolveSystemPrimer(systems, rulesets);
 });
 
+final resolvedSystemProvider = Provider<String>((ref) {
+  final systems =
+      ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+          kAllSystems;
+  final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+  return resolveSystem(systems, rulesets);
+});
+
 // -- Split view (global layout preference, not session-scoped) ---------------
 class SplitViewNotifier extends AsyncNotifier<bool> {
   static const _key = 'juice.splitview.v1';

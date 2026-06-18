@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/system_primer.dart';
 
 void main() {
   group('LocationRef', () {
@@ -48,6 +49,24 @@ void main() {
       final back = PlayContext.fromJson(const PlayContext().toJson());
       expect(back.activeCharacterId, isNull);
       expect(back.activeLocation, isNull);
+    });
+  });
+
+  group('resolveSystem', () {
+    test('dnd wins over everything', () {
+      expect(resolveSystem({'dnd', 'ironsworn'}, {'classic'}), 'dnd');
+    });
+    test('shadowdark before ironsworn family', () {
+      expect(resolveSystem({'shadowdark', 'ironsworn'}, {}), 'shadowdark');
+    });
+    test('ironsworn family refined by ruleset', () {
+      expect(
+          resolveSystem({'ironsworn'}, {'sundered_isles'}), 'sundered_isles');
+      expect(resolveSystem({'ironsworn'}, {'starforged'}), 'starforged');
+      expect(resolveSystem({'ironsworn'}, {'classic'}), 'ironsworn');
+    });
+    test('nothing covered returns empty', () {
+      expect(resolveSystem({'juice', 'mythic'}, {}), '');
     });
   });
 }
