@@ -1515,23 +1515,30 @@ class EncounterState {
     this.combatants = const [],
     this.turnIndex = 0,
     this.round = 1,
+    this.locationRef,
   });
   final List<Combatant> combatants;
   final int turnIndex;
   final int round;
+  final LocationRef? locationRef;
 
   EncounterState copyWith(
-          {List<Combatant>? combatants, int? turnIndex, int? round}) =>
+          {List<Combatant>? combatants,
+          int? turnIndex,
+          int? round,
+          LocationRef? locationRef}) =>
       EncounterState(
         combatants: combatants ?? this.combatants,
         turnIndex: turnIndex ?? this.turnIndex,
         round: round ?? this.round,
+        locationRef: locationRef ?? this.locationRef,
       );
 
   Map<String, dynamic> toJson() => {
         'combatants': combatants.map((c) => c.toJson()).toList(),
         'turnIndex': turnIndex,
         'round': round,
+        if (locationRef != null) 'locationRef': locationRef!.toJson(),
       };
 
   /// Tolerant defaults; turnIndex sanitized into the combatant range
@@ -1547,6 +1554,10 @@ class EncounterState {
       combatants: combatants,
       turnIndex: ((j['turnIndex'] as int?) ?? 0).clamp(0, maxTurn),
       round: (j['round'] as int?) ?? 1,
+      locationRef: j['locationRef'] == null
+          ? null
+          : LocationRef.fromJson(
+              Map<String, dynamic>.from(j['locationRef'] as Map)),
     );
   }
 }

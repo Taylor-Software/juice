@@ -69,4 +69,16 @@ void main() {
       expect(resolveSystem({'juice', 'mythic'}, {}), '');
     });
   });
+
+  group('EncounterState.locationRef', () {
+    test('absent decodes to null', () {
+      final e = EncounterState.fromJson({'combatants': [], 'round': 1});
+      expect(e.locationRef, isNull);
+    });
+    test('round-trips a room location', () {
+      const e = EncounterState(locationRef: LocationRef(roomId: 'r2'));
+      final back = EncounterState.fromJson(e.toJson());
+      expect(back.locationRef?.roomId, 'r2');
+    });
+  });
 }
