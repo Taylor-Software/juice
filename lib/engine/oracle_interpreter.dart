@@ -352,6 +352,36 @@ String parseVoiceResponse(String raw) {
   return out;
 }
 
+// -- Ask the GM ---------------------------------------------------------------
+
+const String _askGmInstruction =
+    'You are the game master for a solo tabletop RPG. Answer the player\'s '
+    'question in 1-3 sentences of plain prose. Be concrete and decisive.';
+
+class AskGmSeed {
+  const AskGmSeed({required this.question, this.sceneTitle});
+  final String question;
+  final String? sceneTitle;
+}
+
+/// Tiny, budget-safe prompt: instruction + optional scene line + question.
+String buildAskGmPrompt(AskGmSeed seed) {
+  final scene = seed.sceneTitle;
+  final sceneLine =
+      (scene == null || scene.trim().isEmpty) ? '' : 'scene: ${_flat(scene)}\n';
+  return '$_askGmInstruction\n\n'
+      'INPUT:\n'
+      '$sceneLine'
+      'question: ${_flat(seed.question)}\n'
+      'OUTPUT:';
+}
+
+String parseAskGmResponse(String raw) {
+  final out = _stripThink(raw).trim();
+  if (out.isEmpty) throw const FormatException('Empty ask-the-GM response');
+  return out;
+}
+
 // -- Journal recap ------------------------------------------------------------
 
 /// Recap instruction, baked into [buildSummaryPrompt] (like
