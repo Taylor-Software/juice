@@ -252,28 +252,45 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('New character'),
-        content: const Text('Choose a sheet type.'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Choose a sheet type.'),
+            if (!systems.contains('dnd') || !systems.contains('shadowdark'))
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  'Enable D&D 5e or Shadowdark in Campaigns → Edit '
+                  'systems to add those sheets.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+          ],
+        ),
         actions: [
           TextButton(
             key: const Key('new-generic'),
             onPressed: () => Navigator.pop(context, 'generic'),
             child: const Text('Generic'),
           ),
-          FilledButton(
-            key: const Key('new-ironsworn'),
-            onPressed: () => Navigator.pop(context, 'ironsworn'),
-            child: const Text('Ironsworn'),
-          ),
-          FilledButton(
-            key: const Key('new-starforged'),
-            onPressed: () => Navigator.pop(context, 'starforged'),
-            child: const Text('Starforged'),
-          ),
-          FilledButton(
-            key: const Key('new-sundered'),
-            onPressed: () => Navigator.pop(context, 'sundered'),
-            child: const Text('Sundered Isles'),
-          ),
+          if (systems.contains('ironsworn')) ...[
+            FilledButton(
+              key: const Key('new-ironsworn'),
+              onPressed: () => Navigator.pop(context, 'ironsworn'),
+              child: const Text('Ironsworn'),
+            ),
+            FilledButton(
+              key: const Key('new-starforged'),
+              onPressed: () => Navigator.pop(context, 'starforged'),
+              child: const Text('Starforged'),
+            ),
+            FilledButton(
+              key: const Key('new-sundered'),
+              onPressed: () => Navigator.pop(context, 'sundered'),
+              child: const Text('Sundered Isles'),
+            ),
+          ],
           if (systems.contains('dnd'))
             FilledButton(
               key: const Key('new-dnd'),

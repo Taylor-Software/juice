@@ -1013,4 +1013,76 @@ void main() {
         find.byKey(const Key('pick-asset-asset:sundered_isles/path/corsair')),
         findsOneWidget);
   });
+
+  testWidgets(
+      'sheet picker hides Ironsworn family when ironsworn system is off',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["dnd"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    // ironsworn system is off, so the Ironsworn-family options are hidden.
+    expect(find.byKey(const Key('new-ironsworn')), findsNothing);
+    expect(find.byKey(const Key('new-starforged')), findsNothing);
+    expect(find.byKey(const Key('new-sundered')), findsNothing);
+    // Generic + the enabled D&D option remain.
+    expect(find.byKey(const Key('new-generic')), findsOneWidget);
+    expect(find.byKey(const Key('new-dnd')), findsOneWidget);
+  });
+
+  testWidgets('sheet picker hints how to enable D&D/Shadowdark when off',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Edit systems'), findsOneWidget);
+  });
+
+  testWidgets('sheet picker omits the hint when D&D and Shadowdark are on',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["dnd","shadowdark"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Edit systems'), findsNothing);
+    expect(find.byKey(const Key('new-dnd')), findsOneWidget);
+    expect(find.byKey(const Key('new-shadowdark')), findsOneWidget);
+  });
 }
