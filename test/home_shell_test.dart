@@ -106,7 +106,7 @@ void main() {
     // Tapping a tool navigates to its destination (no overlay panel).
     await tester.tap(find.widgetWithText(ListTile, 'Fate Check'));
     await tester.pumpAndSettle();
-    expect(container.read(shellRouteProvider).destination, Destination.oracles);
+    expect(container.read(shellRouteProvider).destination, Destination.ask);
     expect(find.byType(NavigationBar), findsOneWidget);
   });
 

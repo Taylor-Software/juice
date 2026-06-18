@@ -178,7 +178,7 @@ void main() {
     // The fate-check source tool homes on the Oracles destination.
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
-    expect(container.read(shellRouteProvider).destination, Destination.oracles);
+    expect(container.read(shellRouteProvider).destination, Destination.ask);
     expect(container.read(shellRouteProvider).subtab, 'oracle');
   });
 

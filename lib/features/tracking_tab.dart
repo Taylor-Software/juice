@@ -22,7 +22,7 @@ class TrackingTab extends ConsumerWidget {
                 kAllSystems)
             .contains('lonelog');
     return SubtabHost(
-      destination: Destination.tracking,
+      destination: Destination.track,
       scrollable: true,
       tabs: [
         const SubtabDef('scenes', 'Scenes'),

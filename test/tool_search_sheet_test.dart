@@ -34,7 +34,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Verdant Journey'));
     await t.pumpAndSettle();
-    expect(c.read(shellRouteProvider).destination, Destination.maps);
+    expect(c.read(shellRouteProvider).destination, Destination.map);
     expect(c.read(shellRouteProvider).subtab, 'journey');
   });
 }

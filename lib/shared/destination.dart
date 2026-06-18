@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-/// Top-level sections of the home shell.
-enum Destination { journal, maps, party, tracking, oracles }
+/// Top-level verbs of the home shell.
+enum Destination { journal, sheet, ask, map, track }
 
 class DestinationMeta {
   const DestinationMeta(this.label, this.icon);
@@ -11,34 +11,34 @@ class DestinationMeta {
 
 const destinationMeta = <Destination, DestinationMeta>{
   Destination.journal: DestinationMeta('Journal', Icons.book_outlined),
-  Destination.maps: DestinationMeta('Maps', Icons.map_outlined),
-  Destination.party: DestinationMeta('Party', Icons.groups_outlined),
-  Destination.tracking: DestinationMeta('Tracking', Icons.checklist_outlined),
-  Destination.oracles: DestinationMeta('Oracles', Icons.casino_outlined),
+  Destination.sheet: DestinationMeta('Sheet', Icons.person_outline),
+  Destination.ask: DestinationMeta('Ask', Icons.casino_outlined),
+  Destination.map: DestinationMeta('Map', Icons.map_outlined),
+  Destination.track: DestinationMeta('Track', Icons.checklist_outlined),
 };
 
 /// Registry tool id -> (destination, subtab key). Tools absent here have no
 /// tab home (e.g. 'dice' lives on the entry line; 'help' opens as a route).
 const toolLocation = <String, (Destination, String)>{
-  'maps': (Destination.maps, 'world'),
-  'verdant': (Destination.maps, 'journey'),
-  'hexcrawl': (Destination.maps, 'hexcrawl'),
-  'party-emulator': (Destination.party, 'emulator'),
-  'sidekick-dialogue': (Destination.party, 'sidekick'),
-  'behavior-tables': (Destination.party, 'behavior'),
-  'threads-characters': (Destination.tracking, 'npcs'),
-  'encounter': (Destination.tracking, 'encounter'),
-  'resources': (Destination.tracking, 'resources'),
-  'battle': (Destination.tracking, 'battle'),
-  'fate-check': (Destination.oracles, 'oracle'),
-  'roll-high': (Destination.oracles, 'oracle'),
-  'mythic': (Destination.oracles, 'oracle'),
-  'gen-story': (Destination.oracles, 'generators'),
-  'gen-npcs': (Destination.oracles, 'generators'),
-  'gen-exploration': (Destination.oracles, 'generators'),
-  'gen-encounters': (Destination.oracles, 'generators'),
-  'gen-details': (Destination.oracles, 'generators'),
-  'tables': (Destination.oracles, 'tables'),
-  'lonelog-ref': (Destination.oracles, 'lonelog'),
-  'moves': (Destination.oracles, 'moves'),
+  'maps': (Destination.map, 'world'),
+  'verdant': (Destination.map, 'journey'),
+  'hexcrawl': (Destination.map, 'hexcrawl'),
+  'party-emulator': (Destination.track, 'emulator'),
+  'sidekick-dialogue': (Destination.track, 'sidekick'),
+  'behavior-tables': (Destination.track, 'behavior'),
+  'threads-characters': (Destination.sheet, 'characters'),
+  'encounter': (Destination.track, 'encounter'),
+  'resources': (Destination.track, 'resources'),
+  'battle': (Destination.track, 'battle'),
+  'fate-check': (Destination.ask, 'oracle'),
+  'roll-high': (Destination.ask, 'oracle'),
+  'mythic': (Destination.ask, 'oracle'),
+  'gen-story': (Destination.ask, 'generators'),
+  'gen-npcs': (Destination.ask, 'generators'),
+  'gen-exploration': (Destination.ask, 'generators'),
+  'gen-encounters': (Destination.ask, 'generators'),
+  'gen-details': (Destination.ask, 'generators'),
+  'tables': (Destination.ask, 'tables'),
+  'lonelog-ref': (Destination.ask, 'lonelog'),
+  'moves': (Destination.sheet, 'moves'),
 };

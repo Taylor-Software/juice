@@ -1185,7 +1185,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   void _openCharacter(String id) => ref
       .read(shellRouteProvider.notifier)
-      .goTo(Destination.tracking, subtab: 'npcs');
+      .goTo(Destination.sheet, subtab: 'characters');
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
 
@@ -1600,7 +1600,7 @@ class _CampaignHeader extends ConsumerWidget {
                       label: Text(t.title),
                       onPressed: () => ref
                           .read(shellRouteProvider.notifier)
-                          .goTo(Destination.tracking, subtab: 'threads'),
+                          .goTo(Destination.track, subtab: 'threads'),
                     ),
                   for (final c in stars)
                     ActionChip(
@@ -1609,7 +1609,7 @@ class _CampaignHeader extends ConsumerWidget {
                       label: Text(c.name),
                       onPressed: () => ref
                           .read(shellRouteProvider.notifier)
-                          .goTo(Destination.tracking, subtab: 'npcs'),
+                          .goTo(Destination.sheet, subtab: 'characters'),
                     ),
                   if (crawl != null && crawl.envRow != null)
                     ActionChip(

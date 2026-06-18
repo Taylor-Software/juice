@@ -39,7 +39,7 @@ class OraclesTab extends ConsumerWidget {
       if (lonelog) const LonelogReferenceScreen(),
     ];
     return SubtabHost(
-      destination: Destination.oracles,
+      destination: Destination.ask,
       tabs: tabs,
       children: children,
     );

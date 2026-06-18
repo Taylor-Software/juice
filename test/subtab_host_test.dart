@@ -9,7 +9,7 @@ Widget _host() => const ProviderScope(
       child: MaterialApp(
         home: Scaffold(
           body: SubtabHost(
-            destination: Destination.tracking,
+            destination: Destination.track,
             tabs: [
               SubtabDef('a', 'Alpha'),
               SubtabDef('b', 'Beta'),
@@ -42,7 +42,7 @@ void main() {
           body: Consumer(builder: (context, ref, _) {
             capturedRef = ref;
             return const SubtabHost(
-              destination: Destination.tracking,
+              destination: Destination.track,
               tabs: [SubtabDef('a', 'Alpha'), SubtabDef('b', 'Beta')],
               children: [Text('PANE A'), Text('PANE B')],
             );
@@ -52,7 +52,7 @@ void main() {
     ));
     capturedRef
         .read(shellRouteProvider.notifier)
-        .goTo(Destination.tracking, subtab: 'b');
+        .goTo(Destination.track, subtab: 'b');
     await t.pumpAndSettle();
     expect(find.text('PANE B'), findsOneWidget);
   });
@@ -61,7 +61,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(
       child: MaterialApp(
         home: SubtabHost(
-          destination: Destination.tracking,
+          destination: Destination.track,
           initialTabIndex: 1,
           tabs: [SubtabDef('a', 'A'), SubtabDef('b', 'B')],
           children: [Text('PANE-A'), Text('PANE-B')],
