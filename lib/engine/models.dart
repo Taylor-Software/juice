@@ -1745,6 +1745,29 @@ class HexCell {
   }
 }
 
+/// A reference to a place on the session's single map: a dungeon room id,
+/// or a hex by (col,row). Empty when none set.
+class LocationRef {
+  const LocationRef({this.roomId, this.hexCol, this.hexRow});
+  final String? roomId;
+  final int? hexCol;
+  final int? hexRow;
+
+  bool get isEmpty => roomId == null && hexCol == null && hexRow == null;
+
+  Map<String, dynamic> toJson() => {
+        if (roomId != null) 'roomId': roomId,
+        if (hexCol != null) 'hexCol': hexCol,
+        if (hexRow != null) 'hexRow': hexRow,
+      };
+
+  factory LocationRef.fromJson(Map<String, dynamic> j) => LocationRef(
+        roomId: j['roomId'] as String?,
+        hexCol: (j['hexCol'] as num?)?.toInt(),
+        hexRow: (j['hexRow'] as num?)?.toInt(),
+      );
+}
+
 /// Persisted map state: dungeon graph + revealed hex field.
 class MapState {
   const MapState({
