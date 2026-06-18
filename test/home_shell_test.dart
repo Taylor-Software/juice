@@ -9,7 +9,7 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/features/maps_tab.dart';
+import 'package:juice_oracle/features/sheet_tab.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
@@ -65,21 +65,21 @@ void main() {
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
-    for (final label in ['Journal', 'Maps', 'Party', 'Tracking', 'Oracles']) {
+    for (final label in ['Journal', 'Sheet', 'Ask', 'Map', 'Track']) {
       expect(find.text(label), findsWidgets);
     }
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 
-  testWidgets('tapping Maps switches the body', (t) async {
+  testWidgets('tapping Map switches the body', (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: [_verdantOverride, _emulatorOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
-    await t.tap(find.text('Maps').first);
+    await t.tap(find.text('Map').first);
     await t.pumpAndSettle();
-    // The Maps subtab bar is now visible (stub panes echo these labels too,
+    // The Map subtab bar is now visible (stub panes echo these labels too,
     // so assert presence, not a unique count).
     expect(find.text('World'), findsWidgets);
     expect(find.text('Journey'), findsWidgets);
@@ -225,7 +225,7 @@ void main() {
         containsAll(['juice', 'mythic', 'ironsworn', 'verdant']));
   });
 
-  testWidgets('split view shows Maps + Journal side by side (wide)',
+  testWidgets('split view shows a tool pane + Journal side by side (wide)',
       (tester) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -239,9 +239,9 @@ void main() {
     await tester.pumpAndSettle();
     // The pinned journal panel (its key exists ONLY in the split branch — the
     // single-pane IndexedStack builds JournalScreen too, so byType is not a
-    // discriminating check).
+    // discriminating check). The default-selected left pane is now Sheet.
     expect(find.byKey(const Key('split-journal')), findsOneWidget);
-    expect(find.byType(MapsTab), findsOneWidget);
+    expect(find.byType(SheetTab), findsOneWidget);
     expect(find.byType(JournalScreen), findsOneWidget);
     expect(find.byKey(const Key('split-toggle')), findsOneWidget);
   });
