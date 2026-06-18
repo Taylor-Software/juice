@@ -11,6 +11,7 @@ import 'package:juice_oracle/features/sheet_tab.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/features/tracking_tab.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/play_context.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final testOracle = Oracle(OracleData(
@@ -69,5 +70,26 @@ void main() {
     // unique to TablesScreen) is the visible IndexedStack child.
     expect(find.widgetWithText(Tab, 'Tables'), findsOneWidget);
     expect(find.text('Dis'), findsOneWidget);
+  });
+
+  testWidgets('opening a character sets the active character in context',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(c.read(playContextProvider).valueOrNull?.activeCharacterId, 'c1');
   });
 }
