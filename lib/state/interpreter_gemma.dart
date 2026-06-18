@@ -250,6 +250,11 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   @override
+  Future<String> askGm(AskGmSeed seed) async {
+    return parseAskGmResponse(await _generate(buildAskGmPrompt(seed)));
+  }
+
+  @override
   Future<void> dispose() async {
     _disposed = true; // an in-flight warm-up must not resurrect us
     await _model?.close();

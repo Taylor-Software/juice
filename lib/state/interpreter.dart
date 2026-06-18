@@ -60,6 +60,10 @@ abstract class InterpreterService {
   /// One-shot recap of recent journal entries (plain text). Requires ready.
   Future<String> summarize(List<String> entries);
 
+  /// Free-form GM answer to a player question (plain text). Same readiness
+  /// contract as [voiceLine]: requires phase == ready.
+  Future<String> askGm(AskGmSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }
