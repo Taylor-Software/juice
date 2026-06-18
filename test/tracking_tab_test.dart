@@ -7,20 +7,23 @@ import 'package:juice_oracle/features/tracking_tab.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('Tracking shows all six subtabs', (t) async {
+  testWidgets('Track shows the core subtabs and no longer hosts NPCs',
+      (t) async {
     await t.pumpWidget(const ProviderScope(
-      child: MaterialApp(home: Scaffold(body: TrackingTab())),
+      child: MaterialApp(home: Scaffold(body: TrackingTab(systems: {}))),
     ));
     await t.pumpAndSettle();
     for (final label in [
       'Scenes',
-      'NPCs',
       'Threads',
       'Rumors',
       'Tracks',
-      'Encounter'
+      'Encounter',
     ]) {
       expect(find.widgetWithText(Tab, label), findsOneWidget);
     }
+    // NPCs (CharactersPane) moved to the Sheet verb; party subtabs are gated.
+    expect(find.widgetWithText(Tab, 'NPCs'), findsNothing);
+    expect(find.widgetWithText(Tab, 'Emulator'), findsNothing);
   });
 }

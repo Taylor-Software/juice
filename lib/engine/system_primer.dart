@@ -41,3 +41,17 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   }
   return '';
 }
+
+/// The active system KEY, by the same priority as [resolveSystemPrimer]:
+/// dnd > shadowdark > Ironsworn-family (sundered_isles > starforged > ironsworn).
+/// Empty when no covered system is enabled.
+String resolveSystem(Set<String> systems, Set<String> rulesets) {
+  if (systems.contains('dnd')) return 'dnd';
+  if (systems.contains('shadowdark')) return 'shadowdark';
+  if (systems.contains('ironsworn')) {
+    if (rulesets.contains('sundered_isles')) return 'sundered_isles';
+    if (rulesets.contains('starforged')) return 'starforged';
+    return 'ironsworn';
+  }
+  return '';
+}

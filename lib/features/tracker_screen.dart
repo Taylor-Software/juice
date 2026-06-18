@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
@@ -123,14 +124,33 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Id of the character whose sheet is open, or null for the list view.
   String? _editingId;
 
+  /// Guards the one-time initial focus from the persisted context.
+  bool _initialFocusApplied = false;
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      playContextProvider.select((v) => v.valueOrNull?.activeCharacterId),
+      (prev, next) {
+        if (next != null && next != _editingId && mounted) {
+          setState(() => _editingId = next);
+        }
+      },
+    );
     final async = ref.watch(charactersProvider);
     return Scaffold(
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (chars) {
+          if (!_initialFocusApplied) {
+            _initialFocusApplied = true;
+            final active =
+                ref.read(playContextProvider).valueOrNull?.activeCharacterId;
+            if (active != null && chars.any((c) => c.id == active)) {
+              _editingId = active;
+            }
+          }
           if (_editingId != null) {
             // Resolve fresh each build; if the id vanished (e.g. session
             // switch), fall back to the list view.
@@ -142,25 +162,45 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               if (c.starforged != null) {
                 return StarforgedSheetView(
                   character: c,
-                  onBack: () => setState(() => _editingId = null),
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
                 );
               }
               if (c.shadowdark != null) {
                 return ShadowdarkSheetView(
                   character: c,
-                  onBack: () => setState(() => _editingId = null),
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
                 );
               }
               if (c.dnd != null) {
                 return DndSheetView(
                   character: c,
-                  onBack: () => setState(() => _editingId = null),
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
                 );
               }
               if (c.ironsworn != null) {
                 return IronswornSheetView(
                   character: c,
-                  onBack: () => setState(() => _editingId = null),
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
                 );
               }
               return _buildSheet(context, c);
@@ -200,7 +240,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                       ),
                     ],
                   ),
-                  onTap: () => setState(() => _editingId = c.id),
+                  onTap: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(c.id);
+                    setState(() => _editingId = c.id);
+                  },
                 ),
               );
             },
@@ -401,7 +446,10 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             IconButton(
               key: const Key('sheet-back'),
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => setState(() => _editingId = null),
+              onPressed: () {
+                ref.read(playContextProvider.notifier).setActiveCharacter(null);
+                setState(() => _editingId = null);
+              },
             ),
             Expanded(
               child: Text(c.name,

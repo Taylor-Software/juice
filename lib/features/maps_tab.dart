@@ -17,7 +17,7 @@ class MapsTab extends ConsumerWidget {
     final showJourney = systems.contains('verdant');
     final showHexcrawl = systems.contains('hexcrawl');
     return SubtabHost(
-      destination: Destination.maps,
+      destination: Destination.map,
       tabs: [
         const SubtabDef('world', 'World'),
         const SubtabDef('dungeon', 'Dungeon'),

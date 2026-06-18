@@ -34,23 +34,30 @@ List<Override> _overrides() => [
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('Party destination hidden when party system disabled', (t) async {
+  testWidgets('Track party subtabs hidden when party system disabled',
+      (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: _overrides(),
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
-    expect(find.text('Party'), findsWidgets); // default session has party
+    // Party is now a Track subtab, not a top-level destination.
+    await t.tap(find.text('Track').first);
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(Tab, 'Emulator'),
+        findsOneWidget); // default session has party
     final container =
         ProviderScope.containerOf(t.element(find.byType(HomeShell)));
     await container.read(sessionsProvider.notifier).create('No party',
         systems: {'juice', 'mythic', 'ironsworn', 'verdant'});
     await t.pumpAndSettle();
-    expect(find.text('Party'), findsNothing);
+    await t.tap(find.text('Track').first);
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(Tab, 'Emulator'), findsNothing);
     expect(find.text('Journal'), findsWidgets);
   });
 
-  testWidgets('Maps Journey subtab hidden when verdant disabled', (t) async {
+  testWidgets('Map Journey subtab hidden when verdant disabled', (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: _overrides(),
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
@@ -61,7 +68,7 @@ void main() {
     await container.read(sessionsProvider.notifier).create('No verdant',
         systems: {'juice', 'mythic', 'ironsworn', 'party'});
     await t.pumpAndSettle();
-    await t.tap(find.text('Maps').first);
+    await t.tap(find.text('Map').first);
     await t.pumpAndSettle();
     expect(find.widgetWithText(Tab, 'World'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Journey'), findsNothing);

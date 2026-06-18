@@ -15,7 +15,7 @@ void main() {
     addTearDown(c.dispose);
     final handled = c.read(shellRouteProvider.notifier).openTool('verdant');
     expect(handled, isTrue);
-    expect(c.read(shellRouteProvider).destination, Destination.maps);
+    expect(c.read(shellRouteProvider).destination, Destination.map);
     expect(c.read(shellRouteProvider).subtab, 'journey');
   });
 
@@ -31,8 +31,8 @@ void main() {
     addTearDown(c.dispose);
     c
         .read(shellRouteProvider.notifier)
-        .goTo(Destination.tracking, subtab: 'rumors');
-    expect(c.read(shellRouteProvider).destination, Destination.tracking);
+        .goTo(Destination.track, subtab: 'rumors');
+    expect(c.read(shellRouteProvider).destination, Destination.track);
     expect(c.read(shellRouteProvider).subtab, 'rumors');
   });
 }

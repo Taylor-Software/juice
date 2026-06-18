@@ -12,7 +12,7 @@ import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
 import '../features/maps_tab.dart';
 import '../features/oracles_tab.dart';
-import '../features/party_tab.dart';
+import '../features/sheet_tab.dart';
 import '../features/tracking_tab.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
@@ -300,29 +300,26 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
-  List<Destination> _visibleDestinations(
-          Set<String> systems, List<String> family) =>
-      [
+  List<Destination> _visibleDestinations() => const [
         Destination.journal,
-        Destination.maps,
-        if (systems.contains('party')) Destination.party,
-        Destination.tracking,
-        Destination.oracles,
+        Destination.sheet,
+        Destination.ask,
+        Destination.map,
+        Destination.track,
       ];
 
   Widget _root(Destination d, Set<String> systems, List<String> family) {
     switch (d) {
       case Destination.journal:
         return const JournalScreen();
-      case Destination.maps:
+      case Destination.sheet:
+        return SheetTab(family: family);
+      case Destination.ask:
+        return OraclesTab(oracle: widget.oracle, systems: systems);
+      case Destination.map:
         return MapsTab(oracle: widget.oracle, systems: systems);
-      case Destination.party:
-        return const PartyTab();
-      case Destination.tracking:
-        return const TrackingTab();
-      case Destination.oracles:
-        return OraclesTab(
-            oracle: widget.oracle, family: family, systems: systems);
+      case Destination.track:
+        return TrackingTab(systems: systems);
     }
   }
 
@@ -330,7 +327,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       BuildContext context, List<String> family, Set<String> systems) {
     final route = ref.watch(shellRouteProvider);
     final split = ref.watch(splitViewProvider).valueOrNull ?? false;
-    final destinations = _visibleDestinations(systems, family);
+    final destinations = _visibleDestinations();
     final index = destinations
         .indexOf(route.destination)
         .clamp(0, destinations.length - 1);

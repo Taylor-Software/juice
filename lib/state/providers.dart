@@ -980,6 +980,7 @@ const sessionScopedKeys = [
   'juice.inventory.v1',
   'juice.units.v1',
   'juice.settings.v1',
+  'juice.context.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
@@ -1224,6 +1225,14 @@ final systemPrimerProvider = Provider<String>((ref) {
           kAllSystems;
   final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
   return resolveSystemPrimer(systems, rulesets);
+});
+
+final resolvedSystemProvider = Provider<String>((ref) {
+  final systems =
+      ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+          kAllSystems;
+  final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+  return resolveSystem(systems, rulesets);
 });
 
 // -- Split view (global layout preference, not session-scoped) ---------------

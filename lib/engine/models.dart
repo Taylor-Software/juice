@@ -1515,23 +1515,33 @@ class EncounterState {
     this.combatants = const [],
     this.turnIndex = 0,
     this.round = 1,
+    this.locationRef,
   });
   final List<Combatant> combatants;
   final int turnIndex;
   final int round;
+  final LocationRef? locationRef;
 
-  EncounterState copyWith(
-          {List<Combatant>? combatants, int? turnIndex, int? round}) =>
+  EncounterState copyWith({
+    List<Combatant>? combatants,
+    int? turnIndex,
+    int? round,
+    LocationRef? locationRef,
+    bool clearLocationRef = false,
+  }) =>
       EncounterState(
         combatants: combatants ?? this.combatants,
         turnIndex: turnIndex ?? this.turnIndex,
         round: round ?? this.round,
+        locationRef:
+            clearLocationRef ? null : (locationRef ?? this.locationRef),
       );
 
   Map<String, dynamic> toJson() => {
         'combatants': combatants.map((c) => c.toJson()).toList(),
         'turnIndex': turnIndex,
         'round': round,
+        if (locationRef != null) 'locationRef': locationRef!.toJson(),
       };
 
   /// Tolerant defaults; turnIndex sanitized into the combatant range
@@ -1547,6 +1557,10 @@ class EncounterState {
       combatants: combatants,
       turnIndex: ((j['turnIndex'] as int?) ?? 0).clamp(0, maxTurn),
       round: (j['round'] as int?) ?? 1,
+      locationRef: j['locationRef'] == null
+          ? null
+          : LocationRef.fromJson(
+              Map<String, dynamic>.from(j['locationRef'] as Map)),
     );
   }
 }
@@ -1743,6 +1757,57 @@ class HexCell {
           .toList(),
     );
   }
+}
+
+/// A reference to a place on the session's single map: a dungeon room id,
+/// or a hex by (col,row). Empty when none set.
+class LocationRef {
+  const LocationRef({this.roomId, this.hexCol, this.hexRow});
+  final String? roomId;
+  final int? hexCol;
+  final int? hexRow;
+
+  bool get isEmpty => roomId == null && hexCol == null && hexRow == null;
+
+  Map<String, dynamic> toJson() => {
+        if (roomId != null) 'roomId': roomId,
+        if (hexCol != null) 'hexCol': hexCol,
+        if (hexRow != null) 'hexRow': hexRow,
+      };
+
+  factory LocationRef.fromJson(Map<String, dynamic> j) => LocationRef(
+        roomId: j['roomId'] as String?,
+        hexCol: (j['hexCol'] as num?)?.toInt(),
+        hexRow: (j['hexRow'] as num?)?.toInt(),
+      );
+}
+
+/// The play-state spine: what's "current" in the active campaign. Pointers
+/// are nullable; null means no focus (consumers fall back to defaults).
+class PlayContext {
+  const PlayContext({
+    this.activeCharacterId,
+    this.activeSceneId,
+    this.activeLocation,
+  });
+  final String? activeCharacterId;
+  final String? activeSceneId;
+  final LocationRef? activeLocation;
+
+  Map<String, dynamic> toJson() => {
+        if (activeCharacterId != null) 'activeCharacterId': activeCharacterId,
+        if (activeSceneId != null) 'activeSceneId': activeSceneId,
+        if (activeLocation != null) 'activeLocation': activeLocation!.toJson(),
+      };
+
+  factory PlayContext.fromJson(Map<String, dynamic> j) => PlayContext(
+        activeCharacterId: j['activeCharacterId'] as String?,
+        activeSceneId: j['activeSceneId'] as String?,
+        activeLocation: j['activeLocation'] == null
+            ? null
+            : LocationRef.fromJson(
+                Map<String, dynamic>.from(j['activeLocation'] as Map)),
+      );
 }
 
 /// Persisted map state: dungeon graph + revealed hex field.
