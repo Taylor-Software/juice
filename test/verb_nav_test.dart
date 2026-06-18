@@ -1,11 +1,21 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/features/oracles_tab.dart';
 import 'package:juice_oracle/features/sheet_tab.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/features/tracking_tab.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+final testOracle = Oracle(OracleData(
+    jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+        as Map<String, dynamic>));
 
 void main() {
   testWidgets('SheetTab with no family renders the roster only',
@@ -38,5 +48,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.widgetWithText(Tab, 'Emulator'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Scenes'), findsOneWidget);
+  });
+
+  testWidgets('Ask defaults to Tables for D&D', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["dnd"]}]}',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+                body: OraclesTab(
+                    oracle: testOracle,
+                    family: const [],
+                    systems: const {'dnd'})))));
+    await tester.pumpAndSettle();
+    // Tables tab is selected: its pane content (the Dis/—/Adv skew control,
+    // unique to TablesScreen) is the visible IndexedStack child.
+    expect(find.widgetWithText(Tab, 'Tables'), findsOneWidget);
+    expect(find.text('Dis'), findsOneWidget);
   });
 }

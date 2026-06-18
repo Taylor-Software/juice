@@ -6,7 +6,6 @@ import '../shared/subtab_host.dart';
 import 'fate_screen.dart';
 import 'generators_screen.dart';
 import 'tables_screen.dart';
-import 'moves_screen.dart';
 import 'lonelog_reference_screen.dart';
 
 class OraclesTab extends ConsumerWidget {
@@ -26,7 +25,6 @@ class OraclesTab extends ConsumerWidget {
       const SubtabDef('oracle', 'Oracle'),
       const SubtabDef('generators', 'Generators'),
       const SubtabDef('tables', 'Tables'),
-      if (family.isNotEmpty) const SubtabDef('moves', 'Moves'),
       if (lonelog) const SubtabDef('lonelog', 'Lonelog'),
     ];
     final children = <Widget>[
@@ -35,12 +33,16 @@ class OraclesTab extends ConsumerWidget {
       // Encounters/Details) plus the wilderness-crawl controls in one surface.
       GeneratorsScreen(oracle: oracle),
       TablesScreen(oracle: oracle),
-      if (family.isNotEmpty) MovesScreen(rulesetIds: family),
       if (lonelog) const LonelogReferenceScreen(),
     ];
+    // D&D / Shadowdark lean on dice tables, not the yes/no oracle — open Ask
+    // on Tables for them; everyone else lands on Oracle.
+    final dice = systems.contains('dnd') || systems.contains('shadowdark');
+    final initial = dice ? tabs.indexWhere((t) => t.key == 'tables') : 0;
     return SubtabHost(
       destination: Destination.ask,
       tabs: tabs,
+      initialTabIndex: initial < 0 ? 0 : initial,
       children: children,
     );
   }
