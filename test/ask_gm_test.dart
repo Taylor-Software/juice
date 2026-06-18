@@ -16,6 +16,14 @@ void main() {
       expect(p, contains('What do I smell?'));
       expect(p.toLowerCase(), isNot(contains('scene:')));
     });
+
+    test('caps a very long question to protect the token budget', () {
+      final long = 'x' * (kAskGmMaxFieldChars + 200);
+      final p = buildAskGmPrompt(AskGmSeed(question: long));
+      expect(p, contains('x' * kAskGmMaxFieldChars));
+      expect(p, contains('…'));
+      expect(p, isNot(contains('x' * (kAskGmMaxFieldChars + 1))));
+    });
   });
 
   group('parseAskGmResponse', () {

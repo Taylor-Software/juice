@@ -358,6 +358,15 @@ const String _askGmInstruction =
     'You are the game master for a solo tabletop RPG. Answer the player\'s '
     'question in 1-3 sentences of plain prose. Be concrete and decisive.';
 
+/// Hard cap on the user question (and scene title) fed to the model, so a long
+/// pasted question can't blow the web model's ~1280-token window. Mirrors the
+/// budget discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
+const int kAskGmMaxFieldChars = 300;
+
+String _capped(String s) => s.length > kAskGmMaxFieldChars
+    ? '${s.substring(0, kAskGmMaxFieldChars)}…'
+    : s;
+
 class AskGmSeed {
   const AskGmSeed({required this.question, this.sceneTitle});
   final String question;
@@ -365,14 +374,16 @@ class AskGmSeed {
 }
 
 /// Tiny, budget-safe prompt: instruction + optional scene line + question.
+/// The question and scene title are length-capped (see [kAskGmMaxFieldChars]).
 String buildAskGmPrompt(AskGmSeed seed) {
   final scene = seed.sceneTitle;
-  final sceneLine =
-      (scene == null || scene.trim().isEmpty) ? '' : 'scene: ${_flat(scene)}\n';
+  final sceneLine = (scene == null || scene.trim().isEmpty)
+      ? ''
+      : 'scene: ${_capped(_flat(scene))}\n';
   return '$_askGmInstruction\n\n'
       'INPUT:\n'
       '$sceneLine'
-      'question: ${_flat(seed.question)}\n'
+      'question: ${_capped(_flat(seed.question))}\n'
       'OUTPUT:';
 }
 
