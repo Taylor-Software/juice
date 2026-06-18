@@ -113,12 +113,13 @@ Nav always shows all 5 verbs (stable muscle memory). Filtering happens
 - **`Map`** opens `activeLocation` (else last/first map).
 - **`Track`** pins the active scene at the top of the Scenes pane.
 
-## Backward compatibility
+## Backward compatibility — out of scope
 
-Presentation layer over existing panes → **no journal/data migration.** Legacy
-campaigns (`systems == null` → `kAllSystems`) keep working. Context pointers
-default null. The new `juice.context.v1.<sessionId>` store is created lazily;
-its absence is a valid empty context.
+Explicitly **not a concern for this thread** (pre-release, solo dev). No
+migration scaffolding; existing saved campaigns/journals may break and that is
+acceptable. Build the cleanest model, not a compatible one. Revisit
+compatibility/migration as a release gate, separately. The new
+`juice.context.v1.<sessionId>` store is simply created when first written.
 
 ## Testing
 
@@ -132,7 +133,7 @@ its absence is a valid empty context.
   `juice.sessions.v1` with chosen systems, avoid the rootBundle hang by not
   pumping the full shell where data providers aren't overridden).
 - `Ask` default-tool-by-system selection.
-- Encounter `locationRef` JSON round-trip + legacy-absent decode.
+- Encounter `locationRef` JSON round-trip (nullable, absent → null).
 - Regression: existing pane tests stay green; full suite green.
 
 ## Decomposition (sequence after this spec)
