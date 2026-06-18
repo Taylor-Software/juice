@@ -81,6 +81,7 @@ class _OracleInterpretationSheetState
         tone: settings.tone,
         sceneContext: widget.seed.sceneContext,
         journalContext: widget.seed.journalContext,
+        systemPrimer: ref.read(systemPrimerProvider),
       ));
       if (!mounted) return;
       setState(() {
@@ -129,8 +130,7 @@ class _OracleInterpretationSheetState
             width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color:
-                  theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -285,8 +285,7 @@ class _OracleInterpretationSheetState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
                 color: theme.colorScheme.secondaryContainer,
                 borderRadius: BorderRadius.circular(6),
@@ -347,8 +346,7 @@ class _Consent extends StatelessWidget {
           Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
           const SizedBox(height: 12),
           Text('Interpret rolls with an on-device model',
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center),
+              style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(
             'Downloads a $sizeLabel language model once and stores it on '
@@ -410,8 +408,7 @@ class _Note extends StatelessWidget {
             Icon(icon, color: theme.colorScheme.onSurfaceVariant),
           const SizedBox(height: 12),
           Text(title,
-              style: theme.textTheme.titleMedium,
-              textAlign: TextAlign.center),
+              style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
           const SizedBox(height: 4),
           Text(detail,
               style: theme.textTheme.bodySmall
@@ -480,8 +477,10 @@ class _SettingsDialogState extends State<_SettingsDialog> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel')),
         FilledButton(
-          onPressed: () => Navigator.pop(context,
-              CampaignSettings(genre: _genre.text.trim(), tone: _tone.text.trim())),
+          onPressed: () => Navigator.pop(
+              context,
+              CampaignSettings(
+                  genre: _genre.text.trim(), tone: _tone.text.trim())),
           child: const Text('Save'),
         ),
       ],

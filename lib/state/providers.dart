@@ -17,6 +17,7 @@ import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_data.dart';
+import '../engine/system_primer.dart';
 import 'campaign_io.dart';
 
 /// Loads the data asset and builds the engine once.
@@ -1213,6 +1214,17 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
 
 final rulesetsProvider =
     AsyncNotifierProvider<RulesetsNotifier, Set<String>>(RulesetsNotifier.new);
+
+/// The resolved facts-only system primer for the active campaign, or '' when
+/// no covered TTRPG system is enabled. Fed into the oracle/voice prompts (see
+/// lib/engine/system_primer.dart).
+final systemPrimerProvider = Provider<String>((ref) {
+  final systems =
+      ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+          kAllSystems;
+  final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
+  return resolveSystemPrimer(systems, rulesets);
+});
 
 // -- Split view (global layout preference, not session-scoped) ---------------
 class SplitViewNotifier extends AsyncNotifier<bool> {

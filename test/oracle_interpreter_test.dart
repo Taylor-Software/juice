@@ -20,6 +20,24 @@ void main() {
       expect(p, endsWith('OUTPUT:'));
     });
 
+    test('systemPrimer renders a system: line between tone and result', () {
+      const seed = OracleSeed(
+        resultText: 'Fate Check — Yes',
+        systemPrimer: 'D&D 5e: heroic high fantasy.',
+      );
+      final lines = buildOraclePrompt(seed).split('\n');
+      final toneIdx = lines.indexWhere((l) => l.startsWith('tone:'));
+      expect(lines[toneIdx + 1], 'system: D&D 5e: heroic high fantasy.');
+      expect(lines.indexWhere((l) => l.startsWith('result:')),
+          greaterThan(toneIdx + 1));
+      expect(lines.last, 'OUTPUT:');
+    });
+
+    test('empty systemPrimer emits no system: line', () {
+      const seed = OracleSeed(resultText: 'Story: Betrayal / Ally');
+      expect(buildOraclePrompt(seed), isNot(contains('system:')));
+    });
+
     test('empty fields become explicit placeholders', () {
       const seed = OracleSeed(resultText: 'Story: Betrayal / Ally');
       final p = buildOraclePrompt(seed);
@@ -241,6 +259,26 @@ result: Fate Check (Likely) — Yes, and…
       expect(p, contains('plain text'));
       expect(p, isNot(contains('JSON shape')));
       expect(p, endsWith('OUTPUT:'));
+    });
+
+    test('systemPrimer renders a system: line after tone', () {
+      const seed = VoiceSeed(
+        line: 'Hold the line!',
+        mood: 'default',
+        systemPrimer: 'Shadowdark: lethal old-school dungeon-crawling.',
+      );
+      final lines = buildVoicePrompt(seed).split('\n');
+      final toneIdx = lines.indexWhere((l) => l.startsWith('tone:'));
+      expect(lines[toneIdx + 1],
+          'system: Shadowdark: lethal old-school dungeon-crawling.');
+      expect(lines.last, 'OUTPUT:');
+    });
+
+    test('empty systemPrimer emits no system: line in the INPUT block', () {
+      const seed = VoiceSeed(line: 'Hi', mood: 'default');
+      final p = buildVoicePrompt(seed);
+      final input = p.substring(p.indexOf('INPUT:'));
+      expect(input, isNot(contains('system:')));
     });
 
     test('optional fields are omitted; empty settings get placeholders', () {

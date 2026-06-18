@@ -334,6 +334,7 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
                 characterTags: selected?.tags ?? const [],
                 genre: settings.genre,
                 toneSetting: settings.tone,
+                systemPrimer: ref.read(systemPrimerProvider),
                 journalContext: [
                   for (final e in related)
                     e.title.isEmpty ? e.body : '${e.title} — ${e.body}',

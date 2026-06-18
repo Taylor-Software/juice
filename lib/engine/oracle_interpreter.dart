@@ -24,6 +24,7 @@ class OracleSeed {
     this.tone = '',
     this.sceneContext = '',
     this.journalContext = const [],
+    this.systemPrimer = '',
   });
 
   /// The journal entry's title + body, verbatim.
@@ -32,6 +33,10 @@ class OracleSeed {
   /// Per-campaign settings, e.g. 'grimdark fantasy' / 'tense and dangerous'.
   final String genre;
   final String tone;
+
+  /// Authored facts-only primer for the active TTRPG (see system_primer.dart),
+  /// or '' for none. Renders as a `system:` line in the prompt.
+  final String systemPrimer;
 
   /// Latest scene entry's title (+ chaos factor), or empty.
   final String sceneContext;
@@ -78,6 +83,7 @@ Rules:
 - Honor the stated genre and tone in word choice and imagery.
 - Use the scene context if given; otherwise invent freely but stay in tone.
 - recall: lines are excerpts from the player's earlier journal. Treat them as established facts; weave them in when they fit.
+- system: line, when present, names the game's setting and core mechanics; honor its flavor and vocabulary in word choice.
 - Output ONLY a JSON object. No preamble, no markdown fences, no commentary.
 
 JSON shape:
@@ -127,9 +133,13 @@ String buildOraclePrompt(OracleSeed seed) {
     recall.write('recall: $cut\n');
   }
 
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: $primer\n';
+
   return 'INPUT:\n'
       'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${_orElse(seed.tone, '(unspecified)')}\n'
+      '$systemLine'
       'result: ${_flat(seed.resultText)}\n'
       '$recall'
       'scene: ${_orElse(seed.sceneContext, '(none given)')}\n'
@@ -257,6 +267,7 @@ class VoiceSeed {
     this.genre = '',
     this.toneSetting = '',
     this.journalContext = const [],
+    this.systemPrimer = '',
   });
 
   /// The rolled dialogue line, verbatim.
@@ -277,6 +288,10 @@ class VoiceSeed {
   final String genre;
   final String toneSetting;
 
+  /// Authored facts-only primer for the active TTRPG (see system_primer.dart),
+  /// or '' for none. Renders as a `system:` line in the prompt.
+  final String systemPrimer;
+
   /// Recall lines (see relatedEntries); capped like the oracle prompt.
   final List<String> journalContext;
 }
@@ -291,7 +306,8 @@ rolled line into EXACTLY ONE in-character utterance, 1-2 short sentences,
 spoken aloud in the character's words. Keep the rolled line's intent, the
 stated mood, and the line tone. Honor the genre and campaign tone. recall:
 lines are excerpts from the player's journal; treat them as established
-facts. Output plain text only: just the spoken words — no JSON, no
+facts. system: line, when present, names the game's setting and mechanics —
+honor its flavor. Output plain text only: just the spoken words — no JSON, no
 markdown, no quotation marks, no stage directions, no commentary.''';
 
 /// Builds the voiceLine prompt: the instruction plus line-keyed fields
@@ -310,10 +326,13 @@ String buildVoicePrompt(VoiceSeed seed) {
   final name = seed.characterName;
   final tone = seed.tone;
   final topic = seed.topic;
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: $primer\n';
   return '$_voiceInstruction\n\n'
       'INPUT:\n'
       'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${_orElse(seed.toneSetting, '(unspecified)')}\n'
+      '$systemLine'
       '${name == null ? '' : 'character: ${_flat(name)}\n'}'
       '${seed.characterTags.isEmpty ? '' : 'traits: ${_flat(seed.characterTags.join(', '))}\n'}'
       'mood: ${_flat(seed.mood)}\n'
