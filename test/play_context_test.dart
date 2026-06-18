@@ -23,4 +23,31 @@ void main() {
       expect(const LocationRef().isEmpty, isTrue);
     });
   });
+
+  group('PlayContext', () {
+    test('defaults are all null', () {
+      const c = PlayContext();
+      expect(c.activeCharacterId, isNull);
+      expect(c.activeSceneId, isNull);
+      expect(c.activeLocation, isNull);
+    });
+
+    test('round-trips full state', () {
+      const c = PlayContext(
+        activeCharacterId: 'c1',
+        activeSceneId: 's1',
+        activeLocation: LocationRef(roomId: 'r1'),
+      );
+      final back = PlayContext.fromJson(c.toJson());
+      expect(back.activeCharacterId, 'c1');
+      expect(back.activeSceneId, 's1');
+      expect(back.activeLocation?.roomId, 'r1');
+    });
+
+    test('round-trips empty state', () {
+      final back = PlayContext.fromJson(const PlayContext().toJson());
+      expect(back.activeCharacterId, isNull);
+      expect(back.activeLocation, isNull);
+    });
+  });
 }

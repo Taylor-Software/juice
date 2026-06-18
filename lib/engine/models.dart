@@ -1768,6 +1768,34 @@ class LocationRef {
       );
 }
 
+/// The play-state spine: what's "current" in the active campaign. Pointers
+/// are nullable; null means no focus (consumers fall back to defaults).
+class PlayContext {
+  const PlayContext({
+    this.activeCharacterId,
+    this.activeSceneId,
+    this.activeLocation,
+  });
+  final String? activeCharacterId;
+  final String? activeSceneId;
+  final LocationRef? activeLocation;
+
+  Map<String, dynamic> toJson() => {
+        if (activeCharacterId != null) 'activeCharacterId': activeCharacterId,
+        if (activeSceneId != null) 'activeSceneId': activeSceneId,
+        if (activeLocation != null) 'activeLocation': activeLocation!.toJson(),
+      };
+
+  factory PlayContext.fromJson(Map<String, dynamic> j) => PlayContext(
+        activeCharacterId: j['activeCharacterId'] as String?,
+        activeSceneId: j['activeSceneId'] as String?,
+        activeLocation: j['activeLocation'] == null
+            ? null
+            : LocationRef.fromJson(
+                Map<String, dynamic>.from(j['activeLocation'] as Map)),
+      );
+}
+
 /// Persisted map state: dungeon graph + revealed hex field.
 class MapState {
   const MapState({
