@@ -980,6 +980,7 @@ const sessionScopedKeys = [
   'juice.inventory.v1',
   'juice.units.v1',
   'juice.settings.v1',
+  'juice.context.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
