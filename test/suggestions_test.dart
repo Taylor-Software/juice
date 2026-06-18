@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/suggestions.dart';
 
 List<String> ids(List<Suggestion> s) => s.map((e) => e.id).toList();
@@ -76,6 +78,24 @@ void main() {
       expect(run(true, true), contains('make-move'));
       expect(run(true, false), isNot(contains('make-move')));
       expect(run(false, true), isNot(contains('make-move')));
+    });
+  });
+
+  group('fateCheckGenResult', () {
+    test('wraps a FateResult into a journal GenResult', () {
+      const r = FateResult(
+        primary: 1,
+        secondary: 0,
+        side: null,
+        intensityRoll: 3,
+        intensity: 'Moderate',
+        likelihood: Likelihood.normal,
+        result: 'Yes',
+      );
+      final g = fateCheckGenResult(r);
+      expect(g.title, 'Fate Check');
+      expect(g.rolls.map((x) => x.label), containsAll(['Answer', 'Intensity']));
+      expect(g.asText, isNotEmpty);
     });
   });
 }

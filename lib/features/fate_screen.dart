@@ -363,20 +363,7 @@ class _FateResultCard extends ConsumerWidget {
                   tooltip: 'Add to journal',
                   icon: const Icon(Icons.bookmark_add_outlined),
                   onPressed: () {
-                    final g = GenResult(
-                      title: 'Fate Check (${result.likelihood.label})',
-                      summary: result.result,
-                      rolls: [
-                        Roll(
-                            label: 'Answer',
-                            value: result.result,
-                            detail: result.shorthand),
-                        Roll(
-                            label: 'Intensity',
-                            value: result.intensity,
-                            detail: 'd6 ${result.intensityRoll}'),
-                      ],
-                    );
+                    final g = fateCheckGenResult(result);
                     ref.read(journalProvider.notifier).addResult(
                         g.title, g.asText,
                         sourceTool: 'fate-check', payload: g.toPayload());
