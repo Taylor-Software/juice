@@ -5,7 +5,11 @@ import 'package:juice_oracle/features/assistant_rail.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_interpreter.dart';
 
 Future<ProviderContainer> pumpRail(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
@@ -37,5 +41,37 @@ void main() {
     final route = c.read(shellRouteProvider);
     expect(route.destination, Destination.track);
     expect(route.subtab, 'scenes');
+  });
+
+  testWidgets('ask-the-GM writes a Q&A journal entry via the fake',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+      'juice.threads.v1.default': '[]',
+    });
+    final fake = FakeInterpreterService(
+      initial: const InterpreterStatus(InterpreterPhase.ready),
+    )..queuedAskGm.add('The door is barred from within.');
+    final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWith((ref) => fake),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: AssistantRail()))));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
+    await tester.tap(find.byKey(const Key('ask-gm-send')));
+    await tester.pumpAndSettle();
+
+    expect(fake.askGmCalls, 1);
+    final entries = await c.read(journalProvider.future);
+    expect(entries.first.body, contains('The door is barred from within.'));
+    expect(entries.first.body, contains('Locked?'));
   });
 }

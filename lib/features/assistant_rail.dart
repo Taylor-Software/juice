@@ -3,39 +3,66 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../state/interpreter.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
 
 /// The assistant strip atop the Journal verb: rule-based suggestion chips
-/// (plus the ask-the-GM box, added in a later task).
-class AssistantRail extends ConsumerWidget {
+/// plus a budget-safe ask-the-GM box.
+class AssistantRail extends ConsumerStatefulWidget {
   const AssistantRail({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final suggestions =
-        ref.watch(suggestionsProvider); // plain List<Suggestion>
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          for (final s in suggestions)
-            ActionChip(
-              key: Key('suggest-${s.id}'),
-              label: Text(s.label),
-              onPressed: () => _onTap(context, ref, s),
-            ),
-        ],
-      ),
-    );
+  ConsumerState<AssistantRail> createState() => _AssistantRailState();
+}
+
+class _AssistantRailState extends ConsumerState<AssistantRail> {
+  final TextEditingController _controller = TextEditingController();
+  bool _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
-  void _onTap(BuildContext context, WidgetRef ref, Suggestion s) {
+  Future<void> _ask() async {
+    final q = _controller.text.trim();
+    if (q.isEmpty) return;
+    final service = ref.read(interpreterServiceProvider);
+    if (service.status.value.phase != InterpreterPhase.ready) {
+      setState(() => _error = 'Assistant not ready.');
+      return;
+    }
+    final entries = ref.read(journalProvider).valueOrNull ?? const [];
+    final scene = entries
+        .where((e) => e.kind == JournalKind.scene)
+        .map((e) => e.title)
+        .firstOrNull;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final answer =
+          await service.askGm(AskGmSeed(question: q, sceneTitle: scene));
+      await ref
+          .read(journalProvider.notifier)
+          .addResult('Ask the GM', 'Q: $q\n\n$answer', sourceTool: 'ask-gm');
+      _controller.clear();
+    } catch (_) {
+      if (mounted) setState(() => _error = 'Could not reach the assistant.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _onTap(Suggestion s) {
     final route = ref.read(shellRouteProvider.notifier);
     switch (s.id) {
       case 'roll-oracle':
@@ -57,5 +84,64 @@ class AssistantRail extends ConsumerWidget {
       case 'make-move':
         route.goTo(Destination.sheet, subtab: 'moves');
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final suggestions =
+        ref.watch(suggestionsProvider); // plain List<Suggestion>
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final s in suggestions)
+                ActionChip(
+                  key: Key('suggest-${s.id}'),
+                  label: Text(s.label),
+                  onPressed: () => _onTap(s),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('ask-gm-field'),
+                  controller: _controller,
+                  decoration: const InputDecoration(
+                    hintText: 'Ask the GM…',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _busy ? null : _ask(),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                key: const Key('ask-gm-send'),
+                icon: const Icon(Icons.send),
+                tooltip: 'Ask the GM',
+                onPressed: _busy ? null : _ask,
+              ),
+            ],
+          ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                _error!,
+                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
