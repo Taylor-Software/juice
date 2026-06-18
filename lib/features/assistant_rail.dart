@@ -24,6 +24,9 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
   final TextEditingController _controller = TextEditingController();
   bool _busy = false;
   String? _error;
+  // Collapsed by default: a thin header keeps the journal primary; one tap
+  // reveals the suggestion chips + ask-the-GM box.
+  bool _expanded = false;
 
   @override
   void dispose() {
@@ -91,57 +94,83 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     final suggestions =
         ref.watch(suggestionsProvider); // plain List<Suggestion>
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final s in suggestions)
-                ActionChip(
-                  key: Key('suggest-${s.id}'),
-                  label: Text(s.label),
-                  onPressed: () => _onTap(s),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('ask-gm-field'),
-                  controller: _controller,
-                  decoration: const InputDecoration(
-                    hintText: 'Ask the GM…',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _busy ? null : _ask(),
-                ),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                key: const Key('ask-gm-send'),
-                icon: const Icon(Icons.send),
-                tooltip: 'Ask the GM',
-                onPressed: _busy ? null : _ask,
-              ),
-            ],
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                _error!,
-                style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Thin always-present header: tap to expand/collapse the assistant.
+        InkWell(
+          key: const Key('assistant-expand'),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
+            child: Row(
+              children: [
+                Icon(Icons.auto_awesome,
+                    size: 16, color: theme.colorScheme.primary),
+                const SizedBox(width: 6),
+                const Text('Assistant'),
+                const Spacer(),
+                Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                    size: 18),
+              ],
             ),
-        ],
-      ),
+          ),
+        ),
+        if (_expanded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final s in suggestions)
+                      ActionChip(
+                        key: Key('suggest-${s.id}'),
+                        label: Text(s.label),
+                        onPressed: () => _onTap(s),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('ask-gm-field'),
+                        controller: _controller,
+                        decoration: const InputDecoration(
+                          hintText: 'Ask the GM…',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        onSubmitted: (_) => _busy ? null : _ask(),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      key: const Key('ask-gm-send'),
+                      icon: const Icon(Icons.send),
+                      tooltip: 'Ask the GM',
+                      onPressed: _busy ? null : _ask,
+                    ),
+                  ],
+                ),
+                if (_error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      _error!,
+                      style: TextStyle(
+                          color: theme.colorScheme.error, fontSize: 12),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

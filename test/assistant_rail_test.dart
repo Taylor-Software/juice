@@ -28,14 +28,24 @@ Future<ProviderContainer> pumpRail(WidgetTester tester) async {
   return c;
 }
 
+/// The rail is collapsed by default; reveal the chips + ask box.
+Future<void> expandRail(WidgetTester tester) async {
+  await tester.tap(find.byKey(const Key('assistant-expand')));
+  await tester.pumpAndSettle();
+}
+
 void main() {
-  testWidgets('renders the always-on oracle chip', (tester) async {
+  testWidgets('collapsed by default; chips hidden until expanded',
+      (tester) async {
     await pumpRail(tester);
+    expect(find.text('Roll the oracle'), findsNothing);
+    await expandRail(tester);
     expect(find.text('Roll the oracle'), findsOneWidget);
   });
 
   testWidgets('navigate chip routes via shellRouteProvider', (tester) async {
     final c = await pumpRail(tester); // empty campaign → start-scene present
+    await expandRail(tester);
     await tester.tap(find.text('Start a scene'));
     await tester.pumpAndSettle();
     final route = c.read(shellRouteProvider);
@@ -65,6 +75,7 @@ void main() {
             home: const Scaffold(body: AssistantRail()))));
     await tester.pumpAndSettle();
 
+    await expandRail(tester);
     await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
     await tester.tap(find.byKey(const Key('ask-gm-send')));
     await tester.pumpAndSettle();
