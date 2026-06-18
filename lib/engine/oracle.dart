@@ -6,7 +6,7 @@ import 'oracle_data.dart';
 /// and the assistant rail's inline "Roll the oracle" so the mapping lives once.
 GenResult fateCheckGenResult(FateResult result) {
   return GenResult(
-    title: 'Fate Check',
+    title: 'Fate Check (${result.likelihood.label})',
     summary: result.result,
     rolls: [
       Roll(label: 'Answer', value: result.result, detail: result.shorthand),

@@ -93,7 +93,7 @@ void main() {
         result: 'Yes',
       );
       final g = fateCheckGenResult(r);
-      expect(g.title, 'Fate Check');
+      expect(g.title, 'Fate Check (Normal)');
       expect(g.rolls.map((x) => x.label), containsAll(['Answer', 'Intensity']));
       expect(g.asText, isNotEmpty);
     });
