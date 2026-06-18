@@ -19,6 +19,7 @@ import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
 import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'oracle_interpretation_sheet.dart';
 
@@ -1183,9 +1184,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     }
   }
 
-  void _openCharacter(String id) => ref
-      .read(shellRouteProvider.notifier)
-      .goTo(Destination.sheet, subtab: 'characters');
+  void _openCharacter(String id) {
+    ref.read(playContextProvider.notifier).setActiveCharacter(id);
+    ref
+        .read(shellRouteProvider.notifier)
+        .goTo(Destination.sheet, subtab: 'characters');
+  }
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
 

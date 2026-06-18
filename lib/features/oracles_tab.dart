@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
+import '../state/providers.dart';
 import 'fate_screen.dart';
 import 'generators_screen.dart';
 import 'tables_screen.dart';
@@ -15,6 +16,12 @@ class OraclesTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // resolvedSystemProvider depends on the async sessionsProvider; gate on it
+    // so SubtabHost is constructed exactly once with the correct initialTabIndex.
+    final sessionsAsync = ref.watch(sessionsProvider);
+    if (!sessionsAsync.hasValue) {
+      return const Center(child: CircularProgressIndicator());
+    }
     final lonelog = systems.contains('lonelog');
     final tabs = <SubtabDef>[
       const SubtabDef('oracle', 'Oracle'),
@@ -32,7 +39,8 @@ class OraclesTab extends ConsumerWidget {
     ];
     // D&D / Shadowdark lean on dice tables, not the yes/no oracle — open Ask
     // on Tables for them; everyone else lands on Oracle.
-    final dice = systems.contains('dnd') || systems.contains('shadowdark');
+    final resolved = ref.watch(resolvedSystemProvider);
+    final dice = resolved == 'dnd' || resolved == 'shadowdark';
     final initial = dice ? tabs.indexWhere((t) => t.key == 'tables') : 0;
     return SubtabHost(
       destination: Destination.ask,

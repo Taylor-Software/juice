@@ -124,14 +124,33 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Id of the character whose sheet is open, or null for the list view.
   String? _editingId;
 
+  /// Guards the one-time initial focus from the persisted context.
+  bool _initialFocusApplied = false;
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      playContextProvider.select((v) => v.valueOrNull?.activeCharacterId),
+      (prev, next) {
+        if (next != null && next != _editingId && mounted) {
+          setState(() => _editingId = next);
+        }
+      },
+    );
     final async = ref.watch(charactersProvider);
     return Scaffold(
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (chars) {
+          if (!_initialFocusApplied) {
+            _initialFocusApplied = true;
+            final active =
+                ref.read(playContextProvider).valueOrNull?.activeCharacterId;
+            if (active != null && chars.any((c) => c.id == active)) {
+              _editingId = active;
+            }
+          }
           if (_editingId != null) {
             // Resolve fresh each build; if the id vanished (e.g. session
             // switch), fall back to the list view.
