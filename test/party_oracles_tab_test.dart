@@ -20,9 +20,7 @@ void main() {
       'Oracles tab shows Oracle/Generators/Tables; Moves hidden with empty family',
       (t) async {
     await t.pumpWidget(ProviderScope(
-      child: MaterialApp(
-          home:
-              Scaffold(body: OraclesTab(oracle: _oracle(), family: const []))),
+      child: MaterialApp(home: Scaffold(body: OraclesTab(oracle: _oracle()))),
     ));
     await t.pumpAndSettle();
     expect(find.widgetWithText(Tab, 'Oracle'), findsOneWidget);

@@ -14,6 +14,7 @@ class SheetTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Empty family: no SubtabHost, so a goTo(Destination.sheet, subtab: 'characters') request resolves here harmlessly — CharactersPane is the whole pane.
     if (family.isEmpty) return const CharactersPane();
     return SubtabHost(
       destination: Destination.sheet,

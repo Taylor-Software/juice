@@ -61,10 +61,8 @@ void main() {
         child: MaterialApp(
             theme: AppTheme.light(),
             home: Scaffold(
-                body: OraclesTab(
-                    oracle: testOracle,
-                    family: const [],
-                    systems: const {'dnd'})))));
+                body:
+                    OraclesTab(oracle: testOracle, systems: const {'dnd'})))));
     await tester.pumpAndSettle();
     // Tables tab is selected: its pane content (the Dis/—/Adv skew control,
     // unique to TablesScreen) is the visible IndexedStack child.

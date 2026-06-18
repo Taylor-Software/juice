@@ -300,9 +300,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
-  List<Destination> _visibleDestinations(
-          Set<String> systems, List<String> family) =>
-      const [
+  List<Destination> _visibleDestinations() => const [
         Destination.journal,
         Destination.sheet,
         Destination.ask,
@@ -317,8 +315,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       case Destination.sheet:
         return SheetTab(family: family);
       case Destination.ask:
-        return OraclesTab(
-            oracle: widget.oracle, family: family, systems: systems);
+        return OraclesTab(oracle: widget.oracle, systems: systems);
       case Destination.map:
         return MapsTab(oracle: widget.oracle, systems: systems);
       case Destination.track:
@@ -330,7 +327,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       BuildContext context, List<String> family, Set<String> systems) {
     final route = ref.watch(shellRouteProvider);
     final split = ref.watch(splitViewProvider).valueOrNull ?? false;
-    final destinations = _visibleDestinations(systems, family);
+    final destinations = _visibleDestinations();
     final index = destinations
         .indexOf(route.destination)
         .clamp(0, destinations.length - 1);

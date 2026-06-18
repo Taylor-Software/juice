@@ -9,13 +9,8 @@ import 'tables_screen.dart';
 import 'lonelog_reference_screen.dart';
 
 class OraclesTab extends ConsumerWidget {
-  const OraclesTab(
-      {super.key,
-      required this.oracle,
-      required this.family,
-      this.systems = const {}});
+  const OraclesTab({super.key, required this.oracle, this.systems = const {}});
   final Oracle oracle;
-  final List<String> family;
   final Set<String> systems;
 
   @override

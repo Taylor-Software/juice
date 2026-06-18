@@ -34,10 +34,14 @@ class SubtabHost extends ConsumerStatefulWidget {
 
 class _SubtabHostState extends ConsumerState<SubtabHost>
     with TickerProviderStateMixin {
+  int get _initialIndex {
+    final len = widget.tabs.length;
+    assert(len > 0, 'SubtabHost requires at least one tab');
+    return len == 0 ? 0 : widget.initialTabIndex.clamp(0, len - 1);
+  }
+
   late TabController _controller = TabController(
-      length: widget.tabs.length,
-      vsync: this,
-      initialIndex: widget.initialTabIndex.clamp(0, widget.tabs.length - 1));
+      length: widget.tabs.length, vsync: this, initialIndex: _initialIndex);
 
   @override
   void didUpdateWidget(SubtabHost old) {
@@ -45,10 +49,7 @@ class _SubtabHostState extends ConsumerState<SubtabHost>
     if (old.tabs.length != widget.tabs.length) {
       _controller.dispose();
       _controller = TabController(
-          length: widget.tabs.length,
-          vsync: this,
-          initialIndex:
-              widget.initialTabIndex.clamp(0, widget.tabs.length - 1));
+          length: widget.tabs.length, vsync: this, initialIndex: _initialIndex);
     }
   }
 
