@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/assistant_rail.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
@@ -10,6 +15,11 @@ import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
+
+// Reads the real asset via dart:io (not rootBundle), so no test hang.
+Oracle _oracle() => Oracle(OracleData(
+    jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+        as Map<String, dynamic>));
 
 Future<ProviderContainer> pumpRail(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
@@ -41,6 +51,44 @@ void main() {
     expect(find.text('Roll the oracle'), findsNothing);
     await expandRail(tester);
     expect(find.text('Roll the oracle'), findsOneWidget);
+  });
+
+  testWidgets('inline oracle chip writes a result to the journal',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+      'juice.threads.v1.default': '[]',
+    });
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: AssistantRail()))));
+    await tester.pumpAndSettle();
+    await c.read(oracleProvider.future); // resolve the FutureProvider first
+    await expandRail(tester);
+    await tester.tap(find.text('Roll the oracle'));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.sourceTool, 'fate-check');
+    expect(entries.first.title, contains('Fate Check'));
+  });
+
+  testWidgets('inline chip before oracle loads is a safe no-op',
+      (tester) async {
+    final c = await pumpRail(tester); // oracleProvider not overridden
+    await expandRail(tester);
+    await tester.tap(find.text('Roll the oracle'));
+    await tester.pump();
+    // Oracle data isn't loaded in this harness → guarded skip, no entry, no throw.
+    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
   });
 
   testWidgets('navigate chip routes via shellRouteProvider', (tester) async {

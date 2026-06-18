@@ -57,7 +57,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
       await ref
           .read(journalProvider.notifier)
           .addResult('Ask the GM', 'Q: $q\n\n$answer', sourceTool: 'ask-gm');
-      _controller.clear();
+      if (mounted) _controller.clear();
     } catch (_) {
       if (mounted) setState(() => _error = 'Could not reach the assistant.');
     } finally {
@@ -69,12 +69,14 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     final route = ref.read(shellRouteProvider.notifier);
     switch (s.id) {
       case 'roll-oracle':
-        final oracle = ref.read(oracleProvider).requireValue;
+        final oracle = ref.read(oracleProvider).valueOrNull;
+        if (oracle == null) return; // oracle data still loading: skip safely
         final g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
         ref.read(journalProvider.notifier).addResult(g.title, g.asText,
             sourceTool: 'fate-check', payload: g.toPayload());
       case 'scene-event':
-        final oracle = ref.read(oracleProvider).requireValue;
+        final oracle = ref.read(oracleProvider).valueOrNull;
+        if (oracle == null) return; // oracle data still loading: skip safely
         final g = oracle.randomEvent();
         ref.read(journalProvider.notifier).addResult(g.title, g.asText,
             sourceTool: 'mythic', payload: g.toPayload());
@@ -98,21 +100,25 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Thin always-present header: tap to expand/collapse the assistant.
-        InkWell(
-          key: const Key('assistant-expand'),
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 12, 6),
-            child: Row(
-              children: [
-                Icon(Icons.auto_awesome,
-                    size: 16, color: theme.colorScheme.primary),
-                const SizedBox(width: 6),
-                const Text('Assistant'),
-                const Spacer(),
-                Icon(_expanded ? Icons.expand_less : Icons.expand_more,
-                    size: 18),
-              ],
+        Semantics(
+          button: true,
+          label: _expanded ? 'Collapse assistant' : 'Expand assistant',
+          child: InkWell(
+            key: const Key('assistant-expand'),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              child: Row(
+                children: [
+                  Icon(Icons.auto_awesome,
+                      size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 6),
+                  const Text('Assistant'),
+                  const Spacer(),
+                  Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18),
+                ],
+              ),
             ),
           ),
         ),
