@@ -12,7 +12,6 @@ import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
 import '../features/maps_tab.dart';
 import '../features/oracles_tab.dart';
-import '../features/party_tab.dart';
 import '../features/sheet_tab.dart';
 import '../features/tracking_tab.dart';
 import '../state/interpreter.dart';
