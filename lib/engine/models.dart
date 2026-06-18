@@ -1522,16 +1522,19 @@ class EncounterState {
   final int round;
   final LocationRef? locationRef;
 
-  EncounterState copyWith(
-          {List<Combatant>? combatants,
-          int? turnIndex,
-          int? round,
-          LocationRef? locationRef}) =>
+  EncounterState copyWith({
+    List<Combatant>? combatants,
+    int? turnIndex,
+    int? round,
+    LocationRef? locationRef,
+    bool clearLocationRef = false,
+  }) =>
       EncounterState(
         combatants: combatants ?? this.combatants,
         turnIndex: turnIndex ?? this.turnIndex,
         round: round ?? this.round,
-        locationRef: locationRef ?? this.locationRef,
+        locationRef:
+            clearLocationRef ? null : (locationRef ?? this.locationRef),
       );
 
   Map<String, dynamic> toJson() => {

@@ -48,4 +48,26 @@ void main() {
     expect(ctx.activeCharacterId, isNull);
     expect(ctx.activeSceneId, 's1');
   });
+
+  test('context is scoped per session id', () async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"a","sessions":[{"id":"a","name":"A"},{"id":"b","name":"B"}]}',
+      'juice.context.v1.a': '{"activeCharacterId":"ca"}',
+      'juice.context.v1.b': '{"activeCharacterId":"cb"}',
+    });
+    final ca = ProviderContainer();
+    addTearDown(ca.dispose);
+    expect((await ca.read(playContextProvider.future)).activeCharacterId, 'ca');
+
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"b","sessions":[{"id":"a","name":"A"},{"id":"b","name":"B"}]}',
+      'juice.context.v1.a': '{"activeCharacterId":"ca"}',
+      'juice.context.v1.b': '{"activeCharacterId":"cb"}',
+    });
+    final cb = ProviderContainer();
+    addTearDown(cb.dispose);
+    expect((await cb.read(playContextProvider.future)).activeCharacterId, 'cb');
+  });
 }

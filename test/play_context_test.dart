@@ -80,5 +80,10 @@ void main() {
       final back = EncounterState.fromJson(e.toJson());
       expect(back.locationRef?.roomId, 'r2');
     });
+    test('copyWith can clear the location', () {
+      const e = EncounterState(locationRef: LocationRef(roomId: 'r1'));
+      expect(e.copyWith(clearLocationRef: true).locationRef, isNull);
+      expect(e.copyWith().locationRef?.roomId, 'r1'); // unchanged when omitted
+    });
   });
 }
