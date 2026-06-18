@@ -56,4 +56,19 @@ void main() {
     await t.pumpAndSettle();
     expect(find.text('PANE B'), findsOneWidget);
   });
+
+  testWidgets('opens on initialTabIndex', (tester) async {
+    await tester.pumpWidget(const ProviderScope(
+      child: MaterialApp(
+        home: SubtabHost(
+          destination: Destination.tracking,
+          initialTabIndex: 1,
+          tabs: [SubtabDef('a', 'A'), SubtabDef('b', 'B')],
+          children: [Text('PANE-A'), Text('PANE-B')],
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('B'), findsOneWidget);
+  });
 }
