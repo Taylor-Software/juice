@@ -1055,7 +1055,22 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final updated = [
       for (final m in s.sessions)
         if (m.id == id)
-          SessionMeta(id: m.id, name: m.name, systems: systems.toList())
+          SessionMeta(
+              id: m.id, name: m.name, systems: systems.toList(), mode: m.mode)
+        else
+          m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
+  }
+
+  /// Set the player-focus mode for session [id]. Preserves systems.
+  Future<void> setMode(String id, CampaignMode mode) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id)
+          SessionMeta(id: m.id, name: m.name, systems: m.systems, mode: mode)
         else
           m,
     ];
@@ -1171,6 +1186,10 @@ final launcherGateProvider =
 
 final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
     SessionsNotifier.new);
+
+final modeProvider = Provider<CampaignMode>((ref) =>
+    ref.watch(sessionsProvider).valueOrNull?.activeMeta.mode ??
+    CampaignMode.party);
 
 // -- Enabled rulesets (global, not session-scoped) ---------------------------
 class RulesetsNotifier extends AsyncNotifier<Set<String>> {

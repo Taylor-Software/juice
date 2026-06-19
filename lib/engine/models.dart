@@ -2148,14 +2148,28 @@ class CrawlState {
 /// tracker, and help are always available (core).
 const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 
+/// The player's current focus for a campaign: running the world (gm) or
+/// playing their character(s) (party). Declutters role-specific sub-options.
+enum CampaignMode { gm, party }
+
+CampaignMode _modeFromName(String? n) =>
+    n == 'gm' ? CampaignMode.gm : CampaignMode.party;
+
 /// A campaign/session: an isolated journal, threads, characters, crawl.
 class SessionMeta {
-  const SessionMeta({required this.id, required this.name, this.systems});
+  const SessionMeta(
+      {required this.id,
+      required this.name,
+      this.systems,
+      this.mode = CampaignMode.party});
   final String id;
   final String name;
 
   /// Enabled optional systems; null means all (legacy campaigns).
   final List<String>? systems;
+
+  /// Player focus mode (default party; legacy campaigns → party).
+  final CampaignMode mode;
 
   /// Resolved set: the declared systems, or every system when unset.
   Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
@@ -2164,12 +2178,14 @@ class SessionMeta {
         'id': id,
         'name': name,
         if (systems != null) 'systems': systems,
+        if (mode != CampaignMode.party) 'mode': mode.name,
       };
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
         id: j['id'] as String,
         name: j['name'] as String,
         systems: (j['systems'] as List?)?.whereType<String>().toList(),
+        mode: _modeFromName(j['mode'] as String?),
       );
 }
 
