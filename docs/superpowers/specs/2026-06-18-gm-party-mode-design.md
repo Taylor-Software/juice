@@ -110,6 +110,28 @@ providers rebuild → subtabs re-filter.
   (existing behavior) so it falls back to the first visible tab — no crash.
 - Mode toggle while data loading: reads `valueOrNull` with `party` fallback.
 
+## Extension: tool-discovery surfaces (shipped)
+
+The tab-bar filtering above declutters the visible subtabs, but the parallel
+discovery/navigation surfaces were not mode-aware: in GM mode the party-only
+tools (party-emulator/sidekick/behavior + moves) and in Party mode the GM-only
+Rumors stayed discoverable yet navigated to a now-hidden subtab (SubtabHost
+clamps → silent mis-land on the wrong/first tab). Closed by reusing
+`visibleForMode` keyed on each tool's `toolLocation` subtab:
+
+- `buildToolRegistry({..., CampaignMode mode = party})` drops a tool when its
+  `toolLocation` subtab is role-hidden in `mode` (tab-homeless dice/help are
+  mode-neutral). Threaded from the `home_shell` search-sheet call site.
+- `ShellRouteNotifier.openTool(id, {CampaignMode? mode})` returns false when the
+  resolved subtab is hidden for `mode`, so the caller's "Tool not available"
+  snackbar fires instead of mis-landing. Wired at `journal_screen._openTool`
+  (covers the journal source-chip re-open of an off-mode tool) and
+  `tool_search_sheet._open`.
+- `suggestionsFor({..., required bool partyMode})` gates the `make-move`
+  suggestion (targets sheet/moves, party-only); `suggestionsProvider` passes
+  `mode == party`. (Partially resolves the per-mode assistant-suggestions
+  deferral.)
+
 ## Testing
 
 - `role_tags_test.dart` — `visibleForMode` truth table; the tag map has the
@@ -124,6 +146,12 @@ providers rebuild → subtabs re-filter.
   non-empty); GM mode (family non-empty) shows the bare roster.
 - `home_shell` test — the `mode-toggle` flips mode + persists; (landing default
   if kept) opening a GM campaign lands on Journal.
+- `tool_registry_test` — GM drops party tools + moves; Party keeps them; mode
+  defaults to party.
+- `shell_route_test` — `openTool` returns false (no nav) for a mode-hidden
+  subtab, true when visible, ignores gating when no mode is passed.
+- `suggestions_test` / `suggestions_provider_test` — `make-move` needs
+  family + focus character + party mode; absent in GM.
 - Full suite green; `dart format` + `flutter analyze` clean.
 
 ## Docs

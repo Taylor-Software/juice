@@ -53,7 +53,9 @@ class _ToolSearchSheetState extends ConsumerState<_ToolSearchSheet> {
       openHelp(context, ref);
       return;
     }
-    ref.read(shellRouteProvider.notifier).openTool(t.id);
+    ref
+        .read(shellRouteProvider.notifier)
+        .openTool(t.id, mode: ref.read(modeProvider));
     Navigator.of(context).pop();
   }
 

@@ -298,6 +298,20 @@ class CharacterNotifier extends _PersistedList<Character> {
     ]);
   }
 
+  Future<void> setRole(String id, CharacterRole role) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null) return;
+    await replace(c.copyWith(role: role));
+  }
+
+  Future<void> setConditions(String id, List<String> conditions) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null) return;
+    await replace(c.copyWith(conditions: conditions));
+  }
+
   Future<void> remove(String id) async {
     await _persist((await _ready).where((c) => c.id != id).toList());
   }

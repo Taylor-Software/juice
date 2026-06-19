@@ -1973,6 +1973,30 @@ class CharacterEmulation {
   }
 }
 
+enum CharacterRole { pc, companion, npc }
+
+CharacterRole _roleFromName(String? n) => switch (n) {
+      'companion' => CharacterRole.companion,
+      'npc' => CharacterRole.npc,
+      _ => CharacterRole.pc,
+    };
+
+/// Authored, system-agnostic status conditions (facts-only). Free-text custom
+/// conditions are also allowed.
+const kConditions = <String>[
+  'poisoned',
+  'hurt',
+  'afraid',
+  'hidden',
+  'prone',
+  'restrained',
+  'stunned',
+  'exhausted',
+  'sick',
+  'marked',
+  'blessed',
+];
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
@@ -1989,6 +2013,8 @@ class Character {
     this.dnd,
     this.shadowdark,
     this.starred = false,
+    this.role = CharacterRole.pc,
+    this.conditions = const [],
   });
   final String id;
   final String name;
@@ -2015,6 +2041,12 @@ class Character {
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
+  /// Roster role: pc (default), companion, or npc. Omitted from JSON when pc.
+  final CharacterRole role;
+
+  /// Active status conditions (system-agnostic). Omitted from JSON when empty.
+  final List<String> conditions;
+
   /// Lists are replaced wholesale when provided; null keeps the current list.
   Character copyWith({
     String? name,
@@ -2033,6 +2065,8 @@ class Character {
     ShadowdarkSheet? shadowdark,
     bool clearShadowdark = false,
     bool? starred,
+    CharacterRole? role,
+    List<String>? conditions,
   }) =>
       Character(
         id: id,
@@ -2047,10 +2081,13 @@ class Character {
         dnd: clearDnd ? null : (dnd ?? this.dnd),
         shadowdark: clearShadowdark ? null : (shadowdark ?? this.shadowdark),
         starred: starred ?? this.starred,
+        role: role ?? this.role,
+        conditions: conditions ?? this.conditions,
       );
 
-  /// 'emulation' and 'starred' are written only when non-null/true so existing
-  /// characters and campaign files stay byte-stable until the features are used.
+  /// 'emulation', 'starred', 'role', and 'conditions' are written only when
+  /// non-null/non-default so existing characters and campaign files stay
+  /// byte-stable until the features are used.
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
@@ -2064,6 +2101,8 @@ class Character {
         if (dnd != null) 'dnd': dnd!.toJson(),
         if (shadowdark != null) 'shadowdark': shadowdark!.toJson(),
         if (starred) 'starred': true,
+        if (role != CharacterRole.pc) 'role': role.name,
+        if (conditions.isNotEmpty) 'conditions': conditions,
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -2085,6 +2124,10 @@ class Character {
         dnd: DndSheet.maybeFromJson(j['dnd']),
         shadowdark: ShadowdarkSheet.maybeFromJson(j['shadowdark']),
         starred: (j['starred'] as bool?) ?? false,
+        role: _roleFromName(j['role'] as String?),
+        conditions: ((j['conditions'] as List?) ?? const [])
+            .whereType<String>()
+            .toList(),
       );
 }
 

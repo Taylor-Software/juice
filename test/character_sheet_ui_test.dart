@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
@@ -1157,5 +1158,106 @@ void main() {
         find.descendant(of: dialog, matching: find.byType(TextField)).first;
     final tf = tester.widget<TextField>(nameField);
     expect(tf.controller!.text.trim(), isNotEmpty);
+  });
+
+  // -- Task 3: grouped roster + role dropdown --
+
+  testWidgets('roster groups by role with headers', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]},'
+              '{"id":"n1","name":"Veyra","role":"npc","stats":[],"tracks":[],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    expect(find.text('Party'), findsOneWidget);
+    expect(find.text('NPCs'), findsOneWidget);
+    expect(find.text('Companions'), findsNothing); // empty group hidden
+  });
+
+  testWidgets('role dropdown re-tags a character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+    await tester.tap(find.byKey(const Key('role-p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NPC').last);
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.role,
+        CharacterRole.npc);
+  });
+
+  // -- Task 4: condition badges + inline editor --
+
+  testWidgets('condition badges show and inline editor toggles them',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[],'
+              '"conditions":["poisoned"]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+    expect(find.text('poisoned'), findsWidgets); // badge on the row
+    await tester.tap(find.byKey(const Key('conditions-p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('hidden')); // toggle a preset on in the editor
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    final ch = (await c.read(charactersProvider.future)).single;
+    expect(ch.conditions, containsAll(['poisoned', 'hidden']));
+  });
+
+  // -- Task 5: Generate NPC → npc role --
+
+  testWidgets('Generate NPC creates an npc-role character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-npc')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.role,
+        CharacterRole.npc);
   });
 }
