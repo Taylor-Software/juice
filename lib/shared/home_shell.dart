@@ -434,6 +434,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final systems =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
+    final mode = ref.watch(modeProvider);
     final family = !systems.contains('ironsworn')
         ? const <String>[]
         : [
@@ -542,6 +543,25 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               tooltip: split ? 'Single pane' : 'Split with journal',
               onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
             ),
+          IconButton(
+            key: const Key('mode-toggle'),
+            icon: Icon(mode == CampaignMode.gm
+                ? Icons.castle_outlined
+                : Icons.groups_outlined),
+            tooltip: mode == CampaignMode.gm
+                ? 'GM mode (tap for Party)'
+                : 'Party mode (tap for GM)',
+            onPressed: () {
+              final sessions = ref.read(sessionsProvider).valueOrNull;
+              if (sessions == null) return;
+              final next = mode == CampaignMode.gm
+                  ? CampaignMode.party
+                  : CampaignMode.gm;
+              ref
+                  .read(sessionsProvider.notifier)
+                  .setMode(sessions.active, next);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',

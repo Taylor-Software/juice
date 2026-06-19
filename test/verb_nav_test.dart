@@ -12,6 +12,7 @@ import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/features/tracking_tab.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/play_context.dart';
+import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final testOracle = Oracle(OracleData(
@@ -135,5 +136,57 @@ void main() {
     // List is shown and does NOT immediately re-open.
     expect(find.text('Ash'), findsOneWidget);
     expect(find.byKey(const Key('sheet-back')), findsNothing);
+  });
+
+  testWidgets('Sheet shows Moves only in party mode', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1","mode":"gm"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: SheetTab(family: ['classic'])))));
+    await tester.pumpAndSettle();
+    // GM mode + family non-empty: Moves hidden → bare roster (no Moves tab).
+    expect(find.text('Moves'), findsNothing);
+    expect(find.byType(CharactersPane), findsOneWidget);
+  });
+
+  testWidgets('Sheet shows Moves in party mode (positive case)',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final fixture = {
+      'meta': {
+        'title': 'Ironsworn',
+        'authors': ['Shawn Tomkin'],
+        'license': 'https://creativecommons.org/licenses/by/4.0',
+      },
+      'move_categories': <dynamic>[],
+      'oracle_collections': <dynamic>[],
+      'asset_collections': <dynamic>[],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('classic').overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: SheetTab(family: ['classic'])))));
+    await tester.pumpAndSettle();
+    // Party mode (default) + family non-empty: Characters + Moves subtabs shown.
+    expect(find.text('Moves'), findsOneWidget);
   });
 }
