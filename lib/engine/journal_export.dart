@@ -103,6 +103,9 @@ String _entryBlock(
       }
     case JournalKind.text:
       lines.add(html ? '<p>${_escBody(plainBody)}</p>' : plainBody);
+    case JournalKind.sketch:
+      // Sketches are vector-only; export as a placeholder label.
+      lines.add(html ? '<p><em>[Sketch]</em></p>' : '[Sketch]');
   }
   if (e.threadId != null) {
     final title = threadTitles[e.threadId] ?? '(closed thread)';

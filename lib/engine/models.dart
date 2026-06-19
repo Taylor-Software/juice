@@ -76,8 +76,9 @@ class GenResult {
       };
 }
 
-/// Kind of journal entry: player prose, a tool result, or a scene divider.
-enum JournalKind { text, result, scene }
+/// Kind of journal entry: player prose, a tool result, a scene divider, or a
+/// freehand sketch.
+enum JournalKind { text, result, scene, sketch }
 
 /// Persisted journal entry (formerly LogEntry; old JSON parses as `result`).
 class JournalEntry {
@@ -120,6 +121,7 @@ class JournalEntry {
     String? threadId,
     bool clearThreadId = false,
     List<String>? tags,
+    Map<String, dynamic>? payload,
   }) =>
       JournalEntry(
         id: id,
@@ -131,7 +133,7 @@ class JournalEntry {
         chaosFactor: chaosFactor,
         tags: tags ?? this.tags,
         sourceTool: sourceTool,
-        payload: payload,
+        payload: payload ?? this.payload,
       );
 
   Map<String, dynamic> toJson() => {

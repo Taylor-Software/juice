@@ -265,4 +265,29 @@ void main() {
     expect(entries.first.payload!['summary'], '3d6 = 11');
     expect(entries.first.kind, JournalKind.result);
   });
+
+  test('JournalKind.sketch round-trips', () {
+    final e = JournalEntry(
+        id: 's1',
+        timestamp: DateTime(2026),
+        title: 'Sketch',
+        body: '',
+        kind: JournalKind.sketch,
+        payload: const {'v': 1, 'sketch': {}});
+    final back = JournalEntry.fromJson(e.toJson());
+    expect(back.kind, JournalKind.sketch);
+    expect(back.payload?['v'], 1);
+  });
+
+  test('copyWith(payload:) replaces, omitted keeps', () {
+    final e = JournalEntry(
+        id: 's1',
+        timestamp: DateTime(2026),
+        title: 'S',
+        body: '',
+        kind: JournalKind.sketch,
+        payload: const {'a': 1});
+    expect(e.copyWith(payload: const {'b': 2}).payload, const {'b': 2});
+    expect(e.copyWith(title: 'X').payload, const {'a': 1});
+  });
 }

@@ -660,6 +660,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
           ),
         );
+      case JournalKind.sketch:
+        // Interim placeholder — replaced in Task 5 with inline thumbnail.
+        return const SizedBox.shrink();
     }
   }
 

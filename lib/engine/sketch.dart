@@ -15,8 +15,8 @@ class SketchStroke {
   factory SketchStroke.fromJson(Map<String, dynamic> j) => SketchStroke(
         color: (j['c'] as num?)?.toInt() ?? 0xFF000000,
         width: (j['w'] as num?)?.toDouble() ?? 3,
-        points: ((j['p'] as List?) ?? const [])
-            .whereType<List>()
+        points: ((j['p'] as List?) ?? const <dynamic>[])
+            .whereType<List<dynamic>>()
             .map((pt) => pt.whereType<num>().map((n) => n.toDouble()).toList())
             .where((pt) => pt.length == 2)
             .toList(),
@@ -46,10 +46,11 @@ class SketchData {
   factory SketchData.fromJson(Map<String, dynamic> j) => SketchData(
         canvasWidth: (j['w'] as num?)?.toDouble() ?? 1,
         canvasHeight: (j['h'] as num?)?.toDouble() ?? 1,
-        strokes:
-            (j['strokes'] is List ? (j['strokes'] as List) : const <dynamic>[])
-                .whereType<Map>()
-                .map((m) => SketchStroke.fromJson(m.cast<String, dynamic>()))
-                .toList(),
+        strokes: (j['strokes'] is List
+                ? (j['strokes'] as List<dynamic>)
+                : const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
+            .map((m) => SketchStroke.fromJson(m.cast<String, dynamic>()))
+            .toList(),
       );
 }
