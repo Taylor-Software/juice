@@ -25,7 +25,7 @@ void main() {
     expect(result!.strokes, isNotEmpty);
   });
 
-  testWidgets('undo removes the last stroke; clear empties', (tester) async {
+  testWidgets('undo removes the last stroke', (tester) async {
     SketchData? result;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
@@ -42,5 +42,43 @@ void main() {
     await tester.tap(find.byKey(const Key('sketch-save')));
     await tester.pumpAndSettle();
     expect(result!.strokes, isEmpty);
+  });
+
+  testWidgets('clear empties all strokes', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    final canvas = find.byKey(const Key('sketch-canvas'));
+    final center = tester.getCenter(canvas);
+    // Two separate strokes.
+    for (final dx in [30.0, -30.0]) {
+      final gesture = await tester.startGesture(center);
+      await gesture.moveBy(Offset(dx, 20));
+      await gesture.up();
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.byKey(const Key('sketch-clear')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.strokes, isEmpty);
+  });
+
+  testWidgets('cancel returns null', (tester) async {
+    SketchData? result;
+    var called = false;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) {
+        called = true;
+        result = d;
+      })),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-cancel')));
+    await tester.pumpAndSettle();
+    expect(called, isTrue);
+    expect(result, isNull);
   });
 }

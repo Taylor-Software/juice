@@ -590,7 +590,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   : 'Save as thread')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
         const PopupMenuItem(value: 'tags', child: Text('Tags…')),
-        const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
+        // Sketches edit in place via tap on the thumbnail, not the text editor.
+        if (e.kind != JournalKind.sketch)
+          const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     );
