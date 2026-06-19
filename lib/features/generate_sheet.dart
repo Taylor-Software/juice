@@ -49,12 +49,12 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
         _lastIcon = oracle.abstractIcon();
       });
 
-  void _rollNpcDialog(Oracle oracle) {
-    final s = ref.read(crawlProvider).valueOrNull ?? const CrawlState();
+  Future<void> _rollNpcDialog(Oracle oracle) async {
+    final s = await ref.read(crawlProvider.future);
     oracle.restoreDialogPos(s.dialogRow, s.dialogCol);
     final r = oracle.npcDialog();
     final pos = oracle.dialogPos;
-    ref
+    await ref
         .read(crawlProvider.notifier)
         .save(s.copyWith(dialogRow: pos.row, dialogCol: pos.col));
     setState(() {
