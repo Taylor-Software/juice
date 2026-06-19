@@ -1,7 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/destination.dart';
 
 void main() {
+  test('landingDestination maps mode to its home verb', () {
+    expect(landingDestination(CampaignMode.gm), Destination.track);
+    expect(landingDestination(CampaignMode.party), Destination.sheet);
+  });
+
   test('toolLocation maps tools to destination + subtab key', () {
     expect(toolLocation['verdant'], (Destination.map, 'journey'));
     expect(toolLocation['encounter'], (Destination.track, 'encounter'));

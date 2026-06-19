@@ -116,12 +116,14 @@ Working rules for this repo:
   scene in Scenes (`generate-scene`), Generate monster in Encounter
   (`generate-monster`). The `Ask > Generators` tab + the `gen-*` `ToolDef`s are
   gone; `gen-*` survive only as journal `sourceTool` provenance tags (their
-  journal source-chip is non-tappable since they have no tool home). Three
-  generators with bespoke UI lost their entry point when the old screen was
-  deleted (engine methods remain, now UI-orphaned) — a deferred re-home:
-  `rollLocation` (Location grid), `abstractIcon` (oblique image), and the
-  stateful `npcDialog` walk (`restoreDialogPos` + `CrawlState.dialogRow/
-  dialogCol`). See
+  journal source-chip is non-tappable since they have no tool home). The three
+  bespoke-UI generators were re-homed (#81) into a **Visual & Stateful** section
+  atop the same `GenerateSheet` — Location grid (`gen-location` → `rollLocation`
+  → `_LocationCard` 5×5 compass grid), NPC Dialog walk (`gen-npc-dialog` →
+  stateful `npcDialog`, position persisted via `crawlProvider` +
+  `CrawlState.dialogRow/dialogCol`), and Abstract Icon (`gen-abstract-icon` →
+  `abstractIcon` inline image) — each renders its result inline and keeps the
+  sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
 - **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
   `party`; legacy campaigns → party). `modeProvider` exposes the active
@@ -139,8 +141,15 @@ Working rules for this repo:
   takes an optional `mode` and returns false for a hidden target (caller's
   "Tool not available" snackbar fires; wired at `journal_screen._openTool` +
   `tool_search_sheet._open`), and `suggestionsFor` gates `make-move` on a
-  `partyMode` flag. Deferred: per-mode landing default, creation-time mode
-  picker, richer per-mode assistant suggestions (beyond `make-move`). See
+  `partyMode` flag. The mode is chosen at campaign creation (`NewCampaignDialog`
+  has a `new-campaign-mode` Party|GM `SegmentedButton`; `SessionsNotifier.create`
+  takes a `mode` param) and each campaign **lands on its mode home** when entered:
+  pure `landingDestination(mode)` (gm→Track, party→Sheet) drives
+  `ShellRouteNotifier.landFor`, called from every entry point (launcher
+  Continue/New/switch/import + in-shell switch/New). `build()` stays
+  `journal` — landing only applies on explicit entry, so toggling mode
+  mid-session doesn't re-land. Deferred: richer per-mode assistant suggestions
+  (beyond `make-move`). See
   `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs

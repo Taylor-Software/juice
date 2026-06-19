@@ -10,8 +10,14 @@ void main() {
     }
   });
 
-  testWidgets('returns name + systems + genre + tone', (t) async {
-    ({String name, Set<String> systems, String genre, String tone})? out;
+  testWidgets('returns name + systems + mode + genre + tone', (t) async {
+    ({
+      String name,
+      Set<String> systems,
+      CampaignMode mode,
+      String genre,
+      String tone
+    })? out;
     await t.pumpWidget(MaterialApp(
       home: Builder(
         builder: (ctx) => Scaffold(
@@ -21,6 +27,7 @@ void main() {
                   ({
                     String name,
                     Set<String> systems,
+                    CampaignMode mode,
                     String genre,
                     String tone
                   })>(
@@ -46,5 +53,44 @@ void main() {
     expect(out!.genre, 'grimdark');
     expect(out!.tone, 'tense');
     expect(out!.systems, contains('juice'));
+    // Mode defaults to party.
+    expect(out!.mode, CampaignMode.party);
+  });
+
+  testWidgets('mode selector returns the chosen mode (gm)', (t) async {
+    CampaignMode? mode;
+    await t.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (ctx) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                final out = await showDialog<
+                    ({
+                      String name,
+                      Set<String> systems,
+                      CampaignMode mode,
+                      String genre,
+                      String tone
+                    })>(
+                  context: ctx,
+                  builder: (_) => const NewCampaignDialog(),
+                );
+                mode = out?.mode;
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('new-campaign-name')), 'GM game');
+    await t.tap(find.text('GM'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Create'));
+    await t.pumpAndSettle();
+    expect(mode, CampaignMode.gm);
   });
 }
