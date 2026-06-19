@@ -21,6 +21,7 @@ import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'assistant_rail.dart';
 import 'oracle_interpretation_sheet.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
@@ -372,6 +373,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         .title;
     return Column(
       children: [
+        const AssistantRail(),
         Expanded(
           child: async.when(
             loading: () => const Center(child: CircularProgressIndicator()),

@@ -2,6 +2,22 @@ import 'dice.dart';
 import 'models.dart';
 import 'oracle_data.dart';
 
+/// The journal representation of a Fate Check roll. Shared by the Fate screen
+/// and the assistant rail's inline "Roll the oracle" so the mapping lives once.
+GenResult fateCheckGenResult(FateResult result) {
+  return GenResult(
+    title: 'Fate Check (${result.likelihood.label})',
+    summary: result.result,
+    rolls: [
+      Roll(label: 'Answer', value: result.result, detail: result.shorthand),
+      Roll(
+          label: 'Intensity',
+          value: result.intensity,
+          detail: 'd6 ${result.intensityRoll}'),
+    ],
+  );
+}
+
 /// Verified Fate Check result map (matches FATE_MAP in build_oracle.py, which is
 /// tested against the PDF's documented table and probabilities).
 /// Key: "primary,secondary" or "0,0,left" / "0,0,right" for the double-blank.
