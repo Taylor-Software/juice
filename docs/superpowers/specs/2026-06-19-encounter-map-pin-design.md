@@ -59,7 +59,11 @@ no extra clear path is needed there.
   `setLocation(LocationRef(roomId: room.id))`.
 - `HexMapPaneState._hexDetailCard(hex)`: same toggle keyed on
   `hexCol == h.col && hexRow == h.row`, setting
-  `LocationRef(hexCol: h.col, hexRow: h.row)`.
+  `LocationRef(hexCol: h.col, hexRow: h.row)`. NOTE: the hex detail card is
+  itself gated behind the `hexcrawl` opt-in (`_hexcrawlOn()`), so hex *linking*
+  is only available in hexcrawl campaigns. Pin *rendering* on the hex painter is
+  ungated — a link set elsewhere still draws. The dungeon room card (and its
+  toggle) is ungated.
 - Button keys: `dungeon-encounter-toggle`, `hex-encounter-toggle` (for tests).
 - Guard: `encounterProvider.valueOrNull == null` (loading) → button disabled.
 

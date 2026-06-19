@@ -612,6 +612,14 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
     await save(s.copyWith(turnIndex: i, round: round));
   }
 
+  /// Link the encounter to a map cell (room or hex), or clear it with null.
+  Future<void> setLocation(LocationRef? ref) async {
+    final s = await _ready;
+    await save(ref == null
+        ? s.copyWith(clearLocationRef: true)
+        : s.copyWith(locationRef: ref));
+  }
+
   Future<void> reset() async {
     await _ready;
     await save(const EncounterState());
