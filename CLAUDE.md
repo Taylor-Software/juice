@@ -208,6 +208,19 @@ Working rules for this repo:
   `lib/shared/tool_host.dart` + the declarative registry in
   `lib/shared/tool_registry.dart`). Add rails only when a real need appears.
 - Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`). The journal lives in `juice.journal.v2` (one-shot migration from `juice.log.v1` in `JournalNotifier.build`; the legacy key stays import-only and is excluded from campaign exports). Campaign files are schema v2; v1 still imports.
+- **Journal sketches (drawing).** `JournalKind.sketch` entries store vector
+  strokes in `payload['sketch']` as `SketchData` (`lib/engine/sketch.dart`,
+  pure: strokes = ARGB color/width/points + canvas size, JSON round-trips,
+  tolerant `fromJson`). `SketchEditor` + `SketchPainter`
+  (`lib/features/sketch_editor.dart`) draw freehand on a fixed paper background
+  (so stored colors read the same in light/dark); palette, two widths, undo,
+  clear, save/cancel. The composer `composer-draw` button opens it for a new
+  sketch (→ `JournalNotifier.addSketch`, empty sketches dropped); a sketch entry
+  renders an inline `CustomPaint` thumbnail (`sketch-thumb-<id>`) and taps open
+  the editor seeded with its strokes, saving via
+  `JournalEntry.copyWith(payload:)` + `JournalNotifier.replace`. See
+  `docs/superpowers/specs/2026-06-18-journal-sketch-design.md`. Deferred:
+  shapes/eraser/image-import/pan-zoom. No licensed content (user-drawn vectors).
 - Interpreter models are pinned in `lib/state/interpreter_gemma.dart`.
   The web URL is a third-party dev mirror; swapping it to the user's own
   HF mirror is a release gate for web (see the oracle-interpreter spec,
