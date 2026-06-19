@@ -1,19 +1,15 @@
 /// flutter_gemma-backed interpreter. Never constructed in tests.
 ///
-/// Per-platform model (see spec "Spike results" for why they differ):
-/// - web: Gemma3 1B int4 `-web.task` via MediaPipe/WebGPU. NOTE: the
-///   pinned URL is a third-party mirror for DEVELOPMENT ONLY — the
-///   release merge-gate is swapping it to the user's own HF mirror.
-/// - mobile: Qwen3 0.6B int4 `.litertlm` from the official
-///   litert-community repo.
+/// Mobile/desktop: Gemma 4 E2B int4 `.litertlm` (`ModelType.gemma4`) from the
+/// ungated litert-community repo, downloaded on demand (~2.6 GB) — never
+/// bundled. The on-device LLM is DISABLED on web (no model): web reports
+/// `unsupported` and the UI hides every AI affordance.
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_gemma/flutter_gemma.dart';
 
 import '../engine/oracle_interpreter.dart';
-import '../shared/webgpu_check_stub.dart'
-    if (dart.library.js_interop) '../shared/webgpu_check_web.dart';
 import 'interpreter.dart';
 
 class _ModelSpec {
@@ -31,35 +27,25 @@ class _ModelSpec {
   final int approxMb;
 }
 
-// DEV PIN — swap to the user's own HF mirror before enabling web in a
-// release (spec: "Weights provenance").
-const _webSpec = _ModelSpec(
+const _gemma4Spec = _ModelSpec(
   url:
-      'https://huggingface.co/darkB/gemma3-1b-it-int4-web-litert/resolve/main/gemma3-1b-it-int4-web.task',
-  filename: 'gemma3-1b-it-int4-web.task',
-  modelType: ModelType.gemmaIt,
-  fileType: ModelFileType.task,
-  approxMb: 670,
-);
-
-const _mobileSpec = _ModelSpec(
-  url:
-      'https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/qwen3_0_6b_mixed_int4.litertlm',
-  filename: 'qwen3_0_6b_mixed_int4.litertlm',
-  modelType: ModelType.qwen3,
+      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm',
+  filename: 'gemma-4-E2B-it.litertlm',
+  modelType: ModelType.gemma4,
   fileType: ModelFileType.litertlm,
-  approxMb: 480,
+  approxMb: 2588,
 );
 
 class GemmaInterpreterService implements InterpreterService {
   GemmaInterpreterService() {
-    if (kIsWeb && !hasWebGpu) {
+    if (kIsWeb) {
       _status.value = const InterpreterStatus(InterpreterPhase.unsupported,
-          message: 'This browser has no WebGPU support.');
+          message: 'On-device AI runs in the mobile and desktop apps, '
+              'not on the web.');
     }
   }
 
-  final _spec = kIsWeb ? _webSpec : _mobileSpec;
+  final _spec = _gemma4Spec;
   final _status =
       ValueNotifier(const InterpreterStatus(InterpreterPhase.needsDownload));
   InferenceModel? _model;
@@ -75,7 +61,7 @@ class GemmaInterpreterService implements InterpreterService {
   ValueListenable<InterpreterStatus> get status => _status;
 
   @override
-  String get downloadLabel => '~${_spec.approxMb} MB';
+  String get downloadLabel => formatDownloadSize(_spec.approxMb);
 
   bool get _unsupported => _status.value.phase == InterpreterPhase.unsupported;
 
@@ -135,31 +121,18 @@ class GemmaInterpreterService implements InterpreterService {
     }
   }
 
-  /// Try a roomy context first; some artifacts cap the KV cache (the web
-  /// build was only proven at 1280 in the spike).
+  /// Try a roomy context first; some artifacts cap the KV cache, so fall back
+  /// to 1280, and from the GPU backend to CPU.
   Future<InferenceModel> _loadModel() async {
     Object? firstError;
     for (final maxTokens in const [2048, 1280]) {
-      for (final backend in [
+      for (final backend in const [
         PreferredBackend.gpu,
-        if (!kIsWeb) PreferredBackend.cpu, // web is GPU-only
+        PreferredBackend.cpu,
       ]) {
         try {
-          final model = await FlutterGemma.getActiveModel(
+          return await FlutterGemma.getActiveModel(
               maxTokens: maxTokens, preferredBackend: backend);
-          if (kIsWeb) {
-            // flutter_gemma 0.16.5 web: createModel/getActiveModel only
-            // constructs a WebInferenceModel — the real WASM + weights
-            // load happens in createSession (cached in _initCompleter),
-            // which createChat calls via initSession. Probe it here so a
-            // too-big maxTokens fails NOW and the fallback loop engages,
-            // instead of blowing up the first interpret(). The probed
-            // session is the one every later chat reuses, so it must be
-            // created with interpret()'s sampling params (web bakes
-            // temperature/topK/topP into the engine at session creation).
-            await _createChat(model);
-          }
-          return model;
         } catch (e) {
           // Keep the FIRST failure for the message: it names the real
           // cause (e.g. a corrupt file), not the last-ditch attempt.
@@ -170,77 +143,47 @@ class GemmaInterpreterService implements InterpreterService {
     throw StateError('Model load failed: $firstError');
   }
 
-  /// One set of chat params for the web load probe, interpret(), and
-  /// voiceLine(): on web the first createSession fixes the sampling params
-  /// for the lifetime of the (reused) engine session, so they must not
-  /// diverge.
+  /// One set of chat params for interpret() and voiceLine(): variety is the
+  /// product, so override the topK-1 defaults.
   Future<InferenceChat> _createChat(InferenceModel model,
       {String? systemInstruction}) {
     return model.createChat(
-      temperature: 1.0, // variety is the product; defaults (topK 1) kill it
+      temperature: 1.0,
       topK: 64,
       topP: 0.95,
       isThinking: false,
       modelType: _spec.modelType,
-      // Web reuses one engine session whose _systemInstructionSent latch
-      // never resets, so a session-level instruction would vanish after
-      // the first roll; inline it into the prompt there instead (same
-      // "[System: ...]" wrapping upstream applies on every platform).
-      systemInstruction: kIsWeb ? null : systemInstruction,
+      systemInstruction: systemInstruction,
     );
   }
 
   /// One prompt → raw model text, the shared generation discipline for
-  /// interpret() and voiceLine(): fresh chat, inter-token watchdog,
-  /// web stopGeneration in `finally`.
+  /// interpret() and voiceLine(): fresh chat + inter-token watchdog.
   Future<String> _generate(String prompt, {String? systemInstruction}) async {
     final model = _model;
     if (model == null) throw StateError('Interpreter not ready');
     final chat = await _createChat(model, systemInstruction: systemInstruction);
     await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
     final buffer = StringBuffer();
-    // Inter-token watchdog: 60s with no token means the generation hung
-    // (seen on web, where a MediaPipe error can leave the stream open
-    // forever). Stream.timeout throws TimeoutException into the await-for;
-    // it propagates and the caller's UI shows its retry affordance.
-    try {
-      await for (final r in chat
-          .generateChatResponseAsync()
-          .timeout(const Duration(seconds: 60))) {
-        if (r is TextResponse) buffer.write(r.token);
-      }
-    } finally {
-      if (kIsWeb) {
-        // Upstream web behavior: one WebModelSession is cached and reused by
-        // every chat, and addQueryChunk appends to its _promptParts list,
-        // which nothing clears on success — each roll would re-send all
-        // previous prompts. stopGeneration() clears the list in a `finally`
-        // without closing the engine (cancelProcessing is a no-op once the
-        // stream completed). Mobile recreates the native session per chat,
-        // so this is web-only. Run it in a `finally` so a timeout or
-        // mid-stream error also cancels the hung generation and clears the
-        // stale prompt parts — otherwise retry re-sends them.
-        await chat.stopGeneration();
-      }
+    // Inter-token watchdog: 60s with no token means the generation hung.
+    // Stream.timeout throws TimeoutException into the await-for; it
+    // propagates and the caller's UI shows its retry affordance.
+    await for (final r in chat
+        .generateChatResponseAsync()
+        .timeout(const Duration(seconds: 60))) {
+      if (r is TextResponse) buffer.write(r.token);
     }
     return buffer.toString();
   }
 
   @override
   Future<List<OracleInterpretation>> interpret(OracleSeed seed) async {
-    final prompt = kIsWeb
-        ? '[System: $oracleSystemInstruction]\n\n${buildOraclePrompt(seed)}'
-        : buildOraclePrompt(seed);
-    return parseInterpretations(
-        await _generate(prompt, systemInstruction: oracleSystemInstruction));
+    return parseInterpretations(await _generate(buildOraclePrompt(seed),
+        systemInstruction: oracleSystemInstruction));
   }
 
   @override
   Future<String> voiceLine(VoiceSeed seed) async {
-    // The compact voice instruction is baked into buildVoicePrompt on every
-    // platform (no session instruction): the web session is shared and
-    // latch-locked, and a per-chat oracle instruction here would push the
-    // model back toward lens JSON.
     return parseVoiceResponse(await _generate(buildVoicePrompt(seed)));
   }
 
