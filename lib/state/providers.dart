@@ -16,6 +16,7 @@ import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/system_primer.dart';
 import 'campaign_io.dart';
@@ -134,6 +135,19 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           body: '',
           kind: JournalKind.scene,
           chaosFactor: chaosFactor),
+      ...await _ready,
+    ]);
+  }
+
+  Future<void> addSketch(SketchData data) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(),
+          timestamp: DateTime.now(),
+          title: 'Sketch',
+          body: '',
+          kind: JournalKind.sketch,
+          payload: {'v': 1, 'sketch': data.toJson()}),
       ...await _ready,
     ]);
   }
