@@ -22,6 +22,7 @@ import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'assistant_rail.dart';
+import 'generate_sheet.dart';
 import 'oracle_interpretation_sheet.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
@@ -936,6 +937,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 final oracle = ref.read(oracleProvider).valueOrNull;
                 if (oracle != null) showDiceSheet(context, oracle.dice);
               },
+            ),
+            IconButton(
+              key: const Key('composer-inspire'),
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'Inspire (generators)',
+              onPressed: () => showGenerateSheet(context),
             ),
             IconButton(
               key: const Key('journal-send'),
