@@ -230,31 +230,16 @@ class DndSheetView extends ConsumerWidget {
     );
   }
 
-  Widget _abilityBox(WidgetRef ref, DndSheet s, String a) => SizedBox(
-        width: 110,
-        child: Column(children: [
-          Text(kDndAbilityLabels[a]!, style: const TextStyle(fontSize: 11)),
-          Text(_fmt(s.abilityMod(a)),
-              style:
-                  const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            IconButton(
-              key: Key('dnd-ability-$a-minus'),
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.remove, size: 16),
-              onPressed: () => _save(ref,
-                  s.copyWith(abilities: {...s.abilities, a: s.score(a) - 1})),
-            ),
-            Text('${s.score(a)}'),
-            IconButton(
-              key: Key('dnd-ability-$a-plus'),
-              visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.add, size: 16),
-              onPressed: () => _save(ref,
-                  s.copyWith(abilities: {...s.abilities, a: s.score(a) + 1})),
-            ),
-          ]),
-        ]),
+  Widget _abilityBox(WidgetRef ref, DndSheet s, String a) => abilityBox(
+        prefix: 'dnd',
+        abilityKey: a,
+        label: kDndAbilityLabels[a]!,
+        modText: _fmt(s.abilityMod(a)),
+        score: s.score(a),
+        onMinus: () => _save(
+            ref, s.copyWith(abilities: {...s.abilities, a: s.score(a) - 1})),
+        onPlus: () => _save(
+            ref, s.copyWith(abilities: {...s.abilities, a: s.score(a) + 1})),
       );
 
   Widget _saveRow(WidgetRef ref, DndSheet s, String a) {

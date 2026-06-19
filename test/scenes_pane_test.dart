@@ -71,4 +71,35 @@ void main() {
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller?.text.trim(), isNotEmpty);
   });
+
+  testWidgets('scene dialog name-roll fills the title field', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: ScenesPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('scenes-new')));
+    await tester.pumpAndSettle();
+    // Open with an empty field, then the in-dialog dice fills it.
+    final empty = tester.widget<TextField>(find.byType(TextField));
+    expect(empty.controller?.text, isEmpty);
+    await tester.tap(find.byIcon(Icons.casino_outlined));
+    await tester.pumpAndSettle();
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller?.text.trim(), isNotEmpty);
+  });
 }
