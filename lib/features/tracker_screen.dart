@@ -301,8 +301,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     await notifier.add(result.title.trim());
     if (!mounted) return;
     final added = ref.read(charactersProvider).valueOrNull?.first;
-    if (added != null && result.note.trim().isNotEmpty) {
-      await notifier.replace(added.copyWith(note: result.note.trim()));
+    if (added != null) {
+      final note = result.note.trim();
+      await notifier.replace(added.copyWith(
+        role: CharacterRole.npc,
+        note: note.isEmpty ? null : note,
+      ));
     }
     if (mounted) setState(() => _editingId = added?.id);
   }

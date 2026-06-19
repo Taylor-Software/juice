@@ -1230,4 +1230,34 @@ void main() {
     final ch = (await c.read(charactersProvider.future)).single;
     expect(ch.conditions, containsAll(['poisoned', 'hidden']));
   });
+
+  // -- Task 5: Generate NPC → npc role --
+
+  testWidgets('Generate NPC creates an npc-role character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-npc')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.role,
+        CharacterRole.npc);
+  });
 }
