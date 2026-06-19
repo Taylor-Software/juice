@@ -214,4 +214,44 @@ void main() {
     expect(tool.group, 'Exploration');
     expect(tool.label, 'Hexcrawl');
   });
+
+  // -- Mode gating (GM/Party) -------------------------------------------------
+
+  test('gm mode drops party-only tools and moves from the registry', () {
+    final ids = buildToolRegistry(
+      family: ['classic'],
+      systems: {'party', 'ironsworn', 'juice'},
+      mode: CampaignMode.gm,
+    ).map((t) => t.id).toSet();
+    expect(ids, isNot(contains('party-emulator')));
+    expect(ids, isNot(contains('sidekick-dialogue')));
+    expect(ids, isNot(contains('behavior-tables')));
+    expect(ids, isNot(contains('moves')));
+    // Mode-neutral tools survive.
+    expect(ids, containsAll(['fate-check', 'encounter', 'help']));
+  });
+
+  test('party mode keeps party-only tools and moves', () {
+    final ids = buildToolRegistry(
+      family: ['classic'],
+      systems: {'party', 'ironsworn'},
+      mode: CampaignMode.party,
+    ).map((t) => t.id).toSet();
+    expect(
+        ids,
+        containsAll([
+          'party-emulator',
+          'sidekick-dialogue',
+          'behavior-tables',
+          'moves',
+        ]));
+  });
+
+  test('mode defaults to party (party tools present without an explicit mode)',
+      () {
+    final ids = buildToolRegistry(family: [], systems: {'party'})
+        .map((t) => t.id)
+        .toSet();
+    expect(ids, contains('party-emulator'));
+  });
 }

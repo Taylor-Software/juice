@@ -460,8 +460,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Search tools',
-            onPressed: () => showToolSearchSheet(
-                context, buildToolRegistry(family: family, systems: systems),
+            onPressed: () => showToolSearchSheet(context,
+                buildToolRegistry(family: family, systems: systems, mode: mode),
                 oracle: widget.oracle),
           ),
           IconButton(

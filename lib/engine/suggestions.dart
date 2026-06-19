@@ -18,6 +18,7 @@ List<Suggestion> suggestionsFor({
   required bool encounterActive,
   required bool ironswornFamily,
   required bool hasFocusCharacter,
+  required bool partyMode,
 }) {
   return [
     const Suggestion('roll-oracle', 'Roll the oracle', SuggestionAction.inline),
@@ -31,7 +32,8 @@ List<Suggestion> suggestionsFor({
           'advance-thread', 'Advance a thread', SuggestionAction.navigate),
     if (encounterActive)
       const Suggestion('combat-turn', 'Take a turn', SuggestionAction.navigate),
-    if (ironswornFamily && hasFocusCharacter)
+    // Moves live on the Sheet's party-only Moves subtab — hidden in gm mode.
+    if (ironswornFamily && hasFocusCharacter && partyMode)
       const Suggestion('make-move', 'Make a move', SuggestionAction.navigate),
   ];
 }
