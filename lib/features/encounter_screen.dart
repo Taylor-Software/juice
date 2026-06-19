@@ -241,13 +241,22 @@ class EncounterScreen extends ConsumerWidget {
               onPressed: () => _addFromCharacters(context, ref),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: OutlinedButton.icon(
               key: const Key('add-adhoc'),
               icon: const Icon(Icons.add),
               label: const Text('Ad-hoc'),
               onPressed: () => _addAdHoc(context, ref),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              key: const Key('generate-monster'),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Generate'),
+              onPressed: () => _generateMonster(context, ref),
             ),
           ),
         ],
@@ -388,8 +397,16 @@ class EncounterScreen extends ConsumerWidget {
         ));
   }
 
-  Future<void> _addAdHoc(BuildContext context, WidgetRef ref) async {
-    final name = TextEditingController();
+  Future<void> _generateMonster(BuildContext context, WidgetRef ref) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final g = oracle.monsterEncounter();
+    await _addAdHoc(context, ref, initialName: g.summary ?? g.title);
+  }
+
+  Future<void> _addAdHoc(BuildContext context, WidgetRef ref,
+      {String initialName = ''}) async {
+    final name = TextEditingController(text: initialName);
     final hp = TextEditingController();
     final init = TextEditingController(text: '10');
     final ok = await showDialog<bool>(

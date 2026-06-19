@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/features/encounter_screen.dart';
@@ -61,10 +65,8 @@ void main() {
       (tester) async {
     await pump(tester,
         encounterJson: _enc([
-          _c('w', 'Wolf', 18,
-              track: {'label': 'HP', 'current': 5, 'max': 5}),
-          _c('g', 'Goblin', 12,
-              track: {'label': 'HP', 'current': 4, 'max': 6}),
+          _c('w', 'Wolf', 18, track: {'label': 'HP', 'current': 5, 'max': 5}),
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 4, 'max': 6}),
         ]));
     expect(find.text('Round 1'), findsOneWidget);
     expect(tester.getTopLeft(find.text('Wolf')).dy,
@@ -90,27 +92,21 @@ void main() {
     expect(find.text('Round 2'), findsOneWidget);
   });
 
-  testWidgets('ad-hoc stepper updates track text and persists',
-      (tester) async {
+  testWidgets('ad-hoc stepper updates track text and persists', (tester) async {
     final container = await pump(tester,
         encounterJson: _enc([
-          _c('g', 'Goblin', 12,
-              track: {'label': 'HP', 'current': 4, 'max': 6}),
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 4, 'max': 6}),
         ]));
     expect(find.text('4/6'), findsOneWidget);
     await tester.tap(find.byKey(const Key('enc-plus-0')));
     await tester.pumpAndSettle();
     expect(
-        tester
-            .widget<Text>(find.byKey(const Key('enc-track-0')))
-            .data,
-        '5/6');
+        tester.widget<Text>(find.byKey(const Key('enc-track-0'))).data, '5/6');
     final s = await container.read(encounterProvider.future);
     expect(s.combatants.single.track!.current, 5);
   });
 
-  testWidgets('linked stepper writes through to the character',
-      (tester) async {
+  testWidgets('linked stepper writes through to the character', (tester) async {
     final container = await pump(
       tester,
       charactersJson:
@@ -123,10 +119,7 @@ void main() {
     final chars = await container.read(charactersProvider.future);
     expect(chars.single.tracks.single.current, 8);
     expect(
-        tester
-            .widget<Text>(find.byKey(const Key('enc-track-0')))
-            .data,
-        '8/10');
+        tester.widget<Text>(find.byKey(const Key('enc-track-0'))).data, '8/10');
   });
 
   testWidgets('End encounter writes journal summary and resets',
@@ -182,8 +175,8 @@ void main() {
     // Long-press drag A down one slot (incremental moves so the reorder
     // gap tracks the pointer): order becomes B, A, C.
     final from = tester.getCenter(find.byKey(const ValueKey('a')));
-    final rowHeight = tester.getCenter(find.byKey(const ValueKey('b'))).dy -
-        from.dy;
+    final rowHeight =
+        tester.getCenter(find.byKey(const ValueKey('b'))).dy - from.dy;
     final gesture = await tester.startGesture(from);
     await tester.pump(kLongPressTimeout + kPressTimeout);
     var moved = 0.0;
@@ -205,8 +198,7 @@ void main() {
       (tester) async {
     final container = await pump(tester,
         encounterJson: _enc([
-          _c('g', 'Goblin', 12,
-              track: {'label': 'HP', 'current': 4, 'max': 6}),
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 4, 'max': 6}),
         ]));
     await tester.tap(find.byKey(const Key('enc-tag-add-0')));
     await tester.pumpAndSettle();
@@ -221,5 +213,32 @@ void main() {
     expect(find.text('stunned'), findsNothing);
     s = await container.read(encounterProvider.future);
     expect(s.combatants.single.tags, isEmpty);
+  });
+
+  testWidgets('Generate monster prefills the ad-hoc combatant name',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.encounter.v1.default': '{"combatants":[],"round":1}',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: EncounterScreen()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-monster')));
+    await tester.pumpAndSettle();
+    final name = tester.widget<TextField>(find.byKey(const Key('adhoc-name')));
+    expect(name.controller?.text.trim(), isNotEmpty);
   });
 }
