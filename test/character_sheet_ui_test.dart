@@ -1120,4 +1120,42 @@ void main() {
     expect(chars.length, 1);
     expect(chars.first.name.trim(), isNotEmpty);
   });
+
+  testWidgets('Generate NPC dialog dice re-rolls the name field',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-npc')));
+    await tester.pumpAndSettle();
+    // Locate the dice IconButton scoped to the AlertDialog.
+    final dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    final diceButton = find.descendant(
+        of: dialog, matching: find.byIcon(Icons.casino_outlined));
+    expect(diceButton, findsOneWidget);
+    await tester.tap(diceButton);
+    await tester.pumpAndSettle();
+    // After re-roll the name field must still be non-empty.
+    final nameField =
+        find.descendant(of: dialog, matching: find.byType(TextField)).first;
+    final tf = tester.widget<TextField>(nameField);
+    expect(tf.controller!.text.trim(), isNotEmpty);
+  });
 }

@@ -401,7 +401,16 @@ class EncounterScreen extends ConsumerWidget {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final g = oracle.monsterEncounter();
-    await _addAdHoc(context, ref, initialName: g.summary ?? g.title);
+    final monster = g.rolls
+        .firstWhere(
+          (r) => r.label == 'Monster',
+          orElse: () => g.rolls.isNotEmpty
+              ? g.rolls.first
+              : const Roll(label: '', value: ''),
+        )
+        .value;
+    await _addAdHoc(context, ref,
+        initialName: monster.isNotEmpty ? monster : g.title);
   }
 
   Future<void> _addAdHoc(BuildContext context, WidgetRef ref,

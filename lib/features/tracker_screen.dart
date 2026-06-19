@@ -318,6 +318,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     if (result == null || result.title.trim().isEmpty) return;
     final notifier = ref.read(charactersProvider.notifier);
     await notifier.add(result.title.trim());
+    if (!mounted) return;
     final added = ref.read(charactersProvider).valueOrNull?.first;
     if (added != null && result.note.trim().isNotEmpty) {
       await notifier.replace(added.copyWith(note: result.note.trim()));
