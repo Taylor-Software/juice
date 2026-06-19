@@ -1201,4 +1201,33 @@ void main() {
     expect((await c.read(charactersProvider.future)).single.role,
         CharacterRole.npc);
   });
+
+  // -- Task 4: condition badges + inline editor --
+
+  testWidgets('condition badges show and inline editor toggles them',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[],'
+              '"conditions":["poisoned"]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+    expect(find.text('poisoned'), findsWidgets); // badge on the row
+    await tester.tap(find.byKey(const Key('conditions-p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('hidden')); // toggle a preset on in the editor
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    final ch = (await c.read(charactersProvider.future)).single;
+    expect(ch.conditions, containsAll(['poisoned', 'hidden']));
+  });
 }

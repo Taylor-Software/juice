@@ -440,66 +440,149 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   Widget _rosterCard(BuildContext context, Character c, {bool isLead = false}) {
     final t = c.tracks.isEmpty ? null : c.tracks.first;
     return Card(
-      child: ListTile(
-        title: Row(
-          children: [
-            Expanded(child: Text(c.name)),
-            if (isLead)
-              Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Chip(
-                  label: const Text('lead'),
-                  visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor:
-                      Theme.of(context).colorScheme.primaryContainer,
-                  labelStyle: TextStyle(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      fontSize: 11),
-                ),
-              ),
-          ],
-        ),
-        subtitle: t != null
-            ? Text('${t.label} ${t.current}/${t.max}')
-            : (c.note.isEmpty ? null : Text(c.note)),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PopupMenuButton<CharacterRole>(
-              key: Key('role-${c.id}'),
-              initialValue: c.role,
-              tooltip: 'Role',
-              onSelected: (r) =>
-                  ref.read(charactersProvider.notifier).setRole(c.id, r),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: CharacterRole.pc, child: Text('PC')),
-                PopupMenuItem(
-                    value: CharacterRole.companion, child: Text('Companion')),
-                PopupMenuItem(value: CharacterRole.npc, child: Text('NPC')),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            title: Row(
+              children: [
+                Expanded(child: Text(c.name)),
+                if (isLead)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Chip(
+                      label: const Text('lead'),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.primaryContainer,
+                      labelStyle: TextStyle(
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontSize: 11),
+                    ),
+                  ),
               ],
             ),
-            IconButton(
-              key: Key('star-char-${c.id}'),
-              visualDensity: VisualDensity.compact,
-              icon: Icon(c.starred ? Icons.star : Icons.star_border),
-              tooltip: c.starred ? 'Unstar' : 'Star',
-              onPressed: () =>
-                  ref.read(charactersProvider.notifier).toggleStarred(c.id),
+            subtitle: t != null
+                ? Text('${t.label} ${t.current}/${t.max}')
+                : (c.note.isEmpty ? null : Text(c.note)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PopupMenuButton<CharacterRole>(
+                  key: Key('role-${c.id}'),
+                  initialValue: c.role,
+                  tooltip: 'Role',
+                  onSelected: (r) =>
+                      ref.read(charactersProvider.notifier).setRole(c.id, r),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: CharacterRole.pc, child: Text('PC')),
+                    PopupMenuItem(
+                        value: CharacterRole.companion,
+                        child: Text('Companion')),
+                    PopupMenuItem(value: CharacterRole.npc, child: Text('NPC')),
+                  ],
+                ),
+                IconButton(
+                  key: Key('star-char-${c.id}'),
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(c.starred ? Icons.star : Icons.star_border),
+                  tooltip: c.starred ? 'Unstar' : 'Star',
+                  onPressed: () =>
+                      ref.read(charactersProvider.notifier).toggleStarred(c.id),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  onPressed: () =>
+                      ref.read(charactersProvider.notifier).remove(c.id),
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              onPressed: () =>
-                  ref.read(charactersProvider.notifier).remove(c.id),
+            onTap: () {
+              ref.read(playContextProvider.notifier).setActiveCharacter(c.id);
+              setState(() => _editingId = c.id);
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
+            child: Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (final cond in c.conditions)
+                  Chip(
+                    label: Text(cond),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ActionChip(
+                  key: Key('conditions-${c.id}'),
+                  avatar: const Icon(Icons.add, size: 16),
+                  label: const Text('condition'),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _editConditions(context, c),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editConditions(BuildContext context, Character c) async {
+    final selected = {...c.conditions};
+    final customCtrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text('${c.name} — conditions'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final cond in {...kConditions, ...c.conditions})
+                      FilterChip(
+                        label: Text(cond),
+                        selected: selected.contains(cond),
+                        onSelected: (on) => setLocal(() =>
+                            on ? selected.add(cond) : selected.remove(cond)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: customCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Add custom condition'),
+                  onSubmitted: (v) {
+                    final t = v.trim();
+                    if (t.isNotEmpty) setLocal(() => selected.add(t));
+                    customCtrl.clear();
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
             ),
           ],
         ),
-        onTap: () {
-          ref.read(playContextProvider.notifier).setActiveCharacter(c.id);
-          setState(() => _editingId = c.id);
-        },
       ),
     );
+    await ref
+        .read(charactersProvider.notifier)
+        .setConditions(c.id, selected.toList());
   }
 
   Future<void> _editNameNote(BuildContext context, Character c) async {
