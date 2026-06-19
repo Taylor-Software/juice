@@ -92,9 +92,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                         ),
                     ],
                   ),
-                  onTap: () {
-                    ref.read(sessionsProvider.notifier).switchTo(s.id);
-                    Navigator.of(dialogContext).pop();
+                  onTap: () async {
+                    await ref.read(sessionsProvider.notifier).switchTo(s.id);
+                    ref.read(shellRouteProvider.notifier).landFor(s.mode);
+                    if (dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
                   },
                 ),
               const Divider(),
@@ -132,13 +135,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   Future<void> _createSession(BuildContext dialogContext) async {
     final result = await showDialog<
-        ({String name, Set<String> systems, String genre, String tone})>(
+        ({
+          String name,
+          Set<String> systems,
+          CampaignMode mode,
+          String genre,
+          String tone
+        })>(
       context: dialogContext,
       builder: (context) => const NewCampaignDialog(),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
-        systems: result.systems, genre: result.genre, tone: result.tone);
+        systems: result.systems,
+        mode: result.mode,
+        genre: result.genre,
+        tone: result.tone);
+    ref.read(shellRouteProvider.notifier).landFor(result.mode);
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
@@ -226,6 +239,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
+      // Imported campaigns are always party (files carry no mode).
+      ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
@@ -263,6 +278,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       await ref
           .read(sessionsProvider.notifier)
           .importLonelog(utf8.decode(bytes));
+      // Imported campaigns are always party (files carry no mode).
+      ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
@@ -631,6 +648,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _hexcrawl = false;
   bool _dnd = false;
   bool _shadowdark = false;
+  CampaignMode _mode = CampaignMode.party;
 
   @override
   void dispose() {
@@ -655,6 +673,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
     Navigator.of(context).pop((
       name: _controller.text,
       systems: picked,
+      mode: _mode,
       genre: _genre.text.trim(),
       tone: _tone.text.trim(),
     ));
@@ -688,6 +707,30 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               decoration: const InputDecoration(
                   labelText: 'Tone (optional)',
                   hintText: 'e.g. tense and dangerous'),
+            ),
+            const Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                    padding: EdgeInsets.only(top: 12), child: Text('Mode'))),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: SegmentedButton<CampaignMode>(
+                key: const Key('new-campaign-mode'),
+                segments: const [
+                  ButtonSegment(
+                    value: CampaignMode.party,
+                    label: Text('Party'),
+                    icon: Icon(Icons.groups_outlined),
+                  ),
+                  ButtonSegment(
+                    value: CampaignMode.gm,
+                    label: Text('GM'),
+                    icon: Icon(Icons.shield_outlined),
+                  ),
+                ],
+                selected: {_mode},
+                onSelectionChanged: (s) => setState(() => _mode = s.first),
+              ),
             ),
             const Align(
                 alignment: Alignment.centerLeft,

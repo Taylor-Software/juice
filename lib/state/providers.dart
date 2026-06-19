@@ -1048,11 +1048,14 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   }
 
   Future<void> create(String name,
-      {Set<String>? systems, String genre = '', String tone = ''}) async {
+      {Set<String>? systems,
+      CampaignMode mode = CampaignMode.party,
+      String genre = '',
+      String tone = ''}) async {
     final s = state.valueOrNull;
     if (s == null) return;
-    final meta =
-        SessionMeta(id: _newId(), name: name, systems: systems?.toList());
+    final meta = SessionMeta(
+        id: _newId(), name: name, systems: systems?.toList(), mode: mode);
     if (genre.isNotEmpty || tone.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('juice.settings.v1.${meta.id}',

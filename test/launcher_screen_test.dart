@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/launcher_screen.dart';
+import 'package:juice_oracle/shared/destination.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 class _FixedSessions extends SessionsNotifier {
@@ -55,6 +57,41 @@ void main() {
     await t.pumpAndSettle();
     expect(c.read(sessionsProvider).valueOrNull?.active, 'b');
     expect(c.read(launcherGateProvider), isFalse);
+  });
+
+  ProviderContainer modedContainer() {
+    SharedPreferences.setMockInitialValues({});
+    return ProviderContainer(overrides: [
+      sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
+            active: 'a',
+            sessions: [
+              SessionMeta(id: 'a', name: 'Alpha', mode: CampaignMode.gm),
+              SessionMeta(id: 'b', name: 'Beta'), // party (default)
+            ],
+          ))),
+    ]);
+  }
+
+  testWidgets('Continue lands on the active campaign mode home (gm→track)',
+      (t) async {
+    final c = modedContainer();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+    // Before entry the route is the bare default.
+    expect(c.read(shellRouteProvider).destination, Destination.journal);
+    await t.tap(find.byKey(const Key('launcher-continue')));
+    await t.pumpAndSettle();
+    expect(c.read(shellRouteProvider).destination, Destination.track);
+  });
+
+  testWidgets('switching to a party campaign lands on Sheet', (t) async {
+    final c = modedContainer();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+    await t.tap(find.byKey(const Key('launcher-campaign-b')));
+    await t.pumpAndSettle();
+    expect(c.read(sessionsProvider).valueOrNull?.active, 'b');
+    expect(c.read(shellRouteProvider).destination, Destination.sheet);
   });
 
   testWidgets('New and Import actions are present', (t) async {

@@ -19,6 +19,13 @@ class ShellRouteNotifier extends Notifier<ShellRoute> {
     state = ShellRoute(destination, subtab);
   }
 
+  /// Lands on the mode's home verb (gm→Track, party→Sheet). Called when a
+  /// campaign is entered (launcher Continue/New/switch/import, in-shell switch/
+  /// New) so each campaign opens on the surface its mode is about.
+  void landFor(CampaignMode mode) {
+    state = ShellRoute(landingDestination(mode), '');
+  }
+
   /// Navigates to the tool's home. Returns false (no-op) for ids with no tab
   /// home, so callers can fall back (e.g. dice sheet, snackbar). When [mode] is
   /// given, also returns false if the target subtab is role-hidden in that mode

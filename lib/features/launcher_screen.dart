@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../shared/home_shell.dart' show NewCampaignDialog;
+import '../shared/shell_route.dart';
 import '../state/providers.dart';
 
 /// Startup campaign menu: Continue / switch / New / Import. Shown while
@@ -14,24 +15,36 @@ import '../state/providers.dart';
 class LauncherScreen extends ConsumerWidget {
   const LauncherScreen({super.key});
 
-  void _enter(WidgetRef ref) =>
-      ref.read(launcherGateProvider.notifier).dismiss();
+  /// Lands on the campaign's mode home, then dismisses the launcher gate.
+  void _enter(WidgetRef ref, CampaignMode mode) {
+    ref.read(shellRouteProvider.notifier).landFor(mode);
+    ref.read(launcherGateProvider.notifier).dismiss();
+  }
 
-  Future<void> _switch(WidgetRef ref, String id) async {
-    await ref.read(sessionsProvider.notifier).switchTo(id);
-    _enter(ref);
+  Future<void> _switch(WidgetRef ref, SessionMeta m) async {
+    await ref.read(sessionsProvider.notifier).switchTo(m.id);
+    _enter(ref, m.mode);
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
     final result = await showDialog<
-        ({String name, Set<String> systems, String genre, String tone})>(
+        ({
+          String name,
+          Set<String> systems,
+          CampaignMode mode,
+          String genre,
+          String tone
+        })>(
       context: context,
       builder: (context) => const NewCampaignDialog(),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
-        systems: result.systems, genre: result.genre, tone: result.tone);
-    _enter(ref);
+        systems: result.systems,
+        mode: result.mode,
+        genre: result.genre,
+        tone: result.tone);
+    _enter(ref, result.mode);
   }
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
@@ -58,7 +71,8 @@ class LauncherScreen extends ConsumerWidget {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
-      _enter(ref);
+      // Imported campaigns are always party (files carry no mode).
+      _enter(ref, CampaignMode.party);
     } on FormatException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -143,7 +157,7 @@ class LauncherScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('launcher-continue'),
-                  onPressed: () => _enter(ref),
+                  onPressed: () => _enter(ref, active.mode),
                   icon: const Icon(Icons.play_arrow),
                   label: Text('Continue · ${active.name}'),
                 ),
@@ -156,7 +170,7 @@ class LauncherScreen extends ConsumerWidget {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off),
                     title: Text(s.name),
-                    onTap: () => _switch(ref, s.id),
+                    onTap: () => _switch(ref, s),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
