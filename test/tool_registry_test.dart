@@ -22,8 +22,8 @@ void main() {
 
   test('expected entry count and core ids', () {
     final tools = buildToolRegistry(family: []);
-    expect(tools, hasLength(18));
-    expect(buildToolRegistry(family: ['classic']), hasLength(19));
+    expect(tools, hasLength(13));
+    expect(buildToolRegistry(family: ['classic']), hasLength(14));
     expect(
         tools.map((t) => t.id),
         containsAll([
@@ -31,11 +31,6 @@ void main() {
           'roll-high',
           'mythic',
           'dice',
-          'gen-story',
-          'gen-npcs',
-          'gen-exploration',
-          'gen-encounters',
-          'gen-details',
           'threads-characters',
           'tables',
           'encounter',
@@ -120,7 +115,7 @@ void main() {
   });
 
   test(
-      'juice-only profile includes fate-check, roll-high, gen-*, maps, tables '
+      'juice-only profile includes fate-check, roll-high, maps, tables '
       'and core tools but excludes mythic and party tools', () {
     final tools = buildToolRegistry(family: [], systems: {'juice'});
     final ids = tools.map((t) => t.id).toSet();
@@ -130,12 +125,7 @@ void main() {
         containsAll([
           'fate-check',
           'roll-high',
-          'gen-story',
-          'gen-npcs',
-          'gen-exploration',
           'maps',
-          'gen-encounters',
-          'gen-details',
           'tables',
           'dice',
           'encounter',

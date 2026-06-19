@@ -24,15 +24,8 @@ void main() {
     ));
     await t.pumpAndSettle();
     expect(find.widgetWithText(Tab, 'Oracle'), findsOneWidget);
-    expect(find.widgetWithText(Tab, 'Generators'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Generators'), findsNothing);
     expect(find.widgetWithText(Tab, 'Tables'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Moves'), findsNothing);
-    // The Generators surface shows ALL sections, not just Story. With
-    // section==null the pane header reads 'Generators'; a section-locked
-    // build would read 'Story & Scenes'. Switch to the subtab and check.
-    await t.tap(find.widgetWithText(Tab, 'Generators'));
-    await t.pumpAndSettle();
-    expect(find.text('Story & Scenes'), findsNothing);
-    expect(find.text('Settlement'), findsOneWidget); // an Exploration generator
   });
 }

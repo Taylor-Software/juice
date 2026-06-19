@@ -5,7 +5,6 @@ import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
 import '../state/providers.dart';
 import 'fate_screen.dart';
-import 'generators_screen.dart';
 import 'tables_screen.dart';
 import 'lonelog_reference_screen.dart';
 
@@ -25,15 +24,11 @@ class OraclesTab extends ConsumerWidget {
     final lonelog = systems.contains('lonelog');
     final tabs = <SubtabDef>[
       const SubtabDef('oracle', 'Oracle'),
-      const SubtabDef('generators', 'Generators'),
       const SubtabDef('tables', 'Tables'),
       if (lonelog) const SubtabDef('lonelog', 'Lonelog'),
     ];
     final children = <Widget>[
       FateScreen(oracle: oracle, initialSection: FateSection.fateCheck),
-      // section: null shows ALL generator sections (Story/NPCs/Exploration/
-      // Encounters/Details) plus the wilderness-crawl controls in one surface.
-      GeneratorsScreen(oracle: oracle),
       TablesScreen(oracle: oracle),
       if (lonelog) const LonelogReferenceScreen(),
     ];

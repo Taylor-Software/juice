@@ -6,7 +6,7 @@ void main() {
     expect(toolLocation['verdant'], (Destination.map, 'journey'));
     expect(toolLocation['encounter'], (Destination.track, 'encounter'));
     expect(toolLocation['tables'], (Destination.ask, 'tables'));
-    expect(toolLocation['gen-npcs'], (Destination.ask, 'generators'));
+    expect(toolLocation.containsKey('gen-npcs'), isFalse);
     // dice has no tab home (entry line + modal)
     expect(toolLocation.containsKey('dice'), isFalse);
   });

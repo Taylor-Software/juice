@@ -4,18 +4,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/generator_registry.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/fate_screen.dart';
-import 'package:juice_oracle/features/generators_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('every generator belongs to exactly one section', () {
     final seen = <String>{};
     for (final s in GenSection.values) {
-      for (final label in GeneratorsScreen.labelsFor(s)) {
-        expect(seen.add(label), isTrue, reason: '$label in two sections');
+      for (final g in kGenerators.where((g) => g.section == s)) {
+        expect(seen.add(g.label), isTrue, reason: '${g.label} in two sections');
       }
     }
     expect(seen.length, greaterThanOrEqualTo(28));
@@ -49,9 +49,8 @@ void main() {
                     oracle: Oracle(data),
                     initialSection: FateSection.mythic)))));
     await tester.pumpAndSettle();
-    final pos = tester
-        .state<ScrollableState>(find.byType(Scrollable).first)
-        .position;
+    final pos =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
     expect(pos.pixels, greaterThan(0));
   });
 }
