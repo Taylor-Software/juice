@@ -1,11 +1,17 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/scenes_pane.dart';
-import 'package:juice_oracle/state/providers.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/destination.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
+import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -37,5 +43,32 @@ void main() {
     await t.tap(find.text('The Crossing'));
     await t.pumpAndSettle();
     expect(c.read(shellRouteProvider).destination, Destination.journal);
+  });
+
+  testWidgets('Generate scene prefills the new-scene dialog', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: ScenesPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-scene')));
+    await tester.pumpAndSettle();
+    // The new-scene dialog is open with a non-empty prefilled title field.
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.controller?.text.trim(), isNotEmpty);
   });
 }

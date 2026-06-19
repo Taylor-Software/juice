@@ -22,6 +22,7 @@ import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'assistant_rail.dart';
+import 'generate_sheet.dart';
 import 'oracle_interpretation_sheet.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
@@ -637,7 +638,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             menu: menu,
             onReroll: _canReroll(e) ? () => _reroll(e) : null,
             onOpenTool:
-                e.sourceTool == null ? null : () => _openTool(e.sourceTool!),
+                (e.sourceTool != null && toolLocation.containsKey(e.sourceTool))
+                    ? () => _openTool(e.sourceTool!)
+                    : null,
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
             lonelog: lonelog,
@@ -936,6 +939,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 final oracle = ref.read(oracleProvider).valueOrNull;
                 if (oracle != null) showDiceSheet(context, oracle.dice);
               },
+            ),
+            IconButton(
+              key: const Key('composer-inspire'),
+              icon: const Icon(Icons.auto_awesome),
+              tooltip: 'Inspire (generators)',
+              onPressed: () => showGenerateSheet(context),
             ),
             IconButton(
               key: const Key('journal-send'),
@@ -1623,9 +1632,7 @@ class _CampaignHeader extends ConsumerWidget {
                       avatar: const Icon(Icons.explore, size: 14),
                       label:
                           Text(crawl.lost ? 'Wilderness (lost)' : 'Wilderness'),
-                      onPressed: () => ref
-                          .read(shellRouteProvider.notifier)
-                          .openTool('gen-exploration'),
+                      onPressed: () => showGenerateSheet(context),
                     ),
                 ],
               ),

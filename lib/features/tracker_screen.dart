@@ -253,9 +253,25 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         },
       ),
       floatingActionButton: _editingId == null
-          ? FloatingActionButton(
-              onPressed: () => _onAdd(context),
-              child: const Icon(Icons.add),
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton.small(
+                  key: const Key('generate-npc'),
+                  heroTag: 'generate-npc-fab',
+                  tooltip: 'Generate NPC',
+                  onPressed: () => _generateNpc(context),
+                  child: const Icon(Icons.person_add_alt_1),
+                ),
+                const SizedBox(height: 8),
+                FloatingActionButton(
+                  key: const Key('add-character'),
+                  heroTag: 'add-character-fab',
+                  onPressed: () => _onAdd(context),
+                  child: const Icon(Icons.add),
+                ),
+              ],
             )
           : null,
     );
@@ -281,6 +297,33 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await notifier.replace(added.copyWith(note: result.note.trim()));
     }
     if (mounted) setState(() => _editingId = added.id);
+  }
+
+  Future<void> _generateNpc(BuildContext context) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final npc = oracle.npc();
+    final name = oracle.generateName().summary ?? '';
+    final result = await showDialog<({String title, String note})>(
+      context: context,
+      builder: (_) => _EditDialog(
+        heading: 'New NPC',
+        labelA: 'Name',
+        labelB: 'Note',
+        initialA: name,
+        initialB: npc.asText,
+        onRollName: () => oracle.generateName().summary ?? '',
+      ),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    final notifier = ref.read(charactersProvider.notifier);
+    await notifier.add(result.title.trim());
+    if (!mounted) return;
+    final added = ref.read(charactersProvider).valueOrNull?.first;
+    if (added != null && result.note.trim().isNotEmpty) {
+      await notifier.replace(added.copyWith(note: result.note.trim()));
+    }
+    if (mounted) setState(() => _editingId = added?.id);
   }
 
   Future<void> _onAdd(BuildContext context) async {
@@ -691,12 +734,17 @@ class _EditDialog extends StatefulWidget {
     required this.labelB,
     required this.initialA,
     required this.initialB,
+    this.onRollName,
   });
   final String heading;
   final String labelA;
   final String labelB;
   final String initialA;
   final String initialB;
+
+  /// If non-null, a dice icon is shown on the name field; tapping it calls
+  /// this to generate a new name and fills the field.
+  final String Function()? onRollName;
 
   @override
   State<_EditDialog> createState() => _EditDialogState();
@@ -725,7 +773,17 @@ class _EditDialogState extends State<_EditDialog> {
           TextField(
             controller: _a,
             autofocus: true,
-            decoration: InputDecoration(labelText: widget.labelA),
+            decoration: InputDecoration(
+              labelText: widget.labelA,
+              suffixIcon: widget.onRollName == null
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.casino_outlined),
+                      tooltip: 'Roll a name',
+                      onPressed: () =>
+                          setState(() => _a.text = widget.onRollName!()),
+                    ),
+            ),
           ),
           const SizedBox(height: 12),
           TextField(

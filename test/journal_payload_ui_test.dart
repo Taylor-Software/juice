@@ -200,9 +200,11 @@ void main() {
     expect(find.byKey(const Key('entry-reroll-e2')), findsNothing);
   });
 
-  testWidgets('non-rerollable payload hides re-roll, shows open-in-tool',
+  testWidgets(
+      'non-rerollable payload hides re-roll; gen-* sourceTool hides open-in-tool',
       (tester) async {
-    // Tool-logged entry: has sourceTool and payload but no command/rerollable.
+    // Tool-logged entry from a gen-* source (no toolLocation entry) — neither
+    // icon should appear.
     const toolEntry = '{'
         '"id":"e3",'
         '"timestamp":"2026-06-12T10:00:00.000Z",'
@@ -214,9 +216,32 @@ void main() {
         '"payload":{"v":1,"rolls":[{"label":"Trait","display":"Grim"}]}'
         '}';
     await pumpJournal(tester, _journalPrefs(toolEntry));
-    // Open-in-tool icon present.
-    expect(find.byKey(const Key('entry-open-tool-e3')), findsOneWidget);
+    // Open-in-tool icon absent: gen-npcs has no toolLocation entry (graceful
+    // degrade — chip is omitted rather than firing a dead snackbar).
+    expect(find.byKey(const Key('entry-open-tool-e3')), findsNothing);
     // Re-roll icon absent (no command/rerollable in payload).
     expect(find.byKey(const Key('entry-reroll-e3')), findsNothing);
+  });
+
+  testWidgets('gen-story sourceTool shows chip text but no open-in-tool button',
+      (tester) async {
+    // Entries produced by the inspire sheet (gen-story etc.) have a sourceTool
+    // that is not in toolLocation — the open-in-tool button must be absent so
+    // tapping never triggers a "Tool not available" snackbar.
+    const genEntry = '{'
+        '"id":"e4",'
+        '"timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"New Quest",'
+        '"body":"A dragon stirs",'
+        '"kind":"result",'
+        '"tags":[],'
+        '"sourceTool":"gen-story",'
+        '"payload":{"v":1,"rolls":[{"label":"Quest","display":"A dragon stirs"}]}'
+        '}';
+    await pumpJournal(tester, _journalPrefs(genEntry));
+    // No open-in-tool button — gen-story is not in toolLocation.
+    expect(find.byKey(const Key('entry-open-tool-e4')), findsNothing);
+    // No snackbar (nothing tappable to trigger it).
+    expect(find.text('Tool not available'), findsNothing);
   });
 }
