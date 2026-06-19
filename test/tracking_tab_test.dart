@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/tracking_tab.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
