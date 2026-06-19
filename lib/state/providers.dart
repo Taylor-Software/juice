@@ -1040,10 +1040,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     if (s == null || name.trim().isEmpty) return;
     final updated = [
       for (final m in s.sessions)
-        if (m.id == id)
-          SessionMeta(id: m.id, name: name.trim(), systems: m.systems)
-        else
-          m,
+        if (m.id == id) m.copyWith(name: name.trim()) else m,
     ];
     await _save(SessionsState(active: s.active, sessions: updated));
   }
@@ -1054,11 +1051,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     if (s == null) return;
     final updated = [
       for (final m in s.sessions)
-        if (m.id == id)
-          SessionMeta(
-              id: m.id, name: m.name, systems: systems.toList(), mode: m.mode)
-        else
-          m,
+        if (m.id == id) m.copyWith(systems: systems.toList()) else m,
     ];
     await _save(SessionsState(active: s.active, sessions: updated));
   }
@@ -1069,10 +1062,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     if (s == null) return;
     final updated = [
       for (final m in s.sessions)
-        if (m.id == id)
-          SessionMeta(id: m.id, name: m.name, systems: m.systems, mode: mode)
-        else
-          m,
+        if (m.id == id) m.copyWith(mode: mode) else m,
     ];
     await _save(SessionsState(active: s.active, sessions: updated));
   }
@@ -1133,6 +1123,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   Future<void> importCampaign(String fileContent) async {
     final parsed = parseCampaign(fileContent);
     final s = state.valueOrNull ?? await future;
+    // Campaign files don't carry session mode; imported campaigns default to party.
     final meta = SessionMeta(id: _newId(), name: parsed.name);
     final prefs = await SharedPreferences.getInstance();
     for (final e in parsed.rawByKey.entries) {
@@ -1152,6 +1143,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     }
     final doc = parseLonelog(content, importedAt: DateTime.now());
     final s = state.valueOrNull ?? await future;
+    // Campaign files don't carry session mode; imported campaigns default to party.
     final meta = SessionMeta(id: _newId(), name: doc.campaignName);
     final prefs = await SharedPreferences.getInstance();
     final rawByKey = <String, String>{

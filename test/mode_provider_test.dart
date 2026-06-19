@@ -36,6 +36,23 @@ void main() {
       expect(c.read(modeProvider), CampaignMode.party);
     });
 
+    test('rename preserves mode', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      await c.read(sessionsProvider.future);
+      await c
+          .read(sessionsProvider.notifier)
+          .setMode('default', CampaignMode.gm);
+      await c.read(sessionsProvider.notifier).rename('default', 'Renamed');
+      final meta = c.read(sessionsProvider).valueOrNull?.activeMeta;
+      expect(meta?.mode, CampaignMode.gm);
+      expect(meta?.name, 'Renamed');
+    });
+
     test('setMode flips + persists + preserves systems', () async {
       SharedPreferences.setMockInitialValues({
         'juice.sessions.v1':

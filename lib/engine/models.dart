@@ -2153,6 +2153,7 @@ const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 enum CampaignMode { gm, party }
 
 CampaignMode _modeFromName(String? n) =>
+    // Unknown/absent → party (forward-compat default).
     n == 'gm' ? CampaignMode.gm : CampaignMode.party;
 
 /// A campaign/session: an isolated journal, threads, characters, crawl.
@@ -2180,6 +2181,16 @@ class SessionMeta {
         if (systems != null) 'systems': systems,
         if (mode != CampaignMode.party) 'mode': mode.name,
       };
+
+  // id is immutable — not overridable via copyWith.
+  SessionMeta copyWith(
+          {String? name, List<String>? systems, CampaignMode? mode}) =>
+      SessionMeta(
+        id: id,
+        name: name ?? this.name,
+        systems: systems ?? this.systems,
+        mode: mode ?? this.mode,
+      );
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
         id: j['id'] as String,
