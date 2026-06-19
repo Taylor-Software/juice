@@ -13,6 +13,42 @@ Widget sheetSection(BuildContext context, String title) => Padding(
       child: Text(title, style: Theme.of(context).textTheme.titleMedium),
     );
 
+/// Ability score box (D&D / Shadowdark): label, derived modifier, and a
+/// −/score/+ stepper. [prefix] keys the buttons, e.g. 'dnd' ->
+/// 'dnd-ability-str-plus', 'sd' -> 'sd-ability-str-plus'.
+Widget abilityBox({
+  required String prefix,
+  required String abilityKey,
+  required String label,
+  required String modText,
+  required int score,
+  required VoidCallback onMinus,
+  required VoidCallback onPlus,
+}) =>
+    SizedBox(
+      width: 110,
+      child: Column(children: [
+        Text(label, style: const TextStyle(fontSize: 11)),
+        Text(modText,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          IconButton(
+            key: Key('$prefix-ability-$abilityKey-minus'),
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.remove, size: 16),
+            onPressed: onMinus,
+          ),
+          Text('$score'),
+          IconButton(
+            key: Key('$prefix-ability-$abilityKey-plus'),
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.add, size: 16),
+            onPressed: onPlus,
+          ),
+        ]),
+      ]),
+    );
+
 Widget statStepper({
   required String prefix,
   required String label,

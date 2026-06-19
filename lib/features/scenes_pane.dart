@@ -79,7 +79,18 @@ class ScenesPane extends ConsumerWidget {
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: 'Scene title'),
+          decoration: InputDecoration(
+            labelText: 'Scene title',
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.casino_outlined),
+              tooltip: 'Roll a name',
+              onPressed: () {
+                final oracle = ref.read(oracleProvider).valueOrNull;
+                if (oracle == null) return;
+                controller.text = oracle.generateName().summary ?? '';
+              },
+            ),
+          ),
           onSubmitted: (v) => Navigator.pop(context, v),
         ),
         actions: [
