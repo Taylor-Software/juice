@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -350,7 +355,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-ironsworn')));
     await tester.pumpAndSettle();
@@ -462,7 +467,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-starforged')));
     await tester.pumpAndSettle();
@@ -669,7 +674,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-dnd')));
     await tester.pumpAndSettle();
@@ -742,7 +747,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-sundered')));
     await tester.pumpAndSettle();
@@ -833,7 +838,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('new-shadowdark')));
     await tester.pumpAndSettle();
@@ -1031,7 +1036,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     // ironsworn system is off, so the Ironsworn-family options are hidden.
     expect(find.byKey(const Key('new-ironsworn')), findsNothing);
@@ -1058,7 +1063,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Edit systems'), findsOneWidget);
   });
@@ -1079,10 +1084,40 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Edit systems'), findsNothing);
     expect(find.byKey(const Key('new-dnd')), findsOneWidget);
     expect(find.byKey(const Key('new-shadowdark')), findsOneWidget);
+  });
+
+  testWidgets('Generate NPC prefills and creates a character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => oracle),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('generate-npc')));
+    await tester.pumpAndSettle();
+    // The edit dialog opens prefilled; Save creates the character.
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.length, 1);
+    expect(chars.first.name.trim(), isNotEmpty);
   });
 }
