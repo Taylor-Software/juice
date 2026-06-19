@@ -538,52 +538,56 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   Future<void> _editConditions(BuildContext context, Character c) async {
     final selected = {...c.conditions};
     final customCtrl = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setLocal) => AlertDialog(
-          title: Text('${c.name} — conditions'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final cond in {...kConditions, ...c.conditions})
-                      FilterChip(
-                        label: Text(cond),
-                        selected: selected.contains(cond),
-                        onSelected: (on) => setLocal(() =>
-                            on ? selected.add(cond) : selected.remove(cond)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: customCtrl,
-                  decoration:
-                      const InputDecoration(labelText: 'Add custom condition'),
-                  onSubmitted: (v) {
-                    final t = v.trim();
-                    if (t.isNotEmpty) setLocal(() => selected.add(t));
-                    customCtrl.clear();
-                  },
-                ),
-              ],
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setLocal) => AlertDialog(
+            title: Text('${c.name} — conditions'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final cond in {...kConditions, ...c.conditions})
+                        FilterChip(
+                          label: Text(cond),
+                          selected: selected.contains(cond),
+                          onSelected: (on) => setLocal(() =>
+                              on ? selected.add(cond) : selected.remove(cond)),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: customCtrl,
+                    decoration: const InputDecoration(
+                        labelText: 'Add custom condition'),
+                    onSubmitted: (v) {
+                      final t = v.trim();
+                      if (t.isNotEmpty) setLocal(() => selected.add(t));
+                      customCtrl.clear();
+                    },
+                  ),
+                ],
+              ),
             ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Done'),
+              ),
+            ],
           ),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Done'),
-            ),
-          ],
         ),
-      ),
-    );
+      );
+    } finally {
+      customCtrl.dispose();
+    }
     await ref
         .read(charactersProvider.notifier)
         .setConditions(c.id, selected.toList());
