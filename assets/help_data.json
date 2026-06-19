@@ -615,7 +615,7 @@
               "h": "On-device AI models"
             },
             {
-              "p": "Web: Gemma 3 1B (Google) under the Gemma license. Mobile: Qwen3 0.6B (Alibaba) under Apache 2.0. Models run entirely on your device after a one-time download."
+              "p": "On-device AI (mobile & desktop): Gemma 4 E2B (Google), used under the Gemma license. The model runs entirely on your device after a one-time download. The web version has no on-device AI."
             }
           ]
         }

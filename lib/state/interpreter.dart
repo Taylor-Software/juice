@@ -21,7 +21,7 @@ enum InterpreterPhase {
   /// Loaded; interpret() may be called.
   ready,
 
-  /// This platform cannot run the model (e.g. no WebGPU). Hide the feature.
+  /// This platform has no on-device LLM (e.g. web). Hide the feature.
   unsupported,
 
   /// warmUp failed; [InterpreterStatus.message] says why. Retry allowed.
@@ -35,6 +35,12 @@ class InterpreterStatus {
   final int progress;
   final String message;
 }
+
+/// Human download size: MB under 1 GB, else one-decimal GB (decimal MB,
+/// matching how model hosts list file sizes).
+String formatDownloadSize(int approxMb) => approxMb < 1000
+    ? '~$approxMb MB'
+    : '~${(approxMb / 1000).toStringAsFixed(1)} GB';
 
 abstract class InterpreterService {
   /// Current lifecycle phase; the sheet rebuilds off this.

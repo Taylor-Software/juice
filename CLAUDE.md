@@ -221,10 +221,20 @@ Working rules for this repo:
   `JournalEntry.copyWith(payload:)` + `JournalNotifier.replace`. See
   `docs/superpowers/specs/2026-06-18-journal-sketch-design.md`. Deferred:
   shapes/eraser/image-import/pan-zoom. No licensed content (user-drawn vectors).
-- Interpreter models are pinned in `lib/state/interpreter_gemma.dart`.
-  The web URL is a third-party dev mirror; swapping it to the user's own
-  HF mirror is a release gate for web (see the oracle-interpreter spec,
-  "Weights provenance").
+- The on-device interpreter model is pinned in
+  `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
+  `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/
+  gemma-4-E2B-it-litert-lm` repo (~2.6 GB), downloaded on demand with a consent
+  card — never bundled (a multi-GB binary is infeasible for app stores). The
+  **on-device LLM is disabled on web** (`GemmaInterpreterService` forces the
+  `unsupported` phase in its constructor; every AI affordance already gates on
+  phase, so web hides them and falls back to deterministic oracle rolls). This
+  retired the old per-platform split (web Gemma3 1B `.task` via a third-party
+  dev mirror + mobile Qwen3 0.6B) and the web "Weights provenance" release gate
+  — web no longer ships any model. `downloadLabel` uses the pure
+  `formatDownloadSize` (`lib/state/interpreter.dart`). See
+  `docs/superpowers/specs/2026-06-19-gemma4-mobile-web-disable-design.md`;
+  the original two-model rationale is in the oracle-interpreter spec.
 
 ## Workflow system
 

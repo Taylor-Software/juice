@@ -129,7 +129,6 @@ void main() {
       'hedonic.ink',
       'thunder9861',
       'Gemma',
-      'Qwen',
       'free',
     ]) {
       expect(text, contains(needle));

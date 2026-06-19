@@ -366,8 +366,8 @@ class _Consent extends StatelessWidget {
           const SizedBox(height: 12),
           // Model attribution, alongside the app's other source credits.
           Text(
-            'Web: Gemma 3 1B © Google, Gemma license. '
-            'Mobile: Qwen3 0.6B © Alibaba, Apache 2.0.',
+            'Gemma 4 E2B © Google, used under the Gemma license.',
+            key: const Key('interp-model-credit'),
             style: theme.textTheme.labelSmall
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
