@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
@@ -1157,5 +1158,47 @@ void main() {
         find.descendant(of: dialog, matching: find.byType(TextField)).first;
     final tf = tester.widget<TextField>(nameField);
     expect(tf.controller!.text.trim(), isNotEmpty);
+  });
+
+  // -- Task 3: grouped roster + role dropdown --
+
+  testWidgets('roster groups by role with headers', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]},'
+              '{"id":"n1","name":"Veyra","role":"npc","stats":[],"tracks":[],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    expect(find.text('Party'), findsOneWidget);
+    expect(find.text('NPCs'), findsOneWidget);
+    expect(find.text('Companions'), findsNothing); // empty group hidden
+  });
+
+  testWidgets('role dropdown re-tags a character', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+    await tester.tap(find.byKey(const Key('role-p1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('NPC').last);
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.role,
+        CharacterRole.npc);
   });
 }

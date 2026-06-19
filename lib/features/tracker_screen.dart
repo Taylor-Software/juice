@@ -209,46 +209,27 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           if (chars.isEmpty) {
             return const _Empty('No characters yet. Track NPCs and PCs.');
           }
-          return ListView.builder(
+          final active =
+              ref.watch(playContextProvider).valueOrNull?.activeCharacterId;
+          const groups = [
+            ('Party', CharacterRole.pc),
+            ('Companions', CharacterRole.companion),
+            ('NPCs', CharacterRole.npc),
+          ];
+          return ListView(
             padding: const EdgeInsets.all(12),
-            itemCount: chars.length,
-            itemBuilder: (context, i) {
-              final c = chars[i];
-              final t = c.tracks.isEmpty ? null : c.tracks.first;
-              return Card(
-                child: ListTile(
-                  title: Text(c.name),
-                  subtitle: t != null
-                      ? Text('${t.label} ${t.current}/${t.max}')
-                      : (c.note.isEmpty ? null : Text(c.note)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        key: Key('star-char-${c.id}'),
-                        visualDensity: VisualDensity.compact,
-                        icon: Icon(c.starred ? Icons.star : Icons.star_border),
-                        tooltip: c.starred ? 'Unstar' : 'Star',
-                        onPressed: () => ref
-                            .read(charactersProvider.notifier)
-                            .toggleStarred(c.id),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () =>
-                            ref.read(charactersProvider.notifier).remove(c.id),
-                      ),
-                    ],
+            children: [
+              for (final (label, role) in groups)
+                if (chars.any((c) => c.role == role)) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
+                    child: Text(label,
+                        style: Theme.of(context).textTheme.labelMedium),
                   ),
-                  onTap: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(c.id);
-                    setState(() => _editingId = c.id);
-                  },
-                ),
-              );
-            },
+                  for (final c in chars.where((c) => c.role == role))
+                    _rosterCard(context, c, isLead: c.id == active),
+                ],
+            ],
           );
         },
       ),
@@ -454,6 +435,71 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         .read(charactersProvider.notifier)
         .addStarforged(assetRuleset: 'sundered_isles');
     if (mounted) setState(() => _editingId = id);
+  }
+
+  Widget _rosterCard(BuildContext context, Character c, {bool isLead = false}) {
+    final t = c.tracks.isEmpty ? null : c.tracks.first;
+    return Card(
+      child: ListTile(
+        title: Row(
+          children: [
+            Expanded(child: Text(c.name)),
+            if (isLead)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Chip(
+                  label: const Text('lead'),
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
+                  labelStyle: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontSize: 11),
+                ),
+              ),
+          ],
+        ),
+        subtitle: t != null
+            ? Text('${t.label} ${t.current}/${t.max}')
+            : (c.note.isEmpty ? null : Text(c.note)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PopupMenuButton<CharacterRole>(
+              key: Key('role-${c.id}'),
+              initialValue: c.role,
+              tooltip: 'Role',
+              onSelected: (r) =>
+                  ref.read(charactersProvider.notifier).setRole(c.id, r),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: CharacterRole.pc, child: Text('PC')),
+                PopupMenuItem(
+                    value: CharacterRole.companion, child: Text('Companion')),
+                PopupMenuItem(value: CharacterRole.npc, child: Text('NPC')),
+              ],
+            ),
+            IconButton(
+              key: Key('star-char-${c.id}'),
+              visualDensity: VisualDensity.compact,
+              icon: Icon(c.starred ? Icons.star : Icons.star_border),
+              tooltip: c.starred ? 'Unstar' : 'Star',
+              onPressed: () =>
+                  ref.read(charactersProvider.notifier).toggleStarred(c.id),
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () =>
+                  ref.read(charactersProvider.notifier).remove(c.id),
+            ),
+          ],
+        ),
+        onTap: () {
+          ref.read(playContextProvider.notifier).setActiveCharacter(c.id);
+          setState(() => _editingId = c.id);
+        },
+      ),
+    );
   }
 
   Future<void> _editNameNote(BuildContext context, Character c) async {
