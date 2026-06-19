@@ -296,4 +296,61 @@ void main() {
         contains('current: ${data.table('wilderness_environment')[6]}'));
     expect(find.text('Added to journal'), findsOneWidget);
   });
+
+  // -- Encounter pin ----------------------------------------------------------
+
+  testWidgets('dungeon detail card links and unlinks the encounter location',
+      (tester) async {
+    final container = await pumpDungeon(tester, mapJson: seededMap());
+    final origin = tester.getTopLeft(find.byKey(const Key('dungeon-canvas')));
+    await tester.tapAt(origin + const Offset(56, 56)); // select room a
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('room-detail-card')), findsOneWidget);
+    expect(find.text('Set encounter here'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('dungeon-encounter-toggle')));
+    await tester.pumpAndSettle();
+    expect(container.read(encounterProvider).valueOrNull!.locationRef?.roomId,
+        'a');
+    expect(find.text('Encounter here ✓'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('dungeon-encounter-toggle')));
+    await tester.pumpAndSettle();
+    expect(container.read(encounterProvider).valueOrNull!.locationRef, isNull);
+  });
+
+  testWidgets('hex detail card links the encounter to the selected hex',
+      (tester) async {
+    // The hex detail card (and so the toggle) is gated behind the hexcrawl
+    // opt-in, so enable it on the seeded session.
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+          '"name":"C1","systems":["juice","hexcrawl"]}]}',
+      'juice.map.v1.default': jsonEncode({
+        'hexes': [
+          {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+        ],
+        'currentHexCol': 0,
+        'currentHexRow': 0,
+      }),
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: HexMapPane(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
+
+    // Cells = (0,0) + 6 neighbors -> minCol = minRow = -1.
+    final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
+    await tester.tapAt(origin + hexCenterFor(0, 0, -1, -1, 34.0));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('hex-detail-card')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('hex-encounter-toggle')));
+    await tester.pumpAndSettle();
+    final loc = container.read(encounterProvider).valueOrNull!.locationRef;
+    expect(loc?.hexCol, 0);
+    expect(loc?.hexRow, 0);
+  });
 }

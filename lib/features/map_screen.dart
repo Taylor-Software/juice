@@ -37,6 +37,47 @@ String? roomIdAt(List<DungeonRoom> rooms, Offset local, double cell) {
   return null;
 }
 
+/// Stamps the active-encounter marker (a material icon) centered on [center].
+/// Used by both the dungeon and hex painters so the pin reads identically.
+void paintEncounterPin(Canvas canvas, Offset center, Color color) {
+  const icon = Icons.local_fire_department;
+  final tp = TextPainter(
+    text: TextSpan(
+      text: String.fromCharCode(icon.codePoint),
+      style: TextStyle(
+        fontSize: 18,
+        fontFamily: icon.fontFamily,
+        package: icon.fontPackage,
+        color: color,
+      ),
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+}
+
+/// Link/unlink toggle for pinning the active encounter to a map cell. Shared by
+/// the dungeon room and hex detail cards. Disabled while the encounter is still
+/// loading ([enabled] false) so the tap can't null-deref.
+Widget encounterToggleButton({
+  required Key key,
+  required bool linked,
+  required bool enabled,
+  required VoidCallback onLink,
+  required VoidCallback onUnlink,
+}) =>
+    OutlinedButton.icon(
+      key: key,
+      onPressed: !enabled ? null : (linked ? onUnlink : onLink),
+      icon: Icon(
+        linked
+            ? Icons.local_fire_department
+            : Icons.add_location_alt_outlined,
+        size: 18,
+      ),
+      label: Text(linked ? 'Encounter here ✓' : 'Set encounter here'),
+    );
+
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
   const DungeonMapPane({super.key, required this.oracle});
@@ -164,6 +205,8 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               corridors: s.corridors,
               currentRoomId: s.currentRoomId,
               scheme: scheme,
+              encounterRoomId:
+                  ref.watch(encounterProvider).valueOrNull?.locationRef?.roomId,
             ),
           ),
         ),
@@ -267,13 +310,28 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               ),
               const SizedBox(height: 8),
             ],
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 OutlinedButton(
                   key: const Key('linger'),
                   onPressed: () => _linger(room),
                   child: const Text('Linger'),
                 ),
+                Builder(builder: (context) {
+                  final enc = ref.watch(encounterProvider);
+                  return encounterToggleButton(
+                    key: const Key('dungeon-encounter-toggle'),
+                    linked: enc.valueOrNull?.locationRef?.roomId == room.id,
+                    enabled: enc.hasValue,
+                    onLink: () => ref
+                        .read(encounterProvider.notifier)
+                        .setLocation(LocationRef(roomId: room.id)),
+                    onUnlink: () =>
+                        ref.read(encounterProvider.notifier).setLocation(null),
+                  );
+                }),
               ],
             ),
           ],
@@ -342,12 +400,14 @@ class _DungeonPainter extends CustomPainter {
     required this.corridors,
     required this.currentRoomId,
     required this.scheme,
+    this.encounterRoomId,
   });
 
   final List<DungeonRoom> rooms;
   final List<List<String>> corridors;
   final String? currentRoomId;
   final ColorScheme scheme;
+  final String? encounterRoomId;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -399,6 +459,10 @@ class _DungeonPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, rect.center - Offset(tp.width / 2, tp.height / 2));
+      if (r.id == encounterRoomId) {
+        paintEncounterPin(
+            canvas, Offset(rect.right - 7, rect.top + 7), scheme.error);
+      }
     }
   }
 
@@ -407,6 +471,7 @@ class _DungeonPainter extends CustomPainter {
       old.rooms != rooms ||
       old.corridors != corridors ||
       old.currentRoomId != currentRoomId ||
+      old.encounterRoomId != encounterRoomId ||
       old.scheme != scheme;
 }
 
@@ -707,6 +772,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
 
   Widget _canvas(MapState s) {
     final scheme = Theme.of(context).colorScheme;
+    final encounterRef = ref.watch(encounterProvider).valueOrNull?.locationRef;
     final revealed = {for (final h in s.hexes) (h.col, h.row)};
     final ghosts = <({int col, int row})>[];
     final seen = <(int, int)>{};
@@ -767,6 +833,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
               minRow: minRow,
               envNames: _envNames,
               scheme: scheme,
+              encounterCol: encounterRef?.hexCol,
+              encounterRow: encounterRef?.hexRow,
             ),
           ),
         ),
@@ -900,6 +968,20 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                     child: const Text('Log'),
                   ),
               ],
+              Builder(builder: (context) {
+                final enc = ref.watch(encounterProvider);
+                final ref0 = enc.valueOrNull?.locationRef;
+                return encounterToggleButton(
+                  key: const Key('hex-encounter-toggle'),
+                  linked: ref0?.hexCol == h.col && ref0?.hexRow == h.row,
+                  enabled: enc.hasValue,
+                  onLink: () => ref
+                      .read(encounterProvider.notifier)
+                      .setLocation(LocationRef(hexCol: h.col, hexRow: h.row)),
+                  onUnlink: () =>
+                      ref.read(encounterProvider.notifier).setLocation(null),
+                );
+              }),
             ]),
           ],
         ),
@@ -1199,6 +1281,8 @@ class _HexPainter extends CustomPainter {
     required this.minRow,
     required this.envNames,
     required this.scheme,
+    this.encounterCol,
+    this.encounterRow,
   });
 
   final List<HexCell> hexes;
@@ -1209,6 +1293,8 @@ class _HexPainter extends CustomPainter {
   final int minRow;
   final List<String> envNames;
   final ColorScheme scheme;
+  final int? encounterCol;
+  final int? encounterRow;
 
   /// Flat-top hexagon: corners at 0, 60, ... 300 degrees from the center.
   static Path _hexPath(Offset center, double size) {
@@ -1320,6 +1406,10 @@ class _HexPainter extends CustomPainter {
                 Offset(_hexSize * 0.35 - badge.width / 2,
                     -_hexSize * 0.6 - badge.height / 2));
       }
+      if (h.col == encounterCol && h.row == encounterRow) {
+        paintEncounterPin(
+            canvas, c + const Offset(0, -_hexSize * 0.5), scheme.error);
+      }
     }
   }
 
@@ -1331,5 +1421,7 @@ class _HexPainter extends CustomPainter {
       old.currentRow != currentRow ||
       old.minCol != minCol ||
       old.minRow != minRow ||
+      old.encounterCol != encounterCol ||
+      old.encounterRow != encounterRow ||
       old.scheme != scheme;
 }

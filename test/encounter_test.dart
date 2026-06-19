@@ -265,6 +265,25 @@ void main() {
       expect(prefs.getString('juice.encounter.v1.default'),
           contains('"round":1'));
     });
+
+    test('setLocation links and clears the encounter location', () async {
+      final container = _container();
+      addTearDown(container.dispose);
+      final n = container.read(encounterProvider.notifier);
+      await n.setLocation(const LocationRef(roomId: 'r1'));
+      var s = await container.read(encounterProvider.future);
+      expect(s.locationRef?.roomId, 'r1');
+      // Re-linking to a hex replaces the ref kind.
+      await n.setLocation(const LocationRef(hexCol: 2, hexRow: 3));
+      s = await container.read(encounterProvider.future);
+      expect(s.locationRef?.hexCol, 2);
+      expect(s.locationRef?.hexRow, 3);
+      expect(s.locationRef?.roomId, isNull);
+      // Null unlinks.
+      await n.setLocation(null);
+      s = await container.read(encounterProvider.future);
+      expect(s.locationRef, isNull);
+    });
   });
 
   group('Campaign file encounter key', () {
