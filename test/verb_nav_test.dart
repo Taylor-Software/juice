@@ -12,6 +12,7 @@ import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/features/tracking_tab.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/play_context.dart';
+import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final testOracle = Oracle(OracleData(
@@ -135,5 +136,25 @@ void main() {
     // List is shown and does NOT immediately re-open.
     expect(find.text('Ash'), findsOneWidget);
     expect(find.byKey(const Key('sheet-back')), findsNothing);
+  });
+
+  testWidgets('Sheet shows Moves only in party mode', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1","mode":"gm"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: SheetTab(family: ['classic'])))));
+    await tester.pumpAndSettle();
+    // GM mode + family non-empty: Moves hidden → bare roster (no Moves tab).
+    expect(find.text('Moves'), findsNothing);
+    expect(find.byType(CharactersPane), findsOneWidget);
   });
 }
