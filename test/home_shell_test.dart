@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
@@ -322,5 +323,25 @@ void main() {
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
     final s = await container.read(sessionsProvider.future);
     expect(s.activeMeta.enabledSystems, contains('shadowdark'));
+  });
+
+  testWidgets('mode toggle flips and persists the campaign mode',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    // Default mode is party.
+    expect(container.read(modeProvider), CampaignMode.party);
+    // Tap the mode toggle.
+    await tester.tap(find.byKey(const Key('mode-toggle')));
+    await tester.pumpAndSettle();
+    expect(container.read(modeProvider), CampaignMode.gm);
   });
 }

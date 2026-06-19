@@ -543,6 +543,25 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
             ),
           IconButton(
+            key: const Key('mode-toggle'),
+            icon: Icon(ref.watch(modeProvider) == CampaignMode.gm
+                ? Icons.castle_outlined
+                : Icons.groups_outlined),
+            tooltip: ref.watch(modeProvider) == CampaignMode.gm
+                ? 'GM mode (tap for Party)'
+                : 'Party mode (tap for GM)',
+            onPressed: () {
+              final sessions = ref.read(sessionsProvider).valueOrNull;
+              if (sessions == null) return;
+              final next = ref.read(modeProvider) == CampaignMode.gm
+                  ? CampaignMode.party
+                  : CampaignMode.gm;
+              ref
+                  .read(sessionsProvider.notifier)
+                  .setMode(sessions.active, next);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',
             onPressed: () => _showSessions(context),
