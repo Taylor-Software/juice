@@ -34,6 +34,15 @@ class ScenesPane extends ConsumerWidget {
                   onPressed: () => _newScene(context, ref),
                 ),
               ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: FilledButton.tonalIcon(
+                  key: const Key('generate-scene'),
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('Generate'),
+                  onPressed: () => _generateScene(context, ref),
+                ),
+              ),
             ],
           ),
         ),
@@ -60,8 +69,9 @@ class ScenesPane extends ConsumerWidget {
     );
   }
 
-  Future<void> _newScene(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
+  Future<void> _newScene(BuildContext context, WidgetRef ref,
+      {String initialTitle = ''}) async {
+    final controller = TextEditingController(text: initialTitle);
     final title = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -87,5 +97,12 @@ class ScenesPane extends ConsumerWidget {
           title.trim(),
           chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
         );
+  }
+
+  Future<void> _generateScene(BuildContext context, WidgetRef ref) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final g = oracle.newScene();
+    await _newScene(context, ref, initialTitle: g.summary ?? g.title);
   }
 }
