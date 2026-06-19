@@ -51,6 +51,11 @@ void main() {
     final fake = await pump(tester);
     expect(fake.refreshCalls, 1);
     expect(find.textContaining('~123 MB'), findsWidgets);
+    // The consent card credits the shipped model, not the retired ones.
+    final credit =
+        tester.widget<Text>(find.byKey(const Key('interp-model-credit'))).data!;
+    expect(credit, contains('Gemma 4'));
+    expect(credit, isNot(contains('Qwen')));
     await tester.tap(find.byKey(const Key('interp-download')));
     await tester.pumpAndSettle();
     expect(fake.warmUpCalls, 1);
@@ -60,8 +65,8 @@ void main() {
 
   testWidgets('installing shows progress', (tester) async {
     await pump(tester,
-        initial: const InterpreterStatus(InterpreterPhase.installing,
-            progress: 42));
+        initial:
+            const InterpreterStatus(InterpreterPhase.installing, progress: 42));
     expect(find.textContaining('42%'), findsOneWidget);
   });
 
@@ -90,8 +95,7 @@ void main() {
     final fake = await pump(tester,
         initial: const InterpreterStatus(InterpreterPhase.ready),
         seedOverride: const OracleSeed(
-            resultText: 'Fate Check (Likely) — Yes…',
-            journalContext: ['x']));
+            resultText: 'Fate Check (Likely) — Yes…', journalContext: ['x']));
     expect(fake.interpretCalls, 1);
     expect(fake.lastSeed!.journalContext, ['x']);
   });
@@ -175,16 +179,14 @@ void main() {
     expect(fake.interpretCalls, 0);
   });
 
-  testWidgets('genre/tone editable from header and persisted',
-      (tester) async {
+  testWidgets('genre/tone editable from header and persisted', (tester) async {
     await pump(tester,
         initial: const InterpreterStatus(InterpreterPhase.ready));
     await tester.tap(find.byKey(const Key('interp-tone-edit')));
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('interp-genre-field')), 'grimdark');
-    await tester.enterText(
-        find.byKey(const Key('interp-tone-field')), 'tense');
+    await tester.enterText(find.byKey(const Key('interp-tone-field')), 'tense');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
     expect(find.textContaining('grimdark'), findsOneWidget);
