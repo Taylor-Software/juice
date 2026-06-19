@@ -81,6 +81,9 @@ List<String> _beatLines(
       lines.add(first.isEmpty ? 'd: $title' : 'd: $title -> $first');
     case JournalKind.text:
       if (body.isNotEmpty) lines.add(body);
+    case JournalKind.sketch:
+      // Sketches are vector-only; export as a freeform note placeholder.
+      lines.add('(note: [Sketch])');
   }
   if (e.threadId != null) {
     final title = threadTitles[e.threadId] ?? '(closed thread)';

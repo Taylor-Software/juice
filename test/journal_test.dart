@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/sketch.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 void main() {
@@ -264,5 +265,51 @@ void main() {
     expect(entries.first.sourceTool, 'dice');
     expect(entries.first.payload!['summary'], '3d6 = 11');
     expect(entries.first.kind, JournalKind.result);
+  });
+
+  test('JournalKind.sketch round-trips', () {
+    final e = JournalEntry(
+        id: 's1',
+        timestamp: DateTime(2026),
+        title: 'Sketch',
+        body: '',
+        kind: JournalKind.sketch,
+        payload: const {'v': 1, 'sketch': {}});
+    final back = JournalEntry.fromJson(e.toJson());
+    expect(back.kind, JournalKind.sketch);
+    expect(back.payload?['v'], 1);
+  });
+
+  test('copyWith(payload:) replaces, omitted keeps', () {
+    final e = JournalEntry(
+        id: 's1',
+        timestamp: DateTime(2026),
+        title: 'S',
+        body: '',
+        kind: JournalKind.sketch,
+        payload: const {'a': 1});
+    expect(e.copyWith(payload: const {'b': 2}).payload, const {'b': 2});
+    expect(e.copyWith(title: 'X').payload, const {'a': 1});
+  });
+
+  test('addSketch creates a sketch entry with payload', () async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(journalProvider.future);
+    await c.read(journalProvider.notifier).addSketch(
+            const SketchData(canvasWidth: 300, canvasHeight: 200, strokes: [
+          SketchStroke(color: 0xFF000000, width: 3, points: [
+            [1, 1],
+            [2, 2]
+          ])
+        ]));
+    final e = (await c.read(journalProvider.future)).first;
+    expect(e.kind, JournalKind.sketch);
+    expect(e.payload?['sketch'], isNotNull);
   });
 }

@@ -13,6 +13,7 @@ import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
+import '../engine/sketch.dart';
 import '../shared/destination.dart';
 import '../shared/dice_sheet.dart';
 import '../shared/help_nav.dart';
@@ -24,6 +25,7 @@ import '../state/providers.dart';
 import 'assistant_rail.dart';
 import 'generate_sheet.dart';
 import 'oracle_interpretation_sheet.dart';
+import 'sketch_editor.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
@@ -588,7 +590,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   : 'Save as thread')),
         const PopupMenuItem(value: 'link', child: Text('Link to thread…')),
         const PopupMenuItem(value: 'tags', child: Text('Tags…')),
-        const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
+        // Sketches edit in place via tap on the thumbnail, not the text editor.
+        if (e.kind != JournalKind.sketch)
+          const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     );
@@ -658,6 +662,41 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             ),
             trailing: menu,
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
+          ),
+        );
+      case JournalKind.sketch:
+        final data = SketchData.fromJson(
+            (e.payload?['sketch'] as Map?)?.cast<String, dynamic>() ??
+                const {});
+        return Card(
+          child: InkWell(
+            onTap: () async {
+              final edited = await showSketchEditor(context, initial: data);
+              if (edited != null) {
+                await ref.read(journalProvider.notifier).replace(
+                    e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
+              }
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  key: Key('sketch-thumb-${e.id}'),
+                  height: 180,
+                  child: CustomPaint(painter: SketchPainter(data)),
+                ),
+                Row(
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Text('Sketch'),
+                    ),
+                    const Spacer(),
+                    menu,
+                  ],
+                ),
+              ],
+            ),
           ),
         );
     }
@@ -946,6 +985,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               icon: const Icon(Icons.auto_awesome),
               tooltip: 'Inspire (generators)',
               onPressed: () => showGenerateSheet(context),
+            ),
+            IconButton(
+              key: const Key('composer-draw'),
+              icon: const Icon(Icons.draw_outlined),
+              tooltip: 'Draw a sketch',
+              onPressed: () async {
+                final data = await showSketchEditor(context);
+                if (data != null && !data.isEmpty) {
+                  await ref.read(journalProvider.notifier).addSketch(data);
+                }
+              },
             ),
             IconButton(
               key: const Key('journal-send'),
