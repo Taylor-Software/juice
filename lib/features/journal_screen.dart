@@ -638,7 +638,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             menu: menu,
             onReroll: _canReroll(e) ? () => _reroll(e) : null,
             onOpenTool:
-                e.sourceTool == null ? null : () => _openTool(e.sourceTool!),
+                (e.sourceTool != null && toolLocation.containsKey(e.sourceTool))
+                    ? () => _openTool(e.sourceTool!)
+                    : null,
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
             lonelog: lonelog,
@@ -1630,9 +1632,7 @@ class _CampaignHeader extends ConsumerWidget {
                       avatar: const Icon(Icons.explore, size: 14),
                       label:
                           Text(crawl.lost ? 'Wilderness (lost)' : 'Wilderness'),
-                      onPressed: () => ref
-                          .read(shellRouteProvider.notifier)
-                          .openTool('gen-exploration'),
+                      onPressed: () => showGenerateSheet(context),
                     ),
                 ],
               ),

@@ -17,7 +17,7 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   testWidgets(
-      'Oracles tab shows Oracle/Generators/Tables; Moves hidden with empty family',
+      'Ask tab shows Oracle/Tables; Generators and Moves hidden with empty family',
       (t) async {
     await t.pumpWidget(ProviderScope(
       child: MaterialApp(home: Scaffold(body: OraclesTab(oracle: _oracle()))),

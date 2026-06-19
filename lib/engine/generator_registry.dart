@@ -28,7 +28,7 @@ class GeneratorDef {
   final GenResult Function(Oracle o) run;
 }
 
-/// All content generators (the source of truth, moved out of GeneratorsScreen).
+/// All content generators — the source of truth for the generate sheet and the contextual entity affordances.
 final List<GeneratorDef> kGenerators = [
   GeneratorDef('New Quest', GenSection.story, (o) => o.newQuest()),
   GeneratorDef('New Scene', GenSection.story, (o) => o.newScene()),
