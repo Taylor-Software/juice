@@ -157,4 +157,36 @@ void main() {
     expect(find.text('Moves'), findsNothing);
     expect(find.byType(CharactersPane), findsOneWidget);
   });
+
+  testWidgets('Sheet shows Moves in party mode (positive case)',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final fixture = {
+      'meta': {
+        'title': 'Ironsworn',
+        'authors': ['Shawn Tomkin'],
+        'license': 'https://creativecommons.org/licenses/by/4.0',
+      },
+      'move_categories': <dynamic>[],
+      'oracle_collections': <dynamic>[],
+      'asset_collections': <dynamic>[],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('classic').overrideWith((ref) async => fixture),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: SheetTab(family: ['classic'])))));
+    await tester.pumpAndSettle();
+    // Party mode (default) + family non-empty: Characters + Moves subtabs shown.
+    expect(find.text('Moves'), findsOneWidget);
+  });
 }
