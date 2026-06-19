@@ -2,32 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
+import '../engine/generator_registry.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_data.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
-
-/// Activity grouping for the launcher; each generator lives in exactly one.
-enum GenSection { story, npcs, exploration, encounters, details }
-
-extension GenSectionLabel on GenSection {
-  String get label => switch (this) {
-        GenSection.story => 'Story & Scenes',
-        GenSection.npcs => 'NPCs & Dialog',
-        GenSection.exploration => 'Exploration',
-        GenSection.encounters => 'Encounters & Combat',
-        GenSection.details => 'Names & Details',
-      };
-}
-
-/// A named generator the user can tap to run.
-class _Gen {
-  const _Gen(this.label, this.section, this.run);
-  final String label;
-  final GenSection section;
-  final GenResult Function(Oracle o) run;
-}
 
 class GeneratorsScreen extends ConsumerStatefulWidget {
   const GeneratorsScreen({super.key, required this.oracle, this.section});
@@ -36,10 +16,8 @@ class GeneratorsScreen extends ConsumerStatefulWidget {
   /// When non-null, show only this section's generators; null = everything.
   final GenSection? section;
 
-  static List<String> labelsFor(GenSection s) => _GeneratorsScreenState._gens
-      .where((g) => g.section == s)
-      .map((g) => g.label)
-      .toList();
+  static List<String> labelsFor(GenSection s) =>
+      kGenerators.where((g) => g.section == s).map((g) => g.label).toList();
 
   @override
   ConsumerState<GeneratorsScreen> createState() => _GeneratorsScreenState();
@@ -49,53 +27,12 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
   GenResult? _last;
 
   /// Registry tool id for entries logged from this screen (open-in-tool).
-  String get _sourceTool => switch (widget.section) {
-        GenSection.story => 'gen-story',
-        GenSection.npcs => 'gen-npcs',
-        GenSection.exploration => 'gen-exploration',
-        GenSection.encounters => 'gen-encounters',
-        GenSection.details || null => 'gen-details',
-      };
-
-  static final List<_Gen> _gens = [
-    _Gen('New Quest', GenSection.story, (o) => o.newQuest()),
-    _Gen('New Scene', GenSection.story, (o) => o.newScene()),
-    _Gen('Random Event', GenSection.story, (o) => o.randomEvent()),
-    _Gen('Challenge', GenSection.story, (o) => o.challenge()),
-    _Gen('Pay the Price', GenSection.story, (o) => o.payThePrice()),
-    _Gen('Major Plot Twist', GenSection.story,
-        (o) => o.payThePrice(critical: true)),
-    _Gen('NPC', GenSection.npcs, (o) => o.npc()),
-    _Gen('NPC Behavior', GenSection.npcs, (o) => o.npcBehavior()),
-    _Gen('NPC Behavior (Active)', GenSection.npcs,
-        (o) => o.npcBehavior(skew: 1)),
-    _Gen('NPC Behavior (Passive)', GenSection.npcs,
-        (o) => o.npcBehavior(skew: -1)),
-    _Gen('NPC Combat', GenSection.npcs, (o) => o.npcCombat()),
-    _Gen('Settlement', GenSection.exploration, (o) => o.settlement()),
-    _Gen('Natural Hazard', GenSection.exploration, (o) => o.naturalHazard()),
-    _Gen('Monster Encounter', GenSection.encounters,
-        (o) => o.monsterEncounter()),
-    _Gen('Creature Tracks', GenSection.encounters, (o) => o.creatureTracks()),
-    _Gen('Dungeon Name', GenSection.exploration, (o) => o.dungeonName()),
-    _Gen('Dungeon Room', GenSection.exploration, (o) => o.dungeonRoom()),
-    _Gen('Treasure', GenSection.details, (o) => o.treasure()),
-    _Gen('Name', GenSection.details, (o) => o.generateName()),
-    _Gen('Discover Meaning', GenSection.details, (o) => o.discoverMeaning()),
-    _Gen('Immersion', GenSection.details, (o) => o.immersion()),
-    _Gen('Plot Point', GenSection.story, (o) => o.plotPoint()),
-    _Gen('Random Idea', GenSection.details, (o) => o.randomIdea()),
-    _Gen('Detail', GenSection.details, (o) => o.detail()),
-    _Gen('Property', GenSection.details, (o) => o.property()),
-    _Gen('NPC Plot Knowledge', GenSection.npcs, (o) => o.extendedInfo()),
-    _Gen('Companion Response', GenSection.npcs, (o) => o.companionResponse()),
-    _Gen('NPC Dialog Topic', GenSection.npcs, (o) => o.dialogTopic()),
-  ];
+  String get _sourceTool => sourceToolFor(widget.section ?? GenSection.details);
 
   ({String asset, int d10, int d6})? _lastIcon;
   LocationResult? _lastLocation;
 
-  void _run(_Gen g) => setState(() {
+  void _run(GeneratorDef g) => setState(() {
         _last = g.run(widget.oracle);
         _lastIcon = null;
         _lastLocation = null;
@@ -110,8 +47,9 @@ class _GeneratorsScreenState extends ConsumerState<GeneratorsScreen> {
     final showCrawl = section == null || section == GenSection.exploration;
     final showNpcDialog = section == null || section == GenSection.npcs;
     final showAbstractIcon = section == null || section == GenSection.details;
-    final gens =
-        section == null ? _gens : _gens.where((g) => g.section == section);
+    final gens = section == null
+        ? kGenerators
+        : kGenerators.where((g) => g.section == section);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
