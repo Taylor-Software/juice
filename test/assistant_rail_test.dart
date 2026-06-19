@@ -133,4 +133,64 @@ void main() {
     expect(entries.first.body, contains('The door is barred from within.'));
     expect(entries.first.body, contains('Locked?'));
   });
+
+  testWidgets(
+      'ask-the-GM writes nothing and shows an error when the LLM throws',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+      'juice.threads.v1.default': '[]',
+    });
+    final fake = FakeInterpreterService(
+      initial: const InterpreterStatus(InterpreterPhase.ready),
+    )..askGmError = StateError('boom');
+    final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWith((ref) => fake),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: AssistantRail()))));
+    await tester.pumpAndSettle();
+    await expandRail(tester);
+    await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
+    await tester.tap(find.byKey(const Key('ask-gm-send')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not reach'), findsOneWidget);
+    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
+  });
+
+  testWidgets('ask-the-GM is a guarded no-op when the model is not ready',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+      'juice.threads.v1.default': '[]',
+    });
+    final fake = FakeInterpreterService(); // default: not ready
+    final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWith((ref) => fake),
+    ]);
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: AssistantRail()))));
+    await tester.pumpAndSettle();
+    await expandRail(tester);
+    await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
+    await tester.tap(find.byKey(const Key('ask-gm-send')));
+    await tester.pumpAndSettle();
+
+    expect(fake.askGmCalls, 0);
+    expect(find.textContaining('not ready'), findsOneWidget);
+    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
+  });
 }

@@ -27,14 +27,17 @@ oracle interpretation.
   roll→journal pipeline); navigate chips deep-link via `shellRouteProvider`.
 - `askGm` on `InterpreterService` (+ fake + prompt builder): tiny-context,
   budget-safe; writes the question and answer to the journal.
-- Wires `PlayContext.activeScene` (the "start/continue scene" path sets it) —
-  consuming a foundation pointer that was previously write-only.
 
 **Out (later threads / v2):**
 - LLM-generated or LLM-ranked suggestions.
 - Per-system richer rule sets; scene-event tuning beyond a single source.
 - Multi-turn GM conversation / memory beyond one Q&A.
 - Suggestion analytics.
+- Wiring `PlayContext.activeScene`. v1 reuses the **implicit current scene** —
+  the latest `kind==scene` journal entry (the existing `_sceneContext` /
+  `_CampaignHeader` convention) — so the engine gates on `hasScenes`, and the
+  `setActiveScene` notifier (foundation API) stays unwired until a thread needs
+  non-chronological scene selection.
 
 ## Components
 
@@ -50,9 +53,7 @@ class Suggestion {
 }
 
 List<Suggestion> suggestionsFor({
-  required PlayContext context,
   required bool hasScenes,
-  required bool hasActiveScene,
   required bool hasOpenThreads,
   required bool encounterActive,
   required bool ironswornFamily,
@@ -62,8 +63,8 @@ List<Suggestion> suggestionsFor({
 
 Pure function of explicit booleans (not providers) so it is trivially testable.
 A thin `suggestionsProvider` (in `lib/state/`) derives those booleans from
-`playContextProvider` + `journalProvider`/`threadsProvider`/`charactersProvider`
-/`encounter`/`mapProvider` and the resolved system, then calls `suggestionsFor`.
+`playContextProvider` + `journalProvider`/`threadsProvider`/`encounterProvider`
++ enabled systems/rulesets, then calls `suggestionsFor`.
 
 ### v1 rules (ranked, ~6)
 
@@ -71,20 +72,24 @@ A thin `suggestionsProvider` (in `lib/state/`) derives those booleans from
 |---|---|---|
 | always | `roll-oracle` "Roll the oracle" | inline |
 | `!hasScenes` | `start-scene` "Start a scene" | navigate → Track/scenes |
-| `hasActiveScene` | `scene-event` "Scene event" | inline |
+| `hasScenes` | `scene-event` "Scene event" | inline |
 | `hasOpenThreads` | `advance-thread` "Advance a thread" | navigate → Track/threads |
-| `encounterActive` | `combat-turn` "Make a move / next turn" | navigate → Track/encounter |
+| `encounterActive` | `combat-turn` "Take a turn" | navigate → Track/encounter |
 | `ironswornFamily && hasFocusCharacter` | `make-move` "Make a move" | navigate → Sheet/moves |
 
-Ranking: inline-now actions (oracle, scene-event) before navigation; the
-always-on `roll-oracle` leads. Cap the rendered chips (e.g. 4) to keep the rail
-calm; `ask the GM` is always present below the chips.
+`start-scene` and `scene-event` are mutually exclusive on `hasScenes` (no
+scenes → start one; scenes exist → roll an event in the current/latest scene).
+Ranking: inline-now actions before navigation; the always-on `roll-oracle`
+leads. All context-filtered chips render (≤6, reflowing in a `Wrap`); `ask the
+GM` is always present below the chips when the rail is expanded.
 
 ### `AssistantRail` — `lib/features/assistant_rail.dart` (new)
 
-A `ConsumerWidget` rendered at the top of the Journal verb, inside a collapsible
-container (expanded by default; collapse state is local UI, not persisted in
-v1). Renders the chips from `suggestionsProvider` and the ask-the-GM field.
+A `ConsumerStatefulWidget` rendered at the top of the Journal verb, inside a
+collapsible container (**collapsed by default** — a thin header keeps the journal
+primary; one tap reveals chips + ask box; collapse state is local UI, not
+persisted in v1). Renders the chips from `suggestionsProvider` and the ask-the-GM
+field.
 
 - **inline chip** → run the action and append a journal block. `roll-oracle`
   and `scene-event` reuse the existing oracle roll→journal path (which already
@@ -94,7 +99,7 @@ v1). Renders the chips from `suggestionsProvider` and the ask-the-GM field.
 
 ### Ask-the-GM — `InterpreterService.askGm`
 
-New seam method mirroring `voiceLine`/`recap`:
+New seam method mirroring `voiceLine`/`summarize`:
 
 ```
 Future<String> askGm(AskGmSeed seed); // seed: { question, sceneTitle? }
@@ -103,18 +108,19 @@ Future<String> askGm(AskGmSeed seed); // seed: { question, sceneTitle? }
 `buildAskGmPrompt` keeps the instruction short (~120 tokens, e.g. "You are the
 GM for a solo RPG. Answer the player's question in 1–3 sentences of plain
 prose."), prepends only the active scene title (if any) as context, then the
-question. Output target ≤ ~150 tokens. The fake interpreter returns a canned
-string; **tests never construct GemmaInterpreterService**. On submit, the rail
-writes the question (a text block) and the answer (a text/result block) to the
-journal via `journalProvider.notifier`.
+question. Both question and scene title are length-capped
+(`kAskGmMaxFieldChars`). Output target ≤ ~150 tokens. The fake interpreter
+returns a canned string; **tests never construct GemmaInterpreterService**. On
+submit, the rail writes ONE journal entry (`'Ask the GM'`, body `Q: <q>\n\n
+<answer>`, `sourceTool: 'ask-gm'`) via `journalProvider.notifier.addResult`.
 
 ## Data flow
 
 `PlayContext + entity providers → suggestionsProvider → AssistantRail chips`.
-Inline chip → oracle engine → `journalProvider.add` (+ optional interpret).
+Inline chip → oracle engine → `journalProvider.addResult` (+ optional interpret).
 Navigate chip → `shellRouteProvider.goTo`. Ask-the-GM → `InterpreterService
-.askGm` → `journalProvider.add` (Q + A). "Start a scene" / scene-event →
-`playContextProvider.notifier.setActiveScene`.
+.askGm` → `journalProvider.addResult` (one Q&A entry). The current scene fed to
+`askGm` is the latest `kind==scene` entry (implicit, not a stored pointer).
 
 ## Error handling
 
