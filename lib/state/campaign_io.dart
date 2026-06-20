@@ -68,10 +68,6 @@ CampaignImport parseCampaign(String raw) {
         (value as List)
             .map((e) => JournalEntry.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.log.v1') {
-        (value as List)
-            .map((e) => JournalEntry.fromJson(e as Map<String, dynamic>))
-            .toList();
       } else if (key == 'juice.threads.v1') {
         (value as List)
             .map((e) => Thread.fromJson(e as Map<String, dynamic>))

@@ -84,27 +84,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _onComposerChanged() {
-    final text = _composer.text;
-    final slash = text.startsWith('/');
-    // baseOffset is -1 when no explicit selection; treat as end-of-text.
-    final rawSel = _composer.selection.baseOffset;
-    final sel = rawSel < 0 ? text.length : rawSel;
-    String? mention;
-    if (!slash && sel > 0) {
-      final upToCaret = text.substring(0, sel);
-      final at = upToCaret.lastIndexOf('@');
-      if (at >= 0 && !upToCaret.substring(at).contains(' ')) {
-        mention = upToCaret.substring(at + 1);
-      }
-    }
-    final isQuestion = !slash &&
-        mention == null &&
-        text.trim().endsWith('?') &&
-        text.trim().length > 1;
+    final st = parseComposerState(
+        _composer.text, _composer.selection.baseOffset);
     setState(() {
-      _slashActive = slash;
-      _mentionQuery = mention;
-      _askActive = isQuestion;
+      _slashActive = st.slash;
+      _mentionQuery = st.mention;
+      _askActive = st.question;
     });
   }
 

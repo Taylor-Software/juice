@@ -44,3 +44,27 @@ Set<String> mentionedCharIds(String body) => {
       for (final m in _mentionRe.allMatches(body))
         if (m.group(2) == 'char') m.group(3)!,
     };
+
+/// Derives the journal composer's live affordance state from its [text] and
+/// caret [selectionOffset] (-1 = no explicit selection → treat as end). Pure so
+/// the slash/mention/question detection is unit-testable apart from the widget.
+({bool slash, String? mention, bool question}) parseComposerState(
+    String text, int selectionOffset) {
+  final slash = text.startsWith('/');
+  final sel = (selectionOffset < 0 ? text.length : selectionOffset)
+      .clamp(0, text.length);
+  String? mention;
+  if (!slash && sel > 0) {
+    final upToCaret = text.substring(0, sel);
+    final at = upToCaret.lastIndexOf('@');
+    if (at >= 0 && !upToCaret.substring(at).contains(' ')) {
+      mention = upToCaret.substring(at + 1);
+    }
+  }
+  final trimmed = text.trim();
+  final question = !slash &&
+      mention == null &&
+      trimmed.endsWith('?') &&
+      trimmed.length > 1;
+  return (slash: slash, mention: mention, question: question);
+}

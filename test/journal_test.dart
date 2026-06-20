@@ -175,39 +175,7 @@ void main() {
     });
   });
 
-  group('JournalNotifier migration and typed adds', () {
-    test('migrates juice.log.v1 data into juice.journal.v2 once', () async {
-      SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
-            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.log.v1.default':
-            '[{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"Old","body":"Yes"}]',
-      });
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final entries = await container.read(journalProvider.future);
-      expect(entries.single.title, 'Old');
-      expect(entries.single.kind, JournalKind.result);
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.journal.v2.default'), isNotNull);
-      expect(prefs.getString('juice.log.v1.default'), isNotNull);
-    });
-
-    test('migration never clobbers existing journal data', () async {
-      SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
-            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.journal.v2.default':
-            '[{"id":"new","timestamp":"2026-06-11T10:00:00.000","title":"Kept","body":"x","kind":"text"}]',
-        'juice.log.v1.default':
-            '[{"id":"old","timestamp":"2026-06-11T09:00:00.000","title":"Legacy","body":"y"}]',
-      });
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      final entries = await container.read(journalProvider.future);
-      expect(entries.single.title, 'Kept');
-    });
-
+  group('JournalNotifier typed adds', () {
     test('addText and addScene append typed entries', () async {
       SharedPreferences.setMockInitialValues({
         'juice.sessions.v1':
@@ -226,27 +194,6 @@ void main() {
       expect(entries[1].body, 'We slip inside.');
     });
 
-    test('importing a v1 campaign file surfaces its log in the journal',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
-            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      });
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-      await container.read(sessionsProvider.future);
-      const v1File = '''
-      {"app":"juice-oracle","schemaVersion":1,
-       "savedAt":"2026-06-11T00:00:00.000","name":"Old campaign",
-       "data":{"juice.log.v1":[{"id":"a",
-         "timestamp":"2026-06-11T09:00:00.000","title":"Legacy roll",
-         "body":"Yes"}]}}''';
-      await container.read(sessionsProvider.notifier).importCampaign(v1File);
-      // Import switches to the new session; the journal migrates its log.
-      final entries = await container.read(journalProvider.future);
-      expect(entries.single.title, 'Legacy roll');
-      expect(entries.single.kind, JournalKind.result);
-    });
   });
 
   test('addResult persists sourceTool and payload', () async {

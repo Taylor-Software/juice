@@ -2,6 +2,12 @@
 /// No freezed/codegen — the data is small and stable.
 library;
 
+// Tolerant JSON readers shared by the sheets' `maybeFromJson` factories.
+int _intOr(dynamic v, int d) => v is int ? v : d;
+String _strOr(dynamic v) => v is String ? v : '';
+Set<String> _strSet(dynamic v) =>
+    v is List ? v.whereType<String>().toSet() : const {};
+
 /// Likelihood applied to a Fate Check.
 enum Likelihood { unlikely, normal, likely }
 
@@ -516,7 +522,6 @@ class IronswornSheet {
 
   static IronswornSheet? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
-    int intOr(dynamic v, int d) => v is int ? v : d;
     final dbs = j['debilities'] is List
         ? (j['debilities'] as List)
             .whereType<String>()
@@ -525,18 +530,18 @@ class IronswornSheet {
         : <String>{};
     final maxM = 10 - dbs.length;
     return IronswornSheet(
-      edge: intOr(j['edge'], 1).clamp(1, 3),
-      heart: intOr(j['heart'], 1).clamp(1, 3),
-      iron: intOr(j['iron'], 1).clamp(1, 3),
-      shadow: intOr(j['shadow'], 1).clamp(1, 3),
-      wits: intOr(j['wits'], 1).clamp(1, 3),
-      health: intOr(j['health'], 5).clamp(0, 5),
-      spirit: intOr(j['spirit'], 5).clamp(0, 5),
-      supply: intOr(j['supply'], 5).clamp(0, 5),
-      momentum: intOr(j['momentum'], 2).clamp(-6, maxM),
-      xpEarned: intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
-      xpSpent: intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
-      bonds: intOr(j['bonds'], 0).clamp(0, 10),
+      edge: _intOr(j['edge'], 1).clamp(1, 3),
+      heart: _intOr(j['heart'], 1).clamp(1, 3),
+      iron: _intOr(j['iron'], 1).clamp(1, 3),
+      shadow: _intOr(j['shadow'], 1).clamp(1, 3),
+      wits: _intOr(j['wits'], 1).clamp(1, 3),
+      health: _intOr(j['health'], 5).clamp(0, 5),
+      spirit: _intOr(j['spirit'], 5).clamp(0, 5),
+      supply: _intOr(j['supply'], 5).clamp(0, 5),
+      momentum: _intOr(j['momentum'], 2).clamp(-6, maxM),
+      xpEarned: _intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
+      xpSpent: _intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
+      bonds: _intOr(j['bonds'], 0).clamp(0, 10),
       debilities: dbs,
       vows: j['vows'] is List
           ? (j['vows'] as List)
@@ -789,7 +794,6 @@ class StarforgedSheet {
 
   static StarforgedSheet? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
-    int intOr(dynamic v, int d) => v is int ? v : d;
     List<ProgressTrack> tracks(dynamic v) => v is List
         ? v.map(ProgressTrack.maybeFromJson).whereType<ProgressTrack>().toList()
         : const [];
@@ -801,20 +805,20 @@ class StarforgedSheet {
         : <String>{};
     final maxM = 10 - imp.length;
     return StarforgedSheet(
-      edge: intOr(j['edge'], 1).clamp(1, 3),
-      heart: intOr(j['heart'], 1).clamp(1, 3),
-      iron: intOr(j['iron'], 1).clamp(1, 3),
-      shadow: intOr(j['shadow'], 1).clamp(1, 3),
-      wits: intOr(j['wits'], 1).clamp(1, 3),
-      health: intOr(j['health'], 5).clamp(0, 5),
-      spirit: intOr(j['spirit'], 5).clamp(0, 5),
-      supply: intOr(j['supply'], 5).clamp(0, 5),
-      momentum: intOr(j['momentum'], 2).clamp(-6, maxM),
-      xpEarned: intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
-      xpSpent: intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
-      questsLegacy: intOr(j['questsLegacy'], 0).clamp(0, 10),
-      bondsLegacy: intOr(j['bondsLegacy'], 0).clamp(0, 10),
-      discoveriesLegacy: intOr(j['discoveriesLegacy'], 0).clamp(0, 10),
+      edge: _intOr(j['edge'], 1).clamp(1, 3),
+      heart: _intOr(j['heart'], 1).clamp(1, 3),
+      iron: _intOr(j['iron'], 1).clamp(1, 3),
+      shadow: _intOr(j['shadow'], 1).clamp(1, 3),
+      wits: _intOr(j['wits'], 1).clamp(1, 3),
+      health: _intOr(j['health'], 5).clamp(0, 5),
+      spirit: _intOr(j['spirit'], 5).clamp(0, 5),
+      supply: _intOr(j['supply'], 5).clamp(0, 5),
+      momentum: _intOr(j['momentum'], 2).clamp(-6, maxM),
+      xpEarned: _intOr(j['xpEarned'], 0).clamp(0, 1 << 31),
+      xpSpent: _intOr(j['xpSpent'], 0).clamp(0, 1 << 31),
+      questsLegacy: _intOr(j['questsLegacy'], 0).clamp(0, 10),
+      bondsLegacy: _intOr(j['bondsLegacy'], 0).clamp(0, 10),
+      discoveriesLegacy: _intOr(j['discoveriesLegacy'], 0).clamp(0, 10),
       impacts: imp,
       vows: tracks(j['vows']),
       connections: tracks(j['connections']),
@@ -1305,53 +1309,49 @@ class DndSheet {
 
   static DndSheet? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
-    int intOr(dynamic v, int d) => v is int ? v : d;
-    String strOr(dynamic v) => v is String ? v : '';
-    Set<String> strSet(dynamic v) =>
-        v is List ? v.whereType<String>().toSet() : const {};
     final rawAb = j['abilities'];
     final ab = <String, int>{
       for (final a in kDndAbilities)
-        a: (rawAb is Map ? intOr(rawAb[a], 10) : 10).clamp(1, 30),
+        a: (rawAb is Map ? _intOr(rawAb[a], 10) : 10).clamp(1, 30),
     };
-    final cls = strOr(j['className']);
+    final cls = _strOr(j['className']);
     return DndSheet(
       abilities: ab,
       className: kDndClassHitDie.containsKey(cls) ? cls : 'Fighter',
-      subclass: strOr(j['subclass']),
-      race: strOr(j['race']),
-      background: strOr(j['background']),
-      alignment: strOr(j['alignment']),
-      level: intOr(j['level'], 1).clamp(1, 20),
-      ac: intOr(j['ac'], 10).clamp(0, 99),
-      currentHp: intOr(j['currentHp'], 1).clamp(0, 1 << 20),
-      maxHp: intOr(j['maxHp'], 1).clamp(0, 1 << 20),
-      tempHp: intOr(j['tempHp'], 0).clamp(0, 1 << 20),
-      hitDiceRemaining: intOr(j['hitDiceRemaining'], 1)
-          .clamp(0, intOr(j['level'], 1).clamp(1, 20)),
-      speed: intOr(j['speed'], 30).clamp(0, 999),
-      initiativeOverride: intOr(j['initiativeOverride'], 0),
+      subclass: _strOr(j['subclass']),
+      race: _strOr(j['race']),
+      background: _strOr(j['background']),
+      alignment: _strOr(j['alignment']),
+      level: _intOr(j['level'], 1).clamp(1, 20),
+      ac: _intOr(j['ac'], 10).clamp(0, 99),
+      currentHp: _intOr(j['currentHp'], 1).clamp(0, 1 << 20),
+      maxHp: _intOr(j['maxHp'], 1).clamp(0, 1 << 20),
+      tempHp: _intOr(j['tempHp'], 0).clamp(0, 1 << 20),
+      hitDiceRemaining: _intOr(j['hitDiceRemaining'], 1)
+          .clamp(0, _intOr(j['level'], 1).clamp(1, 20)),
+      speed: _intOr(j['speed'], 30).clamp(0, 999),
+      initiativeOverride: _intOr(j['initiativeOverride'], 0),
       saveProficiencies:
-          strSet(j['saveProficiencies']).where(kDndAbilities.contains).toSet(),
-      skillProficiencies: strSet(j['skillProficiencies'])
+          _strSet(j['saveProficiencies']).where(kDndAbilities.contains).toSet(),
+      skillProficiencies: _strSet(j['skillProficiencies'])
           .where(kDndSkillAbility.containsKey)
           .toSet(),
-      skillExpertise: strSet(j['skillExpertise'])
+      skillExpertise: _strSet(j['skillExpertise'])
           .where(kDndSkillAbility.containsKey)
           .toSet(),
       conditions:
-          strSet(j['conditions']).where(kDndConditions.containsKey).toSet(),
-      exhaustionLevel: intOr(j['exhaustionLevel'], 0).clamp(0, 6),
-      deathSaveSuccesses: intOr(j['deathSaveSuccesses'], 0).clamp(0, 3),
-      deathSaveFailures: intOr(j['deathSaveFailures'], 0).clamp(0, 3),
+          _strSet(j['conditions']).where(kDndConditions.containsKey).toSet(),
+      exhaustionLevel: _intOr(j['exhaustionLevel'], 0).clamp(0, 6),
+      deathSaveSuccesses: _intOr(j['deathSaveSuccesses'], 0).clamp(0, 3),
+      deathSaveFailures: _intOr(j['deathSaveFailures'], 0).clamp(0, 3),
       inspiration: j['inspiration'] == true,
-      xp: intOr(j['xp'], 0).clamp(0, 1 << 31),
-      featuresText: strOr(j['featuresText']),
+      xp: _intOr(j['xp'], 0).clamp(0, 1 << 31),
+      featuresText: _strOr(j['featuresText']),
       spellSlotsUsed: _normSlots(j['spellSlotsUsed'] is List
           ? [for (final x in j['spellSlotsUsed'] as List) x is int ? x : 0]
           : const []),
-      pactSlotsUsed: intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
-      preparedSpells: strOr(j['preparedSpells']),
+      pactSlotsUsed: _intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
+      preparedSpells: _strOr(j['preparedSpells']),
     );
   }
 }
@@ -1498,33 +1498,31 @@ class ShadowdarkSheet {
 
   static ShadowdarkSheet? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
-    int intOr(dynamic v, int d) => v is int ? v : d;
-    String strOr(dynamic v) => v is String ? v : '';
     final rawAb = j['abilities'];
     final ab = <String, int>{
       for (final a in kDndAbilities)
-        a: (rawAb is Map ? intOr(rawAb[a], 10) : 10).clamp(1, 20),
+        a: (rawAb is Map ? _intOr(rawAb[a], 10) : 10).clamp(1, 20),
     };
-    final cls = strOr(j['className']);
-    final anc = strOr(j['ancestry']);
-    final al = strOr(j['alignment']);
+    final cls = _strOr(j['className']);
+    final anc = _strOr(j['ancestry']);
+    final al = _strOr(j['alignment']);
     return ShadowdarkSheet(
       abilities: ab,
       className: kShadowdarkClassHitDie.containsKey(cls) ? cls : 'Fighter',
       ancestry: kShadowdarkAncestries.contains(anc) ? anc : 'Human',
       alignment: kShadowdarkAlignments.contains(al) ? al : 'Neutral',
-      level: intOr(j['level'], 1).clamp(1, 10),
-      xp: intOr(j['xp'], 0).clamp(0, 1 << 31),
-      ac: intOr(j['ac'], 10).clamp(0, 99),
-      currentHp: intOr(j['currentHp'], 1).clamp(0, 1 << 20),
-      maxHp: intOr(j['maxHp'], 1).clamp(0, 1 << 20),
-      gearSlotsUsed: intOr(j['gearSlotsUsed'], 0).clamp(0, 999),
+      level: _intOr(j['level'], 1).clamp(1, 10),
+      xp: _intOr(j['xp'], 0).clamp(0, 1 << 31),
+      ac: _intOr(j['ac'], 10).clamp(0, 99),
+      currentHp: _intOr(j['currentHp'], 1).clamp(0, 1 << 20),
+      maxHp: _intOr(j['maxHp'], 1).clamp(0, 1 << 20),
+      gearSlotsUsed: _intOr(j['gearSlotsUsed'], 0).clamp(0, 999),
       luckToken: j['luckToken'] == true,
-      title: strOr(j['title']),
-      deity: strOr(j['deity']),
-      background: strOr(j['background']),
-      talentsText: strOr(j['talentsText']),
-      spellsText: strOr(j['spellsText']),
+      title: _strOr(j['title']),
+      deity: _strOr(j['deity']),
+      background: _strOr(j['background']),
+      talentsText: _strOr(j['talentsText']),
+      spellsText: _strOr(j['spellsText']),
     );
   }
 }
@@ -2037,17 +2035,17 @@ class CharacterEmulation {
   /// Tolerant: junk-typed fields fall back to their defaults.
   static CharacterEmulation? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
-    int? intOr(dynamic v) => v is int ? v : null;
+    int? intOrNull(dynamic v) => v is int ? v : null;
     List<String> strings(dynamic v) =>
         v is List ? v.whereType<String>().toList() : const [];
     return CharacterEmulation(
-      agendaKey: intOr(j['agendaKey']),
-      focusKey: intOr(j['focusKey']),
+      agendaKey: intOrNull(j['agendaKey']),
+      focusKey: intOrNull(j['focusKey']),
       mood: j['mood'] is String ? j['mood'] as String : null,
-      tokens: intOr(j['tokens']) ?? 0,
+      tokens: intOrNull(j['tokens']) ?? 0,
       prominentTags: strings(j['prominentTags']),
       usedTags: strings(j['usedTags']),
-      hexIndex: intOr(j['hexIndex']),
+      hexIndex: intOrNull(j['hexIndex']),
     );
   }
 }

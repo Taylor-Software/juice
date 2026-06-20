@@ -75,22 +75,6 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
   @override
   Map<String, dynamic> toJsonMap(JournalEntry item) => item.toJson();
 
-  static const _legacyKey = 'juice.log.v1';
-
-  @override
-  Future<List<JournalEntry>> build() async {
-    final sessions = await ref.watch(sessionsProvider.future);
-    final prefs = await SharedPreferences.getInstance();
-    final scoped = '$prefsKey.${sessions.active}';
-    // One-shot, non-destructive migration from the legacy log key. Old
-    // entries lack 'kind' and parse as JournalKind.result.
-    if (prefs.getString(scoped) == null) {
-      final legacy = prefs.getString('$_legacyKey.${sessions.active}');
-      if (legacy != null) await prefs.setString(scoped, legacy);
-    }
-    return super.build();
-  }
-
   Future<void> add(String title, String body) async {
     await _persist([
       JournalEntry(
@@ -977,7 +961,6 @@ final settingsProvider =
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
   'juice.journal.v2',
-  'juice.log.v1', // legacy; kept so v1 campaign imports round-trip
   'juice.threads.v1',
   'juice.characters.v1',
   'juice.crawl.v1',
@@ -1097,8 +1080,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await SharedPreferences.getInstance();
     final rawByKey = <String, String>{};
     for (final base in sessionScopedKeys) {
-      // Exports carry journal v2 only; log v1 is import-only.
-      if (base == 'juice.log.v1') continue;
       final raw = prefs.getString('$base.${s.active}');
       if (raw != null) rawByKey[base] = raw;
     }
