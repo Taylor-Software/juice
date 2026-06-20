@@ -66,6 +66,56 @@ void main() {
     expect(result!.strokes, isEmpty);
   });
 
+  Future<void> drawStroke(WidgetTester tester) async {
+    final center = tester.getCenter(find.byKey(const Key('sketch-canvas')));
+    final g = await tester.startGesture(center);
+    await g.moveBy(const Offset(60, 0));
+    await g.up();
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('eraser drag deletes a stroke it passes over', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await drawStroke(tester);
+    await tester.tap(find.byKey(const Key('sketch-tool-eraser')));
+    await tester.pumpAndSettle();
+    // Drag from the stroke's start across part of its path.
+    final center = tester.getCenter(find.byKey(const Key('sketch-canvas')));
+    final g = await tester.startGesture(center);
+    await g.moveBy(const Offset(30, 0));
+    await g.up();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.strokes, isEmpty);
+  });
+
+  testWidgets('undo restores an erased stroke', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await drawStroke(tester);
+    await tester.tap(find.byKey(const Key('sketch-tool-eraser')));
+    await tester.pumpAndSettle();
+    final center = tester.getCenter(find.byKey(const Key('sketch-canvas')));
+    final g = await tester.startGesture(center);
+    await g.moveBy(const Offset(30, 0));
+    await g.up();
+    await tester.pumpAndSettle();
+    // Erased; undo brings it back.
+    await tester.tap(find.byKey(const Key('sketch-undo')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.strokes.length, 1);
+  });
+
   testWidgets('cancel returns null', (tester) async {
     SketchData? result;
     var called = false;

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../engine/sketch.dart';
@@ -10,6 +12,9 @@ const _palette = <int>[
   0xFF2E9E5B,
   0xFFFFFFFF,
 ];
+
+/// Active drawing tool: freehand pen or whole-stroke eraser.
+enum _SketchTool { pen, eraser }
 
 /// Paints a [SketchData]'s strokes on a paper background (theme-independent so
 /// stored colors render the same in light and dark mode).
@@ -68,6 +73,26 @@ class _SketchEditorState extends State<SketchEditor> {
   int _color = _palette.first;
   double _width = 3;
   Size _canvas = const Size(1, 1);
+  _SketchTool _tool = _SketchTool.pen;
+  // Undo history: snapshots of [_strokes] taken before each mutation (draw,
+  // erase, clear), so all three are undoable. Replaces a plain removeLast.
+  final List<List<SketchStroke>> _undo = [];
+  // True once the current erase drag has captured its pre-erase snapshot, so a
+  // single drag-to-erase is one undo step.
+  bool _erasing = false;
+
+  double get _eraserRadius => math.max(_width * 1.5, 10);
+
+  void _eraseAt(Offset o) {
+    final before = _strokes;
+    final after = eraseStrokesAt(before, o.dx, o.dy, _eraserRadius);
+    if (after.length == before.length) return; // nothing under the pointer
+    if (!_erasing) {
+      _undo.add(before);
+      _erasing = true;
+    }
+    setState(() => _strokes = after);
+  }
 
   void _save() {
     widget.onDone(SketchData(
@@ -101,15 +126,16 @@ class _SketchEditorState extends State<SketchEditor> {
             key: const Key('sketch-undo'),
             icon: const Icon(Icons.undo),
             tooltip: 'Undo',
-            onPressed: _strokes.isEmpty
+            onPressed: _undo.isEmpty
                 ? null
-                : () => setState(() => _strokes.removeLast()),
+                : () => setState(() => _strokes = _undo.removeLast()),
           ),
           IconButton(
             key: const Key('sketch-clear'),
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Clear',
             onPressed: () => setState(() {
+              if (_strokes.isNotEmpty) _undo.add(_strokes);
               _strokes = [];
               _current = [];
             }),
@@ -129,17 +155,38 @@ class _SketchEditorState extends State<SketchEditor> {
               _canvas = Size(constraints.maxWidth, constraints.maxHeight);
               return GestureDetector(
                 key: const Key('sketch-canvas'),
-                onPanStart: (d) =>
-                    setState(() => _current = [_xy(d.localPosition)]),
-                onPanUpdate: (d) =>
-                    setState(() => _current.add(_xy(d.localPosition))),
-                onPanEnd: (_) => setState(() {
-                  if (_current.isNotEmpty) {
-                    _strokes.add(SketchStroke(
-                        color: _color, width: _width, points: _current));
+                onPanStart: (d) {
+                  if (_tool == _SketchTool.eraser) {
+                    _erasing = false;
+                    _eraseAt(d.localPosition);
+                  } else {
+                    setState(() => _current = [_xy(d.localPosition)]);
                   }
-                  _current = [];
-                }),
+                },
+                onPanUpdate: (d) {
+                  if (_tool == _SketchTool.eraser) {
+                    _eraseAt(d.localPosition);
+                  } else {
+                    setState(() => _current.add(_xy(d.localPosition)));
+                  }
+                },
+                onPanEnd: (_) {
+                  if (_tool == _SketchTool.eraser) {
+                    _erasing = false;
+                    return;
+                  }
+                  setState(() {
+                    if (_current.isNotEmpty) {
+                      _undo.add(_strokes);
+                      _strokes = [
+                        ..._strokes,
+                        SketchStroke(
+                            color: _color, width: _width, points: _current),
+                      ];
+                    }
+                    _current = [];
+                  });
+                },
                 child: CustomPaint(
                   painter: SketchPainter(preview),
                   size: Size.infinite,
@@ -188,6 +235,23 @@ class _SketchEditorState extends State<SketchEditor> {
                 icon: Icon(Icons.circle, size: _width > 3 ? 22 : 14),
                 tooltip: 'Thick',
                 onPressed: () => setState(() => _width = 8),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                key: const Key('sketch-tool-pen'),
+                icon: const Icon(Icons.edit),
+                tooltip: 'Pen',
+                isSelected: _tool == _SketchTool.pen,
+                color: _tool == _SketchTool.pen ? Colors.blue : null,
+                onPressed: () => setState(() => _tool = _SketchTool.pen),
+              ),
+              IconButton(
+                key: const Key('sketch-tool-eraser'),
+                icon: const Icon(Icons.auto_fix_normal),
+                tooltip: 'Eraser',
+                isSelected: _tool == _SketchTool.eraser,
+                color: _tool == _SketchTool.eraser ? Colors.blue : null,
+                onPressed: () => setState(() => _tool = _SketchTool.eraser),
               ),
             ],
           ),
