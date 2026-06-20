@@ -11,6 +11,8 @@ import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/map_screen.dart';
+import 'package:juice_oracle/shared/destination.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 void main() {
@@ -317,6 +319,25 @@ void main() {
     await tester.tap(find.byKey(const Key('dungeon-encounter-toggle')));
     await tester.pumpAndSettle();
     expect(container.read(encounterProvider).valueOrNull!.locationRef, isNull);
+  });
+
+  testWidgets('dungeon detail card jumps to the encounter when linked',
+      (tester) async {
+    final container = await pumpDungeon(tester, mapJson: seededMap());
+    final origin = tester.getTopLeft(find.byKey(const Key('dungeon-canvas')));
+    await tester.tapAt(origin + const Offset(56, 56)); // select room a
+    await tester.pumpAndSettle();
+    // No jump button until this cell is the encounter location.
+    expect(find.byKey(const Key('dungeon-encounter-goto')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('dungeon-encounter-toggle')));
+    await tester.pumpAndSettle();
+    // Linked → the jump button appears and routes to Track › Encounter.
+    await tester.tap(find.byKey(const Key('dungeon-encounter-goto')));
+    await tester.pumpAndSettle();
+    final route = container.read(shellRouteProvider);
+    expect(route.destination, Destination.track);
+    expect(route.subtab, 'encounter');
   });
 
   testWidgets('hex detail card links the encounter to the selected hex',
