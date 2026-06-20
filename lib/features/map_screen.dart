@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../shared/destination.dart';
 import '../shared/result_card.dart';
+import '../shared/shell_route.dart';
 import '../state/providers.dart';
 
 /// Grid cell size for the dungeon canvas, in logical pixels.
@@ -77,6 +79,23 @@ Widget encounterToggleButton({
       ),
       label: Text(linked ? 'Encounter here ✓' : 'Set encounter here'),
     );
+
+/// "Go to encounter" jump shown on the detail card of the cell the active
+/// encounter is pinned to ([show]); navigates to Track › Encounter. Renders
+/// nothing when this cell isn't the encounter location.
+Widget encounterJumpButton({
+  required Key key,
+  required bool show,
+  required VoidCallback onJump,
+}) =>
+    show
+        ? OutlinedButton.icon(
+            key: key,
+            icon: const Icon(Icons.my_location, size: 18),
+            label: const Text('Go to encounter'),
+            onPressed: onJump,
+          )
+        : const SizedBox.shrink();
 
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
@@ -330,6 +349,16 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                         .setLocation(LocationRef(roomId: room.id)),
                     onUnlink: () =>
                         ref.read(encounterProvider.notifier).setLocation(null),
+                  );
+                }),
+                Builder(builder: (context) {
+                  final enc = ref.watch(encounterProvider);
+                  return encounterJumpButton(
+                    key: const Key('dungeon-encounter-goto'),
+                    show: enc.valueOrNull?.locationRef?.roomId == room.id,
+                    onJump: () => ref
+                        .read(shellRouteProvider.notifier)
+                        .goTo(Destination.track, subtab: 'encounter'),
                   );
                 }),
               ],
@@ -980,6 +1009,16 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                       .setLocation(LocationRef(hexCol: h.col, hexRow: h.row)),
                   onUnlink: () =>
                       ref.read(encounterProvider.notifier).setLocation(null),
+                );
+              }),
+              Builder(builder: (context) {
+                final ref0 = ref.watch(encounterProvider).valueOrNull?.locationRef;
+                return encounterJumpButton(
+                  key: const Key('hex-encounter-goto'),
+                  show: ref0?.hexCol == h.col && ref0?.hexRow == h.row,
+                  onJump: () => ref
+                      .read(shellRouteProvider.notifier)
+                      .goTo(Destination.track, subtab: 'encounter'),
                 );
               }),
             ]),
