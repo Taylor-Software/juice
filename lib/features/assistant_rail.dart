@@ -88,6 +88,10 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
         route.goTo(Destination.track, subtab: 'encounter');
       case 'make-move':
         route.goTo(Destination.sheet, subtab: 'moves');
+      case 'develop-rumor':
+        route.goTo(Destination.track, subtab: 'rumors');
+      case 'seed-npc':
+        route.goTo(Destination.sheet);
     }
   }
 

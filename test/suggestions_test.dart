@@ -88,6 +88,20 @@ void main() {
       // GM mode hides Moves → no make-move even with family + focus character.
       expect(run(true, true, false), isNot(contains('make-move')));
     });
+
+    test('gm-only suggestions appear in gm mode, hidden in party', () {
+      List<String> run(bool party) => ids(suggestionsFor(
+            hasScenes: true,
+            hasOpenThreads: false,
+            encounterActive: false,
+            ironswornFamily: false,
+            hasFocusCharacter: false,
+            partyMode: party,
+          ));
+      expect(run(false), containsAll(['develop-rumor', 'seed-npc']));
+      expect(run(true), isNot(contains('develop-rumor')));
+      expect(run(true), isNot(contains('seed-npc')));
+    });
   });
 
   group('fateCheckGenResult', () {

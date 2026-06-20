@@ -101,6 +101,38 @@ void main() {
     expect(route.subtab, 'scenes');
   });
 
+  testWidgets('gm-mode rail shows Develop a rumor and routes to Rumors',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+          '"name":"C1","mode":"gm"}]}',
+      'juice.journal.v2.default': '[]',
+      'juice.threads.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: AssistantRail()))));
+    await tester.pumpAndSettle();
+    await expandRail(tester);
+    expect(find.text('Develop a rumor'), findsOneWidget);
+    await tester.tap(find.text('Develop a rumor'));
+    await tester.pumpAndSettle();
+    final route = c.read(shellRouteProvider);
+    expect(route.destination, Destination.track);
+    expect(route.subtab, 'rumors');
+  });
+
+  testWidgets('party-mode rail omits the gm-only suggestions', (tester) async {
+    await pumpRail(tester); // default session → party mode
+    await expandRail(tester);
+    expect(find.text('Develop a rumor'), findsNothing);
+    expect(find.text('Add an NPC'), findsNothing);
+  });
+
   testWidgets('ask-the-GM writes a Q&A journal entry via the fake',
       (tester) async {
     SharedPreferences.setMockInitialValues({

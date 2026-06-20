@@ -35,5 +35,12 @@ List<Suggestion> suggestionsFor({
     // Moves live on the Sheet's party-only Moves subtab — hidden in gm mode.
     if (ironswornFamily && hasFocusCharacter && partyMode)
       const Suggestion('make-move', 'Make a move', SuggestionAction.navigate),
+    // GM-mode prep moves (mirrors the party-only make-move): the Rumors subtab
+    // is gm-only, and NPC stocking is core GM prep.
+    if (!partyMode) ...[
+      const Suggestion(
+          'develop-rumor', 'Develop a rumor', SuggestionAction.navigate),
+      const Suggestion('seed-npc', 'Add an NPC', SuggestionAction.navigate),
+    ],
   ];
 }
