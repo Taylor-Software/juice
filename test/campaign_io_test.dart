@@ -170,26 +170,6 @@ void main() {
       expect(back.tags, ['wounded']);
     });
 
-    test('imports a v1 campaign file (log key only)', () {
-      final v1 = jsonEncode({
-        'app': 'juice-oracle',
-        'schemaVersion': 1,
-        'savedAt': '2026-06-11T00:00:00.000',
-        'name': 'Old campaign',
-        'data': {
-          'juice.log.v1': [
-            {
-              'id': 'a',
-              'timestamp': '2026-06-11T09:00:00.000',
-              'title': 'T',
-              'body': 'B'
-            }
-          ],
-        },
-      });
-      final parsed = parseCampaign(v1);
-      expect(parsed.rawByKey, contains('juice.log.v1'));
-    });
 
     test('rejects malformed journal payloads', () {
       final bad = jsonEncode({

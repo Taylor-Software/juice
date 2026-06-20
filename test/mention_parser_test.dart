@@ -2,6 +2,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/mention_parser.dart';
 
 void main() {
+  group('parseComposerState', () {
+    test('slash command', () {
+      final s = parseComposerState('/roll', 5);
+      expect(s.slash, isTrue);
+      expect(s.mention, isNull);
+      expect(s.question, isFalse);
+    });
+    test('active @mention up to the caret', () {
+      final s = parseComposerState('hi @bran', 8);
+      expect(s.mention, 'bran');
+      expect(s.slash, isFalse);
+      expect(s.question, isFalse);
+    });
+    test('a space after @ closes the mention', () {
+      expect(parseComposerState('hi @bran the bold', 17).mention, isNull);
+    });
+    test('trailing ? (not slash/mention) is a question', () {
+      final s = parseComposerState('what lurks here?', -1);
+      expect(s.question, isTrue);
+      expect(s.mention, isNull);
+    });
+    test('a bare ? is not a question', () {
+      expect(parseComposerState('?', -1).question, isFalse);
+    });
+    test('out-of-range caret is clamped (no throw)', () {
+      expect(parseComposerState('hi', 99).slash, isFalse);
+    });
+  });
+
   test('plain text → one text segment', () {
     final segs = parseMentions('hello world');
     expect(segs, hasLength(1));

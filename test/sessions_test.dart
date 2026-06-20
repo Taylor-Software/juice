@@ -42,7 +42,6 @@ void main() {
       SharedPreferences.setMockInitialValues({
         'juice.threads.v1':
             '[{"id":"t1","title":"Old vow","note":"","open":true}]',
-        'juice.log.v1': '[]',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -79,23 +78,20 @@ void main() {
       final newId = s.active;
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('juice.log.v1.$newId', '["junk"]');
+      await prefs.setString('juice.threads.v1.$newId', '["junk"]');
       await notifier.remove(newId);
       s = await container.read(sessionsProvider.future);
       expect(s.sessions.length, 1);
       expect(s.active, 'default');
-      expect(prefs.getString('juice.log.v1.$newId'), isNull);
+      expect(prefs.getString('juice.threads.v1.$newId'), isNull);
     });
 
-    test('exportActive carries journal v2 but never the legacy log key',
-        () async {
+    test('exportActive carries journal v2', () async {
       SharedPreferences.setMockInitialValues({
         'juice.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
         'juice.journal.v2.default':
             '[{"id":"n","timestamp":"2026-06-11T10:00:00.000","title":"New","body":"x","kind":"text"}]',
-        'juice.log.v1.default':
-            '[{"id":"o","timestamp":"2026-06-11T09:00:00.000","title":"Old","body":"y"}]',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -105,7 +101,6 @@ void main() {
       final data = (jsonDecode(file) as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
       expect(data, contains('juice.journal.v2'));
-      expect(data, isNot(contains('juice.log.v1')));
     });
 
     test('cannot remove the last session', () async {
