@@ -222,14 +222,23 @@ Working rules for this repo:
   pure: strokes = ARGB color/width/points + canvas size, JSON round-trips,
   tolerant `fromJson`). `SketchEditor` + `SketchPainter`
   (`lib/features/sketch_editor.dart`) draw freehand on a fixed paper background
-  (so stored colors read the same in light/dark); palette, two widths, undo,
-  clear, save/cancel. The composer `composer-draw` button opens it for a new
-  sketch (→ `JournalNotifier.addSketch`, empty sketches dropped); a sketch entry
-  renders an inline `CustomPaint` thumbnail (`sketch-thumb-<id>`) and taps open
-  the editor seeded with its strokes, saving via
-  `JournalEntry.copyWith(payload:)` + `JournalNotifier.replace`. See
-  `docs/superpowers/specs/2026-06-18-journal-sketch-design.md`. Deferred:
-  shapes/eraser/image-import/pan-zoom. No licensed content (user-drawn vectors).
+  (so stored colors read the same in light/dark); palette, two widths, a
+  pen/eraser tool toggle (`sketch-tool-pen`/`sketch-tool-eraser`; eraser =
+  whole-stroke delete via pure `eraseStrokesAt`/`distanceToStroke` in
+  `sketch.dart`, radius scales with width), undo (now a snapshot history stack
+  covering draw+erase+clear), clear, save/cancel. The composer `composer-draw`
+  button opens it for a new sketch (→ `JournalNotifier.addSketch`, empty sketches
+  dropped); a sketch entry renders an inline `CustomPaint` thumbnail
+  (`sketch-thumb-<id>`) and taps open the editor seeded with its strokes, saving
+  via `JournalEntry.copyWith(payload:)` + `JournalNotifier.replace`. See
+  `docs/superpowers/specs/2026-06-18-journal-sketch-design.md` and
+  `docs/superpowers/specs/2026-06-19-sketch-v2-pdf-annotation-design.md` (the
+  latter records why we keep the custom engine over a pub.dev package — only ours
+  serializes re-editable vectors for the journal/export — and the deferred
+  pdfrx-based PDF-annotation epic: render user-imported PDF pages → optional
+  `ui.Image` editor background → annotate; NEVER bundled rulebooks). Deferred:
+  shapes/text/layers/image-background+PDF/pan-zoom. No licensed content
+  (user-drawn vectors).
 - The on-device interpreter model is pinned in
   `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
   `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/
