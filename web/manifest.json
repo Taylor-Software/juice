@@ -1,6 +1,6 @@
 {
-    "name": "Juice Oracle",
-    "short_name": "Juice",
+    "name": "Solo Adventurer's Journal",
+    "short_name": "Solo Journal",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FDF6F0",

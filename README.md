@@ -1,4 +1,4 @@
-# Juice Oracle
+# Solo Adventurer's Journal
 
 **Play it now:** https://taylor-software.github.io/juice/ — free, no account,
 your campaigns stay on your device.

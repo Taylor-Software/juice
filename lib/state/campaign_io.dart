@@ -48,7 +48,7 @@ CampaignImport parseCampaign(String raw) {
     throw const FormatException('Not a campaign file');
   }
   if (decoded['app'] != _appMarker) {
-    throw const FormatException('Not a Juice Oracle campaign file');
+    throw const FormatException("Not a Solo Adventurer's Journal campaign file");
   }
   final version = decoded['schemaVersion'];
   if (version is! int || version > campaignSchemaVersion) {
