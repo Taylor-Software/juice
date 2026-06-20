@@ -410,114 +410,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   _recapBanner(entries),
                   const _CampaignHeader(),
                   if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
-                    SizedBox(
-                      height: 48,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: FilterChip(
-                              label: const Text('All'),
-                              selected: _filterThreadId == null &&
-                                  _filterTag == null &&
-                                  _filterCharId == null,
-                              onSelected: (_) => setState(() {
-                                _filterThreadId = null;
-                                _filterTag = null;
-                                _filterCharId = null;
-                              }),
-                            ),
-                          ),
-                          for (final t in threads)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                label: Text(t.title),
-                                selected: _filterThreadId == t.id,
-                                onSelected: (_) =>
-                                    setState(() => _filterThreadId = t.id),
-                              ),
-                            ),
-                          for (final tag in tags)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                key: Key('tag-chip-$tag'),
-                                label: Text('#$tag'),
-                                selected: _filterTag == tag,
-                                onSelected: (_) => setState(() => _filterTag =
-                                    _filterTag == tag ? null : tag),
-                              ),
-                            ),
-                          for (final c in chars)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: FilterChip(
-                                key: Key('char-filter-${c.id}'),
-                                avatar: const Icon(Icons.person, size: 16),
-                                label: Text(c.name),
-                                selected: _filterCharId == c.id,
-                                onSelected: (_) => setState(() =>
-                                    _filterCharId =
-                                        _filterCharId == c.id ? null : c.id),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        IconButton(
-                          key: const Key('journal-search'),
-                          icon: const Icon(Icons.search),
-                          tooltip: 'Search journal',
-                          onPressed: () => setState(() {
-                            _searching = !_searching;
-                            if (!_searching) _search.clear();
-                          }),
-                        ),
-                        IconButton(
-                          key: const Key('journal-export'),
-                          icon: const Icon(Icons.ios_share),
-                          tooltip: 'Export journal…',
-                          onPressed: _export,
-                        ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.clear_all),
-                          label: const Text('Clear'),
-                          onPressed: _confirmClear,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_searching)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                      child: TextField(
-                        key: const Key('journal-search-field'),
-                        controller: _search,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: 'Search journal…',
-                          border: const OutlineInputBorder(),
-                          isDense: true,
-                          suffixIcon: IconButton(
-                            icon: const Icon(Icons.close),
-                            tooltip: 'Close search',
-                            onPressed: () => setState(() {
-                              _search.clear();
-                              _searching = false;
-                            }),
-                          ),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ),
+                    _filterChips(threads, tags, chars),
+                  _journalActions(),
+                  if (_searching) _searchField(),
                   Expanded(
                     child: ListView.builder(
                       reverse: true,
@@ -543,6 +438,119 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       ],
     );
   }
+
+  /// Horizontal filter strip: All + open threads + tags + mentioned characters.
+  Widget _filterChips(
+          List<Thread> threads, List<String> tags, List<Character> chars) =>
+      SizedBox(
+        height: 48,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilterChip(
+                label: const Text('All'),
+                selected: _filterThreadId == null &&
+                    _filterTag == null &&
+                    _filterCharId == null,
+                onSelected: (_) => setState(() {
+                  _filterThreadId = null;
+                  _filterTag = null;
+                  _filterCharId = null;
+                }),
+              ),
+            ),
+            for (final t in threads)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(t.title),
+                  selected: _filterThreadId == t.id,
+                  onSelected: (_) => setState(() => _filterThreadId = t.id),
+                ),
+              ),
+            for (final tag in tags)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  key: Key('tag-chip-$tag'),
+                  label: Text('#$tag'),
+                  selected: _filterTag == tag,
+                  onSelected: (_) => setState(
+                      () => _filterTag = _filterTag == tag ? null : tag),
+                ),
+              ),
+            for (final c in chars)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  key: Key('char-filter-${c.id}'),
+                  avatar: const Icon(Icons.person, size: 16),
+                  label: Text(c.name),
+                  selected: _filterCharId == c.id,
+                  onSelected: (_) => setState(
+                      () => _filterCharId = _filterCharId == c.id ? null : c.id),
+                ),
+              ),
+          ],
+        ),
+      );
+
+  /// Search / export / clear actions above the entry list.
+  Widget _journalActions() => Padding(
+        padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              key: const Key('journal-search'),
+              icon: const Icon(Icons.search),
+              tooltip: 'Search journal',
+              onPressed: () => setState(() {
+                _searching = !_searching;
+                if (!_searching) _search.clear();
+              }),
+            ),
+            IconButton(
+              key: const Key('journal-export'),
+              icon: const Icon(Icons.ios_share),
+              tooltip: 'Export journal…',
+              onPressed: _export,
+            ),
+            TextButton.icon(
+              icon: const Icon(Icons.clear_all),
+              label: const Text('Clear'),
+              onPressed: _confirmClear,
+            ),
+          ],
+        ),
+      );
+
+  /// The expandable journal search field (shown while [_searching]).
+  Widget _searchField() => Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        child: TextField(
+          key: const Key('journal-search-field'),
+          controller: _search,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search journal…',
+            border: const OutlineInputBorder(),
+            isDense: true,
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: 'Close search',
+              onPressed: () => setState(() {
+                _search.clear();
+                _searching = false;
+              }),
+            ),
+          ),
+          onChanged: (_) => setState(() {}),
+        ),
+      );
 
   // -- Entry rendering ------------------------------------------------------
 
