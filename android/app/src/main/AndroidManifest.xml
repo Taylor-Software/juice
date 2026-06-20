@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="juice"
+        android:label="Solo Adventurer's Journal"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

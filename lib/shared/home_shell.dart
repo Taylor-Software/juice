@@ -500,10 +500,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         title: sessionName == null
-            ? const Text('Juice Oracle')
+            ? const Text("Solo Adventurer's Journal")
             : Column(
                 children: [
-                  const Text('Juice Oracle'),
+                  const Text("Solo Adventurer's Journal"),
                   Text(sessionName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
