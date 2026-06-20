@@ -30,12 +30,20 @@ abstract class BlobStore {
 /// Deterministic content id (FNV-1a 64-bit over the bytes, length-prefixed).
 /// NOT cryptographic — just a stable key for dedupe/storage. Length in the id
 /// makes accidental collisions across different files vanishingly unlikely.
+///
+/// Uses [BigInt] so the 64-bit math compiles on web (JS has no 64-bit int — the
+/// hex literals overflowed the JS number range and broke the web build). The id
+/// is an unsigned 16-hex value, identical across native and web. (Pre-release,
+/// this changes the exact id vs the old native-only int math — which printed a
+/// signed value — so any device-local blobs from before re-id on next put; no
+/// migration is needed.)
 String blobId(List<int> bytes) {
-  var hash = 0xcbf29ce484222325;
-  const prime = 0x100000001b3;
+  final mask = (BigInt.one << 64) - BigInt.one;
+  final prime = BigInt.parse('100000001b3', radix: 16);
+  var hash = BigInt.parse('cbf29ce484222325', radix: 16);
   for (final b in bytes) {
-    hash ^= b & 0xff;
-    hash = (hash * prime) & 0xFFFFFFFFFFFFFFFF;
+    hash ^= BigInt.from(b & 0xff);
+    hash = (hash * prime) & mask;
   }
   return '${bytes.length}-${hash.toRadixString(16).padLeft(16, '0')}';
 }

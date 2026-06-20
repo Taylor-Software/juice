@@ -244,9 +244,22 @@ Working rules for this repo:
   image from the blob (`_SketchThumbnail` caches the decoded image). See the blob
   store + PDF epic in
   `docs/superpowers/specs/2026-06-19-pdf-annotation-blob-store-design.md`.
-  Deferred: PDF source (`pdfrx`, epic B2), export-bundles-blobs zip (B0b), blob
-  GC for orphaned imports, shapes/text/layers/pan-zoom. No licensed content
-  (user-drawn vectors + user-imported images; never bundled rulebooks).
+  **PDF annotation shipped (epic B2):** a PDF-page annotation IS a B1 image-bg
+  sketch whose background is a rendered page raster — `SketchData.pdfBlobId`/
+  `pdfPage` (JSON `pdf`/`pp`) keep the source PDF + page as provenance, while
+  rendering reuses `backgroundBlobId` (the cached PNG) so thumbnails/opens need
+  no pdfrx. `lib/state/pdf_rasterizer.dart` (interface + `pdfRasterizerProvider`
+  + `pdfAvailableProvider`, conditional-import `_io`=pdfrx/pdfium real,
+  `_web`=unavailable stub so pdfrx stays out of the web build — like blob_store)
+  renders a page to PNG; the composer `composer-annotate-pdf` button (gated on
+  `blobStoreAvailable && pdfAvailable`, desktop/mobile only) picks a PDF →
+  `BlobStore.put` → page-pick → render → cache raster → B1 editor. Export bundles
+  the source PDF too (`referencedBlobIds` scans `pdf`). The real `PdfrxRasterizer`
+  is device-verified only (native/WASM), not unit-tested. See
+  `docs/superpowers/specs/2026-06-19-pdf-annotation-pdfrx-design.md`. Deferred:
+  web PDF import (pdfium WASM), sharper re-render from provenance, blob GC for
+  orphans, shapes/text/layers/pan-zoom. No licensed content (user-drawn vectors +
+  user-imported images/PDFs; never bundled rulebooks).
 - The on-device interpreter model is pinned in
   `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
   `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/

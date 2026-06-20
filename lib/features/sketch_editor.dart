@@ -80,6 +80,8 @@ class SketchEditor extends StatefulWidget {
     this.initial,
     this.background,
     this.backgroundBlobId,
+    this.pdfBlobId,
+    this.pdfPage,
     required this.onDone,
   });
   final SketchData? initial;
@@ -90,6 +92,10 @@ class SketchEditor extends StatefulWidget {
   /// The blob id of [background], persisted on the saved [SketchData] so the
   /// image re-loads when the sketch is reopened.
   final String? backgroundBlobId;
+
+  /// PDF-page provenance carried through onto the saved [SketchData].
+  final String? pdfBlobId;
+  final int? pdfPage;
   final void Function(SketchData? result) onDone;
 
   @override
@@ -129,6 +135,8 @@ class _SketchEditorState extends State<SketchEditor> {
       canvasHeight: _canvas.height,
       strokes: _strokes,
       backgroundBlobId: widget.backgroundBlobId,
+      pdfBlobId: widget.pdfBlobId,
+      pdfPage: widget.pdfPage,
     ));
   }
 
@@ -305,6 +313,8 @@ Future<SketchData?> showSketchEditor(
   SketchData? initial,
   ui.Image? background,
   String? backgroundBlobId,
+  String? pdfBlobId,
+  int? pdfPage,
 }) {
   return Navigator.of(context).push<SketchData>(MaterialPageRoute(
     fullscreenDialog: true,
@@ -312,6 +322,8 @@ Future<SketchData?> showSketchEditor(
       initial: initial,
       background: background,
       backgroundBlobId: backgroundBlobId,
+      pdfBlobId: pdfBlobId,
+      pdfPage: pdfPage,
       onDone: (d) => Navigator.of(context).pop(d),
     ),
   ));

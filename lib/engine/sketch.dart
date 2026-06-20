@@ -35,11 +35,19 @@ class SketchData {
     required this.canvasHeight,
     this.strokes = const [],
     this.backgroundBlobId,
+    this.pdfBlobId,
+    this.pdfPage,
   });
   final double canvasWidth;
   final double canvasHeight;
   final List<SketchStroke> strokes;
   final String? backgroundBlobId;
+
+  /// Provenance for a PDF-page annotation: the source PDF blob id + 0-based page
+  /// index. Rendering still uses [backgroundBlobId] (the cached page raster);
+  /// these enable bundling the PDF on export + a future sharper re-render.
+  final String? pdfBlobId;
+  final int? pdfPage;
 
   /// Empty only when there is nothing to keep: no strokes AND no background
   /// image (an imported image with no annotations is still worth saving).
@@ -51,6 +59,8 @@ class SketchData {
         'h': canvasHeight,
         'strokes': strokes.map((s) => s.toJson()).toList(),
         if (backgroundBlobId != null) 'bg': backgroundBlobId,
+        if (pdfBlobId != null) 'pdf': pdfBlobId,
+        if (pdfPage != null) 'pp': pdfPage,
       };
 
   factory SketchData.fromJson(Map<String, dynamic> j) => SketchData(
@@ -63,6 +73,8 @@ class SketchData {
             .map((m) => SketchStroke.fromJson(m.cast<String, dynamic>()))
             .toList(),
         backgroundBlobId: j['bg'] as String?,
+        pdfBlobId: j['pdf'] as String?,
+        pdfPage: (j['pp'] as num?)?.toInt(),
       );
 }
 

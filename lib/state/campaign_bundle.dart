@@ -77,6 +77,8 @@ Set<String> referencedBlobIds(Map<String, String> rawByKey) {
       if (sketch is! Map) continue;
       final bg = sketch['bg'];
       if (bg is String && bg.isNotEmpty) ids.add(bg);
+      final pdf = sketch['pdf']; // PDF-page annotation source (epic B2)
+      if (pdf is String && pdf.isNotEmpty) ids.add(pdf);
     }
   } catch (_) {
     // Malformed journal JSON → no referenced blobs.
