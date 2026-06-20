@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -19,6 +20,7 @@ import '../shared/dice_sheet.dart';
 import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
 import '../shared/shell_route.dart';
+import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -670,20 +672,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 const {});
         return Card(
           child: InkWell(
-            onTap: () async {
-              final edited = await showSketchEditor(context, initial: data);
-              if (edited != null) {
-                await ref.read(journalProvider.notifier).replace(
-                    e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
-              }
-            },
+            onTap: () => _openSketch(e, data),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
                   key: Key('sketch-thumb-${e.id}'),
                   height: 180,
-                  child: CustomPaint(painter: SketchPainter(data)),
+                  child: _SketchThumbnail(data),
                 ),
                 Row(
                   children: [
@@ -946,6 +942,56 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
   }
 
+  // -- Sketch / image annotation ----------------------------------------------
+
+  /// Opens a sketch, resolving its background image (if any) from the blob store
+  /// first so the editor reopens over the same image.
+  Future<void> _openSketch(JournalEntry e, SketchData data) async {
+    final id = data.backgroundBlobId;
+    ui.Image? bg;
+    if (id != null && ref.read(blobStoreAvailableProvider)) {
+      bg = await decodeSketchBackground(
+          await ref.read(blobStoreProvider).get(id));
+    }
+    try {
+      if (!mounted) return;
+      final edited = await showSketchEditor(context,
+          initial: data, background: bg, backgroundBlobId: id);
+      if (edited != null) {
+        await ref.read(journalProvider.notifier).replace(
+            e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
+      }
+    } finally {
+      bg?.dispose(); // we own the decoded image; release its native memory
+    }
+  }
+
+  /// Import an image, store it as a blob, and annotate it in the sketch editor.
+  Future<void> _annotateImage() async {
+    if (!ref.read(blobStoreAvailableProvider)) return;
+    final result =
+        await FilePicker.pickFiles(type: FileType.image, withData: true);
+    final file = result?.files.singleOrNull;
+    final bytes = file?.bytes;
+    if (bytes == null) return;
+    final blobId =
+        await ref.read(blobStoreProvider).put(bytes, ext: file?.extension);
+    final bg = await decodeSketchBackground(bytes);
+    try {
+      if (!mounted) return;
+      final data = await showSketchEditor(context,
+          background: bg, backgroundBlobId: blobId);
+      if (data != null && !data.isEmpty) {
+        await ref.read(journalProvider.notifier).addSketch(data);
+      }
+    } finally {
+      bg?.dispose(); // release the decoded image's native memory
+    }
+    // A cancelled import leaves an orphan blob; blob GC is a later epic step
+    // (BlobStore.list() supports it) — kept simple here to avoid deleting a
+    // content-addressed blob another sketch may share.
+  }
+
   // -- Composer ---------------------------------------------------------------
 
   Widget _composerBar() {
@@ -997,6 +1043,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 }
               },
             ),
+            // Annotate-an-image needs the blob store (file-backed); hidden on web
+            // until an IndexedDB store lands (blobStoreAvailableProvider).
+            if (ref.watch(blobStoreAvailableProvider))
+              IconButton(
+                key: const Key('composer-annotate-image'),
+                icon: const Icon(Icons.image_outlined),
+                tooltip: 'Annotate an image',
+                onPressed: _annotateImage,
+              ),
             IconButton(
               key: const Key('journal-send'),
               icon: const Icon(Icons.send),
@@ -1906,6 +1961,76 @@ class _PayloadCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Renders a sketch thumbnail, resolving its background image (if any) from the
+/// blob store once and caching the decoded [ui.Image] in state (so the journal
+/// list doesn't re-read the file on every rebuild).
+class _SketchThumbnail extends ConsumerStatefulWidget {
+  const _SketchThumbnail(this.data);
+  final SketchData data;
+
+  @override
+  ConsumerState<_SketchThumbnail> createState() => _SketchThumbnailState();
+}
+
+class _SketchThumbnailState extends ConsumerState<_SketchThumbnail> {
+  ui.Image? _bg;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_SketchThumbnail old) {
+    super.didUpdateWidget(old);
+    if (old.data.backgroundBlobId != widget.data.backgroundBlobId) _load();
+  }
+
+  @override
+  void dispose() {
+    _bg?.dispose(); // release the cached decoded image's native memory
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final id = widget.data.backgroundBlobId;
+    if (id == null || !ref.read(blobStoreAvailableProvider)) {
+      final old = _bg;
+      if (_bg != null) {
+        if (mounted) {
+          setState(() => _bg = null);
+        } else {
+          _bg = null;
+        }
+      }
+      old?.dispose();
+      return;
+    }
+    final img =
+        await decodeSketchBackground(await ref.read(blobStoreProvider).get(id));
+    if (!mounted) {
+      img?.dispose();
+      return;
+    }
+    final old = _bg;
+    setState(() => _bg = img);
+    old?.dispose(); // drop the previously-cached image
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = _bg;
+    final paint = CustomPaint(painter: SketchPainter(widget.data, background: bg));
+    // Lock the thumbnail to the image aspect so strokes (uniformly scaled) stay
+    // aligned to the BoxFit.contain background.
+    if (bg == null) return paint;
+    return Center(
+      child: AspectRatio(aspectRatio: bg.width / bg.height, child: paint),
     );
   }
 }

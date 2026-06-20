@@ -232,13 +232,21 @@ Working rules for this repo:
   (`sketch-thumb-<id>`) and taps open the editor seeded with its strokes, saving
   via `JournalEntry.copyWith(payload:)` + `JournalNotifier.replace`. See
   `docs/superpowers/specs/2026-06-18-journal-sketch-design.md` and
-  `docs/superpowers/specs/2026-06-19-sketch-v2-pdf-annotation-design.md` (the
-  latter records why we keep the custom engine over a pub.dev package — only ours
-  serializes re-editable vectors for the journal/export — and the deferred
-  pdfrx-based PDF-annotation epic: render user-imported PDF pages → optional
-  `ui.Image` editor background → annotate; NEVER bundled rulebooks). Deferred:
-  shapes/text/layers/image-background+PDF/pan-zoom. No licensed content
-  (user-drawn vectors).
+  `docs/superpowers/specs/2026-06-19-sketch-v2-pdf-annotation-design.md` (why we
+  keep the custom engine over a pub.dev package — only ours serializes
+  re-editable vectors for the journal/export). **Image-background annotation
+  shipped:** `SketchData.backgroundBlobId` (JSON `bg`) references an image in the
+  `BlobStore`; `SketchPainter`/`SketchEditor` take an optional `ui.Image`
+  background (`paintImage` BoxFit.contain over paper, under the strokes);
+  `decodeSketchBackground(bytes)` decodes it; the composer `composer-annotate-image`
+  button (gated on `blobStoreAvailableProvider`, hidden on web) imports an image
+  via file_picker → `BlobStore.put` → annotate; thumbnails/opens resolve the
+  image from the blob (`_SketchThumbnail` caches the decoded image). See the blob
+  store + PDF epic in
+  `docs/superpowers/specs/2026-06-19-pdf-annotation-blob-store-design.md`.
+  Deferred: PDF source (`pdfrx`, epic B2), export-bundles-blobs zip (B0b), blob
+  GC for orphaned imports, shapes/text/layers/pan-zoom. No licensed content
+  (user-drawn vectors + user-imported images; never bundled rulebooks).
 - The on-device interpreter model is pinned in
   `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
   `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/

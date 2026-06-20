@@ -1,4 +1,6 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
@@ -19,12 +21,25 @@ enum _SketchTool { pen, eraser }
 /// Paints a [SketchData]'s strokes on a paper background (theme-independent so
 /// stored colors render the same in light and dark mode).
 class SketchPainter extends CustomPainter {
-  const SketchPainter(this.data);
+  const SketchPainter(this.data, {this.background});
   final SketchData data;
+
+  /// Optional background image (resolved from [SketchData.backgroundBlobId] by
+  /// the widget layer); drawn fit-contained over the paper, under the strokes.
+  final ui.Image? background;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Offset.zero & size, Paint()..color = _paper);
+    if (background != null) {
+      paintImage(
+        canvas: canvas,
+        rect: Offset.zero & size,
+        image: background!,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.medium,
+      );
+    }
     final sx = data.canvasWidth == 0 ? 1.0 : size.width / data.canvasWidth;
     final sy = data.canvasHeight == 0 ? 1.0 : size.height / data.canvasHeight;
     for (final s in data.strokes) {
@@ -53,14 +68,28 @@ class SketchPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(SketchPainter old) => old.data != data;
+  bool shouldRepaint(SketchPainter old) =>
+      old.data != data || old.background != background;
 }
 
 /// Full-screen freehand editor. Calls [onDone] with the drawing (or null on
 /// cancel) and pops.
 class SketchEditor extends StatefulWidget {
-  const SketchEditor({super.key, this.initial, required this.onDone});
+  const SketchEditor({
+    super.key,
+    this.initial,
+    this.background,
+    this.backgroundBlobId,
+    required this.onDone,
+  });
   final SketchData? initial;
+
+  /// Optional background image to annotate (resolved from a blob by the caller).
+  final ui.Image? background;
+
+  /// The blob id of [background], persisted on the saved [SketchData] so the
+  /// image re-loads when the sketch is reopened.
+  final String? backgroundBlobId;
   final void Function(SketchData? result) onDone;
 
   @override
@@ -99,6 +128,7 @@ class _SketchEditorState extends State<SketchEditor> {
       canvasWidth: _canvas.width,
       canvasHeight: _canvas.height,
       strokes: _strokes,
+      backgroundBlobId: widget.backgroundBlobId,
     ));
   }
 
@@ -150,53 +180,63 @@ class _SketchEditorState extends State<SketchEditor> {
       ),
       body: Column(
         children: [
-          Expanded(
-            child: LayoutBuilder(builder: (context, constraints) {
-              _canvas = Size(constraints.maxWidth, constraints.maxHeight);
-              return GestureDetector(
-                key: const Key('sketch-canvas'),
-                onPanStart: (d) {
-                  if (_tool == _SketchTool.eraser) {
-                    _erasing = false;
-                    _eraseAt(d.localPosition);
-                  } else {
-                    setState(() => _current = [_xy(d.localPosition)]);
-                  }
-                },
-                onPanUpdate: (d) {
-                  if (_tool == _SketchTool.eraser) {
-                    _eraseAt(d.localPosition);
-                  } else {
-                    setState(() => _current.add(_xy(d.localPosition)));
-                  }
-                },
-                onPanEnd: (_) {
-                  if (_tool == _SketchTool.eraser) {
-                    _erasing = false;
-                    return;
-                  }
-                  setState(() {
-                    if (_current.isNotEmpty) {
-                      _undo.add(_strokes);
-                      _strokes = [
-                        ..._strokes,
-                        SketchStroke(
-                            color: _color, width: _width, points: _current),
-                      ];
-                    }
-                    _current = [];
-                  });
-                },
-                child: CustomPaint(
-                  painter: SketchPainter(preview),
-                  size: Size.infinite,
-                ),
-              );
-            }),
-          ),
+          Expanded(child: _canvasArea(preview)),
           _toolbar(),
         ],
       ),
+    );
+  }
+
+  /// The drawing surface. With a background image the surface is locked to the
+  /// image's aspect ratio so strokes and image share one coordinate space and
+  /// scale uniformly — without this the stretch-to-fill stroke scaling would
+  /// drift from the BoxFit.contain image whenever container aspect ≠ canvas.
+  Widget _canvasArea(SketchData preview) {
+    final surface = LayoutBuilder(builder: (context, constraints) {
+      _canvas = Size(constraints.maxWidth, constraints.maxHeight);
+      return GestureDetector(
+        key: const Key('sketch-canvas'),
+        onPanStart: (d) {
+          if (_tool == _SketchTool.eraser) {
+            _erasing = false;
+            _eraseAt(d.localPosition);
+          } else {
+            setState(() => _current = [_xy(d.localPosition)]);
+          }
+        },
+        onPanUpdate: (d) {
+          if (_tool == _SketchTool.eraser) {
+            _eraseAt(d.localPosition);
+          } else {
+            setState(() => _current.add(_xy(d.localPosition)));
+          }
+        },
+        onPanEnd: (_) {
+          if (_tool == _SketchTool.eraser) {
+            _erasing = false;
+            return;
+          }
+          setState(() {
+            if (_current.isNotEmpty) {
+              _undo.add(_strokes);
+              _strokes = [
+                ..._strokes,
+                SketchStroke(color: _color, width: _width, points: _current),
+              ];
+            }
+            _current = [];
+          });
+        },
+        child: CustomPaint(
+          painter: SketchPainter(preview, background: widget.background),
+          size: Size.infinite,
+        ),
+      );
+    });
+    final bg = widget.background;
+    if (bg == null) return surface;
+    return Center(
+      child: AspectRatio(aspectRatio: bg.width / bg.height, child: surface),
     );
   }
 
@@ -260,13 +300,36 @@ class _SketchEditorState extends State<SketchEditor> {
 }
 
 /// Opens the editor full-screen; returns the drawing or null on cancel.
-Future<SketchData?> showSketchEditor(BuildContext context,
-    {SketchData? initial}) {
+Future<SketchData?> showSketchEditor(
+  BuildContext context, {
+  SketchData? initial,
+  ui.Image? background,
+  String? backgroundBlobId,
+}) {
   return Navigator.of(context).push<SketchData>(MaterialPageRoute(
     fullscreenDialog: true,
     builder: (_) => SketchEditor(
       initial: initial,
+      background: background,
+      backgroundBlobId: backgroundBlobId,
       onDone: (d) => Navigator.of(context).pop(d),
     ),
   ));
+}
+
+/// Decodes raw image [bytes] into a [ui.Image] for use as an editor/painter
+/// background. Returns null on null/empty input or a decode failure.
+Future<ui.Image?> decodeSketchBackground(List<int>? bytes) async {
+  if (bytes == null || bytes.isEmpty) return null;
+  try {
+    final codec = await ui.instantiateImageCodec(Uint8List.fromList(bytes));
+    try {
+      final frame = await codec.getNextFrame();
+      return frame.image; // caller owns the image and must dispose it
+    } finally {
+      codec.dispose(); // release the decoder's native resources
+    }
+  } catch (_) {
+    return null; // unsupported/corrupt image → fall back to paper
+  }
 }

@@ -26,23 +26,31 @@ class SketchStroke {
 }
 
 /// A vector sketch drawn at a known logical canvas size; round-trips via JSON.
+/// [backgroundBlobId] optionally references a background image in the BlobStore
+/// (e.g. an imported photo, map/handout, or a rendered PDF page) the strokes
+/// annotate; null means the plain paper background.
 class SketchData {
   const SketchData({
     required this.canvasWidth,
     required this.canvasHeight,
     this.strokes = const [],
+    this.backgroundBlobId,
   });
   final double canvasWidth;
   final double canvasHeight;
   final List<SketchStroke> strokes;
+  final String? backgroundBlobId;
 
-  bool get isEmpty => strokes.isEmpty;
+  /// Empty only when there is nothing to keep: no strokes AND no background
+  /// image (an imported image with no annotations is still worth saving).
+  bool get isEmpty => strokes.isEmpty && backgroundBlobId == null;
 
   Map<String, dynamic> toJson() => {
         'v': 1,
         'w': canvasWidth,
         'h': canvasHeight,
         'strokes': strokes.map((s) => s.toJson()).toList(),
+        if (backgroundBlobId != null) 'bg': backgroundBlobId,
       };
 
   factory SketchData.fromJson(Map<String, dynamic> j) => SketchData(
@@ -54,6 +62,7 @@ class SketchData {
             .whereType<Map<dynamic, dynamic>>()
             .map((m) => SketchStroke.fromJson(m.cast<String, dynamic>()))
             .toList(),
+        backgroundBlobId: j['bg'] as String?,
       );
 }
 

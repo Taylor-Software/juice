@@ -28,6 +28,15 @@ void main() {
       expect(SketchData.fromJson(const {}).isEmpty, isTrue);
       expect(SketchData.fromJson(const {'strokes': 'garbage'}).isEmpty, isTrue);
     });
+
+    test('round-trips backgroundBlobId; an image-only sketch is not empty', () {
+      const d = SketchData(
+          canvasWidth: 10, canvasHeight: 10, backgroundBlobId: 'b1');
+      expect(d.isEmpty, isFalse); // a background image alone is worth keeping
+      final back = SketchData.fromJson(d.toJson());
+      expect(back.backgroundBlobId, 'b1');
+      expect(back.isEmpty, isFalse);
+    });
   });
 
   group('eraser geometry', () {
