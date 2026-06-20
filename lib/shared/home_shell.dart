@@ -166,17 +166,17 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _exportCampaign(BuildContext dialogContext) async {
-    final content = await ref.read(sessionsProvider.notifier).exportActive();
+    final file = await ref.read(sessionsProvider.notifier).exportActiveFile();
     final name =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
-    final fileName = '${slugify(name)}.juice.json';
+    final fileName = '${slugify(name)}.juice.${file.ext}';
     try {
       await FilePicker.saveFile(
         dialogTitle: 'Export campaign',
         fileName: fileName,
         type: FileType.custom,
-        allowedExtensions: ['json'],
-        bytes: Uint8List.fromList(utf8.encode(content)),
+        allowedExtensions: [file.ext],
+        bytes: Uint8List.fromList(file.bytes),
       );
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
@@ -220,7 +220,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       result = await FilePicker.pickFiles(
         dialogTitle: 'Import campaign',
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: ['json', 'zip'],
         withData: true,
       );
     } on PlatformException catch (e) {
@@ -238,7 +238,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     try {
       await ref
           .read(sessionsProvider.notifier)
-          .importCampaign(utf8.decode(bytes));
+          .importCampaignData(bytes);
       // Imported campaigns are always party (files carry no mode).
       ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();

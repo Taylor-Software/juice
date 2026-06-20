@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +20,8 @@ import '../engine/oracle.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/system_primer.dart';
+import 'blob_store.dart';
+import 'campaign_bundle.dart';
 import 'campaign_io.dart';
 
 /// Loads the data asset and builds the engine once.
@@ -1136,6 +1139,29 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     );
   }
 
+  /// Export the active session as a file: a `.juice.zip` bundle when it
+  /// references blob images (so annotations travel with it), else a plain
+  /// `.juice.json` string. Returns the bytes + the file extension to use.
+  Future<({List<int> bytes, String ext})> exportActiveFile() async {
+    final json = await exportActive();
+    final plain = (bytes: utf8.encode(json), ext: 'json');
+    if (!ref.read(blobStoreAvailableProvider)) return plain;
+    final s = state.valueOrNull ?? await future;
+    final prefs = await SharedPreferences.getInstance();
+    final journalRaw = prefs.getString('juice.journal.v2.${s.active}');
+    final ids = referencedBlobIds(
+        {if (journalRaw != null) 'juice.journal.v2': journalRaw});
+    if (ids.isEmpty) return plain;
+    final store = ref.read(blobStoreProvider);
+    final blobs = <String, Uint8List>{};
+    for (final id in ids) {
+      final b = await store.get(id);
+      if (b != null) blobs[id] = b;
+    }
+    if (blobs.isEmpty) return plain;
+    return (bytes: encodeCampaignBundle(json, blobs), ext: 'zip');
+  }
+
   /// Serialize the active session to a Lonelog `.md` document.
   Future<String> exportActiveAsLonelog() async {
     final s = state.valueOrNull ?? await future;
@@ -1170,6 +1196,25 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     }
     await _save(
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
+  }
+
+  /// Import campaign file [bytes]: a `.juice.zip` bundle (extracts its blobs into
+  /// the blob store, then imports the JSON) or a plain `.juice.json` string.
+  /// Throws [FormatException] on invalid files.
+  Future<void> importCampaignData(List<int> bytes) async {
+    final bundle = decodeCampaignBundle(bytes);
+    if (bundle == null) {
+      await importCampaign(utf8.decode(bytes)); // plain JSON
+      return;
+    }
+    if (ref.read(blobStoreAvailableProvider)) {
+      final store = ref.read(blobStoreProvider);
+      for (final e in bundle.blobs.entries) {
+        // Re-put under the same content-addressed id (same bytes + ext).
+        await store.put(e.value, ext: blobExtFromId(e.key));
+      }
+    }
+    await importCampaign(bundle.campaignJson);
   }
 
   /// Import a Lonelog `.md` document as a NEW session and switch to it.
