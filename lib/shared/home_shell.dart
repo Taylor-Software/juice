@@ -14,6 +14,7 @@ import '../features/maps_tab.dart';
 import '../features/oracles_tab.dart';
 import '../features/sheet_tab.dart';
 import '../features/tracking_tab.dart';
+import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'destination.dart';
@@ -126,11 +127,47 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: const Text('Import Lonelog (.md)'),
                 onTap: () => _importLonelog(dialogContext),
               ),
+              if (ref.read(blobStoreAvailableProvider))
+                ListTile(
+                  key: const Key('gc-blobs'),
+                  leading: const Icon(Icons.cleaning_services_outlined),
+                  title: const Text('Clean up unused images'),
+                  onTap: () => _gcBlobs(dialogContext),
+                ),
             ],
           );
         },
       ),
     );
+  }
+
+  Future<void> _gcBlobs(BuildContext dialogContext) async {
+    final ok = await showDialog<bool>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Clean up unused images?'),
+        content: const Text(
+            'Deletes imported images and PDFs no campaign references. '
+            'This can\'t be undone.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Clean up')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final n = await ref.read(sessionsProvider.notifier).gcBlobs();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(n == 0
+          ? 'No unused images to remove.'
+          : 'Removed $n unused file${n == 1 ? '' : 's'}.'),
+    ));
+    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
   Future<void> _createSession(BuildContext dialogContext) async {

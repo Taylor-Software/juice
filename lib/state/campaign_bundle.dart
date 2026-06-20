@@ -59,9 +59,10 @@ CampaignBundle? decodeCampaignBundle(List<int> bytes) {
   return CampaignBundle(campaignJson: json, blobs: blobs);
 }
 
-/// Blob ids a campaign's stores reference, so an export only bundles blobs that
-/// are actually used. Currently that is the journal sketches' background images
-/// (`payload.sketch.bg`); tolerant of any malformed shape (returns what it can).
+/// Blob ids a campaign's stores reference, so export/GC only touch blobs that
+/// are actually used. Currently that is the journal sketches' background image
+/// (`payload.sketch.bg`) and the source PDF of a PDF-page annotation
+/// (`payload.sketch.pdf`); tolerant of any malformed shape (returns what it can).
 Set<String> referencedBlobIds(Map<String, String> rawByKey) {
   final ids = <String>{};
   final journalRaw = rawByKey['juice.journal.v2'];
