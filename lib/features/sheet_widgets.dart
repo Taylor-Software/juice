@@ -296,6 +296,7 @@ Widget assetCard({
   required AssetState asset,
   required ValueChanged<List<bool>> onAbilitiesChanged,
   required VoidCallback onDelete,
+  void Function(String key, int value)? onMeterChanged,
 }) =>
     Card(
       child: Padding(
@@ -324,9 +325,38 @@ Widget assetCard({
                 onAbilitiesChanged(flags);
               },
             ),
+          for (final m in asset.meters)
+            Row(children: [
+              SizedBox(
+                width: 80,
+                child: Text(_titleCase(m.label),
+                    style: const TextStyle(fontSize: 12)),
+              ),
+              IconButton(
+                key: Key('$prefix-asset-$index-meter-${m.key}-minus'),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: onMeterChanged == null
+                    ? null
+                    : () => onMeterChanged(m.key, m.value - 1),
+              ),
+              Text('${m.value} / ${m.max}'),
+              IconButton(
+                key: Key('$prefix-asset-$index-meter-${m.key}-plus'),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: onMeterChanged == null
+                    ? null
+                    : () => onMeterChanged(m.key, m.value + 1),
+              ),
+            ]),
         ]),
       ),
     );
+
+/// Datasworn control labels are lowercase ("integrity"); title-case for display.
+String _titleCase(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 /// Loads [rulesetId] assets and shows the picker; returns the chosen def or null.
 Future<IronswornAssetDef?> addAssetDialog(

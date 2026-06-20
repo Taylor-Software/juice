@@ -307,6 +307,43 @@ class ProgressTrack {
   }
 }
 
+/// A condition meter on an asset (Starforged/SI companion health, vehicle
+/// integrity, ammo, …). Denormalized from the Datasworn `controls` so the sheet
+/// renders it without the ruleset; [value] is the live tracked value.
+class AssetMeter {
+  const AssetMeter({
+    required this.key,
+    required this.label,
+    required this.min,
+    required this.max,
+    required this.value,
+  });
+  final String key;
+  final String label;
+  final int min;
+  final int max;
+  final int value;
+
+  AssetMeter copyWith({int? value}) => AssetMeter(
+        key: key,
+        label: label,
+        min: min,
+        max: max,
+        value: (value ?? this.value).clamp(min, max),
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'k': key, 'l': label, 'mn': min, 'mx': max, 'v': value};
+
+  factory AssetMeter.fromJson(Map<String, dynamic> j) => AssetMeter(
+        key: j['k'] is String ? j['k'] as String : '',
+        label: j['l'] is String ? j['l'] as String : '',
+        min: (j['mn'] as num?)?.toInt() ?? 0,
+        max: (j['mx'] as num?)?.toInt() ?? 0,
+        value: (j['v'] as num?)?.toInt() ?? 0,
+      );
+}
+
 /// A persisted asset on an Ironsworn sheet. [enabledAbilities] parallels the
 /// asset definition's abilities[]; only the toggled-on flags are play state.
 class AssetState {
@@ -315,17 +352,21 @@ class AssetState {
     required this.name,
     this.category = '',
     this.enabledAbilities = const [],
+    this.meters = const [],
   });
   final String assetId; // datasworn _id
   final String name;
   final String category;
   final List<bool> enabledAbilities;
+  final List<AssetMeter> meters;
 
-  AssetState copyWith({List<bool>? enabledAbilities}) => AssetState(
+  AssetState copyWith({List<bool>? enabledAbilities, List<AssetMeter>? meters}) =>
+      AssetState(
         assetId: assetId,
         name: name,
         category: category,
         enabledAbilities: enabledAbilities ?? this.enabledAbilities,
+        meters: meters ?? this.meters,
       );
 
   Map<String, dynamic> toJson() => {
@@ -333,6 +374,8 @@ class AssetState {
         'name': name,
         if (category.isNotEmpty) 'category': category,
         'enabledAbilities': enabledAbilities,
+        if (meters.isNotEmpty)
+          'meters': meters.map((m) => m.toJson()).toList(),
       };
 
   static AssetState? maybeFromJson(dynamic j) {
@@ -345,6 +388,12 @@ class AssetState {
       category: j['category'] is String ? j['category'] as String : '',
       enabledAbilities: j['enabledAbilities'] is List
           ? (j['enabledAbilities'] as List).map((e) => e == true).toList()
+          : const [],
+      meters: j['meters'] is List
+          ? (j['meters'] as List)
+              .whereType<Map<dynamic, dynamic>>()
+              .map((m) => AssetMeter.fromJson(m.cast<String, dynamic>()))
+              .toList()
           : const [],
     );
   }
@@ -514,20 +563,47 @@ class IronswornAssetDef {
     required this.category,
     required this.abilities,
     required this.abilityEnabled,
+    this.meters = const [],
   });
   final String id;
   final String name;
   final String category;
   final List<String> abilities; // ability text
   final List<bool> abilityEnabled; // default-on flags
+  final List<AssetMeter> meters; // condition meters (health/integrity/ammo/…)
 
-  /// A fresh persisted [AssetState] with the definition's default flags.
+  /// A fresh persisted [AssetState] with the definition's default flags + meters.
   AssetState toState() => AssetState(
         assetId: id,
         name: name,
         category: category,
         enabledAbilities: List<bool>.of(abilityEnabled),
+        meters: List<AssetMeter>.of(meters),
       );
+
+  /// Parse condition meters from a Datasworn asset's `controls` map. Each
+  /// control with `field_type == 'condition_meter'` becomes an [AssetMeter]
+  /// seeded at its default `value`; nested toggles (battered, out-of-action) are
+  /// not surfaced yet.
+  static List<AssetMeter> _metersFromControls(dynamic controls) {
+    if (controls is! Map) return const [];
+    final out = <AssetMeter>[];
+    for (final e in controls.entries) {
+      final c = e.value;
+      if (c is! Map || c['field_type'] != 'condition_meter') continue;
+      final max = (c['max'] as num?)?.toInt();
+      if (max == null) continue;
+      final min = (c['min'] as num?)?.toInt() ?? 0;
+      out.add(AssetMeter(
+        key: '${e.key}',
+        label: c['label'] is String ? c['label'] as String : '${e.key}',
+        min: min,
+        max: max,
+        value: (c['value'] as num?)?.toInt() ?? max,
+      ));
+    }
+    return out;
+  }
 
   static List<IronswornAssetDef> listFromRuleset(Map<String, dynamic> ruleset) {
     final out = <IronswornAssetDef>[];
@@ -559,6 +635,7 @@ class IronswornAssetDef {
               a['category'] is String ? a['category'] as String : collName,
           abilities: abilities,
           abilityEnabled: enabled,
+          meters: _metersFromControls(a['controls']),
         ));
       }
     }

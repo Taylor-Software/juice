@@ -204,6 +204,13 @@ class StarforgedSheetView extends ConsumerWidget {
                 s.copyWith(
                     assets: [...s.assets]..[i] =
                         s.assets[i].copyWith(enabledAbilities: flags))),
+            onMeterChanged: (key, value) => _save(
+                ref,
+                s.copyWith(
+                    assets: [...s.assets]..[i] = s.assets[i].copyWith(meters: [
+                          for (final m in s.assets[i].meters)
+                            m.key == key ? m.copyWith(value: value) : m,
+                        ]))),
             onDelete: () =>
                 _save(ref, s.copyWith(assets: [...s.assets]..removeAt(i))),
           ),
