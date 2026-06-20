@@ -1,7 +1,16 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/sketch.dart';
 import 'package:juice_oracle/features/sketch_editor.dart';
+
+Future<ui.Image> _redImage() async {
+  final recorder = ui.PictureRecorder();
+  Canvas(recorder).drawRect(
+      const Rect.fromLTWH(0, 0, 4, 4), Paint()..color = const Color(0xFFFF0000));
+  return recorder.endRecording().toImage(4, 4);
+}
 
 void main() {
   testWidgets('draw a stroke then save returns SketchData', (tester) async {
@@ -114,6 +123,70 @@ void main() {
     await tester.tap(find.byKey(const Key('sketch-save')));
     await tester.pumpAndSettle();
     expect(result!.strokes.length, 1);
+  });
+
+  testWidgets('editor with a background image saves its backgroundBlobId',
+      (tester) async {
+    final img = await _redImage();
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SketchEditor(
+          background: img,
+          backgroundBlobId: 'blob-1',
+          onDone: (d) => result = d,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    // An imported image with no strokes still saves (the image is the content).
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result, isNotNull);
+    expect(result!.backgroundBlobId, 'blob-1');
+    expect(result!.isEmpty, isFalse);
+  });
+
+  testWidgets('a background image aspect-locks the canvas; plain does not',
+      (tester) async {
+    final img = await _redImage();
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SketchEditor(
+            background: img, backgroundBlobId: 'b', onDone: (_) {}),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+        find.ancestor(
+            of: find.byKey(const Key('sketch-canvas')),
+            matching: find.byType(AspectRatio)),
+        findsOneWidget);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (_) {})),
+    ));
+    await tester.pumpAndSettle();
+    expect(
+        find.ancestor(
+            of: find.byKey(const Key('sketch-canvas')),
+            matching: find.byType(AspectRatio)),
+        findsNothing);
+  });
+
+  group('decodeSketchBackground', () {
+    test('null or empty bytes → null', () async {
+      expect(await decodeSketchBackground(null), isNull);
+      expect(await decodeSketchBackground(const []), isNull);
+    });
+    test('valid PNG bytes → an image', () async {
+      final png = await (await _redImage())
+          .toByteData(format: ui.ImageByteFormat.png);
+      final decoded =
+          await decodeSketchBackground(png!.buffer.asUint8List());
+      expect(decoded, isNotNull);
+      expect(decoded!.width, 4);
+    });
   });
 
   testWidgets('cancel returns null', (tester) async {
