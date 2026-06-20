@@ -737,11 +737,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _addStat(BuildContext context, Character c) async {
+    final label = TextEditingController();
+    final value = TextEditingController();
     final result = await showDialog<({String label, String value})>(
       context: context,
       builder: (context) {
-        final label = TextEditingController();
-        final value = TextEditingController();
         return AlertDialog(
           title: const Text('Add stat'),
           content: Column(
@@ -775,6 +775,10 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      label.dispose();
+      value.dispose();
+    });
     if (result == null || result.label.trim().isEmpty) return;
     await _replace(c.copyWith(stats: [
       ...c.stats,
@@ -783,11 +787,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _addTrack(BuildContext context, Character c) async {
+    final labelCtrl = TextEditingController();
+    final maxCtrl = TextEditingController();
     final result = await showDialog<({String label, String max})>(
       context: context,
       builder: (context) {
-        final label = TextEditingController();
-        final max = TextEditingController();
         return AlertDialog(
           title: const Text('Add track'),
           content: Column(
@@ -795,14 +799,14 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             children: [
               TextField(
                 key: const Key('track-label'),
-                controller: label,
+                controller: labelCtrl,
                 autofocus: true,
                 decoration: const InputDecoration(labelText: 'Label'),
               ),
               const SizedBox(height: 12),
               TextField(
                 key: const Key('track-max'),
-                controller: max,
+                controller: maxCtrl,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Max'),
               ),
@@ -815,13 +819,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             ),
             FilledButton(
               onPressed: () =>
-                  Navigator.pop(context, (label: label.text, max: max.text)),
+                  Navigator.pop(context, (label: labelCtrl.text, max: maxCtrl.text)),
               child: const Text('Add'),
             ),
           ],
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      labelCtrl.dispose();
+      maxCtrl.dispose();
+    });
     if (result == null || result.label.trim().isEmpty) return;
     var max = int.tryParse(result.max.trim()) ?? 1;
     if (max < 1) max = 1;
@@ -832,15 +840,15 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _addTag(BuildContext context, Character c) async {
+    final tagCtrl = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        final tag = TextEditingController();
         return AlertDialog(
           title: const Text('Add tag'),
           content: TextField(
             key: const Key('tag-input'),
-            controller: tag,
+            controller: tagCtrl,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Tag'),
           ),
@@ -850,13 +858,14 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, tag.text),
+              onPressed: () => Navigator.pop(context, tagCtrl.text),
               child: const Text('Add'),
             ),
           ],
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
     final tag = result?.trim() ?? '';
     if (tag.isEmpty || c.tags.contains(tag)) return;
     await _replace(c.copyWith(tags: [...c.tags, tag]));

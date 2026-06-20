@@ -5,8 +5,6 @@ import '../engine/models.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
-String _fmt(int n) => n >= 0 ? '+$n' : '$n';
-
 /// Bespoke lean Shadowdark character sheet. Renders for characters whose
 /// [Character.shadowdark] is non-null; edits persist via charactersProvider.
 class ShadowdarkSheetView extends ConsumerWidget {
@@ -167,7 +165,7 @@ class ShadowdarkSheetView extends ConsumerWidget {
         if (s.isCaster) ...[
           sheetSection(context, 'Spellcasting'),
           Text(
-              'Casts on d20 + ${kDndAbilityLabels[s.castingAbility]} (${_fmt(s.castingMod!)})'
+              'Casts on d20 + ${kDndAbilityLabels[s.castingAbility]} (${fmtSigned(s.castingMod!)})'
               ' vs DC 10 + spell tier',
               style: theme.textTheme.bodySmall),
           _freeform(ref, 'sd-spells', 'Spells known', s.spellsText,
@@ -183,7 +181,7 @@ class ShadowdarkSheetView extends ConsumerWidget {
         prefix: 'sd',
         abilityKey: a,
         label: kDndAbilityLabels[a]!,
-        modText: _fmt(s.abilityMod(a)),
+        modText: fmtSigned(s.abilityMod(a)),
         score: s.score(a),
         onMinus: () => _save(
             ref, s.copyWith(abilities: {...s.abilities, a: s.score(a) - 1})),

@@ -90,6 +90,7 @@ class RumorsPane extends ConsumerWidget {
         ],
       ),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     if (text == null || text.trim().isEmpty) return;
     await ref.read(rumorsProvider.notifier).add(text.trim());
   }

@@ -72,42 +72,46 @@ class ScenesPane extends ConsumerWidget {
   Future<void> _newScene(BuildContext context, WidgetRef ref,
       {String initialTitle = ''}) async {
     final controller = TextEditingController(text: initialTitle);
-    final title = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('New scene'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: 'Scene title',
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.casino_outlined),
-              tooltip: 'Roll a name',
-              onPressed: () {
-                final oracle = ref.read(oracleProvider).valueOrNull;
-                if (oracle == null) return;
-                controller.text = oracle.generateName().summary ?? '';
-              },
+    try {
+      final title = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('New scene'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              labelText: 'Scene title',
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.casino_outlined),
+                tooltip: 'Roll a name',
+                onPressed: () {
+                  final oracle = ref.read(oracleProvider).valueOrNull;
+                  if (oracle == null) return;
+                  controller.text = oracle.generateName().summary ?? '';
+                },
+              ),
             ),
+            onSubmitted: (v) => Navigator.pop(context, v),
           ),
-          onSubmitted: (v) => Navigator.pop(context, v),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Start scene')),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('Start scene')),
-        ],
-      ),
-    );
-    if (title == null || title.trim().isEmpty) return;
-    await ref.read(journalProvider.notifier).addScene(
-          title.trim(),
-          chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
-        );
+      );
+      if (title == null || title.trim().isEmpty) return;
+      await ref.read(journalProvider.notifier).addScene(
+            title.trim(),
+            chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
+          );
+    } finally {
+      controller.dispose();
+    }
   }
 
   Future<void> _generateScene(BuildContext context, WidgetRef ref) async {

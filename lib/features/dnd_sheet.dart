@@ -5,8 +5,6 @@ import '../engine/models.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
-String _fmt(int n) => n >= 0 ? '+$n' : '$n';
-
 /// Bespoke D&D 5e character sheet (P1). Renders for characters whose
 /// [Character.dnd] is non-null; edits persist via charactersProvider.
 class DndSheetView extends ConsumerWidget {
@@ -77,7 +75,7 @@ class DndSheetView extends ConsumerWidget {
               onSet: (v) => _save(ref, s.copyWith(level: v))),
         ]),
         Text(
-            'Proficiency Bonus ${_fmt(s.proficiencyBonus)}  ·  Hit die d${s.hitDie}',
+            'Proficiency Bonus ${fmtSigned(s.proficiencyBonus)}  ·  Hit die d${s.hitDie}',
             style: theme.textTheme.labelSmall),
         sheetSection(context, 'Ability Scores'),
         Wrap(spacing: 8, runSpacing: 8, children: [
@@ -94,7 +92,7 @@ class DndSheetView extends ConsumerWidget {
           // Expanded (not Spacer + fixed Text): the info text right-aligns and
           // wraps on a narrow phone instead of throwing a RenderFlex overflow.
           Expanded(
-            child: Text('Init ${_fmt(s.initiative)}   Speed ${s.speed}',
+            child: Text('Init ${fmtSigned(s.initiative)}   Speed ${s.speed}',
                 textAlign: TextAlign.end, style: theme.textTheme.bodySmall),
           ),
         ]),
@@ -186,7 +184,7 @@ class DndSheetView extends ConsumerWidget {
         if (s.isCaster) ...[
           sheetSection(context, 'Spellcasting'),
           Text(
-              'Spell save DC ${s.spellSaveDC}  ·  Attack ${_fmt(s.spellAttackBonus!)}'
+              'Spell save DC ${s.spellSaveDC}  ·  Attack ${fmtSigned(s.spellAttackBonus!)}'
               '  ·  ${kDndAbilityLabels[s.spellcastingAbility]}',
               style: theme.textTheme.bodySmall),
           if (s.className == 'Warlock')
@@ -234,7 +232,7 @@ class DndSheetView extends ConsumerWidget {
         prefix: 'dnd',
         abilityKey: a,
         label: kDndAbilityLabels[a]!,
-        modText: _fmt(s.abilityMod(a)),
+        modText: fmtSigned(s.abilityMod(a)),
         score: s.score(a),
         onMinus: () => _save(
             ref, s.copyWith(abilities: {...s.abilities, a: s.score(a) - 1})),
@@ -259,7 +257,7 @@ class DndSheetView extends ConsumerWidget {
         },
       ),
       SizedBox(width: 48, child: Text(kDndAbilityLabels[a]!)),
-      Text(_fmt(s.saveBonus(a))),
+      Text(fmtSigned(s.saveBonus(a))),
     ]);
   }
 
@@ -299,7 +297,7 @@ class DndSheetView extends ConsumerWidget {
         },
       ),
       Expanded(child: Text('$label (${kDndAbilityLabels[ability]})')),
-      Text(_fmt(s.skillBonus(id))),
+      Text(fmtSigned(s.skillBonus(id))),
     ]);
   }
 

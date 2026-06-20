@@ -121,27 +121,31 @@ class TracksPane extends ConsumerWidget {
   }
 
   Future<String?> _nameDialog(BuildContext context,
-      {required String title, String initial = ''}) {
+      {required String title, String initial = ''}) async {
     final controller = TextEditingController(text: initial);
-    return showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: 'Name'),
-          onSubmitted: (v) => Navigator.pop(context, v),
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(labelText: 'Name'),
+            onSubmitted: (v) => Navigator.pop(context, v),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () => Navigator.pop(context, controller.text),
+                child: const Text('Save')),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.pop(context, controller.text),
-              child: const Text('Save')),
-        ],
-      ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
   }
 }

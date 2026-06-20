@@ -77,6 +77,7 @@ class _BattlePaneState extends ConsumerState<BattlePane> {
         ),
       ),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => sizeCtrl.dispose());
     if (result != null) {
       await ref.read(unitsProvider.notifier).updateUnit(result);
     }
