@@ -439,6 +439,66 @@ void main() {
     test('returns empty for a map with no asset_collections', () {
       expect(IronswornAssetDef.listFromRuleset({'meta': {}}), isEmpty);
     });
+
+    test('parses condition_meter controls into asset meters (seeded default)',
+        () {
+      final ruleset = {
+        'asset_collections': [
+          {
+            'name': 'Companion Assets',
+            'assets': [
+              {
+                'id': 'sf/assets/companion/banshee',
+                'name': 'Banshee',
+                'abilities': [
+                  {'text': 'A', 'enabled': true}
+                ],
+                'controls': {
+                  'health': {
+                    'label': 'health',
+                    'field_type': 'condition_meter',
+                    'min': 0,
+                    'max': 4,
+                    'value': 4,
+                    'controls': {'out_of_action': {'field_type': 'checkbox'}},
+                  },
+                  'doc': {'field_type': 'text'}, // ignored (not a meter)
+                },
+              },
+            ],
+          },
+        ],
+      };
+      final def = IronswornAssetDef.listFromRuleset(ruleset).single;
+      expect(def.meters, hasLength(1));
+      final m = def.meters.single;
+      expect(m.key, 'health');
+      expect(m.max, 4);
+      expect(m.value, 4); // seeded from default
+      // toState carries the meters onto the persisted asset.
+      expect(def.toState().meters.single.value, 4);
+    });
+  });
+
+  group('AssetMeter / AssetState meters', () {
+    test('round-trips meters through JSON', () {
+      const a = AssetState(
+        assetId: 'x',
+        name: 'Banshee',
+        meters: [AssetMeter(key: 'health', label: 'health', min: 0, max: 4, value: 2)],
+      );
+      final back = AssetState.maybeFromJson(a.toJson())!;
+      expect(back.meters.single.key, 'health');
+      expect(back.meters.single.value, 2);
+      expect(back.meters.single.max, 4);
+    });
+
+    test('copyWith clamps the value to [min, max]', () {
+      const m = AssetMeter(key: 'h', label: 'h', min: 0, max: 4, value: 2);
+      expect(m.copyWith(value: 9).value, 4);
+      expect(m.copyWith(value: -3).value, 0);
+      expect(m.copyWith(value: 3).value, 3);
+    });
   });
 
   group('DndSheet', () {
