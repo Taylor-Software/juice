@@ -52,6 +52,7 @@ class _ResourcesPaneState extends ConsumerState<ResourcesPane> {
         ],
       ),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => ctrl.dispose());
     if (result != null) {
       await ref.read(inventoryProvider.notifier).setProps(it.id, result.trim());
     }

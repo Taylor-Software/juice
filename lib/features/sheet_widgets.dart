@@ -286,6 +286,7 @@ Future<ProgressTrack?> addProgressTrackDialog(
       ),
     ),
   );
+  WidgetsBinding.instance.addPostFrameCallback((_) => ctrl.dispose());
   if (name == null || name.trim().isEmpty) return null;
   return ProgressTrack(name: name.trim(), rank: rank);
 }
@@ -411,6 +412,7 @@ Future<String?> renameDialog(BuildContext context,
       ],
     ),
   );
+  ctrl.dispose();
   if (name == null || name.trim().isEmpty) return null;
   return name.trim();
 }

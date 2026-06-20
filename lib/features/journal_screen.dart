@@ -1487,15 +1487,15 @@ class _TagsDialogState extends State<_TagsDialog> {
   late final List<String> _tags = [...widget.initial];
 
   Future<void> _addTag() async {
+    final tagCtrl = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        final tag = TextEditingController();
         return AlertDialog(
           title: const Text('Add tag'),
           content: TextField(
             key: const Key('tag-input'),
-            controller: tag,
+            controller: tagCtrl,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Tag'),
           ),
@@ -1505,13 +1505,14 @@ class _TagsDialogState extends State<_TagsDialog> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, tag.text),
+              onPressed: () => Navigator.pop(context, tagCtrl.text),
               child: const Text('Add'),
             ),
           ],
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
     // Preserve case (search compares case-insensitively); dedupe exact.
     final tag = result?.trim() ?? '';
     if (tag.isEmpty || _tags.contains(tag)) return;

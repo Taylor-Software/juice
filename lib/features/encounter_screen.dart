@@ -313,15 +313,15 @@ class EncounterScreen extends ConsumerWidget {
   }
 
   Future<void> _addTag(BuildContext context, WidgetRef ref, Combatant c) async {
+    final tagCtrl = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        final tag = TextEditingController();
         return AlertDialog(
           title: const Text('Add status'),
           content: TextField(
             key: const Key('enc-tag-input'),
-            controller: tag,
+            controller: tagCtrl,
             autofocus: true,
             decoration: const InputDecoration(labelText: 'Status'),
           ),
@@ -331,13 +331,14 @@ class EncounterScreen extends ConsumerWidget {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, tag.text),
+              onPressed: () => Navigator.pop(context, tagCtrl.text),
               child: const Text('Add'),
             ),
           ],
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
     final tag = result?.trim() ?? '';
     if (tag.isEmpty || c.tags.contains(tag)) return;
     await ref
@@ -388,12 +389,14 @@ class EncounterScreen extends ConsumerWidget {
         ],
       ),
     );
+    final initText = init.text.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) => init.dispose());
     if (picked == null) return;
     await ref.read(encounterProvider.notifier).addCombatant(Combatant(
           id: _newId(),
           name: picked.name,
           characterId: picked.id,
-          initiative: int.tryParse(init.text.trim()) ?? 10,
+          initiative: int.tryParse(initText) ?? 10,
         ));
   }
 
@@ -459,13 +462,21 @@ class EncounterScreen extends ConsumerWidget {
         ],
       ),
     );
-    if (ok != true || name.text.trim().isEmpty) return;
-    var max = int.tryParse(hp.text.trim()) ?? 1;
+    final nameText = name.text.trim();
+    final hpText = hp.text.trim();
+    final initText = init.text.trim();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      name.dispose();
+      hp.dispose();
+      init.dispose();
+    });
+    if (ok != true || nameText.isEmpty) return;
+    var max = int.tryParse(hpText) ?? 1;
     if (max < 1) max = 1;
     await ref.read(encounterProvider.notifier).addCombatant(Combatant(
           id: _newId(),
-          name: name.text.trim(),
-          initiative: int.tryParse(init.text.trim()) ?? 10,
+          name: nameText,
+          initiative: int.tryParse(initText) ?? 10,
           track: CharTrack(label: 'HP', current: max, max: max),
         ));
   }

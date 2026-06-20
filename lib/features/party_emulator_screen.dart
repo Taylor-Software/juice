@@ -360,10 +360,10 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
   }
 
   Future<void> _addTrait(Character c) async {
+    final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
       builder: (context) {
-        final controller = TextEditingController();
         return AlertDialog(
           title: const Text('Add new trait'),
           content: TextField(
@@ -385,6 +385,7 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
         );
       },
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     final trait = result?.trim() ?? '';
     if (trait.isEmpty) return;
     // Tags live on the Character (not its emulation), so [_updateEmulation]
