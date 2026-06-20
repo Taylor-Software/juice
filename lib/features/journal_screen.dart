@@ -1298,7 +1298,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   Future<void> _saveAsEntity(JournalEntry entry) async {
-    final kind = _saveAsKind(entry)!;
+    // Only reached via the gated menu item, but an explicit guard beats a
+    // force-unwrap if that gating ever changes.
+    final kind = _saveAsKind(entry);
+    if (kind == null) return;
     final name = entry.payload?['summary'] as String? ??
         (entry.payload?['rolls'] as List?)
             ?.cast<Map<String, dynamic>>()

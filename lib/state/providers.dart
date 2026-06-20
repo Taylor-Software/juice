@@ -659,6 +659,17 @@ class MapNotifier extends AsyncNotifier<MapState> {
   /// [_scopedKey] or clobber previously persisted data.
   Future<MapState> get _ready async => state.valueOrNull ?? await future;
 
+  /// Find the hex at (col,row), apply [f] to it, and persist. [f] returning
+  /// null (or no hex at that cell) is a no-op — used by the guard cases.
+  Future<void> _updateHex(int col, int row, HexCell? Function(HexCell) f) async {
+    final s = await _ready;
+    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
+    if (idx < 0) return;
+    final next = f(s.hexes[idx]);
+    if (next == null) return;
+    await save(s.copyWith(hexes: [...s.hexes]..[idx] = next));
+  }
+
   /// Place a new room next to the current one (engine picks the cell),
   /// connect it with a corridor, and make it current.
   Future<DungeonRoom> addRoom(
@@ -825,126 +836,85 @@ class MapNotifier extends AsyncNotifier<MapState> {
   /// (col,row). No-op if the hex is absent, has no terrain, or is full.
   Future<void> crawlLocal(
       int col, int row, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.terrain == null || h.local.length >= 6) return;
-    final cell = rollLocalCell(data, h.terrain!, h.local.length, dice);
-    await save(s.copyWith(
-        hexes: [...s.hexes]..[idx] = h.copyWith(local: [...h.local, cell])));
+    await _updateHex(col, row, (h) {
+      if (h.terrain == null || h.local.length >= 6) return null;
+      final cell = rollLocalCell(data, h.terrain!, h.local.length, dice);
+      return h.copyWith(local: [...h.local, cell]);
+    });
   }
 
   /// Local-zoom full: fill all 6 ring sub-hexes of the hex at (col,row).
   Future<void> generateLocal(
       int col, int row, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.terrain == null) return;
-    final cells = [
-      for (var i = 0; i < 6; i++) rollLocalCell(data, h.terrain!, i, dice)
-    ];
-    await save(
-        s.copyWith(hexes: [...s.hexes]..[idx] = h.copyWith(local: cells)));
+    await _updateHex(col, row, (h) {
+      if (h.terrain == null) return null;
+      final cells = [
+        for (var i = 0; i < 6; i++) rollLocalCell(data, h.terrain!, i, dice)
+      ];
+      return h.copyWith(local: cells);
+    });
   }
 
   /// Set the hexcrawl site-type on an existing hex; no-op for unknown cells.
   Future<void> setHexSite(int col, int row, String site) async {
-    final s = await _ready;
-    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
-    await save(s.copyWith(hexes: [
-      for (final h in s.hexes)
-        if (h.col == col && h.row == row) h.copyWith(site: site) else h
-    ]));
+    await _updateHex(col, row, (h) => h.copyWith(site: site));
   }
 
   /// Site crawl: append the next writeup line for the site at (col,row).
   /// No-op if the hex is absent, has no site, or already has 5 lines.
   Future<void> crawlSite(int col, int row, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.site == null || h.siteLines.length >= 5) return;
-    final line = rollSiteLine(data, h.siteLines.length, dice);
-    await save(s.copyWith(
-        hexes: [...s.hexes]..[idx] =
-            h.copyWith(siteLines: [...h.siteLines, line])));
+    await _updateHex(col, row, (h) {
+      if (h.site == null || h.siteLines.length >= 5) return null;
+      final line = rollSiteLine(data, h.siteLines.length, dice);
+      return h.copyWith(siteLines: [...h.siteLines, line]);
+    });
   }
 
   /// Site full: set the 4-line writeup for the site at (col,row).
   Future<void> generateSite(
       int col, int row, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.site == null) return;
-    await save(s.copyWith(
-        hexes: [...s.hexes]..[idx] =
-            h.copyWith(siteLines: rollSiteDetail(data, dice))));
+    await _updateHex(col, row, (h) {
+      if (h.site == null) return null;
+      return h.copyWith(siteLines: rollSiteDetail(data, dice));
+    });
   }
 
   /// Site interior crawl: append one area to the site at (col,row).
   Future<void> crawlSiteArea(
       int col, int row, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.site == null) return;
-    final pos = nextSiteAreaPosition(h.siteAreas, dice);
-    final area = SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice));
-    await save(s.copyWith(
-        hexes: [...s.hexes]..[idx] =
-            h.copyWith(siteAreas: [...h.siteAreas, area])));
+    await _updateHex(col, row, (h) {
+      if (h.site == null) return null;
+      final pos = nextSiteAreaPosition(h.siteAreas, dice);
+      final area = SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice));
+      return h.copyWith(siteAreas: [...h.siteAreas, area]);
+    });
   }
 
   /// Site interior full: generate a fresh [count]-area interior (clamp 3..12)
   /// for the site at (col,row).
   Future<void> generateSiteInterior(
       int col, int row, int count, HexcrawlData data, Dice dice) async {
-    final s = await _ready;
-    final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
-    if (idx < 0) return;
-    final h = s.hexes[idx];
-    if (h.site == null) return;
-    final n = count.clamp(3, 12);
-    final areas = <SiteArea>[];
-    for (var i = 0; i < n; i++) {
-      final pos = nextSiteAreaPosition(areas, dice);
-      areas.add(SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice)));
-    }
-    await save(
-        s.copyWith(hexes: [...s.hexes]..[idx] = h.copyWith(siteAreas: areas)));
+    await _updateHex(col, row, (h) {
+      if (h.site == null) return null;
+      final n = count.clamp(3, 12);
+      final areas = <SiteArea>[];
+      for (var i = 0; i < n; i++) {
+        final pos = nextSiteAreaPosition(areas, dice);
+        areas.add(SiteArea(x: pos.x, y: pos.y, name: rollSiteArea(data, dice)));
+      }
+      return h.copyWith(siteAreas: areas);
+    });
   }
 
   /// Set the Verdant terrain key on an existing hex; no-op for unknown cells.
   Future<void> setHexTerrain(int col, int row, String terrainKey) async {
-    final s = await _ready;
-    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
-    await save(s.copyWith(hexes: [
-      for (final h in s.hexes)
-        if (h.col == col && h.row == row)
-          h.copyWith(terrain: terrainKey)
-        else
-          h,
-    ]));
+    await _updateHex(col, row, (h) => h.copyWith(terrain: terrainKey));
   }
 
   /// Add a Point of Interest (1..12) to an existing hex; ignores duplicates.
   Future<void> addHexPoi(int col, int row, int poiN) async {
-    final s = await _ready;
-    if (!s.hexes.any((h) => h.col == col && h.row == row)) return;
-    await save(s.copyWith(hexes: [
-      for (final h in s.hexes)
-        if (h.col == col && h.row == row)
-          h.copyWith(pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN])
-        else
-          h,
-    ]));
+    await _updateHex(col, row,
+        (h) => h.copyWith(pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN]));
   }
 
   /// Clear the dungeon graph, keeping the hex field.

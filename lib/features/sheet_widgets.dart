@@ -13,6 +13,9 @@ Widget sheetSection(BuildContext context, String title) => Padding(
       child: Text(title, style: Theme.of(context).textTheme.titleMedium),
     );
 
+/// Formats a signed number for a modifier display: `+3`, `0`, `-1`.
+String fmtSigned(int n) => n >= 0 ? '+$n' : '$n';
+
 /// Ability score box (D&D / Shadowdark): label, derived modifier, and a
 /// −/score/+ stepper. [prefix] keys the buttons, e.g. 'dnd' ->
 /// 'dnd-ability-str-plus', 'sd' -> 'sd-ability-str-plus'.
