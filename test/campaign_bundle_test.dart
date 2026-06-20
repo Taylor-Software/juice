@@ -119,6 +119,39 @@ void main() {
     expect(sketches.first.payload?['sketch']?['bg'], id);
   });
 
+  test('gcBlobs deletes unreferenced blobs, keeps referenced (all sessions)',
+      () async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"s1","sessions":'
+          '[{"id":"s1","name":"A"},{"id":"s2","name":"B"}]}',
+    });
+    final store = InMemoryBlobStore();
+    final c = ProviderContainer(
+        overrides: [blobStoreProvider.overrideWithValue(store)]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+
+    final usedBg = await store.put(Uint8List.fromList([1, 2, 3]), ext: 'png');
+    final usedPdf =
+        await store.put(Uint8List.fromList([4, 5, 6, 7]), ext: 'pdf');
+    final orphan =
+        await store.put(Uint8List.fromList([9, 9, 9, 9, 9]), ext: 'png');
+    // The active session (s1) references both used blobs via a sketch.
+    await c.read(journalProvider.notifier).addSketch(SketchData(
+        canvasWidth: 1,
+        canvasHeight: 1,
+        backgroundBlobId: usedBg,
+        pdfBlobId: usedPdf,
+        pdfPage: 0));
+    expect((await store.list()).length, 3);
+
+    final removed = await c.read(sessionsProvider.notifier).gcBlobs();
+    expect(removed, 1);
+    expect(await store.exists(orphan), isFalse);
+    expect(await store.exists(usedBg), isTrue);
+    expect(await store.exists(usedPdf), isTrue);
+  });
+
   test('export with no blobs stays plain json', () async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':

@@ -1217,6 +1217,34 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     await importCampaign(bundle.campaignJson);
   }
 
+  /// Delete blobs no campaign references — orphans from cancelled image/PDF
+  /// imports, re-annotation, or deleted sketches. Blobs are global (shared
+  /// across campaigns), so this scans EVERY session's journal before deleting.
+  /// Returns the number removed; a no-op when the blob store is unavailable.
+  Future<int> gcBlobs() async {
+    if (!ref.read(blobStoreAvailableProvider)) return 0;
+    final store = ref.read(blobStoreProvider);
+    final all = await store.list();
+    if (all.isEmpty) return 0;
+    final s = state.valueOrNull ?? await future;
+    final prefs = await SharedPreferences.getInstance();
+    final referenced = <String>{};
+    for (final meta in s.sessions) {
+      final j = prefs.getString('juice.journal.v2.${meta.id}');
+      if (j != null) {
+        referenced.addAll(referencedBlobIds({'juice.journal.v2': j}));
+      }
+    }
+    var removed = 0;
+    for (final id in all) {
+      if (!referenced.contains(id)) {
+        await store.delete(id);
+        removed++;
+      }
+    }
+    return removed;
+  }
+
   /// Import a Lonelog `.md` document as a NEW session and switch to it.
   /// Throws [FormatException] when the content is not Lonelog-shaped.
   Future<void> importLonelog(String content) async {
