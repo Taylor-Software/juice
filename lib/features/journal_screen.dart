@@ -22,6 +22,7 @@ import '../shared/mention_text.dart';
 import '../shared/shell_route.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
+import '../state/pdf_rasterizer.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'assistant_rail.dart';
@@ -956,7 +957,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     try {
       if (!mounted) return;
       final edited = await showSketchEditor(context,
-          initial: data, background: bg, backgroundBlobId: id);
+          initial: data,
+          background: bg,
+          backgroundBlobId: id,
+          pdfBlobId: data.pdfBlobId,
+          pdfPage: data.pdfPage);
       if (edited != null) {
         await ref.read(journalProvider.notifier).replace(
             e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
@@ -991,6 +996,70 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // (BlobStore.list() supports it) — kept simple here to avoid deleting a
     // content-addressed blob another sketch may share.
   }
+
+  /// Import a PDF, render a chosen page to a cached raster, and annotate it.
+  Future<void> _annotatePdf() async {
+    if (!ref.read(blobStoreAvailableProvider) ||
+        !ref.read(pdfAvailableProvider)) {
+      return;
+    }
+    final result =
+        await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf'], withData: true);
+    final bytes = result?.files.singleOrNull?.bytes;
+    if (bytes == null) return;
+    final store = ref.read(blobStoreProvider);
+    final rasterizer = ref.read(pdfRasterizerProvider);
+    final pdfBlobId = await store.put(bytes, ext: 'pdf');
+    final pages = await rasterizer.pageCount(bytes);
+    if (!mounted) return;
+    if (pages <= 0) {
+      _snack('Could not read that PDF.');
+      return;
+    }
+    final page = pages == 1 ? 0 : await _pickPdfPage(pages);
+    if (page == null) return; // cancelled the page picker
+    final png = await rasterizer.renderPage(bytes, page);
+    if (png == null) {
+      if (mounted) _snack('Could not render that page.');
+      return;
+    }
+    final bgBlobId = await store.put(png, ext: 'png');
+    final bg = await decodeSketchBackground(png);
+    try {
+      if (!mounted) return;
+      final data = await showSketchEditor(context,
+          background: bg,
+          backgroundBlobId: bgBlobId,
+          pdfBlobId: pdfBlobId,
+          pdfPage: page);
+      if (data != null && !data.isEmpty) {
+        await ref.read(journalProvider.notifier).addSketch(data);
+      }
+    } finally {
+      bg?.dispose();
+    }
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  /// Simple page chooser for multi-page PDFs; returns a 0-based index or null.
+  Future<int?> _pickPdfPage(int pages) => showDialog<int>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: const Text('Choose a page'),
+          children: [
+            for (var i = 0; i < pages; i++)
+              SimpleDialogOption(
+                key: Key('pdf-page-$i'),
+                onPressed: () => Navigator.pop(context, i),
+                child: Text('Page ${i + 1}'),
+              ),
+          ],
+        ),
+      );
 
   // -- Composer ---------------------------------------------------------------
 
@@ -1051,6 +1120,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 icon: const Icon(Icons.image_outlined),
                 tooltip: 'Annotate an image',
                 onPressed: _annotateImage,
+              ),
+            // Annotate a PDF page; needs the blob store + a PDF rasterizer
+            // (desktop/mobile — hidden on web for now).
+            if (ref.watch(blobStoreAvailableProvider) &&
+                ref.watch(pdfAvailableProvider))
+              IconButton(
+                key: const Key('composer-annotate-pdf'),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                tooltip: 'Annotate a PDF',
+                onPressed: _annotatePdf,
               ),
             IconButton(
               key: const Key('journal-send'),

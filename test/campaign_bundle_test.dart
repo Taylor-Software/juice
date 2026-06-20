@@ -53,6 +53,19 @@ void main() {
       expect(referencedBlobIds(const {}), isEmpty);
       expect(referencedBlobIds({'juice.journal.v2': 'garbage'}), isEmpty);
     });
+
+    test('collects both the raster (bg) and the source PDF (pdf) blob ids', () {
+      final journal = jsonEncode([
+        {
+          'kind': 'sketch',
+          'payload': {
+            'sketch': {'bg': 'raster.png', 'pdf': 'src.pdf'}
+          }
+        },
+      ]);
+      expect(referencedBlobIds({'juice.journal.v2': journal}),
+          {'raster.png', 'src.pdf'});
+    });
   });
 
   test('blobExtFromId extracts the extension or null', () {
@@ -73,11 +86,17 @@ void main() {
     addTearDown(a.dispose);
     await a.read(sessionsProvider.future);
     final id = await storeA.put(Uint8List.fromList([1, 2, 3, 4, 5]), ext: 'png');
-    await a.read(journalProvider.notifier).addSketch(
-        SketchData(canvasWidth: 10, canvasHeight: 10, backgroundBlobId: id));
+    final pdfId =
+        await storeA.put(Uint8List.fromList([8, 8, 8, 8]), ext: 'pdf');
+    await a.read(journalProvider.notifier).addSketch(SketchData(
+        canvasWidth: 10,
+        canvasHeight: 10,
+        backgroundBlobId: id,
+        pdfBlobId: pdfId,
+        pdfPage: 0));
 
     final file = await a.read(sessionsProvider.notifier).exportActiveFile();
-    expect(file.ext, 'zip'); // has a blob → bundled, not plain json
+    expect(file.ext, 'zip'); // has blobs → bundled, not plain json
 
     // Target device: a fresh, empty blob store.
     final storeB = InMemoryBlobStore();
@@ -89,9 +108,10 @@ void main() {
 
     await b.read(sessionsProvider.notifier).importCampaignData(file.bytes);
 
-    // The blob landed under the SAME content-addressed id, and the journal
-    // sketch still references it.
+    // Both the raster and the source PDF landed under the SAME ids, and the
+    // journal sketch still references the raster.
     expect(await storeB.exists(id), isTrue);
+    expect(await storeB.exists(pdfId), isTrue);
     final journalB = await b.read(journalProvider.future);
     final sketches =
         journalB.where((e) => e.kind == JournalKind.sketch).toList();

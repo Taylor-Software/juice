@@ -37,6 +37,20 @@ void main() {
       expect(back.backgroundBlobId, 'b1');
       expect(back.isEmpty, isFalse);
     });
+
+    test('round-trips PDF provenance (pdfBlobId + pdfPage)', () {
+      const d = SketchData(
+        canvasWidth: 10,
+        canvasHeight: 10,
+        backgroundBlobId: 'raster.png',
+        pdfBlobId: 'src.pdf',
+        pdfPage: 3,
+      );
+      final back = SketchData.fromJson(d.toJson());
+      expect(back.pdfBlobId, 'src.pdf');
+      expect(back.pdfPage, 3);
+      expect(back.backgroundBlobId, 'raster.png');
+    });
   });
 
   group('eraser geometry', () {
