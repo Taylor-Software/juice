@@ -19,6 +19,7 @@ import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'destination.dart';
 import 'help_nav.dart';
+import 'play_context_hud.dart';
 import 'shell_route.dart';
 import 'tool_registry.dart';
 import 'tool_search_sheet.dart';
@@ -273,9 +274,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         : result.files.first.bytes;
     if (bytes == null) return; // user cancelled
     try {
-      await ref
-          .read(sessionsProvider.notifier)
-          .importCampaignData(bytes);
+      await ref.read(sessionsProvider.notifier).importCampaignData(bytes);
       // Imported campaigns are always party (files carry no mode).
       ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
@@ -623,7 +622,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ),
         ],
       ),
-      body: SafeArea(child: _shellBody(context, family, systems)),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const CampaignHeader(),
+            Expanded(child: _shellBody(context, family, systems)),
+          ],
+        ),
+      ),
     );
   }
 }

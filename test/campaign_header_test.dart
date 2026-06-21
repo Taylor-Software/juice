@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/shared/play_context_hud.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -38,6 +38,7 @@ Map<String, Object> _prefs({
   String? charsJson,
   String? crawlJson,
   String? settingsJson,
+  String? contextJson,
 }) {
   return {
     ..._sessionPrefs,
@@ -46,12 +47,17 @@ Map<String, Object> _prefs({
     if (charsJson != null) 'juice.characters.v1.$_sid': charsJson,
     if (crawlJson != null) 'juice.crawl.v1.$_sid': crawlJson,
     if (settingsJson != null) 'juice.settings.v1.$_sid': settingsJson,
+    if (contextJson != null) 'juice.context.v1.$_sid': contextJson,
   };
 }
 
 // A scene entry with chaosFactor 6.
 const _sceneJson =
     '{"id":"e1","timestamp":"2026-01-01T10:00:00.000Z","title":"The Gatehouse","body":"","kind":"scene","chaosFactor":6,"tags":[]}';
+
+// A newer scene entry (storage is newest-first, so this sorts ahead of e1).
+const _scene2Json =
+    '{"id":"e2","timestamp":"2026-01-01T11:00:00.000Z","title":"The Vault","body":"","kind":"scene","chaosFactor":6,"tags":[]}';
 
 // A pinned open thread.
 const _threadJson =
@@ -83,7 +89,7 @@ Future<void> _pump(
     ],
     child: MaterialApp(
       theme: AppTheme.light(),
-      home: const Scaffold(body: JournalScreen()),
+      home: const Scaffold(body: CampaignHeader()),
     ),
   ));
   await tester.pumpAndSettle();
@@ -183,7 +189,7 @@ void main() {
     expect(find.textContaining('Chaos 6'), findsWidgets);
 
     final container =
-        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
 
     // Increment.
     await tester.tap(find.byKey(const Key('hdr-chaos-inc')));
@@ -223,7 +229,7 @@ void main() {
 
     // Persisted: re-pump reads collapsed state.
     final container =
-        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
     expect((await container.read(settingsProvider.future)).headerCollapsed,
         isTrue);
   });
@@ -241,5 +247,29 @@ void main() {
             of: find.byKey(const Key('hdr-oracle')),
             matching: find.text('Juice')),
         findsOneWidget);
+  });
+
+  testWidgets('header renders even when the journal is empty', (tester) async {
+    // The HUD now lives at the shell level, so it must show on a fresh
+    // campaign (no entries) — previously it was gated on journal entries.
+    await _pump(tester, data, _prefs(crawlJson: _crawlJson));
+    expect(find.byKey(const Key('campaign-header')), findsOneWidget);
+    expect(find.text('No scene yet'), findsOneWidget);
+  });
+
+  testWidgets('scene line follows the active scene pointer', (tester) async {
+    // Two scenes; the spine points at the older one (e1). Without the pointer
+    // the newest entry (e2 "The Vault") would show.
+    await _pump(
+      tester,
+      data,
+      _prefs(
+        journalJson: '[$_scene2Json,$_sceneJson]',
+        crawlJson: _crawlJson,
+        contextJson: '{"activeSceneId":"e1"}',
+      ),
+    );
+    expect(find.text('The Gatehouse'), findsWidgets);
+    expect(find.text('The Vault'), findsNothing);
   });
 }

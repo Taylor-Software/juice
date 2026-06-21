@@ -113,10 +113,13 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     ]);
   }
 
-  Future<void> addScene(String title, {int? chaosFactor}) async {
+  /// Creates a scene entry and returns its id so callers can point the
+  /// [PlayContext] spine (`setActiveScene`) at the new scene.
+  Future<String> addScene(String title, {int? chaosFactor}) async {
+    final id = _newId();
     await _persist([
       JournalEntry(
-          id: _newId(),
+          id: id,
           timestamp: DateTime.now(),
           title: title,
           body: '',
@@ -124,6 +127,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           chaosFactor: chaosFactor),
       ...await _ready,
     ]);
+    return id;
   }
 
   Future<void> addSketch(SketchData data) async {
@@ -645,7 +649,8 @@ class MapNotifier extends AsyncNotifier<MapState> {
 
   /// Find the hex at (col,row), apply [f] to it, and persist. [f] returning
   /// null (or no hex at that cell) is a no-op — used by the guard cases.
-  Future<void> _updateHex(int col, int row, HexCell? Function(HexCell) f) async {
+  Future<void> _updateHex(
+      int col, int row, HexCell? Function(HexCell) f) async {
     final s = await _ready;
     final idx = s.hexes.indexWhere((h) => h.col == col && h.row == row);
     if (idx < 0) return;
@@ -897,8 +902,11 @@ class MapNotifier extends AsyncNotifier<MapState> {
 
   /// Add a Point of Interest (1..12) to an existing hex; ignores duplicates.
   Future<void> addHexPoi(int col, int row, int poiN) async {
-    await _updateHex(col, row,
-        (h) => h.copyWith(pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN]));
+    await _updateHex(
+        col,
+        row,
+        (h) => h.copyWith(
+            pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN]));
   }
 
   /// Clear the dungeon graph, keeping the hex field.
