@@ -39,6 +39,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > player-controlled timer with −/+ steppers + lit/out indicator; 0 = out). Facts-only: no
 > rulebook duration asserted. Gives the signature Shadowdark light-pressure mechanic a home.
 >
+> **Increment 6 shipped (2026-06-21):** **#5** — party-wide effect broadcast. Each roster group
+> header (≥2 members) has an "Effect" button → a modal that applies ±N HP and/or condition(s) to
+> a checkbox set of members in one gesture (`CharacterNotifier.applyPartyEffect`, persisted once).
+> HP resolves per character via `Character.withHpDelta` (D&D/Shadowdark `currentHp` or first
+> track; no-pool sheets unchanged). Replaces editing 3-5 sheets one by one for a fireball/heal.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

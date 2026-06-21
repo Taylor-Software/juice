@@ -317,6 +317,28 @@ class CharacterNotifier extends _PersistedList<Character> {
     await replace(c.copyWith(conditions: conditions));
   }
 
+  /// Broadcast a single effect to many characters in one persist: an HP
+  /// [hpDelta] (negative = damage, via [Character.withHpDelta]) and/or a set of
+  /// [addConditions] merged into each target's conditions. Characters not in
+  /// [ids] are untouched.
+  Future<void> applyPartyEffect(
+    Set<String> ids, {
+    int hpDelta = 0,
+    List<String> addConditions = const [],
+  }) async {
+    if (ids.isEmpty) return;
+    await _persist([
+      for (final c in await _ready)
+        if (ids.contains(c.id))
+          c.withHpDelta(hpDelta).copyWith(
+              conditions: addConditions.isEmpty
+                  ? c.conditions
+                  : {...c.conditions, ...addConditions}.toList())
+        else
+          c,
+    ]);
+  }
+
   Future<void> remove(String id) async {
     await _persist((await _ready).where((c) => c.id != id).toList());
   }

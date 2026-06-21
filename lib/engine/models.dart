@@ -2171,6 +2171,32 @@ class Character {
         conditions: conditions ?? this.conditions,
       );
 
+  /// Applies an HP [delta] (negative = damage) to whichever HP pool this
+  /// character uses: the D&D / Shadowdark sheet's currentHp (clamped to its
+  /// maxHp), else the first track (via [CharTrack.adjusted]). Characters with
+  /// no HP pool (e.g. Ironsworn / Starforged, which use condition meters) are
+  /// returned unchanged. Used by the party-wide effect broadcast.
+  Character withHpDelta(int delta) {
+    if (delta == 0) return this;
+    if (dnd != null) {
+      return copyWith(
+          dnd: dnd!.copyWith(
+              currentHp: (dnd!.currentHp + delta).clamp(0, dnd!.maxHp)));
+    }
+    if (shadowdark != null) {
+      return copyWith(
+          shadowdark: shadowdark!.copyWith(
+              currentHp:
+                  (shadowdark!.currentHp + delta).clamp(0, shadowdark!.maxHp)));
+    }
+    if (tracks.isNotEmpty) {
+      final updated = [...tracks];
+      updated[0] = tracks.first.adjusted(delta);
+      return copyWith(tracks: updated);
+    }
+    return this;
+  }
+
   /// 'emulation', 'starred', 'role', and 'conditions' are written only when
   /// non-null/non-default so existing characters and campaign files stay
   /// byte-stable until the features are used.

@@ -58,6 +58,40 @@ void main() {
       expect(ch.role, CharacterRole.npc);
       expect(ch.conditions, ['poisoned']);
     });
+
+    test('applyPartyEffect broadcasts HP + conditions to the set only',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.characters.v1.default': '['
+            '{"id":"p1","name":"A","tracks":[{"label":"HP","current":9,"max":10}]},'
+            '{"id":"p2","name":"B","tracks":[{"label":"HP","current":9,"max":10}],"conditions":["hidden"]},'
+            '{"id":"npc","name":"N","tracks":[{"label":"HP","current":9,"max":10}]}'
+            ']',
+      });
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      await c.read(charactersProvider.future);
+      await c.read(charactersProvider.notifier).applyPartyEffect(
+            {'p1', 'p2'},
+            hpDelta: -3,
+            addConditions: ['burning'],
+          );
+      final all = await c.read(charactersProvider.future);
+      final p1 = all.firstWhere((e) => e.id == 'p1');
+      final p2 = all.firstWhere((e) => e.id == 'p2');
+      final npc = all.firstWhere((e) => e.id == 'npc');
+      expect(p1.tracks.first.current, 6);
+      expect(p1.conditions, ['burning']);
+      // Merges with existing conditions; no duplicates.
+      expect(p2.tracks.first.current, 6);
+      expect(p2.conditions, unorderedEquals(['hidden', 'burning']));
+      // Untargeted character untouched.
+      expect(npc.tracks.first.current, 9);
+      expect(npc.conditions, isEmpty);
+    });
   });
 
   test('addIronsworn prepends a premade Ironsworn character', () async {

@@ -1345,4 +1345,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(c.read(charactersProvider).valueOrNull!.single.shadowdark!.torch, 1);
   });
+
+  testWidgets('party effect broadcasts HP + condition across the party',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': '['
+          '{"id":"p1","name":"Aldra","tracks":[{"label":"HP","current":10,"max":10}]},'
+          '{"id":"p2","name":"Bryn","tracks":[{"label":"HP","current":10,"max":10}]}'
+          ']',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+
+    // The Party group header shows the Effect button (>1 member).
+    await tester.tap(find.byKey(const Key('party-effect-pc')));
+    await tester.pumpAndSettle();
+    // Damage 2 and add a condition, then apply.
+    await tester.tap(find.byKey(const Key('party-effect-hp-minus')));
+    await tester.tap(find.byKey(const Key('party-effect-hp-minus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilterChip, 'poisoned'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('party-effect-apply')));
+    await tester.pumpAndSettle();
+
+    for (final ch in container.read(charactersProvider).valueOrNull!) {
+      expect(ch.tracks.first.current, 8);
+      expect(ch.conditions, contains('poisoned'));
+    }
+  });
 }
