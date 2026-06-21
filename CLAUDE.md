@@ -67,7 +67,11 @@ Working rules for this repo:
   excludes apps, so the sheet ships NO rulebook prose, no title table, no logo, no
   "compatible-with" claim, no attribution — a deliberate facts-only posture (content
   pickers would need The Arcane Library's permission). See
-  `docs/superpowers/specs/2026-06-17-shadowdark-sheet-design.md`.
+  `docs/superpowers/specs/2026-06-17-shadowdark-sheet-design.md`. The sheet has a
+  "Light" section with a `ShadowdarkSheet.torch` countdown (neutral
+  player-controlled −/+ timer + lit/out indicator, 0 = out; no rulebook duration
+  asserted) — the signature light-pressure mechanic, added per the play-loop
+  audit (`docs/superpowers/audits/2026-06-21-play-loop-ux-audit.md`, #6).
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting

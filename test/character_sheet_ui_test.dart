@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/features/shadowdark_sheet.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -1303,5 +1304,45 @@ void main() {
     await tester.pumpAndSettle();
     expect((await c.read(charactersProvider.future)).single.role,
         CharacterRole.npc);
+  });
+
+  testWidgets('shadowdark torch stepper saves to the character',
+      (tester) async {
+    // Tall view so the whole sheet renders (the Light section is far down a
+    // lazily-built ListView).
+    tester.view.physicalSize = const Size(1200, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': jsonEncode([
+        {
+          'id': 'sd1',
+          'name': 'Mort',
+          'shadowdark': ShadowdarkSheet.premade().toJson(),
+        }
+      ]),
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    final char = (await c.read(charactersProvider.future)).single;
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+                body: ShadowdarkSheetView(character: char, onBack: () {})))));
+    await tester.pumpAndSettle();
+    // Torch starts at 0 → "out".
+    expect(find.text('Torch'), findsOneWidget);
+    expect(find.text('out'), findsOneWidget);
+    // Tapping + persists torch=1 on the character (the isolated view keeps
+    // showing the passed-in character; the roster rebuilds it in the app).
+    await tester.ensureVisible(find.byKey(const Key('sd-torch-plus')));
+    await tester.tap(find.byKey(const Key('sd-torch-plus')));
+    await tester.pumpAndSettle();
+    expect(c.read(charactersProvider).valueOrNull!.single.shadowdark!.torch, 1);
   });
 }

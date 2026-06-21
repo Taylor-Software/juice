@@ -366,7 +366,8 @@ class AssetState {
   final List<bool> enabledAbilities;
   final List<AssetMeter> meters;
 
-  AssetState copyWith({List<bool>? enabledAbilities, List<AssetMeter>? meters}) =>
+  AssetState copyWith(
+          {List<bool>? enabledAbilities, List<AssetMeter>? meters}) =>
       AssetState(
         assetId: assetId,
         name: name,
@@ -380,8 +381,7 @@ class AssetState {
         'name': name,
         if (category.isNotEmpty) 'category': category,
         'enabledAbilities': enabledAbilities,
-        if (meters.isNotEmpty)
-          'meters': meters.map((m) => m.toJson()).toList(),
+        if (meters.isNotEmpty) 'meters': meters.map((m) => m.toJson()).toList(),
       };
 
   static AssetState? maybeFromJson(dynamic j) {
@@ -1400,6 +1400,7 @@ class ShadowdarkSheet {
     this.currentHp = 1,
     this.maxHp = 1,
     this.gearSlotsUsed = 0,
+    this.torch = 0,
     this.luckToken = false,
     this.title = '',
     this.deity = '',
@@ -1412,6 +1413,10 @@ class ShadowdarkSheet {
   final String className, ancestry, alignment;
   final int level; // 1..10
   final int xp, ac, currentHp, maxHp, gearSlotsUsed;
+
+  /// Light countdown for the active light source (0 = unlit/out). A neutral
+  /// player-controlled timer — tick down per turn, reset on a fresh light.
+  final int torch;
   final bool luckToken;
   final String title, deity, background, talentsText, spellsText;
 
@@ -1444,6 +1449,7 @@ class ShadowdarkSheet {
     int? currentHp,
     int? maxHp,
     int? gearSlotsUsed,
+    int? torch,
     bool? luckToken,
     String? title,
     String? deity,
@@ -1468,6 +1474,7 @@ class ShadowdarkSheet {
       currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
       maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
       gearSlotsUsed: (gearSlotsUsed ?? this.gearSlotsUsed).clamp(0, 999),
+      torch: (torch ?? this.torch).clamp(0, 9999),
       luckToken: luckToken ?? this.luckToken,
       title: title ?? this.title,
       deity: deity ?? this.deity,
@@ -1488,6 +1495,7 @@ class ShadowdarkSheet {
         'currentHp': currentHp,
         'maxHp': maxHp,
         if (gearSlotsUsed != 0) 'gearSlotsUsed': gearSlotsUsed,
+        if (torch != 0) 'torch': torch,
         if (luckToken) 'luckToken': true,
         if (title.isNotEmpty) 'title': title,
         if (deity.isNotEmpty) 'deity': deity,
@@ -1517,6 +1525,7 @@ class ShadowdarkSheet {
       currentHp: _intOr(j['currentHp'], 1).clamp(0, 1 << 20),
       maxHp: _intOr(j['maxHp'], 1).clamp(0, 1 << 20),
       gearSlotsUsed: _intOr(j['gearSlotsUsed'], 0).clamp(0, 999),
+      torch: _intOr(j['torch'], 0).clamp(0, 9999),
       luckToken: j['luckToken'] == true,
       title: _strOr(j['title']),
       deity: _strOr(j['deity']),
