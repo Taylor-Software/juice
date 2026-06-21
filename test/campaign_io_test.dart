@@ -11,6 +11,54 @@ import 'package:juice_oracle/state/providers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('Campaign file encode/parse', () {
+    test('round-trip preserves the campaign profile (systems + mode)', () {
+      final encoded = encodeCampaign(
+        name: 'Dungeon Run',
+        savedAt: DateTime.utc(2026, 6, 21),
+        rawByKey: const {},
+        systems: ['dnd', 'mythic'],
+        mode: CampaignMode.gm,
+      );
+      final parsed = parseCampaign(encoded);
+      expect(parsed.systems, ['dnd', 'mythic']);
+      expect(parsed.mode, CampaignMode.gm);
+    });
+
+    test('null systems round-trips as null (the all-systems default)', () {
+      // null means "all systems"; [] would mean "no optional systems" — the
+      // two must stay distinct across a round-trip.
+      final encoded = encodeCampaign(
+        name: 'Default',
+        savedAt: DateTime.utc(2026, 6, 21),
+        rawByKey: const {},
+        systems: null,
+      );
+      expect(parseCampaign(encoded).systems, isNull);
+      // An explicitly empty set stays empty (not coerced to all).
+      final bare = encodeCampaign(
+        name: 'Bare',
+        savedAt: DateTime.utc(2026, 6, 21),
+        rawByKey: const {},
+        systems: const [],
+      );
+      expect(parseCampaign(bare).systems, isEmpty);
+    });
+
+    test('a file without systems/mode keys defaults to all-systems + party',
+        () {
+      // An older (pre-profile) file omits these keys entirely.
+      final raw = jsonEncode({
+        'app': 'juice-oracle',
+        'schemaVersion': 3,
+        'name': 'Legacy',
+        'data': <String, dynamic>{},
+      });
+      final parsed = parseCampaign(raw);
+      // mode defaults to party; systems null → consumer falls back to all.
+      expect(parsed.mode, CampaignMode.party);
+      expect(parsed.systems, isNull);
+    });
+
     test('round-trip preserves name and per-key payloads', () {
       final encoded = encodeCampaign(
         name: 'West Marches',
@@ -170,7 +218,6 @@ void main() {
       expect(back.tags, ['wounded']);
     });
 
-
     test('rejects malformed journal payloads', () {
       final bad = jsonEncode({
         'app': 'juice-oracle',
@@ -251,6 +298,25 @@ void main() {
       // original session untouched
       await container.read(sessionsProvider.notifier).switchTo('default');
       expect(await container.read(threadsProvider.future), isEmpty);
+    });
+
+    test('export/import preserves the campaign profile (systems + mode)',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      // A GM campaign with a non-default system set.
+      await container
+          .read(sessionsProvider.notifier)
+          .create('Delve', systems: {'dnd', 'mythic'}, mode: CampaignMode.gm);
+      final file =
+          await container.read(sessionsProvider.notifier).exportActive();
+
+      await container.read(sessionsProvider.notifier).importCampaign(file);
+      final s = await container.read(sessionsProvider.future);
+      expect(s.activeMeta.enabledSystems, {'dnd', 'mythic'});
+      expect(s.activeMeta.mode, CampaignMode.gm);
     });
   });
 }

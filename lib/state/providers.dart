@@ -1095,6 +1095,8 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       name: s.activeMeta.name,
       savedAt: DateTime.now(),
       rawByKey: rawByKey,
+      systems: s.activeMeta.systems,
+      mode: s.activeMeta.mode,
     );
   }
 
@@ -1147,8 +1149,13 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   Future<void> importCampaign(String fileContent) async {
     final parsed = parseCampaign(fileContent);
     final s = state.valueOrNull ?? await future;
-    // Campaign files don't carry session mode; imported campaigns default to party.
-    final meta = SessionMeta(id: _newId(), name: parsed.name);
+    // Restore the campaign profile (enabled systems + GM/Party mode) from the
+    // file; older files without these default to all-systems + party.
+    final meta = SessionMeta(
+        id: _newId(),
+        name: parsed.name,
+        systems: parsed.systems,
+        mode: parsed.mode);
     final prefs = await SharedPreferences.getInstance();
     for (final e in parsed.rawByKey.entries) {
       await prefs.setString('${e.key}.${meta.id}', e.value);

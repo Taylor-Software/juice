@@ -11,24 +11,38 @@ const _appMarker = 'juice-oracle';
 /// Parsed campaign file: session name + raw JSON string per base key,
 /// ready to write into session-scoped SharedPreferences entries.
 class CampaignImport {
-  const CampaignImport({required this.name, required this.rawByKey});
+  const CampaignImport({
+    required this.name,
+    required this.rawByKey,
+    this.systems,
+    this.mode = CampaignMode.party,
+  });
   final String name;
   final Map<String, String> rawByKey;
+
+  /// Enabled optional systems; null means "all" (the default profile).
+  final List<String>? systems;
+  final CampaignMode mode;
 }
 
 /// Encode a campaign to the .juice.json file content.
 /// [rawByKey] holds the stores' persisted JSON strings by base key;
-/// null/absent stores are omitted.
+/// null/absent stores are omitted. [systems]/[mode] carry the campaign
+/// profile so an import restores it (additive keys — older readers ignore them).
 String encodeCampaign({
   required String name,
   required DateTime savedAt,
   required Map<String, String> rawByKey,
+  List<String>? systems,
+  CampaignMode mode = CampaignMode.party,
 }) {
   return const JsonEncoder.withIndent('  ').convert({
     'app': _appMarker,
     'schemaVersion': campaignSchemaVersion,
     'savedAt': savedAt.toIso8601String(),
     'name': name,
+    if (systems != null) 'systems': systems,
+    'mode': mode.name,
     'data': {
       for (final e in rawByKey.entries) e.key: jsonDecode(e.value),
     },
@@ -48,7 +62,8 @@ CampaignImport parseCampaign(String raw) {
     throw const FormatException('Not a campaign file');
   }
   if (decoded['app'] != _appMarker) {
-    throw const FormatException("Not a Solo Adventurer's Journal campaign file");
+    throw const FormatException(
+        "Not a Solo Adventurer's Journal campaign file");
   }
   final version = decoded['schemaVersion'];
   if (version is! int || version > campaignSchemaVersion) {
@@ -107,10 +122,14 @@ CampaignImport parseCampaign(String raw) {
     rawByKey[key] = jsonEncode(value);
   }
   final rawName = decoded['name'];
+  final rawSystems = decoded['systems'];
   return CampaignImport(
     name: rawName is String && rawName.trim().isNotEmpty
         ? rawName.trim()
         : 'Imported campaign',
     rawByKey: rawByKey,
+    systems:
+        rawSystems is List ? rawSystems.whereType<String>().toList() : null,
+    mode: decoded['mode'] == 'gm' ? CampaignMode.gm : CampaignMode.party,
   );
 }

@@ -71,8 +71,11 @@ class LauncherScreen extends ConsumerWidget {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
-      // Imported campaigns are always party (files carry no mode).
-      _enter(ref, CampaignMode.party);
+      // Land on the imported campaign's restored mode.
+      _enter(
+          ref,
+          ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
+              CampaignMode.party);
     } on FormatException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
