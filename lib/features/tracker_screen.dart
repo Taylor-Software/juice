@@ -321,61 +321,93 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _addCharacter(context);
       return;
     }
+    // Sheet types are listed as equal-weight, scrollable rows (not action-bar
+    // buttons): action bars don't scroll, so with several systems enabled the
+    // later options (D&D, Shadowdark) could overflow/clip in a small window.
+    final options = <({String key, String value, String label, String blurb})>[
+      (
+        key: 'new-generic',
+        value: 'generic',
+        label: 'Generic',
+        blurb: 'Freeform stats and tracks.'
+      ),
+      if (systems.contains('ironsworn')) ...[
+        (
+          key: 'new-ironsworn',
+          value: 'ironsworn',
+          label: 'Ironsworn',
+          blurb: 'Classic Ironsworn character sheet.'
+        ),
+        (
+          key: 'new-starforged',
+          value: 'starforged',
+          label: 'Starforged',
+          blurb: 'Starforged character sheet.'
+        ),
+        (
+          key: 'new-sundered',
+          value: 'sundered',
+          label: 'Sundered Isles',
+          blurb: 'Sundered Isles character sheet.'
+        ),
+      ],
+      if (systems.contains('dnd'))
+        (
+          key: 'new-dnd',
+          value: 'dnd',
+          label: 'D&D 5e',
+          blurb: 'Ability scores, saves, skills, HP.'
+        ),
+      if (systems.contains('shadowdark'))
+        (
+          key: 'new-shadowdark',
+          value: 'shadowdark',
+          label: 'Shadowdark',
+          blurb: 'Stats, HP, AC, gear, luck.'
+        ),
+    ];
     final choice = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('New character'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Choose a sheet type.'),
-            if (!systems.contains('dnd') || !systems.contains('shadowdark'))
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Text(
-                  'Enable D&D 5e or Shadowdark in Campaigns → Edit '
-                  'systems to add those sheets.',
-                  style: Theme.of(context).textTheme.bodySmall,
+        content: SizedBox(
+          width: 320,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('Choose a sheet type.'),
                 ),
-              ),
-          ],
+                const SizedBox(height: 4),
+                for (final o in options)
+                  ListTile(
+                    key: Key(o.key),
+                    title: Text(o.label),
+                    subtitle: Text(o.blurb),
+                    onTap: () => Navigator.pop(context, o.value),
+                  ),
+                if (!systems.contains('dnd') || !systems.contains('shadowdark'))
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                    child: Text(
+                      'Enable D&D 5e or Shadowdark in Campaigns → Edit '
+                      'systems to add those sheets.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
-            key: const Key('new-generic'),
-            onPressed: () => Navigator.pop(context, 'generic'),
-            child: const Text('Generic'),
+            key: const Key('new-cancel'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          if (systems.contains('ironsworn')) ...[
-            FilledButton(
-              key: const Key('new-ironsworn'),
-              onPressed: () => Navigator.pop(context, 'ironsworn'),
-              child: const Text('Ironsworn'),
-            ),
-            FilledButton(
-              key: const Key('new-starforged'),
-              onPressed: () => Navigator.pop(context, 'starforged'),
-              child: const Text('Starforged'),
-            ),
-            FilledButton(
-              key: const Key('new-sundered'),
-              onPressed: () => Navigator.pop(context, 'sundered'),
-              child: const Text('Sundered Isles'),
-            ),
-          ],
-          if (systems.contains('dnd'))
-            FilledButton(
-              key: const Key('new-dnd'),
-              onPressed: () => Navigator.pop(context, 'dnd'),
-              child: const Text('D&D 5e'),
-            ),
-          if (systems.contains('shadowdark'))
-            FilledButton(
-              key: const Key('new-shadowdark'),
-              onPressed: () => Navigator.pop(context, 'shadowdark'),
-              child: const Text('Shadowdark'),
-            ),
         ],
       ),
     );
@@ -818,8 +850,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () =>
-                  Navigator.pop(context, (label: labelCtrl.text, max: maxCtrl.text)),
+              onPressed: () => Navigator.pop(
+                  context, (label: labelCtrl.text, max: maxCtrl.text)),
               child: const Text('Add'),
             ),
           ],

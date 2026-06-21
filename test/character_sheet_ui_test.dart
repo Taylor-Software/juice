@@ -1092,6 +1092,50 @@ void main() {
     expect(find.byKey(const Key('new-shadowdark')), findsOneWidget);
   });
 
+  testWidgets(
+      'sheet picker scrolls without overflow and reaches Shadowdark when the '
+      'Ironsworn family is also enabled', (tester) async {
+    // Cramped window: the old action-bar picker overflowed here, clipping the
+    // last (Shadowdark) option. The scrollable list must not overflow, and
+    // every sheet type must be reachable.
+    tester.view.physicalSize = const Size(420, 500);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final errors = <FlutterErrorDetails>[];
+    final prev = FlutterError.onError;
+    FlutterError.onError = errors.add;
+    addTearDown(() => FlutterError.onError = prev);
+
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["ironsworn","shadowdark"]}]}',
+      'juice.characters.v1.default': '[]',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add-character')));
+    await tester.pumpAndSettle();
+
+    expect(errors, isEmpty, reason: 'picker must not overflow at 420x500');
+    expect(find.byKey(const Key('new-shadowdark')), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('new-shadowdark')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('new-shadowdark')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('shadowdark-sheet')), findsOneWidget);
+    expect(
+        (await c.read(charactersProvider.future)).single.shadowdark, isNotNull);
+  });
+
   testWidgets('Generate NPC prefills and creates a character', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
