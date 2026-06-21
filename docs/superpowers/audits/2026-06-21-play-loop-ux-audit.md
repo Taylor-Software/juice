@@ -45,6 +45,17 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > HP resolves per character via `Character.withHpDelta` (D&D/Shadowdark `currentHp` or first
 > track; no-pool sheets unchanged). Replaces editing 3-5 sheets one by one for a fireball/heal.
 >
+> **Increment 7 shipped (2026-06-21):** the remaining **#1** per-caller result-card wirings,
+> assessed and closed. Shipped: the Ironsworn move result card gains an **"Ask oracle"** action
+> (one-tap 50/50 yes/no logged as a follow-up — the common post-move question, in place).
+> The other enumerated wirings were assessed and intentionally NOT built (would be speculative or
+> redundant): **save-as-NPC** is already covered (the contextual Generate-NPC roster flow creates
+> the character directly; journal `gen-npcs` results have a context-menu "Save as character");
+> **apply damage/heal** and **mark track** have no bound target on a *free* oracle/dice result —
+> bulk damage/heal is delivered by #5 (party effect) + per-row/combatant HP editing, and
+> event-driven clock ticks are the separate gap **G5** (not a result-card action). The reusable
+> `ResultAction` slot remains available for any future caller that does have a bound target.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
