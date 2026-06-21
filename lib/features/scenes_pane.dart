@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 
 /// Tracking → Scenes: derived list of journal scene dividers, newest first.
@@ -105,10 +106,11 @@ class ScenesPane extends ConsumerWidget {
         ),
       );
       if (title == null || title.trim().isEmpty) return;
-      await ref.read(journalProvider.notifier).addScene(
+      final id = await ref.read(journalProvider.notifier).addScene(
             title.trim(),
             chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
           );
+      await ref.read(playContextProvider.notifier).setActiveScene(id);
     } finally {
       controller.dispose();
     }

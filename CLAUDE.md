@@ -86,6 +86,17 @@ Working rules for this repo:
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,
   which is a room id OR a hex col/row on the single session map), persisted at
   `juice.context.v1.<sessionId>` (registered in `sessionScopedKeys`).
+  `JournalNotifier.addScene` returns the new entry id; both scene-creation call
+  sites (`scenes_pane`, journal `_newScene`) call `setActiveScene(id)` to point
+  the spine at the new scene. The campaign-context HUD (`CampaignHeader` in
+  `lib/shared/play_context_hud.dart`, was `_CampaignHeader` inside `JournalScreen`)
+  is now mounted at the **shell** level above the verb body (`home_shell` body =
+  `Column[CampaignHeader, Expanded(_shellBody)]`), so the scene line / Chaos
+  chip+steppers / default-oracle picker / pinned-thread + starred-char chips stay
+  visible on every verb and on an empty campaign (no longer gated on journal
+  entries). The scene line follows `activeSceneId`, falling back to the latest
+  scene entry. Covered by `test/campaign_header_test.dart` (pumps `CampaignHeader`
+  directly). See `docs/superpowers/audits/2026-06-21-play-loop-ux-audit.md`.
   `resolveSystem(systems, rulesets)` (sibling of `resolveSystemPrimer`) yields
   the active system key; `resolvedSystemProvider` exposes it. The home shell now
   uses 5 verbs — `Destination { journal, sheet, ask, map, track }`: Sheet =

@@ -84,8 +84,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _onComposerChanged() {
-    final st = parseComposerState(
-        _composer.text, _composer.selection.baseOffset);
+    final st =
+        parseComposerState(_composer.text, _composer.selection.baseOffset);
     setState(() {
       _slashActive = st.slash;
       _mentionQuery = st.mention;
@@ -408,7 +408,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               return Column(
                 children: [
                   _recapBanner(entries),
-                  const _CampaignHeader(),
                   if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     _filterChips(threads, tags, chars),
                   _journalActions(),
@@ -490,8 +489,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   avatar: const Icon(Icons.person, size: 16),
                   label: Text(c.name),
                   selected: _filterCharId == c.id,
-                  onSelected: (_) => setState(
-                      () => _filterCharId = _filterCharId == c.id ? null : c.id),
+                  onSelected: (_) => setState(() =>
+                      _filterCharId = _filterCharId == c.id ? null : c.id),
                 ),
               ),
           ],
@@ -956,8 +955,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           pdfBlobId: data.pdfBlobId,
           pdfPage: data.pdfPage);
       if (edited != null) {
-        await ref.read(journalProvider.notifier).replace(
-            e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
+        await ref
+            .read(journalProvider.notifier)
+            .replace(e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
       }
     } finally {
       bg?.dispose(); // we own the decoded image; release its native memory
@@ -996,8 +996,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         !ref.read(pdfAvailableProvider)) {
       return;
     }
-    final result =
-        await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf'], withData: true);
+    final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+        withData: true);
     final bytes = result?.files.singleOrNull?.bytes;
     if (bytes == null) return;
     final store = ref.read(blobStoreProvider);
@@ -1271,10 +1273,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
     if (!mounted) return;
     if (title == null || title.trim().isEmpty) return;
-    await ref.read(journalProvider.notifier).addScene(
+    final id = await ref.read(journalProvider.notifier).addScene(
           title.trim(),
           chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
         );
+    await ref.read(playContextProvider.notifier).setActiveScene(id);
   }
 
   // -- Entry actions ----------------------------------------------------------
@@ -1690,167 +1693,6 @@ class _Empty extends StatelessWidget {
   }
 }
 
-// -- Campaign header ----------------------------------------------------------
-
-class _CampaignHeader extends ConsumerWidget {
-  const _CampaignHeader();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings =
-        ref.watch(settingsProvider).valueOrNull ?? const CampaignSettings();
-    final entries = ref.watch(journalProvider).valueOrNull ?? const [];
-    final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
-        .where((t) => t.open && t.pinned)
-        .toList();
-    final stars =
-        (ref.watch(charactersProvider).valueOrNull ?? const <Character>[])
-            .where((c) => c.starred)
-            .toList();
-    final crawl = ref.watch(crawlProvider).valueOrNull;
-    // Current scene: latest scene entry (storage newest-first).
-    final scene = entries.where((e) => e.kind == JournalKind.scene).firstOrNull;
-    // Chaos belongs to Mythic — show it only when the campaign's profile
-    // enables that system (phase-4 replaces the old scene-heuristic gate).
-    final systems =
-        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
-            kAllSystems;
-    final usesMythic = systems.contains('mythic');
-    final theme = Theme.of(context);
-    final collapsed = settings.headerCollapsed;
-    return Container(
-      key: const Key('campaign-header'),
-      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(children: [
-            Icon(Icons.local_fire_department_outlined,
-                size: 16, color: theme.colorScheme.primary),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                scene?.title ?? 'No scene yet',
-                style: theme.textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            IconButton(
-              key: const Key('hdr-collapse'),
-              visualDensity: VisualDensity.compact,
-              icon: Icon(collapsed ? Icons.expand_more : Icons.expand_less),
-              tooltip: collapsed ? 'Expand' : 'Collapse',
-              onPressed: () => ref
-                  .read(settingsProvider.notifier)
-                  .setHeaderCollapsed(!collapsed),
-            ),
-          ]),
-          if (!collapsed)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (usesMythic && crawl != null) ...[
-                    InputChip(
-                      label: Text('Chaos ${crawl.chaosFactor}'),
-                      onPressed: null,
-                    ),
-                    IconButton(
-                      key: const Key('hdr-chaos-dec'),
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.remove, size: 18),
-                      onPressed: crawl.chaosFactor > 1
-                          ? () => ref
-                              .read(crawlProvider.notifier)
-                              .setChaos(crawl.chaosFactor - 1)
-                          : null,
-                    ),
-                    IconButton(
-                      key: const Key('hdr-chaos-inc'),
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.add, size: 18),
-                      onPressed: crawl.chaosFactor < 9
-                          ? () => ref
-                              .read(crawlProvider.notifier)
-                              .setChaos(crawl.chaosFactor + 1)
-                          : null,
-                    ),
-                  ],
-                  ActionChip(
-                    key: const Key('hdr-oracle'),
-                    avatar: const Icon(Icons.casino_outlined, size: 16),
-                    label: Text(_oracleLabel(settings.defaultOracle)),
-                    onPressed: () => _pickOracle(context, ref, settings),
-                  ),
-                  for (final t in threads)
-                    ActionChip(
-                      key: Key('hdr-thread-${t.id}'),
-                      avatar: const Icon(Icons.push_pin, size: 14),
-                      label: Text(t.title),
-                      onPressed: () => ref
-                          .read(shellRouteProvider.notifier)
-                          .goTo(Destination.track, subtab: 'threads'),
-                    ),
-                  for (final c in stars)
-                    ActionChip(
-                      key: Key('hdr-char-${c.id}'),
-                      avatar: const Icon(Icons.star, size: 14),
-                      label: Text(c.name),
-                      onPressed: () => ref
-                          .read(shellRouteProvider.notifier)
-                          .goTo(Destination.sheet, subtab: 'characters'),
-                    ),
-                  if (crawl != null && crawl.envRow != null)
-                    ActionChip(
-                      key: const Key('hdr-crawl'),
-                      avatar: const Icon(Icons.explore, size: 14),
-                      label:
-                          Text(crawl.lost ? 'Wilderness (lost)' : 'Wilderness'),
-                      onPressed: () => showGenerateSheet(context),
-                    ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static String _oracleLabel(String id) => switch (id) {
-        'mythic' => 'Mythic',
-        'roll-high' => 'Roll High',
-        _ => 'Juice',
-      };
-
-  Future<void> _pickOracle(
-      BuildContext context, WidgetRef ref, CampaignSettings s) async {
-    final picked = await showDialog<String>(
-      context: context,
-      builder: (_) => SimpleDialog(
-        title: const Text('Default oracle'),
-        children: [
-          for (final o in const ['juice', 'mythic', 'roll-high'])
-            SimpleDialogOption(
-              onPressed: () => Navigator.pop(context, o),
-              child: Text(_oracleLabel(o)),
-            ),
-        ],
-      ),
-    );
-    if (picked != null) {
-      await ref.read(settingsProvider.notifier).setDefaultOracle(picked);
-    }
-  }
-}
-
 // -- Slash row ----------------------------------------------------------------
 
 class _SlashRow extends StatefulWidget {
@@ -2101,7 +1943,8 @@ class _SketchThumbnailState extends ConsumerState<_SketchThumbnail> {
   @override
   Widget build(BuildContext context) {
     final bg = _bg;
-    final paint = CustomPaint(painter: SketchPainter(widget.data, background: bg));
+    final paint =
+        CustomPaint(painter: SketchPainter(widget.data, background: bg));
     // Lock the thumbnail to the image aspect so strokes (uniformly scaled) stay
     // aligned to the BoxFit.contain background.
     if (bg == null) return paint;
