@@ -21,6 +21,13 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > per-caller quick-actions (apply damage/heal, mark track, roll consequences, save-as-NPC) —
 > those wirings stay open.
 >
+> **Increment 3 shipped (2026-06-21):** the **#7 Mythic advance-scene macro** — the New-scene
+> dialog (`scenes_pane`) gained a "Roll Mythic Scene Test" toggle (shown only when `mythic` is
+> enabled, default on). Creating a scene then rolls + logs the Scene Test, and on an
+> *Interrupted* outcome also rolls a random event (`mythicRandomEvent`) — composing increment 1's
+> spine wiring and increment 2's random-event combiner into one tap. Folds the Scene Test +
+> new-scene + (interrupt→random-event) chain that was split across screens. Resolves gap **G2**.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
