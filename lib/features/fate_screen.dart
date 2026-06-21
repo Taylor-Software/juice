@@ -235,6 +235,20 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         const SnackBar(content: Text('Added to journal')),
                       );
                     },
+                    actions: [
+                      // One-tap Mythic random event (Focus + Action + Subject)
+                      // — the canonical follow-up, in place of chaining the
+                      // Event Focus + two Meaning buttons by hand.
+                      ResultAction(
+                        label: 'Random Event',
+                        icon: Icons.bolt_outlined,
+                        tooltip: 'Roll a Mythic random event',
+                        onPressed: () => setState(() => _mythicLast =
+                            widget.oracle.mythicRandomEvent(
+                                threads: _openThreadTitles(),
+                                characters: _characterNames())),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -257,22 +271,10 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {
-                          final threads =
-                              (ref.read(threadsProvider).valueOrNull ??
-                                      const <Thread>[])
-                                  .where((t) => t.open)
-                                  .map((t) => t.title)
-                                  .toList();
-                          final characters =
-                              (ref.read(charactersProvider).valueOrNull ??
-                                      const <Character>[])
-                                  .map((c) => c.name)
-                                  .toList();
-                          setState(() => _mythicLast = widget.oracle
-                              .mythicEventFocus(
-                                  threads: threads, characters: characters));
-                        },
+                        onPressed: () => setState(() => _mythicLast =
+                            widget.oracle.mythicEventFocus(
+                                threads: _openThreadTitles(),
+                                characters: _characterNames())),
                         child: const Text('Event Focus'),
                       ),
                     ),
@@ -316,6 +318,17 @@ class _FateScreenState extends ConsumerState<FateScreen> {
       ),
     );
   }
+
+  List<String> _openThreadTitles() =>
+      (ref.read(threadsProvider).valueOrNull ?? const <Thread>[])
+          .where((t) => t.open)
+          .map((t) => t.title)
+          .toList();
+
+  List<String> _characterNames() =>
+      (ref.read(charactersProvider).valueOrNull ?? const <Character>[])
+          .map((c) => c.name)
+          .toList();
 
   void _logGen(GenResult g) {
     ref.read(journalProvider.notifier).addResult(g.title, g.asText,

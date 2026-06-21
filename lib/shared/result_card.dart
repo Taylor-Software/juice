@@ -2,12 +2,41 @@ import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
 
-/// Renders a composite [GenResult] with an optional "Add to journal" action.
+/// A contextual quick-action shown as a chip beneath a [ResultCard]'s rolls —
+/// e.g. "Random Event", "Roll consequences", "Apply damage". Lets a roll be
+/// acted on in place instead of navigating away to a tool.
+class ResultAction {
+  const ResultAction({
+    required this.label,
+    required this.icon,
+    this.onPressed,
+    this.tooltip,
+  });
+
+  final String label;
+  final IconData icon;
+
+  /// Null disables the chip.
+  final VoidCallback? onPressed;
+  final String? tooltip;
+}
+
+/// Renders a composite [GenResult] with an optional "Add to journal" action and
+/// an optional row of contextual quick-[actions].
 class ResultCard extends StatelessWidget {
-  const ResultCard({super.key, required this.result, this.onLog});
+  const ResultCard({
+    super.key,
+    required this.result,
+    this.onLog,
+    this.actions,
+  });
 
   final GenResult result;
   final VoidCallback? onLog;
+
+  /// Contextual quick-actions rendered as chips below the rolls. Empty/null
+  /// hides the row.
+  final List<ResultAction>? actions;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +72,23 @@ class ResultCard extends StatelessWidget {
             if (result.rolls.isNotEmpty) ...[
               const SizedBox(height: 8),
               ...result.rolls.map((r) => _RollRow(roll: r)),
+            ],
+            if (actions != null && actions!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  for (final a in actions!)
+                    ActionChip(
+                      key: Key('result-action-${a.label}'),
+                      avatar: Icon(a.icon, size: 16),
+                      label: Text(a.label),
+                      tooltip: a.tooltip,
+                      onPressed: a.onPressed,
+                    ),
+                ],
+              ),
             ],
           ],
         ),
