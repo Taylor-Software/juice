@@ -72,14 +72,100 @@ class ScenesPane extends ConsumerWidget {
 
   Future<void> _newScene(BuildContext context, WidgetRef ref,
       {String initialTitle = ''}) async {
-    final controller = TextEditingController(text: initialTitle);
-    try {
-      final title = await showDialog<String>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('New scene'),
-          content: TextField(
-            controller: controller,
+    final usesMythic =
+        (ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+                kAllSystems)
+            .contains('mythic');
+    final result = await showDialog<({String title, bool rollTest})>(
+      context: context,
+      builder: (_) =>
+          _NewSceneDialog(initialTitle: initialTitle, usesMythic: usesMythic),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    final chaos = ref.read(crawlProvider).valueOrNull?.chaosFactor;
+    final id = await ref
+        .read(journalProvider.notifier)
+        .addScene(result.title.trim(), chaosFactor: chaos);
+    await ref.read(playContextProvider.notifier).setActiveScene(id);
+    if (usesMythic && result.rollTest) {
+      // `?? 5` only fires before any crawl state exists; 5 is the Mythic 2e
+      // default Chaos Factor (matches CrawlState.chaosFactor's default).
+      await _rollSceneTest(ref, chaos ?? 5);
+    }
+  }
+
+  /// Rolls a Mythic Scene Test and logs it as a journal result. An interrupted
+  /// scene additionally rolls (and logs) a random event — the canonical Mythic
+  /// "scene is replaced" follow-up — reusing [Oracle.mythicRandomEvent].
+  Future<void> _rollSceneTest(WidgetRef ref, int chaos) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final journal = ref.read(journalProvider.notifier);
+    final test = oracle.mythicSceneTest(chaos);
+    await journal.addResult(test.title, test.asText,
+        sourceTool: 'mythic', payload: test.toPayload());
+    // Literal must match the outcome string emitted by Oracle.mythicSceneTest.
+    if (test.rolls.first.value == 'Interrupted Scene') {
+      final threads =
+          (ref.read(threadsProvider).valueOrNull ?? const <Thread>[])
+              .where((t) => t.open)
+              .map((t) => t.title)
+              .toList();
+      final characters =
+          (ref.read(charactersProvider).valueOrNull ?? const <Character>[])
+              .map((c) => c.name)
+              .toList();
+      final event =
+          oracle.mythicRandomEvent(threads: threads, characters: characters);
+      await journal.addResult(event.title, event.asText,
+          sourceTool: 'mythic', payload: event.toPayload());
+    }
+  }
+
+  Future<void> _generateScene(BuildContext context, WidgetRef ref) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final g = oracle.newScene();
+    await _newScene(context, ref, initialTitle: g.summary ?? g.title);
+  }
+}
+
+/// New-scene dialog: a title field (with a name-roll die) and, when Mythic is
+/// enabled, a "Roll Scene Test" toggle. Owns its own controller so it is
+/// disposed only after the dialog is fully gone (avoids a use-after-dispose
+/// race with the exit animation). Pops `({title, rollTest})` or null.
+class _NewSceneDialog extends ConsumerStatefulWidget {
+  const _NewSceneDialog({required this.initialTitle, required this.usesMythic});
+  final String initialTitle;
+  final bool usesMythic;
+
+  @override
+  ConsumerState<_NewSceneDialog> createState() => _NewSceneDialogState();
+}
+
+class _NewSceneDialogState extends ConsumerState<_NewSceneDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialTitle);
+  late bool _rollTest = widget.usesMythic;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  ({String title, bool rollTest}) get _value =>
+      (title: _controller.text, rollTest: _rollTest);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New scene'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _controller,
             autofocus: true,
             decoration: InputDecoration(
               labelText: 'Scene title',
@@ -89,37 +175,33 @@ class ScenesPane extends ConsumerWidget {
                 onPressed: () {
                   final oracle = ref.read(oracleProvider).valueOrNull;
                   if (oracle == null) return;
-                  controller.text = oracle.generateName().summary ?? '';
+                  _controller.text = oracle.generateName().summary ?? '';
                 },
               ),
             ),
-            onSubmitted: (v) => Navigator.pop(context, v),
+            onSubmitted: (_) => Navigator.pop(context, _value),
           ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () => Navigator.pop(context, controller.text),
-                child: const Text('Start scene')),
-          ],
-        ),
-      );
-      if (title == null || title.trim().isEmpty) return;
-      final id = await ref.read(journalProvider.notifier).addScene(
-            title.trim(),
-            chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
-          );
-      await ref.read(playContextProvider.notifier).setActiveScene(id);
-    } finally {
-      controller.dispose();
-    }
-  }
-
-  Future<void> _generateScene(BuildContext context, WidgetRef ref) async {
-    final oracle = ref.read(oracleProvider).valueOrNull;
-    if (oracle == null) return;
-    final g = oracle.newScene();
-    await _newScene(context, ref, initialTitle: g.summary ?? g.title);
+          // Mythic GME: a scene test against Chaos decides whether the scene
+          // plays as expected, is altered, or is interrupted (a random event).
+          // Folds that roll into scene creation.
+          if (widget.usesMythic)
+            CheckboxListTile(
+              key: const Key('scene-roll-test'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Roll Mythic Scene Test'),
+              value: _rollTest,
+              onChanged: (v) => setState(() => _rollTest = v ?? false),
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        FilledButton(
+            onPressed: () => Navigator.pop(context, _value),
+            child: const Text('Start scene')),
+      ],
+    );
   }
 }
