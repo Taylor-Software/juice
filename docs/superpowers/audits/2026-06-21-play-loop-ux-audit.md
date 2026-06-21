@@ -28,6 +28,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > spine wiring and increment 2's random-event combiner into one tap. Folds the Scene Test +
 > new-scene + (interrupt→random-event) chain that was split across screens. Resolves gap **G2**.
 >
+> **Increment 4 shipped (2026-06-21):** gap **G8** — campaign export/import now preserves the
+> campaign profile. The `.juice.json`/`.juice.zip` file carries `systems` + `mode`
+> (`campaign_io.dart`, additive keys, no schema bump); import restores them onto the new
+> `SessionMeta` and lands on the restored mode (was hardcoded party). Fixes imported GM/D&D
+> campaigns mis-landing on the party home with the wrong systems.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

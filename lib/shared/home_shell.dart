@@ -275,8 +275,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (bytes == null) return; // user cancelled
     try {
       await ref.read(sessionsProvider.notifier).importCampaignData(bytes);
-      // Imported campaigns are always party (files carry no mode).
-      ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
+      // Land on the imported campaign's restored mode.
+      ref.read(shellRouteProvider.notifier).landFor(
+          ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
+              CampaignMode.party);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
