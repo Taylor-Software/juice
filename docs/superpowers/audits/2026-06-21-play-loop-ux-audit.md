@@ -56,6 +56,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > event-driven clock ticks are the separate gap **G5** (not a result-card action). The reusable
 > `ResultAction` slot remains available for any future caller that does have a bound target.
 >
+> **Increment 8 shipped (2026-06-21):** **#4 / G6** — persistent quick-roll. The shell HUD's
+> always-visible row gained a dice button (`hdr-quick-roll`) that rolls the campaign's default
+> oracle (Juice 50/50 / Mythic Fate Chart at current Chaos / Roll-High Unknown) and logs it, from
+> **any** verb and even when the HUD is collapsed. The loop's most frequent action is now one tap
+> everywhere, not buried in the Ask verb or the collapsed assistant rail.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

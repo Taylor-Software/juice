@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -32,6 +33,7 @@ class CampaignHeader extends ConsumerWidget {
             .where((c) => c.starred)
             .toList();
     final crawl = ref.watch(crawlProvider).valueOrNull;
+    final oracle = ref.watch(oracleProvider).valueOrNull;
     // Current scene: prefer the spine's active pointer, fall back to the latest
     // scene entry (storage newest-first).
     final activeSceneId =
@@ -71,6 +73,18 @@ class CampaignHeader extends ConsumerWidget {
                 style: theme.textTheme.labelLarge,
                 overflow: TextOverflow.ellipsis,
               ),
+            ),
+            // One-tap roll of the default oracle from any verb — the loop's
+            // most frequent action, always reachable (even when collapsed).
+            IconButton(
+              key: const Key('hdr-quick-roll'),
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.casino_outlined),
+              tooltip: 'Quick roll (${_oracleLabel(settings.defaultOracle)})',
+              onPressed: oracle == null
+                  ? null
+                  : () => _quickRoll(context, ref, oracle,
+                      crawl?.chaosFactor ?? 5, settings.defaultOracle),
             ),
             IconButton(
               key: const Key('hdr-collapse'),
@@ -161,6 +175,30 @@ class CampaignHeader extends ConsumerWidget {
         'roll-high' => 'Roll High',
         _ => 'Juice',
       };
+
+  /// Rolls the campaign's default oracle with sensible neutral odds (50/50 /
+  /// Unknown) and logs it — a quick yes/no without opening the Ask verb.
+  void _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle, int chaos,
+      String defaultOracle) {
+    final GenResult g;
+    final String tool;
+    switch (defaultOracle) {
+      case 'mythic':
+        g = oracle.mythicFate(4, chaos); // 50/50 odds
+        tool = 'mythic';
+      case 'roll-high':
+        g = oracle.rollHigh('d100', 3); // Unknown odds
+        tool = 'roll-high';
+      default:
+        g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
+        tool = 'fate-check';
+    }
+    ref
+        .read(journalProvider.notifier)
+        .addResult(g.title, g.asText, sourceTool: tool, payload: g.toPayload());
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(g.summary ?? g.rolls.first.value)));
+  }
 
   Future<void> _pickOracle(
       BuildContext context, WidgetRef ref, CampaignSettings s) async {
