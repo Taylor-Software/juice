@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/dice.dart';
 import '../engine/ironsworn.dart';
 import '../engine/models.dart';
+import '../engine/oracle.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 
@@ -85,6 +86,26 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
                   ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Added to journal')));
                 },
+                actions: [
+                  // After a move, ask the oracle a quick yes/no in place and
+                  // log it — the common Ironsworn follow-up without leaving.
+                  ResultAction(
+                    label: 'Ask oracle',
+                    icon: Icons.help_outline,
+                    tooltip: 'Roll a 50/50 yes/no and log it',
+                    onPressed: () {
+                      final oracle = ref.read(oracleProvider).valueOrNull;
+                      if (oracle == null) return;
+                      final g = fateCheckGenResult(
+                          oracle.fateCheck(Likelihood.normal));
+                      ref.read(journalProvider.notifier).addResult(
+                          g.title, g.asText,
+                          sourceTool: 'fate-check', payload: g.toPayload());
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(g.summary ?? g.title)));
+                    },
+                  ),
+                ],
               ),
             ),
           Expanded(
