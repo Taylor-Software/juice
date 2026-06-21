@@ -34,6 +34,11 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > `SessionMeta` and lands on the restored mode (was hardcoded party). Fixes imported GM/D&D
 > campaigns mis-landing on the party home with the wrong systems.
 >
+> **Increment 5 shipped (2026-06-21):** **#6** — Shadowdark torch clock. The Shadowdark sheet
+> gained a "Light" section with a `torch` countdown (`ShadowdarkSheet.torch`, a neutral
+> player-controlled timer with −/+ steppers + lit/out indicator; 0 = out). Facts-only: no
+> rulebook duration asserted. Gives the signature Shadowdark light-pressure mechanic a home.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

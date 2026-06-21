@@ -159,6 +159,24 @@ class ShadowdarkSheetView extends ConsumerWidget {
           title: const Text('Luck token'),
           onChanged: (on) => _save(ref, s.copyWith(luckToken: on ?? false)),
         ),
+        sheetSection(context, 'Light'),
+        Row(children: [
+          const SizedBox(width: 96, child: Text('Torch')),
+          intStepper(
+              prefix: 'sd',
+              fieldKey: 'torch',
+              value: s.torch,
+              onSet: (v) => _save(ref, s.copyWith(torch: v))),
+          const SizedBox(width: 8),
+          Text(
+            s.torch > 0 ? 'lit' : 'out',
+            style: TextStyle(
+              color: s.torch > 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error,
+            ),
+          ),
+        ]),
         sheetSection(context, 'Talents'),
         _freeform(ref, 'sd-talents', 'Talents (rolled boons)', s.talentsText,
             (v) => _save(ref, s.copyWith(talentsText: v))),

@@ -460,7 +460,9 @@ void main() {
                     'min': 0,
                     'max': 4,
                     'value': 4,
-                    'controls': {'out_of_action': {'field_type': 'checkbox'}},
+                    'controls': {
+                      'out_of_action': {'field_type': 'checkbox'}
+                    },
                   },
                   'doc': {'field_type': 'text'}, // ignored (not a meter)
                 },
@@ -485,7 +487,9 @@ void main() {
       const a = AssetState(
         assetId: 'x',
         name: 'Banshee',
-        meters: [AssetMeter(key: 'health', label: 'health', min: 0, max: 4, value: 2)],
+        meters: [
+          AssetMeter(key: 'health', label: 'health', min: 0, max: 4, value: 2)
+        ],
       );
       final back = AssetState.maybeFromJson(a.toJson())!;
       expect(back.meters.single.key, 'health');
@@ -763,6 +767,17 @@ void main() {
       expect(j.level, 10); // clamped 1..10
       expect(j.score('str'), 20); // clamped 1..20
       expect(j.gearSlotsUsed, 0);
+    });
+
+    test('torch defaults to 0, round-trips, omitted when 0, clamps >= 0', () {
+      const off = ShadowdarkSheet();
+      expect(off.torch, 0);
+      expect(off.toJson().containsKey('torch'), isFalse); // omitted at 0
+      final lit = off.copyWith(torch: 6);
+      expect(lit.torch, 6);
+      expect(ShadowdarkSheet.maybeFromJson(lit.toJson())!.torch, 6);
+      // Ticking below 0 clamps to 0 (out).
+      expect(off.copyWith(torch: -1).torch, 0);
     });
   });
 
