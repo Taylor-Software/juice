@@ -79,4 +79,32 @@ void main() {
     expect(entries, hasLength(1));
     expect(entries.single.title, 'Fate Check (Likely)');
   });
+
+  testWidgets('mythic result card offers a one-tap Random Event follow-up',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: FateScreen(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+
+    // Roll the Mythic Fate Chart to surface the mythic result card.
+    await tester.ensureVisible(find.text('Fate Chart'));
+    await tester.tap(find.text('Fate Chart'));
+    await tester.pumpAndSettle();
+
+    // The contextual Random Event action is present; tapping it rolls a
+    // Mythic random event in place (no navigation, no manual focus+meaning).
+    final action = find.byKey(const Key('result-action-Random Event'));
+    await tester.ensureVisible(action);
+    await tester.tap(action);
+    await tester.pumpAndSettle();
+    expect(find.text('Mythic Random Event'), findsOneWidget);
+  });
 }

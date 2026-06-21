@@ -12,6 +12,15 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > mounted above the verb body, visible on every verb + on empty campaigns) and the
 > **#2 `setActiveScene` wiring** it consumes (the HUD scene line follows `activeSceneId`).
 > Resolves gaps **G3** (HUD was journal-only) and the live-confirmed "chaos buried" friction.
+>
+> **Increment 2 shipped (2026-06-21):** the **#1 result-card action mechanism** —
+> `ResultCard` gained a reusable `actions` slot (`ResultAction` chips below the rolls,
+> `lib/shared/result_card.dart`). First consumer wired: the Mythic result card offers a
+> one-tap **"Random Event"** (`Oracle.mythicRandomEvent` = Event Focus + Action + Subject,
+> folding a 3-step manual chain into one). The slot is the foundation for the remaining
+> per-caller quick-actions (apply damage/heal, mark track, roll consequences, save-as-NPC) —
+> those wirings stay open.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

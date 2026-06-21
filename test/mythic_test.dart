@@ -31,8 +31,8 @@ void main() {
     test('defaults to 5 and round-trips', () {
       const s = CrawlState();
       expect(s.chaosFactor, 5);
-      final back = CrawlState.fromJson(
-          const CrawlState(chaosFactor: 8).toJson());
+      final back =
+          CrawlState.fromJson(const CrawlState(chaosFactor: 8).toJson());
       expect(back.chaosFactor, 8);
     });
 
@@ -43,7 +43,8 @@ void main() {
   });
 
   group('Mythic engine', () {
-    test('50/50 at chaos 5: ~50% yes-like, ~10% exceptional yes, ~5% events', () {
+    test('50/50 at chaos 5: ~50% yes-like, ~10% exceptional yes, ~5% events',
+        () {
       final oracle = Oracle(data);
       const n = 40000;
       var yesLike = 0, excYes = 0, events = 0;
@@ -109,6 +110,33 @@ void main() {
         }
       }
       expect(sawThreadTarget && sawCharacterTarget, isTrue);
+    });
+
+    test('random event folds focus + action + subject into one result', () {
+      final oracle = Oracle(data);
+      for (var i = 0; i < 500; i++) {
+        final r = oracle.mythicRandomEvent(
+          threads: ['Find the sword'],
+          characters: ['Old Marta'],
+        );
+        expect(r.title, 'Mythic Random Event');
+        // Always a Focus, an Action and a Subject word.
+        expect(r.rolls.where((x) => x.label == 'Focus').length, 1);
+        final action =
+            r.rolls.where((x) => x.label == 'Action').firstOrNull?.value;
+        final subject =
+            r.rolls.where((x) => x.label == 'Subject').firstOrNull?.value;
+        expect(action, isNotNull);
+        expect(action, isNotEmpty);
+        expect(subject, isNotNull);
+        expect(subject, isNotEmpty);
+        // Inherits Event Focus targeting of the supplied lists.
+        final focus = r.rolls.first.value;
+        final target =
+            r.rolls.where((x) => x.label == 'Target').firstOrNull?.value;
+        if (focus.contains('Thread')) expect(target, 'Find the sword');
+        if (focus.startsWith('NPC')) expect(target, 'Old Marta');
+      }
     });
   });
 

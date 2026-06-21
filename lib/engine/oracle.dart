@@ -634,6 +634,28 @@ class Oracle {
     return GenResult(title: 'Mythic Event Focus', rolls: rolls);
   }
 
+  /// A complete Mythic random event: Event Focus plus an Action + Subject
+  /// meaning pair (Mythic GME 2e). Folds what was three separate manual rolls
+  /// (Focus, then the Actions and Descriptions meaning tables) into one.
+  GenResult mythicRandomEvent({
+    List<String> threads = const [],
+    List<String> characters = const [],
+  }) {
+    final focus = mythicEventFocus(threads: threads, characters: characters);
+    final actions = (data.mythicMeaning
+            .firstWhere((t) => t['id'] == 'actions')['entries'] as List)
+        .cast<String>();
+    final subjects = (data.mythicMeaning
+            .firstWhere((t) => t['id'] == 'descriptions')['entries'] as List)
+        .cast<String>();
+    final ra = dice.d100(), rs = dice.d100();
+    return GenResult(title: 'Mythic Random Event', rolls: [
+      ...focus.rolls,
+      Roll(label: 'Action', value: actions[ra - 1], detail: 'd100 $ra'),
+      Roll(label: 'Subject', value: subjects[rs - 1], detail: 'd100 $rs'),
+    ]);
+  }
+
   /// Two-word meaning prompt from the table with [id]; the second word
   /// comes from entries2 when the table has pairs, else entries again.
   GenResult mythicMeaning(String id) {
