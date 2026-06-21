@@ -185,7 +185,12 @@ Working rules for this repo:
   free-text) shows as roster badges with an inline editor (`conditions-<id>` →
   `_editConditions`). `CharacterNotifier.setRole`/`setConditions` persist. Create
   defaults: Add + sheet creators → pc, Generate NPC → npc. See
-  `docs/superpowers/specs/2026-06-18-party-roles-conditions-design.md`. Deferred:
+  `docs/superpowers/specs/2026-06-18-party-roles-conditions-design.md`. Each roster
+  group header (≥2 members) has an **Effect** button (`party-effect-<role>`) →
+  modal applying ±N HP and/or condition(s) to a checkbox set in one gesture
+  (`CharacterNotifier.applyPartyEffect`, single persist); HP resolves per character
+  via `Character.withHpDelta` (D&D/Shadowdark `currentHp` or first track; no-pool
+  sheets unchanged) — play-loop audit #5. Deferred:
   lead→subordinate nesting, companion↔party-emulator auto-link, per-sheet
   condition surfacing.
 - The party-emulator asset (`assets/emulator_data.json`: Triple-O +

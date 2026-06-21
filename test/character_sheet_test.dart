@@ -405,6 +405,39 @@ void main() {
     });
   });
 
+  group('Character.withHpDelta', () {
+    test('applies to the D&D sheet pool, clamped to 0..maxHp', () {
+      final c = const Character(id: 'a', name: 'A')
+          .copyWith(dnd: const DndSheet(currentHp: 10, maxHp: 12));
+      expect(c.withHpDelta(-4).dnd!.currentHp, 6);
+      expect(c.withHpDelta(-99).dnd!.currentHp, 0); // floor
+      expect(c.withHpDelta(5).dnd!.currentHp, 12); // ceil at maxHp
+    });
+
+    test('applies to the Shadowdark sheet pool', () {
+      final c = const Character(id: 'b', name: 'B')
+          .copyWith(shadowdark: const ShadowdarkSheet(currentHp: 5, maxHp: 8));
+      expect(c.withHpDelta(-3).shadowdark!.currentHp, 2);
+      expect(c.withHpDelta(10).shadowdark!.currentHp, 8);
+    });
+
+    test('falls back to the first track for sheet-less characters', () {
+      const c = Character(id: 'c', name: 'C', tracks: [
+        CharTrack(label: 'HP', current: 7, max: 10),
+      ]);
+      expect(c.withHpDelta(-3).tracks.first.current, 4);
+      expect(c.withHpDelta(-99).tracks.first.current, 0);
+    });
+
+    test('no-op for delta 0 and for characters with no HP pool', () {
+      const bare = Character(id: 'd', name: 'D');
+      expect(bare.withHpDelta(-5), same(bare)); // no pool → unchanged
+      final c = const Character(id: 'e', name: 'E')
+          .copyWith(dnd: const DndSheet(currentHp: 4, maxHp: 9));
+      expect(c.withHpDelta(0).dnd!.currentHp, 4);
+    });
+  });
+
   group('IronswornAssetDef.listFromRuleset', () {
     test('flattens asset_collections and seeds default ability flags', () {
       final ruleset = {

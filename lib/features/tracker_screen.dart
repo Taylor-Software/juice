@@ -223,8 +223,24 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                 if (chars.any((c) => c.role == role)) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-                    child: Text(label,
-                        style: Theme.of(context).textTheme.labelMedium),
+                    child: Row(children: [
+                      Expanded(
+                        child: Text(label,
+                            style: Theme.of(context).textTheme.labelMedium),
+                      ),
+                      // One gesture to apply damage/heal/conditions across a
+                      // group (e.g. a fireball hitting the party).
+                      if (chars.where((c) => c.role == role).length > 1)
+                        TextButton.icon(
+                          key: Key('party-effect-${role.name}'),
+                          style: TextButton.styleFrom(
+                              visualDensity: VisualDensity.compact),
+                          icon: const Icon(Icons.bolt_outlined, size: 16),
+                          label: const Text('Effect'),
+                          onPressed: () => _partyEffect(context,
+                              chars.where((c) => c.role == role).toList()),
+                        ),
+                    ]),
                   ),
                   for (final c in chars.where((c) => c.role == role))
                     _rosterCard(context, c, isLead: c.id == active),
@@ -565,6 +581,92 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         ],
       ),
     );
+  }
+
+  Future<void> _partyEffect(
+      BuildContext context, List<Character> members) async {
+    final selectedIds = {for (final m in members) m.id};
+    final conds = <String>{};
+    var hpDelta = 0;
+    final apply = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: const Text('Party effect'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Apply to'),
+                for (final m in members)
+                  CheckboxListTile(
+                    key: Key('party-effect-target-${m.id}'),
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: selectedIds.contains(m.id),
+                    title: Text(m.name),
+                    onChanged: (on) => setLocal(() => (on ?? false)
+                        ? selectedIds.add(m.id)
+                        : selectedIds.remove(m.id)),
+                  ),
+                const Divider(),
+                Row(children: [
+                  const Text('HP'),
+                  IconButton(
+                    key: const Key('party-effect-hp-minus'),
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: () => setLocal(() => hpDelta -= 1),
+                  ),
+                  Text(hpDelta > 0 ? '+$hpDelta' : '$hpDelta'),
+                  IconButton(
+                    key: const Key('party-effect-hp-plus'),
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: () => setLocal(() => hpDelta += 1),
+                  ),
+                  const Spacer(),
+                  Text(hpDelta < 0
+                      ? 'damage'
+                      : hpDelta > 0
+                          ? 'heal'
+                          : ''),
+                ]),
+                const SizedBox(height: 8),
+                const Text('Add conditions'),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final cond in kConditions)
+                      FilterChip(
+                        label: Text(cond),
+                        selected: conds.contains(cond),
+                        onSelected: (on) => setLocal(
+                            () => on ? conds.add(cond) : conds.remove(cond)),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel')),
+            FilledButton(
+              key: const Key('party-effect-apply'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (apply != true || selectedIds.isEmpty) return;
+    if (hpDelta == 0 && conds.isEmpty) return;
+    await ref.read(charactersProvider.notifier).applyPartyEffect(selectedIds,
+        hpDelta: hpDelta, addConditions: conds.toList());
   }
 
   Future<void> _editConditions(BuildContext context, Character c) async {
