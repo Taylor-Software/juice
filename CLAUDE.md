@@ -99,7 +99,9 @@ Working rules for this repo:
   chip+steppers / default-oracle picker / pinned-thread + starred-char chips stay
   visible on every verb and on an empty campaign (no longer gated on journal
   entries). The scene line follows `activeSceneId`, falling back to the latest
-  scene entry. Covered by `test/campaign_header_test.dart` (pumps `CampaignHeader`
+  scene entry. The HUD's always-visible row also has a one-tap quick-roll dice
+  button (`hdr-quick-roll`) that rolls the default oracle (juice/mythic/roll-high)
+  and logs it from any verb (audit #4/G6). Covered by `test/campaign_header_test.dart` (pumps `CampaignHeader`
   directly). See `docs/superpowers/audits/2026-06-21-play-loop-ux-audit.md`.
   `resolveSystem(systems, rulesets)` (sibling of `resolveSystemPrimer`) yields
   the active system key; `resolvedSystemProvider` exposes it. The home shell now

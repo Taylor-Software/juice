@@ -272,4 +272,19 @@ void main() {
     expect(find.text('The Gatehouse'), findsWidgets);
     expect(find.text('The Vault'), findsNothing);
   });
+
+  testWidgets('quick-roll button rolls the default oracle and logs it',
+      (tester) async {
+    await _pump(tester, data,
+        _prefs(journalJson: '[$_sceneJson]', crawlJson: _crawlJson));
+    // Reachable in the always-visible row (even no need to expand).
+    expect(find.byKey(const Key('hdr-quick-roll')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('hdr-quick-roll')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
+    final entries = await container.read(journalProvider.future);
+    // Default oracle is Juice → a Fate Check entry was logged.
+    expect(entries.where((e) => e.sourceTool == 'fate-check'), hasLength(1));
+  });
 }
