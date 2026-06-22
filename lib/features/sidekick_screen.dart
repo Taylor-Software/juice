@@ -248,57 +248,46 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
     );
   }
 
-  /// The "Voice this" affordance. Gated like the journal's Interpret action:
-  /// hidden when the platform can't run the model, enabled only when the
-  /// service is ready.
+  /// The "Voice this" affordance. Hidden until the model is downloaded AND
+  /// enabled in Settings (aiReady); the aiReady watch gates the whole area.
   Widget _voiceArea(ThemeData theme, Character? selected) {
-    final service = ref.read(interpreterServiceProvider);
-    return ValueListenableBuilder<InterpreterStatus>(
-      valueListenable: service.status,
-      builder: (context, status, _) {
-        if (status.phase == InterpreterPhase.unsupported) {
-          return const SizedBox.shrink();
-        }
-        final voiced = _voiced;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            if (voiced != null)
-              Text('"$voiced"',
-                  key: const Key('sd-voice-line'),
-                  style: theme.textTheme.bodyLarge
-                      ?.copyWith(fontStyle: FontStyle.italic))
-            else if (_voiceError != null) ...[
-              Text(
-                'Could not voice this line. $_voiceError',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.error),
-              ),
-              const SizedBox(height: 8),
-              FilledButton.tonal(
-                key: const Key('sd-voice-retry'),
-                onPressed: () => _voice(selected),
-                child: const Text('Retry'),
-              ),
-            ] else
-              OutlinedButton.icon(
-                key: const Key('sd-voice'),
-                onPressed: status.phase == InterpreterPhase.ready && !_voicing
-                    ? () => _voice(selected)
-                    : null,
-                icon: _voicing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.record_voice_over_outlined, size: 18),
-                label: const Text('Voice this'),
-              ),
-          ],
-        );
-      },
+    if (!ref.watch(aiReadyProvider)) return const SizedBox.shrink();
+    final voiced = _voiced;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        if (voiced != null)
+          Text('"$voiced"',
+              key: const Key('sd-voice-line'),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(fontStyle: FontStyle.italic))
+        else if (_voiceError != null) ...[
+          Text(
+            'Could not voice this line. $_voiceError',
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.error),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.tonal(
+            key: const Key('sd-voice-retry'),
+            onPressed: () => _voice(selected),
+            child: const Text('Retry'),
+          ),
+        ] else
+          OutlinedButton.icon(
+            key: const Key('sd-voice'),
+            onPressed: !_voicing ? () => _voice(selected) : null,
+            icon: _voicing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.record_voice_over_outlined, size: 18),
+            label: const Text('Voice this'),
+          ),
+      ],
     );
   }
 
