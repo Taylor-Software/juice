@@ -70,6 +70,7 @@ void main() {
       'story-scenes',
       'npcs-dialog',
       'generators-tables',
+      'reading-tarot',
       'party-emulator',
       'behavior-tables',
       'sidekick-dialogue',
