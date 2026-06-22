@@ -1419,4 +1419,27 @@ void main() {
       expect(ch.conditions, contains('poisoned'));
     }
   });
+
+  testWidgets('roster shows a mentions backlink chip and opens the list',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
+      'juice.journal.v2.default':
+          '[{"id":"e1","timestamp":"2026-06-11T10:00:00.000","title":"","body":"Met @[Ash](char:c1) at the gate.","kind":"text"}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mentions-c1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mentions-c1')));
+    await tester.pumpAndSettle();
+    // Transient list: the count + the mention rendered as plain text.
+    expect(find.textContaining('mentioned in 1'), findsOneWidget);
+    expect(find.textContaining('Met Ash at the gate.'), findsWidgets);
+  });
 }

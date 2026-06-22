@@ -101,6 +101,11 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > markdown `# heading` (above scenes' `##`) and a plain lonelog line. Gives the outer play loop an
 > explicit marker; the "Continue → auto-recap on a time gap" elaboration stays deferred.
 >
+> **Increment 16 shipped (2026-06-21):** **#14** (backlink slice) — a roster card shows a
+> "Mentions ×N" chip (`mentions-<id>`) when the character is @-mentioned in the journal; tapping it
+> opens a transient list of those entries (reverse of the journal's mention links). No journal-filter
+> coupling — a self-contained read-only list. Thread/encounter→map backlinks stay deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
