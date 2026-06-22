@@ -81,4 +81,33 @@ void main() {
     expect(entries.single.title, 'Dice Roll');
     expect(entries.single.body, contains('= '));
   });
+
+  testWidgets('logged dice roll carries its expression (rerollable)',
+      (tester) async {
+    await pump(tester);
+    await tester.enterText(find.byKey(const Key('dice-input')), '2d6+3');
+    await tester.pump();
+    await tester.tap(find.text('Roll'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Add to journal'));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byType(DiceRollerScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.single.payload?['expression'], '2d6+3');
+  });
+
+  testWidgets('Roll again rerolls the same expression in place',
+      (tester) async {
+    await pump(tester);
+    await tester.enterText(find.byKey(const Key('dice-input')), '2d6+3');
+    await tester.pump();
+    await tester.tap(find.text('Roll'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('dice-history-1')), findsNothing);
+    await tester.tap(find.byKey(const Key('dice-reroll')));
+    await tester.pumpAndSettle();
+    // A second roll of the same expression was recorded.
+    expect(find.byKey(const Key('dice-history-1')), findsOneWidget);
+  });
 }
