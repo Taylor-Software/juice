@@ -30,6 +30,12 @@ void main() {
     expect(() => data.page('nope'), throwsArgumentError);
   });
 
+  test('the Reading tarot guide page exists with blocks', () {
+    final page = data.page('reading-tarot');
+    expect(page.title, 'Reading tarot');
+    expect(page.blocks, isNotEmpty);
+  });
+
   test('pagesOf() returns a section\'s pages in order; throws on unknown', () {
     final pages = data.pagesOf('guide');
     expect(pages.first.id, 'getting-started');

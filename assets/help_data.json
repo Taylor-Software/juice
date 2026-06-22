@@ -222,6 +222,30 @@
           ]
         },
         {
+          "id": "reading-tarot",
+          "title": "Reading tarot",
+          "blocks": [
+            {
+              "p": "The tarot deck is an oracle: draw a card and read its image and meaning against your story. These are generic starting points — not fixed truths."
+            },
+            {
+              "h": "Upright vs reversed"
+            },
+            {
+              "p": "A card lands upright or reversed. Reversed usually softens, blocks, or inverts the upright meaning — resistance, delay, or the shadow side."
+            },
+            {
+              "h": "Major vs Minor"
+            },
+            {
+              "p": "The 22 Major Arcana mark big themes and turning points. The 56 Minor cards cover everyday matters by suit: Wands = drive and creativity, Cups = emotion and bonds, Swords = mind and conflict, Pentacles = work and the material world."
+            },
+            {
+              "tip": "Stuck on a card? Open Card meanings from the Cards panel to look up any card's upright and reversed reading."
+            }
+          ]
+        },
+        {
           "id": "party-emulator",
           "title": "Party Emulator",
           "blocks": [
