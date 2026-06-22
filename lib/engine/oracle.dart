@@ -82,6 +82,42 @@ class Oracle {
   final OracleData data;
   final Dice dice;
 
+  // -- Card-deck oracle --------------------------------------------------
+  /// Draws one card from [deck] without replacement, reshuffling (Fisher-Yates
+  /// via [dice]) when the deck is exhausted or its size doesn't match [state].
+  /// Returns the card as a [GenResult] plus the next [DeckState] to persist.
+  /// [reversible] (tarot) adds a coin-flipped orientation.
+  ({GenResult result, DeckState next}) drawCard({
+    required List<String> deck,
+    required DeckState state,
+    required String title,
+    bool reversible = false,
+  }) {
+    var order = state.order;
+    var drawn = state.drawn;
+    if (order.length != deck.length || drawn >= order.length) {
+      order = List<int>.generate(deck.length, (i) => i);
+      for (var i = order.length - 1; i > 0; i--) {
+        final j = dice.dN(i + 1) - 1; // 0..i inclusive
+        final tmp = order[i];
+        order[i] = order[j];
+        order[j] = tmp;
+      }
+      drawn = 0;
+    }
+    final card = deck[order[drawn]];
+    drawn += 1;
+    final reversed = reversible && dice.coin();
+    final shown = reversed ? '$card (reversed)' : card;
+    return (
+      result: GenResult(title: title, summary: shown, rolls: [
+        Roll(label: 'Card', value: shown),
+        Roll(label: 'Deck', value: '$drawn/${deck.length}'),
+      ]),
+      next: DeckState(order: order, drawn: drawn),
+    );
+  }
+
   // -- Fate Check --------------------------------------------------------
   FateResult fateCheck(Likelihood likelihood) {
     final p = dice.fate();

@@ -2315,7 +2315,110 @@ const kSystemLabels = <String, String>{
   'hexcrawl': 'Hexcrawl',
   'dnd': 'D&D',
   'shadowdark': 'Shadowdark',
+  'cards': 'Cards',
 };
+
+// -- Card-deck oracles (facts-only: card identities, no divinatory meanings) --
+
+const _kPlayingRanks = [
+  'Ace', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen',
+  'King' //
+];
+const _kPlayingSuits = ['Spades', 'Hearts', 'Diamonds', 'Clubs'];
+
+/// Standard 52-card deck (no jokers), e.g. "Ace of Spades".
+final List<String> kPlayingDeck = [
+  for (final s in _kPlayingSuits)
+    for (final r in _kPlayingRanks) '$r of $s',
+];
+
+/// The 22 Major Arcana, in canonical order.
+const kTarotMajor = [
+  'The Fool',
+  'The Magician',
+  'The High Priestess',
+  'The Empress',
+  'The Emperor',
+  'The Hierophant',
+  'The Lovers',
+  'The Chariot',
+  'Strength',
+  'The Hermit',
+  'Wheel of Fortune',
+  'Justice',
+  'The Hanged Man',
+  'Death',
+  'Temperance',
+  'The Devil',
+  'The Tower',
+  'The Star',
+  'The Moon',
+  'The Sun',
+  'Judgement',
+  'The World',
+];
+
+const _kTarotRanks = [
+  'Ace', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', //
+  'Eight', 'Nine', 'Ten', 'Page', 'Knight', 'Queen', 'King'
+];
+const _kTarotSuits = ['Wands', 'Cups', 'Swords', 'Pentacles'];
+
+/// The 78-card tarot deck: 22 Major Arcana + 56 Minor (14 ranks × 4 suits).
+final List<String> kTarotDeck = [
+  ...kTarotMajor,
+  for (final s in _kTarotSuits)
+    for (final r in _kTarotRanks) '$r of $s',
+];
+
+/// A shuffled deck's state: [order] is a permutation of card indices; [drawn]
+/// is how many have been consumed from the front. A draw pops `order[drawn]`;
+/// when exhausted the deck reshuffles. Persisted per campaign.
+class DeckState {
+  const DeckState({this.order = const [], this.drawn = 0});
+  final List<int> order;
+  final int drawn;
+
+  int get remaining =>
+      order.isEmpty ? 0 : (order.length - drawn).clamp(0, order.length);
+
+  /// Cards left for display: an un-shuffled deck (empty order) reads as full
+  /// ([total]), since the first draw lazily shuffles the whole deck.
+  int remainingOf(int total) => order.isEmpty ? total : remaining;
+
+  Map<String, dynamic> toJson() => {'order': order, 'drawn': drawn};
+
+  factory DeckState.fromJson(dynamic j) {
+    if (j is! Map) return const DeckState();
+    return DeckState(
+      order: ((j['order'] as List?) ?? const []).whereType<int>().toList(),
+      drawn: (j['drawn'] as int?) ?? 0,
+    );
+  }
+}
+
+/// Per-campaign deck state for the card oracles (standard 52 + tarot 78).
+class DecksState {
+  const DecksState({
+    this.standard = const DeckState(),
+    this.tarot = const DeckState(),
+  });
+  final DeckState standard;
+  final DeckState tarot;
+
+  DecksState copyWith({DeckState? standard, DeckState? tarot}) => DecksState(
+        standard: standard ?? this.standard,
+        tarot: tarot ?? this.tarot,
+      );
+
+  Map<String, dynamic> toJson() =>
+      {'standard': standard.toJson(), 'tarot': tarot.toJson()};
+
+  factory DecksState.fromJson(Map<String, dynamic> j) => DecksState(
+        standard: DeckState.fromJson(j['standard']),
+        tarot: DeckState.fromJson(j['tarot']),
+      );
+}
 
 /// A compact, stable, human summary of a campaign's enabled [systems], e.g.
 /// "D&D · Mythic". The most distinctive systems (sheets) lead.

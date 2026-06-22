@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
@@ -106,5 +108,43 @@ void main() {
     await tester.tap(action);
     await tester.pumpAndSettle();
     expect(find.text('Mythic Random Event'), findsOneWidget);
+  });
+
+  testWidgets('Cards section is hidden unless the cards system is enabled',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: FateScreen(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    expect(find.text('Cards'), findsNothing);
+  });
+
+  testWidgets('Cards section: Draw decrements the deck readout',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1","systems":["cards"]}]}',
+    });
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(
+                body: FateScreen(oracle: Oracle(data, Dice(Random(1))))))));
+    await tester.pumpAndSettle();
+    expect(find.text('Cards'), findsOneWidget);
+    expect(find.text('Deck 52/52'), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('cards-draw')));
+    await tester.tap(find.byKey(const Key('cards-draw')));
+    await tester.pumpAndSettle();
+    expect(find.text('Deck 51/52'), findsOneWidget);
   });
 }

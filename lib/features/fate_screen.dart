@@ -7,7 +7,7 @@ import '../shared/result_card.dart';
 import '../state/providers.dart';
 
 /// A scroll target within the Fate screen, for launcher deep links.
-enum FateSection { fateCheck, rollHigh, mythic }
+enum FateSection { fateCheck, rollHigh, mythic, cards }
 
 class FateScreen extends ConsumerStatefulWidget {
   const FateScreen({super.key, required this.oracle, this.initialSection});
@@ -29,16 +29,26 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   String _rhDie = 'd100';
   int _rhOdds = 3; // Unknown
   GenResult? _rhLast;
+  GenResult? _cardLast;
 
   final _fateCheckKey = GlobalKey();
   final _rollHighKey = GlobalKey();
   final _mythicKey = GlobalKey();
+  final _cardsKey = GlobalKey();
 
   GlobalKey _keyFor(FateSection s) => switch (s) {
         FateSection.fateCheck => _fateCheckKey,
         FateSection.rollHigh => _rollHighKey,
         FateSection.mythic => _mythicKey,
+        FateSection.cards => _cardsKey,
       };
+
+  Future<void> _drawCard({required bool tarot}) async {
+    final g = await ref
+        .read(decksProvider.notifier)
+        .draw(widget.oracle, tarot: tarot);
+    if (mounted) setState(() => _cardLast = g);
+  }
 
   @override
   void initState() {
@@ -60,6 +70,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final last = _last;
+    final systems =
+        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
     // Non-lazy scroll container: every section's GlobalKey must resolve on
     // the first frame so initialSection deep links work on short viewports
     // (a lazy ListView leaves off-screen sections unbuilt).
@@ -314,6 +327,95 @@ class _FateScreenState extends ConsumerState<FateScreen> {
               ],
             );
           }),
+          if (systems.contains('cards')) ...[
+            const SizedBox(height: 24),
+            const Divider(),
+            Text('Cards', key: _cardsKey, style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 4),
+            Text(
+              'Draw from a deck as an oracle. Log a card, then interpret it '
+              'yourself or via the journal entry.',
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            Consumer(builder: (context, ref, _) {
+              final decks =
+                  ref.watch(decksProvider).valueOrNull ?? const DecksState();
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        key: const Key('cards-draw'),
+                        icon: const Icon(Icons.style_outlined),
+                        label: const Text('Draw card'),
+                        onPressed: () => _drawCard(tarot: false),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const Key('cards-draw-tarot'),
+                        icon: const Icon(Icons.auto_awesome),
+                        label: const Text('Draw tarot'),
+                        onPressed: () => _drawCard(tarot: true),
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  // Wrap (not Row) so the readout + reshuffle reflow instead of
+                  // overflowing on a narrow phone.
+                  Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                          'Deck ${decks.standard.remainingOf(kPlayingDeck.length)}'
+                          '/${kPlayingDeck.length}',
+                          style: theme.textTheme.bodySmall),
+                      TextButton(
+                        key: const Key('cards-reshuffle'),
+                        onPressed: () => ref
+                            .read(decksProvider.notifier)
+                            .reshuffle(tarot: false),
+                        child: const Text('Reshuffle'),
+                      ),
+                      Text(
+                          'Tarot ${decks.tarot.remainingOf(kTarotDeck.length)}'
+                          '/${kTarotDeck.length}',
+                          style: theme.textTheme.bodySmall),
+                      TextButton(
+                        key: const Key('cards-reshuffle-tarot'),
+                        onPressed: () => ref
+                            .read(decksProvider.notifier)
+                            .reshuffle(tarot: true),
+                        child: const Text('Reshuffle'),
+                      ),
+                    ],
+                  ),
+                  if (_cardLast != null) ...[
+                    const SizedBox(height: 8),
+                    ResultCard(
+                      result: _cardLast!,
+                      onLog: () {
+                        ref.read(journalProvider.notifier).addResult(
+                              _cardLast!.title,
+                              _cardLast!.asText,
+                              sourceTool: 'cards',
+                              payload: _cardLast!.toPayload(),
+                            );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Added to journal')),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              );
+            }),
+          ],
         ],
       ),
     );
