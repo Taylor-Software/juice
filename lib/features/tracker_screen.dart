@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -492,6 +493,10 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Widget _rosterCard(BuildContext context, Character c, {bool isLead = false}) {
     final t = c.tracks.isEmpty ? null : c.tracks.first;
+    final journal =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final mentions =
+        journal.where((e) => mentionedCharIds(e.body).contains(c.id)).toList();
     return Card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -576,10 +581,55 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   visualDensity: VisualDensity.compact,
                   onPressed: () => _editConditions(context, c),
                 ),
+                // Backlink: where this character is @-mentioned in the journal.
+                if (mentions.isNotEmpty)
+                  ActionChip(
+                    key: Key('mentions-${c.id}'),
+                    avatar: const Icon(Icons.link, size: 16),
+                    label: Text('Mentions ${mentions.length}'),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _showMentions(context, c, mentions),
+                  ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// A transient list of journal entries that @-mention [c] — the reverse of
+  /// the journal's mention links, so you can jump from a character to where
+  /// they appear.
+  Future<void> _showMentions(
+      BuildContext context, Character c, List<JournalEntry> entries) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          children: [
+            ListTile(
+              title: Text('${c.name} — mentioned in ${entries.length}',
+                  style: Theme.of(context).textTheme.titleMedium),
+            ),
+            for (final e in entries)
+              ListTile(
+                dense: true,
+                leading: const Icon(Icons.notes_outlined),
+                title: Text(
+                  e.title.isEmpty ? mentionsToPlain(e.body) : e.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: e.title.isEmpty
+                    ? null
+                    : Text(mentionsToPlain(e.body),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+              ),
+          ],
+        ),
       ),
     );
   }
