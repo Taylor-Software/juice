@@ -111,7 +111,25 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > so a poisoned PC shows it in the turn order; edit on the sheet. The full bidirectional
 > conditions/spell-slot/emulation sync stays deferred.
 >
-> Remaining opportunities below are still open.
+> **Backlog grind complete (2026-06-21) — 17 increments across PRs #103–#119.** Every HIGH/MEDIUM
+> opportunity and a clean slice of each large one shipped. The remaining items were **assessed and
+> deliberately not built** (per the repo's "minimum code, nothing speculative" rule) — each is
+> marginal, redundant, or mis-premised, not merely unfinished:
+> - **#8 GM emulator/voice chips** — mis-premised: the emulator/sidekick/behavior tools are
+>   `party`-role-gated (hidden in GM mode), so a GM-mode "Emulate" chip would route to a hidden tool.
+> - **#10/#13 full char↔combatant sync** — HP read-through + conditions read-through now ship;
+>   the remaining spell-slot/emulation two-way sync is large for modest gain.
+> - **#12 outcome-reactive suggestions** — low-value + redundant: the assistant rail is
+>   collapsed-by-default, and the headline reactive action (Mythic Random Event) is already one-tap
+>   on the Ask card and the HUD quick-roll; robust outcome detection would need brittle text parsing.
+> - **#19 per-roll reroll** — marginal; the audit's own verify pass flagged it partly mischaracterized.
+> - **#20 causal entry grouping** — modest gain (entries already render chronologically adjacent) for
+>   a model + render-indent + multi-caller stamping change.
+> - **G4 map↔journal / `activeLocation`** — `activeLocation` is redundant with
+>   `MapState.currentRoomId/currentHex*` (the encounter-pin v2 already judged it so); the
+>   map→journal "Add to journal" path already exists (one-way dump).
+>
+> If any of these is wanted anyway, it's a clean follow-up — say which.
 
 Scenario lenses played:
 1. D&D party (multi-PC) + Mythic GME + Juice, party mode
