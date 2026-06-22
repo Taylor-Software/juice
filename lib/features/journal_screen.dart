@@ -194,7 +194,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _recap() async {
     if (!_canVoice) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recap needs the on-device model.')));
+          const SnackBar(content: Text('Enable AI in Settings to recap.')));
       return;
     }
     final entries = ref.read(journalProvider).valueOrNull ?? const [];
@@ -363,6 +363,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(journalProvider);
+    // Re-render AI affordances (Interpret / Voice / recap) as the AI-ready
+    // state flips (download completes, toggle changes). _canVoice/canInterpret
+    // read aiReadyProvider; this watch is what triggers the rebuild.
+    ref.watch(aiReadyProvider);
     // Watch the oracle so payload entries gain their re-roll affordance once
     // it finishes loading (re-roll runs a command against it).
     ref.watch(oracleProvider);
@@ -581,17 +585,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       e.sourceTool == 'gen-npcs' ||
       e.sourceTool == 'sidekick-dialogue';
 
-  bool get _canVoice =>
-      ref.read(interpreterServiceProvider).status.value.phase !=
-      InterpreterPhase.unsupported;
+  // AI affordances stay hidden until the model is downloaded AND enabled in
+  // Settings. build() watches aiReadyProvider so these reads rebuild on flip.
+  bool get _canVoice => ref.read(aiReadyProvider);
 
   Widget _entry(JournalEntry e, List<Thread> threads,
       String Function(String) threadTitle, bool lonelog) {
-    // Read without listening is safe: `unsupported` is decided once in the
-    // GemmaInterpreterService constructor and never flips later.
-    final canInterpret = e.kind == JournalKind.result &&
-        ref.read(interpreterServiceProvider).status.value.phase !=
-            InterpreterPhase.unsupported;
+    final canInterpret =
+        e.kind == JournalKind.result && ref.read(aiReadyProvider);
     final saveAs = _saveAsKind(e);
     final menu = PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),

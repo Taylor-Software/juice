@@ -54,6 +54,7 @@ void main() {
     InterpreterStatus? interp,
     String? journal,
     String? settings,
+    bool aiEnabled = true,
   }) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -61,6 +62,7 @@ void main() {
       'juice.characters.v1.default': chars,
       if (journal != null) 'juice.journal.v2.default': journal,
       if (settings != null) 'juice.settings.v1.default': settings,
+      'juice.ai_enabled.v1': aiEnabled,
     });
     final fake = FakeInterpreterService(
         initial: interp ?? const InterpreterStatus(InterpreterPhase.ready));
@@ -257,16 +259,23 @@ void main() {
     expect(find.byKey(const Key('sd-voice-retry')), findsNothing);
   });
 
-  testWidgets('voice button is disabled until the interpreter is ready',
+  testWidgets('voice button is absent until the model is downloaded',
       (tester) async {
     await pump(tester,
         seed: 7,
         interp: const InterpreterStatus(InterpreterPhase.needsDownload));
     await tester.tap(find.byKey(const Key('sd-roll')));
     await tester.pumpAndSettle();
-    final button =
-        tester.widget<OutlinedButton>(find.byKey(const Key('sd-voice')));
-    expect(button.onPressed, isNull);
+    expect(find.byKey(const Key('sd-voice')), findsNothing);
+  });
+
+  testWidgets('voice button is absent when AI is disabled in Settings',
+      (tester) async {
+    // Model ready, but the Settings toggle is off → still hidden.
+    await pump(tester, seed: 7, aiEnabled: false);
+    await tester.tap(find.byKey(const Key('sd-roll')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('sd-voice')), findsNothing);
   });
 
   testWidgets('voice button is absent on an unsupported platform',

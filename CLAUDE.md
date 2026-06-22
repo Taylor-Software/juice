@@ -325,6 +325,25 @@ Working rules for this repo:
   `formatDownloadSize` (`lib/state/interpreter.dart`). See
   `docs/superpowers/specs/2026-06-19-gemma4-mobile-web-disable-design.md`;
   the original two-model rationale is in the oracle-interpreter spec.
+- **AI is opt-in behind a Settings dialog.** AI affordances stay hidden until
+  the model is downloaded **and** explicitly enabled. The enable flag is
+  **app-global** (`aiEnabledProvider`, `AsyncNotifierProvider<bool>`, default
+  **false**, key `juice.ai_enabled.v1` — deliberately NOT session-scoped, so
+  it's neither per-campaign nor exported). A reactive `interpreterStatusProvider`
+  (`StreamProvider` wrapping the service's `ValueListenable`) feeds two derived
+  gates in `providers.dart`: `aiReadyProvider` (`enabled && phase==ready`) — the
+  single source of truth every AI affordance watches — and `aiSupportedProvider`
+  (`phase != unsupported`, Settings-only). Both resolve `phase` via a `_phase`
+  helper that falls back to the service's synchronous status on the stream's
+  first (loading) frame so gates don't flicker. The `showSettingsSheet`
+  (`lib/features/settings_sheet.dart`, opened by the `shell-settings` gear in
+  the home-shell app bar) owns the enable toggle + the model download/consent
+  (the interpret sheet's inline download UI was stripped — it now assumes ready
+  with a defensive "Enable AI in Settings" note). Re-gated entry points: journal
+  Interpret/Voice/recap, assistant-rail Ask-GM box, sidekick Voice. Tests enable
+  AI via `SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true})`.
+  See `docs/superpowers/specs/2026-06-22-ai-enable-settings-gating-design.md`.
+  Deferred: per-campaign AI override, unloading the model on disable.
 
 ## Workflow system
 

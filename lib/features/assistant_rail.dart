@@ -99,6 +99,9 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
   Widget build(BuildContext context) {
     final suggestions =
         ref.watch(suggestionsProvider); // plain List<Suggestion>
+    // The Ask-the-GM box is AI; hidden until the model is downloaded AND
+    // enabled in Settings. Rule-based suggestion chips stay regardless.
+    final aiReady = ref.watch(aiReadyProvider);
     final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,39 +147,41 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        key: const Key('ask-gm-field'),
-                        controller: _controller,
-                        decoration: const InputDecoration(
-                          hintText: 'Ask the GM…',
-                          border: OutlineInputBorder(),
-                          isDense: true,
+                if (aiReady) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          key: const Key('ask-gm-field'),
+                          controller: _controller,
+                          decoration: const InputDecoration(
+                            hintText: 'Ask the GM…',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _busy ? null : _ask(),
                         ),
-                        onSubmitted: (_) => _busy ? null : _ask(),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        key: const Key('ask-gm-send'),
+                        icon: const Icon(Icons.send),
+                        tooltip: 'Ask the GM',
+                        onPressed: _busy ? null : _ask,
+                      ),
+                    ],
+                  ),
+                  if (_error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(
+                            color: theme.colorScheme.error, fontSize: 12),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      key: const Key('ask-gm-send'),
-                      icon: const Icon(Icons.send),
-                      tooltip: 'Ask the GM',
-                      onPressed: _busy ? null : _ask,
-                    ),
-                  ],
-                ),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      _error!,
-                      style: TextStyle(
-                          color: theme.colorScheme.error, fontSize: 12),
-                    ),
-                  ),
+                ],
               ],
             ),
           ),
