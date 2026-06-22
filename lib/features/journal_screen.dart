@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/command_registry.dart';
+import '../engine/dice_notation.dart';
 import '../engine/entity_suggestions.dart';
 import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
@@ -738,16 +739,31 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   bool _canReroll(JournalEntry e) {
     final p = e.payload;
-    return p != null &&
-        p['rerollable'] == true &&
-        p['command'] is String &&
-        ref.read(oracleProvider).valueOrNull != null;
+    if (p == null || ref.read(oracleProvider).valueOrNull == null) return false;
+    // Registry-command rolls replay the command; dice-roller rolls replay their
+    // notation (the `expression` payload).
+    return (p['rerollable'] == true && p['command'] is String) ||
+        p['expression'] is String;
   }
 
   Future<void> _reroll(JournalEntry e) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     final p = e.payload;
     if (oracle == null || p == null) return;
+    // Dice-roller entries carry a dice `expression` (no command): re-parse + roll.
+    if (p['command'] is! String && p['expression'] is String) {
+      final DiceRollResult r;
+      try {
+        r = parseDice(p['expression'] as String).roll(oracle.dice);
+      } on FormatException {
+        return;
+      }
+      final g = diceRollGenResult(r);
+      await ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+          sourceTool: e.sourceTool,
+          payload: {...g.toPayload(), 'expression': r.expression});
+      return;
+    }
     final cmd = commandById(buildCommandRegistry(), p['command'] as String);
     if (cmd == null) return;
     final args = <String, String>{

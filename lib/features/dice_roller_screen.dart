@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
-import '../engine/models.dart';
 import '../state/providers.dart';
 
 /// Free-form dice roller: notation input, quick chips, breakdown, history.
@@ -74,12 +73,15 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
     _validate(next);
   }
 
-  void _roll() {
-    final text = _input.text.trim();
-    if (text.isEmpty) return;
+  void _roll() => _rollExpr(_input.text.trim());
+
+  /// Rolls [expr] (the normalized notation), recording it as the latest roll.
+  /// Used by both the Roll button and the result card's "Roll again".
+  void _rollExpr(String expr) {
+    if (expr.isEmpty) return;
     final DiceRollResult result;
     try {
-      result = parseDice(text).roll(widget.dice);
+      result = parseDice(expr).roll(widget.dice);
     } on FormatException {
       return;
     }
@@ -153,35 +155,29 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
                             style: theme.textTheme.titleMedium),
                       ),
                       IconButton(
+                        key: const Key('dice-reroll'),
+                        tooltip: 'Roll again',
+                        icon: const Icon(Icons.replay),
+                        onPressed: () => _rollExpr(last.expression),
+                      ),
+                      IconButton(
                         tooltip: 'Add to journal',
                         icon: const Icon(Icons.bookmark_add_outlined),
                         onPressed: () {
-                          // Build a GenResult so body and payload stay
-                          // consistent (body == summary+rolls); the rich card
-                          // then shows no duplicate remainder.
-                          final g = GenResult(
-                            title: 'Dice Roll',
-                            summary: '${last.expression} = ${last.total}',
-                            rolls: [
-                              for (final grp in last.groups)
-                                if (grp.dice.isNotEmpty)
-                                  Roll(
-                                    label: grp.label,
-                                    value: grp.dice
-                                        .map((d) => d.kept
-                                            ? d.display
-                                            : '[${d.display}]')
-                                        .join(', '),
-                                    detail: '${grp.subtotal}',
-                                  ),
-                            ],
-                          );
+                          // Shared builder keeps body/payload identical to the
+                          // journal reroll path.
+                          final g = diceRollGenResult(last);
                           ref.read(journalProvider.notifier).addResult(
-                                g.title,
-                                g.asText,
-                                sourceTool: 'dice',
-                                payload: g.toPayload(),
-                              );
+                            g.title,
+                            g.asText,
+                            sourceTool: 'dice',
+                            // `expression` makes the journal entry rerollable
+                            // (journal_screen `_reroll` re-parses + rolls it).
+                            payload: {
+                              ...g.toPayload(),
+                              'expression': last.expression,
+                            },
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Added to journal')),
                           );

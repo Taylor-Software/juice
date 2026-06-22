@@ -1,4 +1,5 @@
 import 'dice.dart';
+import 'models.dart';
 
 /// Dice-notation engine: parses expressions like `4d6kh3+2`, `d20adv`,
 /// `2d6+1d8-1`, `d%`, `4dF` and evaluates them against a [Dice] source.
@@ -403,3 +404,21 @@ class _Parser {
         fate: fate, keep: keep, explode: explode);
   }
 }
+
+/// The journal [GenResult] for a dice roll — title/summary/per-group rolls.
+/// Shared by the dice roller and the journal reroll so both stay identical.
+GenResult diceRollGenResult(DiceRollResult r) => GenResult(
+      title: 'Dice Roll',
+      summary: '${r.expression} = ${r.total}',
+      rolls: [
+        for (final g in r.groups)
+          if (g.dice.isNotEmpty)
+            Roll(
+              label: g.label,
+              value: g.dice
+                  .map((d) => d.kept ? d.display : '[${d.display}]')
+                  .join(', '),
+              detail: '${g.subtotal}',
+            ),
+      ],
+    );

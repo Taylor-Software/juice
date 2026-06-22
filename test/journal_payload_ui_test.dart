@@ -165,6 +165,47 @@ void main() {
     expect((newest.payload!['args'] as Map)['odds'], 'likely');
   });
 
+  testWidgets('re-roll replays a dice-roller entry via its expression',
+      (tester) async {
+    const diceEntry = '{'
+        '"id":"d1",'
+        '"timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"Dice Roll",'
+        '"body":"2d6 = 7",'
+        '"kind":"result",'
+        '"tags":[],'
+        '"sourceTool":"dice",'
+        '"payload":{"v":1,"summary":"2d6 = 7","rolls":[],"expression":"2d6"}'
+        '}';
+    final oracle = Oracle(_loadData(), Dice(Random(1)));
+    SharedPreferences.setMockInitialValues(_journalPrefs(diceEntry));
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [oracleProvider.overrideWith((ref) async => oracle)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('entry-reroll-d1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('entry-reroll-d1')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.length, 2);
+    final newest = entries.first;
+    expect(newest.sourceTool, 'dice');
+    // Re-rolled with the same expression, still rerollable.
+    expect(newest.payload!['expression'], '2d6');
+  });
+
   testWidgets('open-in-tool navigates to the source tool destination',
       (tester) async {
     final data = _loadData();
