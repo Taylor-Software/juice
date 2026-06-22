@@ -25,9 +25,12 @@ void main() {
         helpDataProvider.overrideWith((ref) async => data),
         if (topic != null) helpTopicProvider.overrideWith((ref) => topic),
       ],
+      // Mount exactly as the app does: a bare pushed route with no ambient
+      // Scaffold/Material (openHelp -> MaterialPageRoute(builder: HelpScreen)).
+      // HelpScreen must supply its own Material via a Scaffold.
       child: MaterialApp(
         theme: AppTheme.light(),
-        home: const Scaffold(body: HelpScreen()),
+        home: const HelpScreen(),
       ),
     ));
     await tester.pumpAndSettle();
@@ -44,6 +47,42 @@ void main() {
             reason: 'tile for ${page.id}');
       }
     }
+  });
+
+  testWidgets(
+      'pushed as a route, the index AppBar back pops Help (no Material '
+      'crash, route is dismissable)', (tester) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [helpDataProvider.overrideWith((ref) async => data)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(builder: (_) => const HelpScreen()),
+                ),
+                child: const Text('open help'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.tap(find.text('open help'));
+    await tester.pumpAndSettle();
+    // Index renders (regression: previously crashed with "No Material found").
+    expect(find.byKey(const Key('help-page-getting-started')), findsOneWidget);
+    // The AppBar's automatic back button (the route can pop) closes Help.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('help-page-getting-started')), findsNothing);
+    expect(find.text('open help'), findsOneWidget);
   });
 
   testWidgets('a page renders its blocks; back returns to the index',
