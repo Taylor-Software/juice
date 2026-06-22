@@ -74,6 +74,11 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > so a player can see a campaign's profile at a glance. The active-oracle badge in FateScreen and
 > revealing (greyed) mode/system-gated tools stay deferred.
 >
+> **Increment 11 shipped (2026-06-21):** **G5** (fire-on-fill half) — a clock that reaches its max
+> via the + button now logs a "Clock filled: <name>" journal entry (+ snackbar) instead of being a
+> silent dead dial. Decided off the fresh post-adjust state. The event-driven "advance this clock"
+> action from a result card (needs a clock picker) stays deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

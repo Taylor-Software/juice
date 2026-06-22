@@ -68,9 +68,7 @@ class TracksPane extends ConsumerWidget {
                                   icon: const Icon(Icons.add),
                                   tooltip: 'Increase',
                                   onPressed: t.filled < t.max
-                                      ? () => ref
-                                          .read(tracksProvider.notifier)
-                                          .adjust(t.id, 1)
+                                      ? () => _increment(context, ref, t)
                                       : null,
                                 ),
                                 PopupMenuButton<String>(
@@ -111,6 +109,26 @@ class TracksPane extends ConsumerWidget {
     final name = await _nameDialog(context, title: 'New track');
     if (name == null || name.trim().isEmpty) return;
     await ref.read(tracksProvider.notifier).add(name.trim());
+  }
+
+  /// Ticks a clock up one; when that completes it (reaches max), logs a journal
+  /// entry so the fill isn't a silent dead dial (the fill→fire→journal closure).
+  Future<void> _increment(BuildContext context, WidgetRef ref, Track t) async {
+    await ref.read(tracksProvider.notifier).adjust(t.id, 1);
+    // Decide off the fresh post-adjust state, not the pre-tap snapshot.
+    final updated = (await ref.read(tracksProvider.future))
+        .where((tr) => tr.id == t.id)
+        .firstOrNull;
+    if (updated != null && updated.max > 0 && updated.filled >= updated.max) {
+      await ref.read(journalProvider.notifier).add(
+            'Clock filled: ${updated.name}',
+            '${updated.name} reached ${updated.max}/${updated.max}.',
+          );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Clock filled: ${updated.name}')));
+      }
+    }
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, Track t) async {
