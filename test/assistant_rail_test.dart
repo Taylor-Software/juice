@@ -140,6 +140,7 @@ void main() {
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
+      'juice.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready),
@@ -174,6 +175,7 @@ void main() {
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
+      'juice.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready),
@@ -197,15 +199,16 @@ void main() {
     expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
   });
 
-  testWidgets('ask-the-GM is a guarded no-op when the model is not ready',
+  testWidgets('ask-the-GM box is hidden when the model is not ready',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
+      'juice.ai_enabled.v1': true, // enabled, but model not downloaded
     });
-    final fake = FakeInterpreterService(); // default: not ready
+    final fake = FakeInterpreterService(); // default: needsDownload
     final c = ProviderContainer(overrides: [
       interpreterServiceProvider.overrideWith((ref) => fake),
     ]);
@@ -217,12 +220,8 @@ void main() {
             home: const Scaffold(body: AssistantRail()))));
     await tester.pumpAndSettle();
     await expandRail(tester);
-    await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
-    await tester.tap(find.byKey(const Key('ask-gm-send')));
-    await tester.pumpAndSettle();
-
-    expect(fake.askGmCalls, 0);
-    expect(find.textContaining('not ready'), findsOneWidget);
-    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
+    // Suggestion chips still render; the AI ask box is gone.
+    expect(find.byKey(const Key('ask-gm-field')), findsNothing);
+    expect(find.byKey(const Key('ask-gm-send')), findsNothing);
   });
 }
