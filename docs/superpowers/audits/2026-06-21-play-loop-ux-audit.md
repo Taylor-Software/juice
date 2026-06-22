@@ -79,6 +79,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > silent dead dial. Decided off the fresh post-adjust state. The event-driven "advance this clock"
 > action from a result card (needs a clock picker) stays deferred.
 >
+> **Increment 12 shipped (2026-06-21):** **#9** (outcome-note slice) — the End-encounter dialog now
+> captures an optional outcome note (`end-encounter-note`) folded into the journal summary, so a
+> fight's resolution ("ogre fled, party took the amulet") is recorded, not just round/defeated.
+> Linked-combatant HP already syncs live to the character, so no separate reconcile is needed;
+> the per-combatant apply + emulation-reset parts stay deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
