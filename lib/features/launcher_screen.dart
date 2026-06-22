@@ -177,6 +177,12 @@ class LauncherScreen extends ConsumerWidget {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off),
                     title: Text(s.name),
+                    subtitle: Text(
+                      formatSystems(s.enabledSystems),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
                     onTap: () => _switch(ref, s),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

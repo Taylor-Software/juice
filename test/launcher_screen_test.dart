@@ -59,6 +59,25 @@ void main() {
     expect(c.read(launcherGateProvider), isFalse);
   });
 
+  testWidgets('campaign card shows the enabled-systems badge', (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer(overrides: [
+      sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
+            active: 'a',
+            sessions: [
+              SessionMeta(
+                  id: 'a',
+                  name: 'Delve',
+                  systems: ['dnd', 'mythic'],
+                  mode: CampaignMode.gm),
+            ],
+          ))),
+    ]);
+    addTearDown(c.dispose);
+    await _pump(t, c);
+    expect(find.text('D&D · Mythic'), findsOneWidget);
+  });
+
   ProviderContainer modedContainer() {
     SharedPreferences.setMockInitialValues({});
     return ProviderContainer(overrides: [
