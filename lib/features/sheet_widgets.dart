@@ -419,3 +419,98 @@ Future<String?> renameDialog(BuildContext context,
   if (name == null || name.trim().isEmpty) return null;
   return name.trim();
 }
+
+/// Conditions editor shared by the roster row and the open sheets. Presents the
+/// preset + existing conditions as toggle chips plus a free-text add, and
+/// persists the selection through [charactersProvider].
+Future<void> showConditionsEditor(
+    BuildContext context, WidgetRef ref, Character c) async {
+  final selected = {...c.conditions};
+  final customCtrl = TextEditingController();
+  try {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text('${c.name} — conditions'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final cond in {...kConditions, ...c.conditions})
+                      FilterChip(
+                        label: Text(cond),
+                        selected: selected.contains(cond),
+                        onSelected: (on) => setLocal(() =>
+                            on ? selected.add(cond) : selected.remove(cond)),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: customCtrl,
+                  decoration:
+                      const InputDecoration(labelText: 'Add custom condition'),
+                  onSubmitted: (v) {
+                    final t = v.trim();
+                    if (t.isNotEmpty) setLocal(() => selected.add(t));
+                    customCtrl.clear();
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    );
+  } finally {
+    customCtrl.dispose();
+  }
+  await ref.read(charactersProvider.notifier).setConditions(c.id, selected.toList());
+}
+
+/// A "Status" section for the open sheets: the character's active conditions as
+/// chips (or a hint) plus an Edit button — so debuffs are visible and editable
+/// without backing out to the roster. [prefix] keys the edit button.
+Widget conditionsSection(
+        BuildContext context, WidgetRef ref, Character c, String prefix) =>
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Status'),
+        Row(
+          children: [
+            Expanded(
+              child: c.conditions.isEmpty
+                  ? Text('No conditions',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant))
+                  : Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        for (final cond in c.conditions) Chip(label: Text(cond)),
+                      ],
+                    ),
+            ),
+            TextButton.icon(
+              key: Key('$prefix-edit-conditions'),
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: const Text('Edit'),
+              onPressed: () => showConditionsEditor(context, ref, c),
+            ),
+          ],
+        ),
+      ],
+    );
