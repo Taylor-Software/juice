@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
@@ -23,6 +24,7 @@ import '../engine/system_primer.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
 import 'campaign_io.dart';
+import 'interpreter.dart';
 
 /// Loads the data asset and builds the engine once.
 final oracleProvider = FutureProvider<Oracle>((ref) async {
@@ -1051,6 +1053,52 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
 final settingsProvider =
     AsyncNotifierProvider<SettingsNotifier, CampaignSettings>(
         SettingsNotifier.new);
+
+// -- AI enable (app-global; NOT per-campaign, NOT exported) -----------------
+class AiEnabledNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.ai_enabled.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> setEnabled(bool value) async {
+    await (await SharedPreferences.getInstance()).setBool(_key, value);
+    state = AsyncData(value);
+  }
+}
+
+final aiEnabledProvider =
+    AsyncNotifierProvider<AiEnabledNotifier, bool>(AiEnabledNotifier.new);
+
+/// The interpreter's status as a reactive provider (the service exposes it as
+/// a ValueListenable). Lets AI affordances rebuild as the phase flips.
+final interpreterStatusProvider = StreamProvider<InterpreterStatus>((ref) {
+  final vl = ref.watch(interpreterServiceProvider).status;
+  final controller = StreamController<InterpreterStatus>();
+  void listener() => controller.add(vl.value);
+  vl.addListener(listener);
+  controller.add(vl.value); // seed current value
+  ref.onDispose(() {
+    vl.removeListener(listener);
+    controller.close();
+  });
+  return controller.stream;
+});
+
+/// Single source of truth every AI affordance watches.
+/// ready => downloaded + loaded; enabled => opted in via Settings.
+final aiReadyProvider = Provider<bool>((ref) {
+  final enabled = ref.watch(aiEnabledProvider).valueOrNull ?? false;
+  final phase = ref.watch(interpreterStatusProvider).valueOrNull?.phase;
+  return enabled && phase == InterpreterPhase.ready;
+});
+
+/// Settings-only: decides toggle vs "not available on this platform".
+final aiSupportedProvider = Provider<bool>((ref) {
+  final phase = ref.watch(interpreterStatusProvider).valueOrNull?.phase;
+  return phase != null && phase != InterpreterPhase.unsupported;
+});
 
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
