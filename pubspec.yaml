@@ -38,6 +38,7 @@ flutter:
     - assets/ruleset_delve.json
     - assets/ruleset_sundered_isles.json
     - assets/abstract_icons/
+    - assets/tarot/
 
 # App icon generation: `dart run flutter_launcher_icons`. Source art is the
 # user-provided 1024px image at assets/icon/app_icon.png (full-bleed circular
