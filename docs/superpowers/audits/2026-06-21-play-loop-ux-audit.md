@@ -62,6 +62,13 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > **any** verb and even when the HUD is collapsed. The loop's most frequent action is now one tap
 > everywhere, not buried in the Ask verb or the collapsed assistant rail.
 >
+> **Increment 9 shipped (2026-06-21):** **#11** (landing half) — encounter-aware landing.
+> `ShellRouteNotifier.landFor(mode, {hasEncounter})` lands on Track→Encounter when combatants
+> are in progress, regardless of mode; every campaign-entry point (launcher Continue/switch/new/
+> import + in-shell switch/import) awaits the session's encounter and passes the flag, so leaving
+> mid-fight reopens on the fight instead of the roster. The Sheet-header "current turn" glance
+> stays deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

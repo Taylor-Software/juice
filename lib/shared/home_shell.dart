@@ -96,7 +96,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   ),
                   onTap: () async {
                     await ref.read(sessionsProvider.notifier).switchTo(s.id);
-                    ref.read(shellRouteProvider.notifier).landFor(s.mode);
+                    final enc = await ref.read(encounterProvider.future);
+                    ref.read(shellRouteProvider.notifier).landFor(s.mode,
+                        hasEncounter: enc.combatants.isNotEmpty);
                     if (dialogContext.mounted) {
                       Navigator.of(dialogContext).pop();
                     }
@@ -275,10 +277,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (bytes == null) return; // user cancelled
     try {
       await ref.read(sessionsProvider.notifier).importCampaignData(bytes);
-      // Land on the imported campaign's restored mode.
+      // Land on the imported campaign's restored mode (or its encounter, if any).
+      final enc = await ref.read(encounterProvider.future);
       ref.read(shellRouteProvider.notifier).landFor(
           ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
-              CampaignMode.party);
+              CampaignMode.party,
+          hasEncounter: enc.combatants.isNotEmpty);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
