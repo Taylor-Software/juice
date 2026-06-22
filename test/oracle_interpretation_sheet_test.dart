@@ -46,28 +46,15 @@ void main() {
     return fake;
   }
 
-  testWidgets('needsDownload shows consent with size; download warms up',
+  testWidgets('non-ready phase shows the enable-in-Settings note, no download',
       (tester) async {
-    final fake = await pump(tester);
-    expect(fake.refreshCalls, 1);
-    expect(find.textContaining('~123 MB'), findsWidgets);
-    // The consent card credits the shipped model, not the retired ones.
-    final credit =
-        tester.widget<Text>(find.byKey(const Key('interp-model-credit'))).data!;
-    expect(credit, contains('Gemma 4'));
-    expect(credit, isNot(contains('Qwen')));
-    await tester.tap(find.byKey(const Key('interp-download')));
-    await tester.pumpAndSettle();
-    expect(fake.warmUpCalls, 1);
-    // warmUp flips the fake to ready -> generation starts.
-    expect(fake.interpretCalls, 1);
-  });
-
-  testWidgets('installing shows progress', (tester) async {
+    // The sheet assumes ready (Interpret is gated on aiReady); a non-ready
+    // phase is just a defensive fallback. Download/consent lives in Settings.
     await pump(tester,
-        initial:
-            const InterpreterStatus(InterpreterPhase.installing, progress: 42));
-    expect(find.textContaining('42%'), findsOneWidget);
+        initial: const InterpreterStatus(InterpreterPhase.needsDownload));
+    expect(find.text('Assistant not ready'), findsOneWidget);
+    expect(find.textContaining('Enable AI in Settings'), findsOneWidget);
+    expect(find.byKey(const Key('interp-download')), findsNothing);
   });
 
   testWidgets('ready generates and renders cards; accept passes the card',
@@ -197,10 +184,10 @@ void main() {
     expect(s.tone, 'tense');
   });
 
-  testWidgets('unsupported phase explains itself', (tester) async {
+  testWidgets('unsupported phase shows the same fallback note', (tester) async {
     await pump(tester,
         initial: const InterpreterStatus(InterpreterPhase.unsupported,
             message: 'This browser has no WebGPU support.'));
-    expect(find.textContaining('WebGPU'), findsOneWidget);
+    expect(find.text('Assistant not ready'), findsOneWidget);
   });
 }

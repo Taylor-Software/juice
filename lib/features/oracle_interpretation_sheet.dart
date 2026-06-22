@@ -41,8 +41,10 @@ class _OracleInterpretationSheetState
   void initState() {
     super.initState();
     _service = ref.read(interpreterServiceProvider);
+    // The sheet opens only when ready (Interpret is gated on aiReady), so
+    // _onStatus() auto-starts generation on the first frame. Settings owns
+    // download/refresh — no refresh() here.
     _service.status.addListener(_onStatus);
-    _service.refresh();
     _onStatus();
   }
 
@@ -171,39 +173,14 @@ class _OracleInterpretationSheetState
   }
 
   Widget _body(BuildContext context) {
-    final status = _service.status.value;
-    switch (status.phase) {
-      case InterpreterPhase.unsupported:
-        return _Note(
-            icon: Icons.desktop_access_disabled,
-            title: 'Not available here',
-            detail: status.message);
-      case InterpreterPhase.needsDownload:
-        return _Consent(
-            sizeLabel: _service.downloadLabel, onDownload: _service.warmUp);
-      case InterpreterPhase.installing:
-        return _Note(
-            icon: Icons.download,
-            title: 'Downloading model… ${status.progress}%',
-            detail: 'One time only. Stored on this device.',
-            progress: status.progress / 100);
-      case InterpreterPhase.loading:
-        return const _Note(
-            icon: Icons.memory,
-            title: 'Loading model…',
-            detail: 'This can take a minute.',
-            spinner: true);
-      case InterpreterPhase.error:
-        return _Note(
-            icon: Icons.error_outline,
-            title: 'Could not prepare the interpreter.',
-            detail: status.message,
-            action: FilledButton.tonal(
-                key: const Key('interp-warm-retry'),
-                onPressed: _service.warmUp,
-                child: const Text('Retry')));
-      case InterpreterPhase.ready:
-        break;
+    // This sheet only opens when AI is ready (the Interpret affordance is
+    // gated on aiReadyProvider, and Settings owns download/consent). The
+    // non-ready note is a defensive fallback, e.g. if the model is evicted.
+    if (_service.status.value.phase != InterpreterPhase.ready) {
+      return const _Note(
+          icon: Icons.auto_awesome_outlined,
+          title: 'Assistant not ready',
+          detail: 'Enable AI in Settings to interpret.');
     }
     if (_generating) {
       return const _Note(
@@ -330,68 +307,18 @@ class _OracleInterpretationSheetState
   }
 }
 
-class _Consent extends StatelessWidget {
-  const _Consent({required this.sizeLabel, required this.onDownload});
-  final String sizeLabel;
-  final Future<void> Function() onDownload;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-          const SizedBox(height: 12),
-          Text('Interpret rolls with an on-device model',
-              style: theme.textTheme.titleMedium, textAlign: TextAlign.center),
-          const SizedBox(height: 4),
-          Text(
-            'Downloads a $sizeLabel language model once and stores it on '
-            'this device. Everything runs locally — nothing you write '
-            'leaves this device.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            key: const Key('interp-download'),
-            onPressed: onDownload,
-            icon: const Icon(Icons.download),
-            label: Text('Download model ($sizeLabel)'),
-          ),
-          const SizedBox(height: 12),
-          // Model attribution, alongside the app's other source credits.
-          Text(
-            'Gemma 4 E2B © Google, used under the Gemma license.',
-            key: const Key('interp-model-credit'),
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Note extends StatelessWidget {
   const _Note({
     required this.icon,
     required this.title,
     required this.detail,
     this.spinner = false,
-    this.progress,
     this.action,
   });
   final IconData icon;
   final String title;
   final String detail;
   final bool spinner;
-  final double? progress;
   final Widget? action;
 
   @override
@@ -416,10 +343,6 @@ class _Note extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis),
-          if (progress != null) ...[
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: progress),
-          ],
           if (action != null) ...[
             const SizedBox(height: 12),
             action!,
