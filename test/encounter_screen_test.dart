@@ -122,6 +122,17 @@ void main() {
         tester.widget<Text>(find.byKey(const Key('enc-track-0'))).data, '8/10');
   });
 
+  testWidgets('linked combatant shows the character conditions live',
+      (tester) async {
+    await pump(
+      tester,
+      charactersJson:
+          '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[{"label":"HP","current":7,"max":10}],"tags":[],"conditions":["poisoned"]}]',
+      encounterJson: _enc([_c('l1', 'Ash', 17, characterId: 'c1')]),
+    );
+    expect(find.byKey(const Key('enc-cond-0-poisoned')), findsOneWidget);
+  });
+
   testWidgets('End encounter writes journal summary and resets',
       (tester) async {
     final container = await pump(tester,

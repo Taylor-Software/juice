@@ -106,6 +106,11 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > opens a transient list of those entries (reverse of the journal's mention links). No journal-filter
 > coupling — a self-contained read-only list. Thread/encounter→map backlinks stay deferred.
 >
+> **Increment 17 shipped (2026-06-21):** **#13** (conditions-sync slice) — a linked combatant row now
+> shows the character's conditions as read-through badges (mirrors the existing live HP read-through),
+> so a poisoned PC shows it in the turn order; edit on the sheet. The full bidirectional
+> conditions/spell-slot/emulation sync stays deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
