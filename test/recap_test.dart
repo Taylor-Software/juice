@@ -22,7 +22,21 @@ OracleData _loadData() {
 }
 
 const _sid = 'default';
-const _twoEntries = {
+// Five entries (newest first, id "5") — enough history to clear the recap
+// offer's min-entries threshold. Oldest (id "1") is "The alarm sounded".
+const _history = {
+  'juice.sessions.v1':
+      '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
+  'juice.journal.v2.$_sid':
+      '[{"id":"5","timestamp":"2026-06-12T10:04:00.000","title":"","body":"The door was barred.","kind":"text"},'
+          '{"id":"4","timestamp":"2026-06-12T10:03:00.000","title":"","body":"Guards closed in.","kind":"text"},'
+          '{"id":"3","timestamp":"2026-06-12T10:02:00.000","title":"","body":"Down the long hall.","kind":"text"},'
+          '{"id":"2","timestamp":"2026-06-12T10:01:00.000","title":"","body":"We fled the keep.","kind":"text"},'
+          '{"id":"1","timestamp":"2026-06-12T10:00:00.000","title":"","body":"The alarm sounded.","kind":"text"}]',
+};
+
+// Two entries — below the recap offer threshold (nothing worth recapping yet).
+const _fewEntries = {
   'juice.sessions.v1':
       '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
   'juice.journal.v2.$_sid':
@@ -38,7 +52,7 @@ Future<FakeInterpreterService> pumpRecap(
   String? queued,
 }) async {
   SharedPreferences.setMockInitialValues(
-      {...(prefs ?? _twoEntries), 'juice.ai_enabled.v1': true});
+      {...(prefs ?? _history), 'juice.ai_enabled.v1': true});
   final fake = FakeInterpreterService(initial: InterpreterStatus(phase));
   if (queued != null) fake.queuedSummary.add(queued);
   final oracle = Oracle(data, Dice(Random(1)));
@@ -111,9 +125,32 @@ void main() {
 
     // Re-pump with the persisted last-seen pointing at the newest entry id.
     await pumpRecap(tester, data, prefs: {
-      ..._twoEntries,
-      'juice.recap.$_sid': '{"lastSeenId":"2"}',
+      ..._history,
+      'juice.recap.$_sid': '{"lastSeenId":"5"}',
     });
+    expect(find.byKey(const Key('recap-banner')), findsNothing);
+  });
+
+  testWidgets('no banner below the history threshold (nothing to recap yet)',
+      (tester) async {
+    await pumpRecap(tester, data, prefs: _fewEntries);
+    expect(find.byKey(const Key('recap-banner')), findsNothing);
+  });
+
+  testWidgets('dismiss stays dismissed when a new entry is added',
+      (tester) async {
+    await pumpRecap(tester, data, queued: 'x');
+    expect(find.byKey(const Key('recap-banner')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('recap-dismiss')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('recap-banner')), findsNothing);
+
+    // Adding a journal entry must NOT bring the banner back (the old bug:
+    // the newest id changed so lastSeenId fell behind and it re-appeared).
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    await container.read(journalProvider.notifier).add('', 'A new beat.');
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('recap-banner')), findsNothing);
   });
 

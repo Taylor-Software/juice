@@ -72,6 +72,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // are not active.
   bool _askActive = false;
 
+  // Recap "Returning to this campaign?" offer. Decided ONCE per campaign visit
+  // (null until the journal first resolves) from the history present at entry,
+  // so adding entries mid-session never re-triggers it; _recapDismissed hides
+  // it for the rest of this visit. Both reset on a campaign switch.
+  bool? _recapEligible;
+  bool _recapDismissed = false;
+
+  /// Minimum journal entries present at entry for the recap offer to appear —
+  /// below this there's nothing worth recapping (a fresh/just-started game).
+  static const _kRecapMinEntries = 5;
+
   // Built-in (non-registry) slash commands handled inline.
   static const _builtinScene = 'scene';
   static const _builtinHelp = 'help';
@@ -218,6 +229,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         .read(recapCacheProvider.notifier)
         .cacheSummary(entries.first.id, summary);
     if (!mounted) return;
+    setState(() => _recapDismissed = true); // recapped — hide for this visit
     await showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -252,10 +264,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   /// "Previously on…" nudge shown when there are entries the player hasn't
   /// recapped since last visit (and the model is available to do it).
   Widget _recapBanner(List<JournalEntry> entries) {
-    if (entries.isEmpty || !_canVoice) return const SizedBox.shrink();
-    final cache = ref.watch(recapCacheProvider).valueOrNull;
-    if (cache != null && cache.lastSeenId == entries.first.id) {
-      return const SizedBox.shrink(); // already seen the latest
+    if (!_canVoice) return const SizedBox.shrink();
+    // Decide once per visit (first time the journal resolves): offer a recap
+    // only when you ARRIVED with real history and haven't already seen the
+    // newest entry. Captured so later entries don't re-trigger the banner.
+    if (_recapEligible == null) {
+      final cache = ref.read(recapCacheProvider).valueOrNull;
+      _recapEligible = entries.length >= _kRecapMinEntries &&
+          cache?.lastSeenId != entries.first.id;
+    }
+    if (_recapEligible != true || _recapDismissed) {
+      return const SizedBox.shrink();
     }
     final theme = Theme.of(context);
     return Container(
@@ -286,9 +305,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             visualDensity: VisualDensity.compact,
             icon: const Icon(Icons.close, size: 18),
             tooltip: 'Dismiss',
-            onPressed: () => ref
-                .read(recapCacheProvider.notifier)
-                .markSeen(entries.first.id),
+            onPressed: () {
+              setState(() => _recapDismissed = true);
+              ref.read(recapCacheProvider.notifier).markSeen(entries.first.id);
+            },
           ),
         ],
       ),
@@ -367,6 +387,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     // state flips (download completes, toggle changes). _canVoice/canInterpret
     // read aiReadyProvider; this watch is what triggers the rebuild.
     ref.watch(aiReadyProvider);
+    // Switching campaigns is a fresh "visit": re-decide the recap offer.
+    ref.listen(sessionsProvider.select((s) => s.valueOrNull?.active),
+        (prev, next) {
+      if (prev != next) {
+        setState(() {
+          _recapEligible = null;
+          _recapDismissed = false;
+        });
+      }
+    });
     // Watch the oracle so payload entries gain their re-roll affordance once
     // it finishes loading (re-roll runs a command against it).
     ref.watch(oracleProvider);
