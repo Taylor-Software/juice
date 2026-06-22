@@ -1,6 +1,6 @@
-/// Pure grouping for the browse-tables screen. Turns a flat list of raw table
-/// keys into category sections derived from each key's prefix (the part before
-/// the first '_'). No asset or generator coupling — UI-layer only.
+// Pure grouping for the browse-tables screen. Turns a flat list of raw table
+// keys into category sections derived from each key's prefix (the part before
+// the first '_'). No asset or generator coupling — UI-layer only.
 
 /// A labeled section of table keys.
 class TableGroup {

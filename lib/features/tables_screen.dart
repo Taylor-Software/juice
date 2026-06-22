@@ -95,7 +95,12 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                 if (_matching(group, q) case final matches
                     when matches.isNotEmpty)
                   ExpansionTile(
-                    key: PageStorageKey('tables-group-${group.label}'),
+                    // While searching, a non-storage key mounts the tile fresh
+                    // so matches always show expanded regardless of a prior
+                    // collapse; with no query, PageStorageKey remembers toggles.
+                    key: q.isEmpty
+                        ? PageStorageKey('tables-group-${group.label}')
+                        : ValueKey('tables-group-search-${group.label}'),
                     initiallyExpanded: true,
                     title:
                         Text(group.label, style: theme.textTheme.titleMedium),

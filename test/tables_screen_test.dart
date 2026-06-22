@@ -65,6 +65,18 @@ void main() {
     expect(find.text('NPC'), findsOneWidget);
   });
 
+  testWidgets('search expands a group the user had collapsed', (tester) async {
+    await pump(tester);
+    // Collapse the Challenge group (top of list, on-screen).
+    await tester.tap(find.text('Challenge'));
+    await tester.pumpAndSettle();
+    expect(find.text('Challenge Physical'), findsNothing); // collapsed
+    // Searching it must surface the match despite the prior collapse.
+    await tester.enterText(find.byKey(const Key('tables-search')), 'challenge');
+    await tester.pumpAndSettle();
+    expect(find.text('Challenge Physical'), findsOneWidget);
+  });
+
   testWidgets('tapping a table rolls and surfaces add-to-journal',
       (tester) async {
     await pump(tester);
