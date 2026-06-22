@@ -84,6 +84,21 @@ void main() {
     expect(find.text('The party fled the keep.'), findsOneWidget);
   });
 
+  testWidgets('saving the recap persists it as a journal entry',
+      (tester) async {
+    await pumpRecap(tester, data, queued: 'The party fled the keep.');
+    await tester.tap(find.byKey(const Key('recap-action')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('recap-save')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    final recap = entries.where((e) => e.title == 'Recap');
+    expect(recap, hasLength(1));
+    expect(recap.first.body, 'The party fled the keep.');
+  });
+
   testWidgets('dismissing the banner persists last-seen (gone after repump)',
       (tester) async {
     await pumpRecap(tester, data, queued: 'x');
