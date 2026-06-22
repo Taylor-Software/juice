@@ -194,7 +194,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _recap() async {
     if (!_canVoice) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Recap needs the on-device model.')));
+          const SnackBar(content: Text('Enable AI in Settings to recap.')));
       return;
     }
     final entries = ref.read(journalProvider).valueOrNull ?? const [];

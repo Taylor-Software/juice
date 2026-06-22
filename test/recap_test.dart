@@ -123,12 +123,12 @@ void main() {
     // Banner gated on interpreter support.
     expect(find.byKey(const Key('recap-banner')), findsNothing);
 
-    // /recap typed + Enter surfaces the needs-model snackbar, no crash.
+    // /recap typed + Enter surfaces the enable-AI snackbar, no crash.
     await tester.enterText(find.byKey(const Key('journal-composer')), '/recap');
     await tester.pump();
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
-    expect(find.text('Recap needs the on-device model.'), findsOneWidget);
+    expect(find.text('Enable AI in Settings to recap.'), findsOneWidget);
   });
 
   testWidgets('/recap via the palette runs summarize when supported',

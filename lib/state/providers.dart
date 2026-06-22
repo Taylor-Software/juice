@@ -1086,19 +1086,23 @@ final interpreterStatusProvider = StreamProvider<InterpreterStatus>((ref) {
   return controller.stream;
 });
 
+/// The current phase, reactive via [interpreterStatusProvider] but falling back
+/// to the service's synchronous value on the stream's first (loading) frame so
+/// gates don't flicker through a null phase before the first emit.
+InterpreterPhase _phase(Ref ref) =>
+    ref.watch(interpreterStatusProvider).valueOrNull?.phase ??
+    ref.watch(interpreterServiceProvider).status.value.phase;
+
 /// Single source of truth every AI affordance watches.
 /// ready => downloaded + loaded; enabled => opted in via Settings.
 final aiReadyProvider = Provider<bool>((ref) {
   final enabled = ref.watch(aiEnabledProvider).valueOrNull ?? false;
-  final phase = ref.watch(interpreterStatusProvider).valueOrNull?.phase;
-  return enabled && phase == InterpreterPhase.ready;
+  return enabled && _phase(ref) == InterpreterPhase.ready;
 });
 
 /// Settings-only: decides toggle vs "not available on this platform".
-final aiSupportedProvider = Provider<bool>((ref) {
-  final phase = ref.watch(interpreterStatusProvider).valueOrNull?.phase;
-  return phase != null && phase != InterpreterPhase.unsupported;
-});
+final aiSupportedProvider =
+    Provider<bool>((ref) => _phase(ref) != InterpreterPhase.unsupported);
 
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
