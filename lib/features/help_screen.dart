@@ -5,9 +5,11 @@ import '../engine/help_data.dart';
 import '../state/providers.dart';
 
 /// In-app help: an index of sections/pages with internal page navigation
-/// (Threads & Characters pattern — no router). Deep links arrive via
-/// [helpTopicProvider]: consumed on first frame and, because the tool host
-/// keeps this screen alive offstage, also via ref.listen on later sets.
+/// (no router). Help has no tab home — it is opened as a full-screen pushed
+/// route (`openHelp` -> MaterialPageRoute), so it must supply its own
+/// [Scaffold] (the ambient one a hosted tab would inherit is absent here).
+/// Deep links arrive via [helpTopicProvider]: consumed on first frame and,
+/// for a topic set while this instance is already mounted, via ref.listen.
 class HelpScreen extends ConsumerStatefulWidget {
   const HelpScreen({super.key});
 
@@ -46,11 +48,29 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
     });
     final theme = Theme.of(context);
     return ref.watch(helpDataProvider).when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('Failed to load help:\n$e')),
-          data: (data) => _pageId == null
-              ? _index(theme, data)
-              : _page(theme, data.page(_pageId!)),
+          loading: () =>
+              const Scaffold(body: Center(child: CircularProgressIndicator())),
+          error: (e, _) =>
+              Scaffold(body: Center(child: Text('Failed to load help:\n$e'))),
+          data: (data) {
+            // On a page the AppBar's back returns to the index; on the index it
+            // falls back to the route's own back (pops Help — it has no tab home).
+            final page = _pageId == null ? null : data.page(_pageId!);
+            return Scaffold(
+              appBar: AppBar(
+                leading: page == null
+                    ? null
+                    : IconButton(
+                        key: const Key('help-back'),
+                        icon: const Icon(Icons.arrow_back),
+                        tooltip: 'All help topics',
+                        onPressed: () => setState(() => _pageId = null),
+                      ),
+                title: Text(page?.title ?? 'Help'),
+              ),
+              body: page == null ? _index(theme, data) : _page(theme, page),
+            );
+          },
         );
   }
 
@@ -79,24 +99,6 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
   Widget _page(ThemeData theme, HelpPage page) => ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Row(
-            children: [
-              IconButton(
-                key: const Key('help-back'),
-                icon: const Icon(Icons.arrow_back),
-                tooltip: 'All help topics',
-                onPressed: () => setState(() => _pageId = null),
-              ),
-              Expanded(
-                child: Text(
-                  page.title,
-                  style: theme.textTheme.titleLarge,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
           for (final b in page.blocks) _block(theme, b),
           if (page.id == 'credits') ...[
             const SizedBox(height: 16),
