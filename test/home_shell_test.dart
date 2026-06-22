@@ -86,6 +86,24 @@ void main() {
     expect(find.text('Journey'), findsWidgets);
   });
 
+  testWidgets('settings gear opens the Settings sheet', (t) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.needsDownload));
+    await t.pumpWidget(ProviderScope(
+      overrides: [
+        _verdantOverride,
+        _emulatorOverride,
+        interpreterServiceProvider.overrideWithValue(fake),
+      ],
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('shell-settings')));
+    await t.pumpAndSettle();
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.byKey(const Key('settings-ai-toggle')), findsOneWidget);
+  });
+
   testWidgets(
       'journal is home; search sheet opens grouped tools and a tap '
       'navigates', (tester) async {

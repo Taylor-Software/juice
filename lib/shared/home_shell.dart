@@ -11,6 +11,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/journal_screen.dart';
 import '../features/maps_tab.dart';
+import '../features/settings_sheet.dart';
 import '../features/oracles_tab.dart';
 import '../features/sheet_tab.dart';
 import '../features/tracking_tab.dart';
@@ -533,6 +534,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             icon: const Icon(Icons.help_outline),
             tooltip: 'Help',
             onPressed: () => openHelp(context, ref),
+          ),
+          IconButton(
+            key: const Key('shell-settings'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => showSettingsSheet(context),
           ),
           if (systems.contains('ironsworn'))
             IconButton(
