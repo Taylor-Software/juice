@@ -130,6 +130,13 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 >   map→journal "Add to journal" path already exists (one-way dump).
 >
 > If any of these is wanted anyway, it's a clean follow-up — say which.
+>
+> **Review pass (2026-06-21) — bug found + fixed:** a code-grounded re-review of the deferred items
+> confirmed 5/6 deferrals, and surfaced a real bug in the shipped #13 HP read-through: the
+> encounter-row only read `char.tracks`, so a **linked D&D/Shadowdark combatant (HP in
+> `dnd.currentHp`/`shadowdark.currentHp`, not a track) showed no HP and dead −/+ steppers**. Fixed:
+> the row now resolves HP from the sheet pool or first track and drives the steppers through
+> `Character.withHpDelta` (symmetric with the #5 party-effect logic).
 
 Scenario lenses played:
 1. D&D party (multi-PC) + Mythic GME + Juice, party mode

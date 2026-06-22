@@ -103,11 +103,13 @@ class EncounterScreen extends ConsumerWidget {
     final c = s.combatants[i];
     final isTurn = i == s.turnIndex;
 
-    // Resolve the track: linked combatants read the character's FIRST track
-    // live; ad-hoc ones carry their own.
+    // Resolve HP live: a linked combatant reads its character's HP pool — the
+    // D&D/Shadowdark sheet's currentHp or the first track (mirrors
+    // Character.withHpDelta) — and an ad-hoc one carries its own track.
     Character? char;
     var name = c.name;
-    CharTrack? track;
+    int? curHp;
+    int? maxHp;
     VoidCallback? minus;
     VoidCallback? plus;
     if (c.characterId != null) {
@@ -115,20 +117,30 @@ class EncounterScreen extends ConsumerWidget {
       char = match.isEmpty ? null : match.first;
       if (char == null) {
         name = '${c.name} (missing)';
-      } else if (char.tracks.isNotEmpty) {
-        track = char.tracks.first;
+      } else {
         final linked = char;
-        void step(int delta) => ref
-            .read(charactersProvider.notifier)
-            .replace(linked.copyWith(tracks: [
-              linked.tracks.first.adjusted(delta),
-              ...linked.tracks.skip(1),
-            ]));
-        minus = () => step(-1);
-        plus = () => step(1);
+        if (linked.dnd != null) {
+          curHp = linked.dnd!.currentHp;
+          maxHp = linked.dnd!.maxHp;
+        } else if (linked.shadowdark != null) {
+          curHp = linked.shadowdark!.currentHp;
+          maxHp = linked.shadowdark!.maxHp;
+        } else if (linked.tracks.isNotEmpty) {
+          curHp = linked.tracks.first.current;
+          maxHp = linked.tracks.first.max;
+        }
+        if (curHp != null) {
+          minus = () => ref
+              .read(charactersProvider.notifier)
+              .replace(linked.withHpDelta(-1));
+          plus = () => ref
+              .read(charactersProvider.notifier)
+              .replace(linked.withHpDelta(1));
+        }
       }
     } else if (c.track != null) {
-      track = c.track;
+      curHp = c.track!.current;
+      maxHp = c.track!.max;
       void step(int delta) => ref
           .read(encounterProvider.notifier)
           .updateCombatant(c.copyWith(track: c.track!.adjusted(delta)));
@@ -160,7 +172,7 @@ class EncounterScreen extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (track != null)
+            if (curHp != null)
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -170,8 +182,7 @@ class EncounterScreen extends ConsumerWidget {
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: minus,
                   ),
-                  Text('${track.current}/${track.max}',
-                      key: Key('enc-track-$i')),
+                  Text('$curHp/$maxHp', key: Key('enc-track-$i')),
                   IconButton(
                     key: Key('enc-plus-$i'),
                     visualDensity: VisualDensity.compact,

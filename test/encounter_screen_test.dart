@@ -133,6 +133,24 @@ void main() {
     expect(find.byKey(const Key('enc-cond-0-poisoned')), findsOneWidget);
   });
 
+  testWidgets('linked D&D combatant shows sheet HP and steppers update it',
+      (tester) async {
+    final container = await pump(
+      tester,
+      charactersJson:
+          '[{"id":"c1","name":"Theron","note":"","stats":[],"tracks":[],"tags":[],"dnd":{"currentHp":8,"maxHp":12}}]',
+      encounterJson: _enc([_c('l1', 'Theron', 15, characterId: 'c1')]),
+    );
+    // HP comes from the D&D sheet (not a track) — was previously missing.
+    expect(find.text('8/12'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('enc-minus-0')));
+    await tester.pumpAndSettle();
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.dnd!.currentHp, 7);
+    expect(
+        tester.widget<Text>(find.byKey(const Key('enc-track-0'))).data, '7/12');
+  });
+
   testWidgets('End encounter writes journal summary and resets',
       (tester) async {
     final container = await pump(tester,
