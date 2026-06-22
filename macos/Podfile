@@ -39,4 +39,35 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_macos_build_settings(target)
   end
+
+  # flutter_gemma's macOS native-asset hook (through 1.1.0) downloads LiteRtLm's
+  # dependency dylib libGemmaModelConstraintProvider.dylib into its cache but
+  # does NOT embed it, so LiteRtLm.framework fails to dlopen at runtime
+  # (Library not loaded: @rpath/libGemmaModelConstraintProvider.dylib). Copy it
+  # into the app's Frameworks dir — resolved via LiteRtLm's @loader_path/../../..
+  # rpath, so the framework's own signature stays intact. Upstream bug; drop this
+  # once flutter_gemma bundles the dylib. See
+  # docs/superpowers/notes/2026-06-22-macos-litertlm-dylib.md
+  phase_name = 'Embed flutter_gemma LiteRtLm dylib'
+  embed_script = <<-SCRIPT
+SRC="$HOME/Library/Caches/flutter_gemma/native/macos_arm64/libGemmaModelConstraintProvider.dylib"
+DST="${BUILT_PRODUCTS_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+if [ -f "$SRC" ] && [ -d "$DST" ]; then
+  cp -f "$SRC" "$DST/libGemmaModelConstraintProvider.dylib"
+  codesign --force --sign - "$DST/libGemmaModelConstraintProvider.dylib" || true
+else
+  echo "warning: flutter_gemma LiteRtLm dylib not embedded (SRC=$SRC DST=$DST)"
+fi
+  SCRIPT
+  installer.aggregate_targets.each do |agg|
+    project = agg.user_project
+    next unless project
+    project.native_targets.each do |target|
+      next unless target.name == 'Runner'
+      next if target.shell_script_build_phases.any? { |p| p.name == phase_name }
+      phase = target.new_shell_script_build_phase(phase_name)
+      phase.shell_script = embed_script
+      project.save
+    end
+  end
 end
