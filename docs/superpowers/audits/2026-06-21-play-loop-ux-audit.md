@@ -69,6 +69,11 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > mid-fight reopens on the fight instead of the roster. The Sheet-header "current turn" glance
 > stays deferred.
 >
+> **Increment 10 shipped (2026-06-21):** **#15** (badges half) — enabled-systems badges. Campaign
+> cards (launcher + in-shell Campaigns dialog) show a `formatSystems` subtitle ("D&D · Mythic"),
+> so a player can see a campaign's profile at a glance. The active-oracle badge in FateScreen and
+> revealing (greyed) mode/system-gated tools stay deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

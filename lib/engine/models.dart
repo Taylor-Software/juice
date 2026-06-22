@@ -2303,6 +2303,44 @@ class CrawlState {
 /// tracker, and help are always available (core).
 const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 
+/// Human display labels for system keys (incl. opt-in systems not in
+/// [kAllSystems]). Used to badge a campaign's profile.
+const kSystemLabels = <String, String>{
+  'juice': 'Juice',
+  'mythic': 'Mythic',
+  'ironsworn': 'Ironsworn',
+  'party': 'Party',
+  'verdant': 'Verdant',
+  'lonelog': 'Lonelog',
+  'hexcrawl': 'Hexcrawl',
+  'dnd': 'D&D',
+  'shadowdark': 'Shadowdark',
+};
+
+/// A compact, stable, human summary of a campaign's enabled [systems], e.g.
+/// "D&D · Mythic". The most distinctive systems (sheets) lead.
+String formatSystems(Set<String> systems) {
+  const order = [
+    'dnd',
+    'shadowdark',
+    'ironsworn',
+    'mythic',
+    'juice',
+    'party',
+    'verdant',
+    'lonelog',
+    'hexcrawl',
+  ];
+  final labels = [
+    for (final k in order)
+      if (systems.contains(k)) kSystemLabels[k]!,
+    // Any unknown keys keep their raw id, appended in encounter order.
+    for (final k in systems)
+      if (!order.contains(k)) kSystemLabels[k] ?? k,
+  ];
+  return labels.join(' · ');
+}
+
 /// The player's current focus for a campaign: running the world (gm) or
 /// playing their character(s) (party). Declutters role-specific sub-options.
 enum CampaignMode { gm, party }

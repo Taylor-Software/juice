@@ -79,6 +79,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off),
                   title: Text(s.name),
+                  subtitle: Text(
+                    formatSystems(s.enabledSystems),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
