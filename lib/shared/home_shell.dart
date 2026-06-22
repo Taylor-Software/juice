@@ -681,6 +681,7 @@ const kSystemBlurbs = <String, String>{
   'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
   'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
   'shadowdark': 'Shadowdark character sheet: stats, HP, AC, gear, luck.',
+  'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
 class NewCampaignDialog extends StatefulWidget {
@@ -703,6 +704,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _hexcrawl = false;
   bool _dnd = false;
   bool _shadowdark = false;
+  bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
   @override
@@ -724,6 +726,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_hexcrawl) 'hexcrawl',
       if (_dnd) 'dnd',
       if (_shadowdark) 'shadowdark',
+      if (_cards) 'cards',
     };
     Navigator.of(context).pop((
       name: _controller.text,
@@ -859,6 +862,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _shadowdark,
               onChanged: (v) => setState(() => _shadowdark = v ?? false),
             ),
+            CheckboxListTile(
+              key: const Key('sys-cards'),
+              title: const Text('Cards'),
+              subtitle: Text(kSystemBlurbs['cards']!),
+              value: _cards,
+              onChanged: (v) => setState(() => _cards = v ?? false),
+            ),
           ],
         ),
       ),
@@ -920,6 +930,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('hexcrawl', 'Hexcrawl toolkit'),
             _row('dnd', 'D&D 5e'),
             _row('shadowdark', 'Shadowdark'),
+            _row('cards', 'Cards'),
           ],
         ),
       ),

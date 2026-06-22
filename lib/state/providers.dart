@@ -538,6 +538,58 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
 final crawlProvider =
     AsyncNotifierProvider<CrawlNotifier, CrawlState>(CrawlNotifier.new);
 
+// -- Card-deck oracles (standard 52 + tarot 78), drawn without replacement ---
+class DecksNotifier extends AsyncNotifier<DecksState> {
+  static const _baseKey = 'juice.decks.v1';
+
+  late String _scopedKey;
+
+  @override
+  Future<DecksState> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    if (raw == null || raw.isEmpty) return const DecksState();
+    return DecksState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> _save(DecksState s) async {
+    // Update in-memory state BEFORE the async persist so a rapid second draw
+    // (fired during this persist) reads the new deck, not the stale one.
+    state = AsyncData(s);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
+  }
+
+  /// Draws one card (reshuffling if needed), persists the new deck state, and
+  /// returns the card result. [tarot] selects the 78-card deck (reversible).
+  Future<GenResult> draw(Oracle oracle, {required bool tarot}) async {
+    final cur = state.valueOrNull ?? await future;
+    final res = oracle.drawCard(
+      deck: tarot ? kTarotDeck : kPlayingDeck,
+      state: tarot ? cur.tarot : cur.standard,
+      title: tarot ? 'Tarot' : 'Card',
+      reversible: tarot,
+    );
+    await _save(tarot
+        ? cur.copyWith(tarot: res.next)
+        : cur.copyWith(standard: res.next));
+    return res.result;
+  }
+
+  /// Clears a deck so the next draw reshuffles a full deck.
+  Future<void> reshuffle({required bool tarot}) async {
+    final cur = state.valueOrNull ?? await future;
+    await _save(tarot
+        ? cur.copyWith(tarot: const DeckState())
+        : cur.copyWith(standard: const DeckState()));
+  }
+}
+
+final decksProvider =
+    AsyncNotifierProvider<DecksNotifier, DecksState>(DecksNotifier.new);
+
 // -- Encounter tracker (initiative order, turns, rounds) ---------------------
 class EncounterNotifier extends AsyncNotifier<EncounterState> {
   static const _baseKey = 'juice.encounter.v1';
@@ -1016,6 +1068,7 @@ const sessionScopedKeys = [
   'juice.units.v1',
   'juice.settings.v1',
   'juice.context.v1',
+  'juice.decks.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {

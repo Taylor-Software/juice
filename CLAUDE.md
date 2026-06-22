@@ -243,6 +243,22 @@ Working rules for this repo:
   `MapState.rooms`, so the Dungeon tab stays independent).
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
+- **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
+  deck (`kPlayingDeck`) and a 78-card tarot deck (`kTarotDeck` = `kTarotMajor` +
+  minor), authored facts-only constants in `models.dart` — card **identities
+  only, no divinatory meanings** (those are copyrighted prose). Decks are drawn
+  WITHOUT replacement + reshuffle, modeled by `DeckState {order, drawn}` /
+  `DecksState {standard, tarot}` and persisted per campaign via `decksProvider`
+  (`juice.decks.v1.<sessionId>`, in `sessionScopedKeys` → auto-exported).
+  `Oracle.drawCard(deck, state, title, {reversible})` reshuffles when exhausted
+  (Fisher-Yates via `Dice`) and returns `(GenResult, next DeckState)`; tarot is
+  `reversible` (coin-flip orientation). UI = a "Cards" section in `fate_screen`
+  (gated on `systems.contains('cards')`): Draw card / Draw tarot + remaining
+  readout + Reshuffle; a drawn card logs as a `result` entry (sourceTool
+  `'cards'`), so it's interpretable via the journal's standard per-entry
+  Interpret (no bespoke card-interpret UI). Deferred: slash commands (stateless,
+  don't fit a stateful deck), HUD quick-draw, jokers. See
+  `docs/superpowers/specs/2026-06-22-dice-reroll-card-oracles-design.md`.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
   oracle interpreter; service seam in `lib/state/interpreter.dart`, tests
