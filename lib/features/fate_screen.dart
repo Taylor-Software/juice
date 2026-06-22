@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/tarot_meanings.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
+import 'tarot_reference.dart';
 
 /// A scroll target within the Fate screen, for launcher deep links.
 enum FateSection { fateCheck, rollHigh, mythic, cards }
@@ -48,6 +50,29 @@ class _FateScreenState extends ConsumerState<FateScreen> {
         .read(decksProvider.notifier)
         .draw(widget.oracle, tarot: tarot);
     if (mounted) setState(() => _cardLast = g);
+  }
+
+  /// The AI-free authored meaning shown under a drawn tarot card (nothing for a
+  /// standard-deck draw, which has no tarot meaning).
+  Widget _cardMeaning(ThemeData theme, GenResult g) {
+    final r = readTarot(g.summary ?? '');
+    if (r.meaning == null) return const SizedBox.shrink();
+    final text = r.reversed ? r.meaning!.reversed : r.meaning!.upright;
+    return Padding(
+      key: const Key('card-meaning'),
+      padding: const EdgeInsets.only(top: 6, left: 4, right: 4),
+      child: Text('${r.reversed ? 'Reversed' : 'Upright'} — $text',
+          style: theme.textTheme.bodyMedium),
+    );
+  }
+
+  /// Journal body for a logged card: the card text plus its tarot meaning when
+  /// present, so the reading is preserved without the AI.
+  String _cardBody(GenResult g) {
+    final r = readTarot(g.summary ?? '');
+    if (r.meaning == null) return g.asText;
+    final text = r.reversed ? r.meaning!.reversed : r.meaning!.upright;
+    return '${g.asText}\n${r.reversed ? 'Reversed' : 'Upright'} — $text';
   }
 
   @override
@@ -395,6 +420,22 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       ),
                     ],
                   ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      key: const Key('cards-reference'),
+                      icon: const Icon(Icons.menu_book_outlined),
+                      label: const Text('Card meanings'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => Scaffold(
+                            appBar: AppBar(title: const Text('Tarot meanings')),
+                            body: const TarotReference(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (_cardLast != null) ...[
                     const SizedBox(height: 8),
                     ResultCard(
@@ -402,7 +443,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       onLog: () {
                         ref.read(journalProvider.notifier).addResult(
                               _cardLast!.title,
-                              _cardLast!.asText,
+                              _cardBody(_cardLast!),
                               sourceTool: 'cards',
                               payload: _cardLast!.toPayload(),
                             );
@@ -411,6 +452,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         );
                       },
                     ),
+                    _cardMeaning(theme, _cardLast!),
                   ],
                 ],
               );
