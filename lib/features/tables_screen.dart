@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/table_groups.dart';
 import '../state/providers.dart';
 
 /// Turn a snake_case table key into a readable title.
@@ -22,11 +23,20 @@ class TablesScreen extends ConsumerStatefulWidget {
 class _TablesScreenState extends ConsumerState<TablesScreen> {
   int _skew = 0; // -1 disadvantage, 0 normal, +1 advantage
   final Map<String, Roll> _last = {};
+  final TextEditingController _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final keys = widget.oracle.data.allTableKeys;
+    final groups = groupTableKeys(widget.oracle.data.allTableKeys);
+    final q = _query.trim().toLowerCase();
     return Column(
       children: [
         Padding(
@@ -53,58 +63,99 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: TextField(
+            key: const Key('tables-search'),
+            controller: _search,
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: 'Search tables…',
+              prefixIcon: const Icon(Icons.search),
+              border: const OutlineInputBorder(),
+              suffixIcon: _query.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () => setState(() {
+                        _search.clear();
+                        _query = '';
+                      }),
+                    ),
+            ),
+            onChanged: (v) => setState(() => _query = v),
+          ),
+        ),
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            itemCount: keys.length,
-            itemBuilder: (context, i) {
-              final key = keys[i];
-              final title = _titleize(key);
-              final rolled = _last[key];
-              return Card(
-                child: ListTile(
-                  title: Text(title),
-                  subtitle: rolled == null
-                      ? null
-                      : Text('${rolled.value}  ·  ${rolled.detail}',
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: theme.colorScheme.primary)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (rolled != null)
-                        IconButton(
-                          tooltip: 'Add to journal',
-                          icon: const Icon(Icons.bookmark_add_outlined),
-                          onPressed: () {
-                            ref
-                                .read(journalProvider.notifier)
-                                .add(title, rolled.value);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Added to journal')),
-                            );
-                          },
-                        ),
-                      IconButton(
-                        tooltip: 'Roll',
-                        icon: const Icon(Icons.casino_outlined),
-                        onPressed: () => setState(() {
-                          _last[key] =
-                              widget.oracle.rollTable(key, title, skew: _skew);
-                        }),
-                      ),
-                    ],
+            children: [
+              for (final group in groups)
+                if (_matching(group, q) case final matches
+                    when matches.isNotEmpty)
+                  ExpansionTile(
+                    key: PageStorageKey('tables-group-${group.label}'),
+                    initiallyExpanded: true,
+                    title:
+                        Text(group.label, style: theme.textTheme.titleMedium),
+                    childrenPadding: const EdgeInsets.only(bottom: 4),
+                    children: [for (final key in matches) _tableTile(key)],
                   ),
-                  onTap: () => setState(() {
-                    _last[key] =
-                        widget.oracle.rollTable(key, title, skew: _skew);
-                  }),
-                ),
-              );
-            },
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  /// Keys in [group] whose display title matches the lowercased query [q]
+  /// (all of them when [q] is empty).
+  List<String> _matching(TableGroup group, String q) => q.isEmpty
+      ? group.keys
+      : group.keys
+          .where((k) => _titleize(k).toLowerCase().contains(q))
+          .toList();
+
+  Widget _tableTile(String key) {
+    final theme = Theme.of(context);
+    final title = _titleize(key);
+    final rolled = _last[key];
+    return Card(
+      child: ListTile(
+        title: Text(title),
+        subtitle: rolled == null
+            ? null
+            : Text('${rolled.value}  ·  ${rolled.detail}',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: theme.colorScheme.primary)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (rolled != null)
+              IconButton(
+                tooltip: 'Add to journal',
+                icon: const Icon(Icons.bookmark_add_outlined),
+                onPressed: () {
+                  ref.read(journalProvider.notifier).add(title, rolled.value);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Added to journal')),
+                  );
+                },
+              ),
+            IconButton(
+              tooltip: 'Roll',
+              icon: const Icon(Icons.casino_outlined),
+              onPressed: () => setState(() {
+                _last[key] = widget.oracle.rollTable(key, title, skew: _skew);
+              }),
+            ),
+          ],
+        ),
+        onTap: () => setState(() {
+          _last[key] = widget.oracle.rollTable(key, title, skew: _skew);
+        }),
+      ),
     );
   }
 }
