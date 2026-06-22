@@ -84,7 +84,7 @@ class GenResult {
 
 /// Kind of journal entry: player prose, a tool result, a scene divider, or a
 /// freehand sketch.
-enum JournalKind { text, result, scene, sketch }
+enum JournalKind { text, result, scene, sketch, session }
 
 /// Persisted journal entry (formerly LogEntry; old JSON parses as `result`).
 class JournalEntry {

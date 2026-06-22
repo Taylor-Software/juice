@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -37,6 +38,25 @@ void main() {
     expect(find.text('The gatehouse'), findsWidgets);
     // 'Chaos 6' appears in both the scene divider and the campaign header.
     expect(find.text('Chaos 6'), findsWidgets);
+  });
+
+  testWidgets('New session adds and renders a session divider', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default':
+          '[{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"","body":"First","kind":"text"}]',
+    });
+    await tester.pumpWidget(const ProviderScope(
+        child: MaterialApp(home: Scaffold(body: JournalScreen()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('journal-new-session')));
+    await tester.pumpAndSettle();
+    expect(find.text('Session 1'), findsOneWidget);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.kind == JournalKind.session), hasLength(1));
   });
 
   testWidgets('entries display oldest first (reverse of storage)',

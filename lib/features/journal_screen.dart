@@ -520,6 +520,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             IconButton(
+              key: const Key('journal-new-session'),
+              icon: const Icon(Icons.flag_outlined),
+              tooltip: 'Start a new session',
+              onPressed: _newSession,
+            ),
+            IconButton(
               key: const Key('journal-search'),
               icon: const Icon(Icons.search),
               tooltip: 'Search journal',
@@ -628,6 +634,29 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   ),
                 ),
               const Expanded(child: Divider()),
+              menu,
+            ],
+          ),
+        );
+      case JournalKind.session:
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              const Expanded(child: Divider(thickness: 2)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.flag_outlined,
+                      size: 16, color: theme.colorScheme.primary),
+                  const SizedBox(width: 4),
+                  Text(e.title,
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold)),
+                ]),
+              ),
+              const Expanded(child: Divider(thickness: 2)),
               menu,
             ],
           ),
@@ -1280,6 +1309,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
     if (confirmed != true || !mounted) return;
     await ref.read(journalProvider.notifier).clear();
+  }
+
+  Future<void> _newSession() async {
+    final entries = ref.read(journalProvider).valueOrNull ?? const [];
+    final n = entries.where((e) => e.kind == JournalKind.session).length + 1;
+    await ref.read(journalProvider.notifier).addSessionBreak('Session $n');
   }
 
   Future<void> _newScene() async {

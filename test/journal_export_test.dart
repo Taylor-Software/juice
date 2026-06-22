@@ -89,6 +89,14 @@ void main() {
       expect(md(entries), isNot(contains('Chaos')));
       expect(html(entries), contains('<h2>The burned mill</h2>'));
     });
+
+    test('session break exports as a top-level heading', () {
+      final entries = [
+        entry(id: '1', title: 'Session 2', kind: JournalKind.session),
+      ];
+      expect(md(entries), contains('# Session 2'));
+      expect(html(entries), contains('<h1>Session 2</h1>'));
+    });
   });
 
   group('result entries', () {
