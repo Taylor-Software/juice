@@ -21,9 +21,13 @@ class ShellRouteNotifier extends Notifier<ShellRoute> {
 
   /// Lands on the mode's home verb (gm→Track, party→Sheet). Called when a
   /// campaign is entered (launcher Continue/New/switch/import, in-shell switch/
-  /// New) so each campaign opens on the surface its mode is about.
-  void landFor(CampaignMode mode) {
-    state = ShellRoute(landingDestination(mode), '');
+  /// New) so each campaign opens on the surface its mode is about. When
+  /// [hasEncounter] is true (combatants in progress), lands on Track→Encounter
+  /// regardless of mode so an in-progress fight isn't buried behind a tab.
+  void landFor(CampaignMode mode, {bool hasEncounter = false}) {
+    state = hasEncounter
+        ? const ShellRoute(Destination.track, 'encounter')
+        : ShellRoute(landingDestination(mode), '');
   }
 
   /// Navigates to the tool's home. Returns false (no-op) for ids with no tab

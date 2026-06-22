@@ -15,9 +15,13 @@ import '../state/providers.dart';
 class LauncherScreen extends ConsumerWidget {
   const LauncherScreen({super.key});
 
-  /// Lands on the campaign's mode home, then dismisses the launcher gate.
-  void _enter(WidgetRef ref, CampaignMode mode) {
-    ref.read(shellRouteProvider.notifier).landFor(mode);
+  /// Lands on the campaign's mode home — or its in-progress encounter, if any —
+  /// then dismisses the launcher gate.
+  Future<void> _enter(WidgetRef ref, CampaignMode mode) async {
+    final enc = await ref.read(encounterProvider.future);
+    ref
+        .read(shellRouteProvider.notifier)
+        .landFor(mode, hasEncounter: enc.combatants.isNotEmpty);
     ref.read(launcherGateProvider.notifier).dismiss();
   }
 

@@ -21,6 +21,21 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.sheet);
   });
 
+  test('landFor with an in-progress encounter lands on Track→Encounter', () {
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    // Overrides the mode home regardless of mode.
+    c
+        .read(shellRouteProvider.notifier)
+        .landFor(CampaignMode.party, hasEncounter: true);
+    expect(c.read(shellRouteProvider).destination, Destination.track);
+    expect(c.read(shellRouteProvider).subtab, 'encounter');
+    c
+        .read(shellRouteProvider.notifier)
+        .landFor(CampaignMode.gm, hasEncounter: true);
+    expect(c.read(shellRouteProvider).subtab, 'encounter');
+  });
+
   test('openTool resolves a mapped id to destination + subtab', () {
     final c = ProviderContainer();
     addTearDown(c.dispose);
