@@ -15,13 +15,15 @@ void main() {
       '[{"id":"2","timestamp":"2026-06-11T12:00:00.000","title":"Fate Check (Likely)","body":"Yes, and…","kind":"result"},'
       '{"id":"1","timestamp":"2026-06-11T11:00:00.000","title":"The burned mill","body":"","kind":"scene","chaosFactor":5}]';
 
-  Future<(FakeInterpreterService, ProviderContainer)> pump(
-      WidgetTester tester,
-      {InterpreterStatus? initial, String journal = journalJson}) async {
+  Future<(FakeInterpreterService, ProviderContainer)> pump(WidgetTester tester,
+      {InterpreterStatus? initial,
+      String journal = journalJson,
+      bool aiEnabled = true}) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default': journal,
+      'juice.ai_enabled.v1': aiEnabled,
     });
     final fake = FakeInterpreterService(
         initial: initial ?? const InterpreterStatus(InterpreterPhase.ready));
@@ -36,8 +38,8 @@ void main() {
   }
 
   Future<void> openMenuFor(WidgetTester tester, String entryTitle) async {
-    final entry = find.ancestor(
-        of: find.text(entryTitle), matching: find.byType(Card));
+    final entry =
+        find.ancestor(of: find.text(entryTitle), matching: find.byType(Card));
     await tester.tap(find.descendant(
         of: entry, matching: find.byType(PopupMenuButton<String>)));
     await tester.pumpAndSettle();
@@ -120,6 +122,14 @@ void main() {
       (tester) async {
     await pump(tester,
         initial: const InterpreterStatus(InterpreterPhase.unsupported));
+    await openMenuFor(tester, 'Fate Check (Likely)');
+    expect(find.text('Interpret…'), findsNothing);
+  });
+
+  testWidgets('ready but AI-disabled hides Interpret on result entries',
+      (tester) async {
+    // Model downloaded (ready) but the Settings toggle is off → still hidden.
+    await pump(tester, aiEnabled: false);
     await openMenuFor(tester, 'Fate Check (Likely)');
     expect(find.text('Interpret…'), findsNothing);
   });

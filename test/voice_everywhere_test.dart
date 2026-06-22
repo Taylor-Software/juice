@@ -32,7 +32,8 @@ Future<({FakeInterpreterService fake, ProviderContainer container})> pumpVoice(
     {FakeInterpreterService? fakeService,
     Map<String, Object>? prefs,
     List<JournalEntry>? initialEntries}) async {
-  SharedPreferences.setMockInitialValues(prefs ?? _sessionPrefs);
+  SharedPreferences.setMockInitialValues(
+      {...(prefs ?? _sessionPrefs), 'juice.ai_enabled.v1': true});
   final fake = fakeService ??
       FakeInterpreterService(
           initial: const InterpreterStatus(InterpreterPhase.ready));

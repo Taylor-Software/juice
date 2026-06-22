@@ -37,7 +37,8 @@ Future<FakeInterpreterService> pumpRecap(
   InterpreterPhase phase = InterpreterPhase.ready,
   String? queued,
 }) async {
-  SharedPreferences.setMockInitialValues(prefs ?? _twoEntries);
+  SharedPreferences.setMockInitialValues(
+      {...(prefs ?? _twoEntries), 'juice.ai_enabled.v1': true});
   final fake = FakeInterpreterService(initial: InterpreterStatus(phase));
   if (queued != null) fake.queuedSummary.add(queued);
   final oracle = Oracle(data, Dice(Random(1)));
