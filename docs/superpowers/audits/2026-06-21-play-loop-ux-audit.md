@@ -95,6 +95,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > Edit — debuffs visible/editable without backing out to the roster. (D&D already has its own rich
 > Conditions section; Ironsworn/Starforged use condition meters, so they're unchanged.)
 >
+> **Increment 15 shipped (2026-06-21):** **G1** — session boundary. New `JournalKind.session` + a
+> "New session" journal action (`journal-new-session`) that drops an auto-numbered "Session N"
+> divider (rendered as a bold flag divider, distinct from scene dividers). Exports map it to a
+> markdown `# heading` (above scenes' `##`) and a plain lonelog line. Gives the outer play loop an
+> explicit marker; the "Continue → auto-recap on a time gap" elaboration stays deferred.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

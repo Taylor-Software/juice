@@ -130,6 +130,19 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     return id;
   }
 
+  /// Marks the start of a play session with a divider entry.
+  Future<void> addSessionBreak(String title) async {
+    await _persist([
+      JournalEntry(
+          id: _newId(),
+          timestamp: DateTime.now(),
+          title: title,
+          body: '',
+          kind: JournalKind.session),
+      ...await _ready,
+    ]);
+  }
+
   Future<void> addSketch(SketchData data) async {
     await _persist([
       JournalEntry(

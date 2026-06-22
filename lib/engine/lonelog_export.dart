@@ -84,6 +84,10 @@ List<String> _beatLines(
     case JournalKind.sketch:
       // Sketches are vector-only; export as a freeform note placeholder.
       lines.add('(note: [Sketch])');
+    case JournalKind.session:
+      // Lonelog has no session concept; emit a plain line so it round-trips
+      // cleanly as a text beat (no literal markdown markup on re-import).
+      lines.add(_inline(e.title));
   }
   if (e.threadId != null) {
     final title = threadTitles[e.threadId] ?? '(closed thread)';

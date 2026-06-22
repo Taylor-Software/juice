@@ -119,6 +119,14 @@ void main() {
         kind: JournalKind.text,
       );
       expect(JournalEntry.fromJson(text.toJson()).kind, JournalKind.text);
+      final session = JournalEntry(
+        id: '4',
+        timestamp: DateTime(2026, 6, 11),
+        title: 'Session 2',
+        body: '',
+        kind: JournalKind.session,
+      );
+      expect(JournalEntry.fromJson(session.toJson()).kind, JournalKind.session);
     });
 
     test('copyWith preserves kind and chaosFactor', () {
@@ -193,7 +201,6 @@ void main() {
       expect(entries[1].kind, JournalKind.text);
       expect(entries[1].body, 'We slip inside.');
     });
-
   });
 
   test('addResult persists sourceTool and payload', () async {
