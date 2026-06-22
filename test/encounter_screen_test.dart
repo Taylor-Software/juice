@@ -146,6 +146,23 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('End encounter folds the optional outcome note into the summary',
+      (tester) async {
+    final container = await pump(tester,
+        encounterJson: _enc([_c('g', 'Goblin', 12, defeated: true)], round: 2));
+    await tester.tap(find.byKey(const Key('end-encounter')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('end-encounter-note')), 'Party looted the lair.');
+    await tester.tap(find.byKey(const Key('end-encounter-confirm')));
+    await tester.pumpAndSettle();
+    final journal = await container.read(journalProvider.future);
+    expect(journal.single.body, startsWith('Round 2'));
+    expect(journal.single.body, contains('Party looted the lair.'));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('defeat toggle strikes the name and Next skips it',
       (tester) async {
     await pump(tester,

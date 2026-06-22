@@ -267,25 +267,11 @@ class EncounterScreen extends ConsumerWidget {
   String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
 
   Future<void> _endEncounter(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    final result = await showDialog<({String note})>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('End encounter?'),
-        content: const Text(
-            'A summary is added to the journal and the tracker resets.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('End'),
-          ),
-        ],
-      ),
+      builder: (context) => const _EndEncounterDialog(),
     );
-    if (ok != true) return;
+    if (result == null) return;
     final s = ref.read(encounterProvider).valueOrNull ?? const EncounterState();
     final lonelog =
         (ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
@@ -303,7 +289,10 @@ class EncounterScreen extends ConsumerWidget {
       body = 'Round ${s.round} — ${defeated.isEmpty //
           ? 'no combatants defeated' : 'defeated: ${defeated.join(', ')}'}';
     }
-    await ref.read(journalProvider.notifier).add('Encounter ended', body);
+    // Fold the GM's optional outcome note into the summary.
+    final note = result.note.trim();
+    final fullBody = note.isEmpty ? body : '$body\n$note';
+    await ref.read(journalProvider.notifier).add('Encounter ended', fullBody);
     await ref.read(encounterProvider.notifier).reset();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -479,5 +468,58 @@ class EncounterScreen extends ConsumerWidget {
           initiative: int.tryParse(initText) ?? 10,
           track: CharTrack(label: 'HP', current: max, max: max),
         ));
+  }
+}
+
+/// End-encounter confirmation that also captures an optional outcome note
+/// (folded into the journal summary). Owns its controller so it disposes after
+/// the dialog is fully gone. Pops `({note})` on End, null on Cancel.
+class _EndEncounterDialog extends StatefulWidget {
+  const _EndEncounterDialog();
+
+  @override
+  State<_EndEncounterDialog> createState() => _EndEncounterDialogState();
+}
+
+class _EndEncounterDialogState extends State<_EndEncounterDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('End encounter?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+              'A summary is added to the journal and the tracker resets.'),
+          const SizedBox(height: 12),
+          TextField(
+            key: const Key('end-encounter-note'),
+            controller: _ctrl,
+            decoration: const InputDecoration(labelText: 'Outcome (optional)'),
+            onSubmitted: (_) => Navigator.pop(context, (note: _ctrl.text)),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('end-encounter-confirm'),
+          onPressed: () => Navigator.pop(context, (note: _ctrl.text)),
+          child: const Text('End'),
+        ),
+      ],
+    );
   }
 }
