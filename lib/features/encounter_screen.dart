@@ -185,6 +185,17 @@ class EncounterScreen extends ConsumerWidget {
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                // Linked character's conditions, read through live (like HP) so
+                // a poisoned PC shows it in the turn order; edit on the sheet.
+                if (char != null)
+                  for (final cond in char.conditions)
+                    Chip(
+                      key: Key('enc-cond-$i-$cond'),
+                      label: Text(cond),
+                      visualDensity: VisualDensity.compact,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: theme.colorScheme.errorContainer,
+                    ),
                 for (final tag in c.tags)
                   InputChip(
                     label: Text(tag),
