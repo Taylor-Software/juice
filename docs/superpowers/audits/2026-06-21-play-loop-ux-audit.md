@@ -85,6 +85,10 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > Linked-combatant HP already syncs live to the character, so no separate reconcile is needed;
 > the per-combatant apply + emulation-reset parts stay deferred.
 >
+> **Increment 13 shipped (2026-06-21):** **G7** — the recap dialog ("Previously…", on-device) gained
+> an "Add to journal" action (`recap-save`) that persists the summary as a Recap entry and re-marks
+> the new newest entry seen (so the banner doesn't re-nag), instead of the recap evaporating on close.
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:

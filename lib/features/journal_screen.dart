@@ -227,6 +227,22 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+          FilledButton(
+            key: const Key('recap-save'),
+            onPressed: () async {
+              // Persist the recap so it's referenceable mid-session, then
+              // re-mark the new newest entry seen so the banner doesn't re-nag.
+              await ref.read(journalProvider.notifier).add('Recap', summary);
+              final first = ref.read(journalProvider).valueOrNull?.firstOrNull;
+              if (first != null) {
+                await ref
+                    .read(recapCacheProvider.notifier)
+                    .cacheSummary(first.id, summary);
+              }
+              if (mounted) Navigator.pop(context);
+            },
+            child: const Text('Add to journal'),
+          ),
         ],
       ),
     );
