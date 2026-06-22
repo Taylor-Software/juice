@@ -1346,6 +1346,40 @@ void main() {
     expect(c.read(charactersProvider).valueOrNull!.single.shadowdark!.torch, 1);
   });
 
+  testWidgets('shadowdark sheet surfaces conditions in a Status section',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': jsonEncode([
+        {
+          'id': 'sd1',
+          'name': 'Mort',
+          'shadowdark': ShadowdarkSheet.premade().toJson(),
+          'conditions': ['poisoned'],
+        }
+      ]),
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    final char = (await c.read(charactersProvider.future)).single;
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+                body: ShadowdarkSheetView(character: char, onBack: () {})))));
+    await tester.pumpAndSettle();
+    // The condition is visible on the open sheet, with an inline Edit affordance.
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.widgetWithText(Chip, 'poisoned'), findsOneWidget);
+    expect(find.byKey(const Key('sd-edit-conditions')), findsOneWidget);
+  });
+
   testWidgets('party effect broadcasts HP + condition across the party',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2600);

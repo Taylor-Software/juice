@@ -89,6 +89,12 @@ critic. Plus 5 live screenshots of the running web build to ground the feel.
 > an "Add to journal" action (`recap-save`) that persists the summary as a Recap entry and re-marks
 > the new newest entry seen (so the banner doesn't re-nag), instead of the recap evaporating on close.
 >
+> **Increment 14 shipped (2026-06-21):** **#17** — inline conditions on the sheet. The conditions
+> editor was extracted to a shared `showConditionsEditor` (reused by the roster), and the Shadowdark
+> sheet gained a "Status" section (`conditionsSection`) showing conditions as chips with an inline
+> Edit — debuffs visible/editable without backing out to the roster. (D&D already has its own rich
+> Conditions section; Ironsworn/Starforged use condition meters, so they're unchanged.)
+>
 > Remaining opportunities below are still open.
 
 Scenario lenses played:
