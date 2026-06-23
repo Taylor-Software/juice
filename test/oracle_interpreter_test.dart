@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/gm_chat.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 
@@ -433,5 +434,47 @@ result: Fate Check (Likely) — Yes, and…
         activeCharacter: 'Taurin (PC)'));
     expect(p, contains('character: The Innkeeper')); // the spoken NPC
     expect(p, contains('pc: Taurin (PC)')); // the player character
+  });
+
+  group('buildGmChatPrompt', () {
+    test('grounds the chat + renders the transcript + trailing GM:', () {
+      final p = buildGmChatPrompt(const GmChatSeed(
+        history: [
+          ChatTurn(ChatRole.player, 'Who guards the gate?'),
+          ChatTurn(ChatRole.gm, 'A bored sergeant named Doll.'),
+          ChatTurn(ChatRole.player, 'Can I bribe her?'),
+        ],
+        sceneTitle: 'The city gate',
+        systemPrimer: 'Ironsworn: perilous Iron Lands.',
+        activeCharacter: 'Taurin (PC)',
+        journalContext: ['Doll owes Taurin a favor.'],
+      ));
+      expect(p, contains('system: Ironsworn'));
+      expect(p, contains('pc: Taurin (PC)'));
+      expect(p, contains('scene: The city gate'));
+      expect(p, contains('recall: Doll owes Taurin a favor.'));
+      expect(p, contains('Player: Who guards the gate?'));
+      expect(p, contains('GM: A bored sergeant named Doll.'));
+      expect(p, contains('Player: Can I bribe her?'));
+      expect(p.trimRight(), endsWith('GM:')); // model continues as GM
+    });
+
+    test('keeps only the last kGmChatHistoryTurns turns', () {
+      final history = [
+        for (var i = 0; i < kGmChatHistoryTurns + 3; i++)
+          ChatTurn(ChatRole.player, 'turn$i'),
+      ];
+      final p = buildGmChatPrompt(GmChatSeed(history: history));
+      expect(p, isNot(contains('turn0'))); // dropped (oldest)
+      expect(p, contains('turn${kGmChatHistoryTurns + 2}')); // newest kept
+      final shown = 'Player:'.allMatches(p).length;
+      expect(shown, kGmChatHistoryTurns);
+    });
+
+    test('parseGmChatResponse strips think + throws on empty', () {
+      expect(
+          parseGmChatResponse('<think>x</think> Doll grins. '), 'Doll grins.');
+      expect(() => parseGmChatResponse('  '), throwsFormatException);
+    });
   });
 }
