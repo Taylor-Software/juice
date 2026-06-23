@@ -96,6 +96,17 @@ Working rules for this repo:
   `docs/superpowers/specs/2026-06-24-ai-richer-context-design.md`. This is
   foundation #1 of the AI-expansion epic; multi-turn GM chat (#2) + new
   affordances (#3) ride on it.
+  **AI expansion #2 (multi-turn GM chat):** a stateless transcript-in-prompt
+  conversation — `gmChat(GmChatSeed)` renders the #1 grounding + the last
+  `kGmChatHistoryTurns` (8) turns + a trailing `GM:` via the fresh-chat
+  `_generate` (the runtime keeps no session). Model in `lib/engine/gm_chat.dart`
+  (`ChatTurn`/`GmChatState`); persisted per campaign by `GmChatNotifier`
+  (`juice.gmchat.v1`, in `sessionScopedKeys` → exported). The
+  `lib/features/gm_chat_screen.dart` bubble thread (`showGmChat`) opens from the
+  assistant rail's Ask-GM box; nothing auto-logs — a per-GM-message Save writes a
+  `gm-chat` journal entry. The single-shot `askGm` seam is retained but
+  app-unused. See
+  `docs/superpowers/specs/2026-06-24-multi-turn-gm-chat-design.md`.
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,
