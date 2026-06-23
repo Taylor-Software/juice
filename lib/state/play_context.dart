@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../engine/journal_search.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import 'providers.dart';
@@ -72,3 +73,49 @@ final activeCharacterLineProvider = Provider<String>((ref) {
   final c = id == null ? null : chars.where((x) => x.id == id).firstOrNull;
   return activeCharacterLine(c);
 });
+
+/// Pure: assemble a [FleshOutSeed] from already-read campaign state.
+/// `sceneTitle` = the newest scene entry's title (journal is newest-first);
+/// `journalContext` = entries mentioning [name] by text (name-query recall).
+FleshOutSeed fleshOutSeedFrom({
+  required String entityKind,
+  required String name,
+  required String existingDetail,
+  required String systemPrimer,
+  required String activeCharacter,
+  required List<JournalEntry> journal,
+}) {
+  final sceneTitle = journal
+      .where((e) => e.kind == JournalKind.scene && e.title.trim().isNotEmpty)
+      .map((e) => e.title)
+      .firstOrNull;
+  final related = searchEntries(journal, name)
+      .take(kRecallMaxEntries)
+      .map((e) => e.title.isEmpty ? e.body : '${e.title}: ${e.body}')
+      .toList();
+  return FleshOutSeed(
+    entityKind: entityKind,
+    name: name,
+    existingDetail: existingDetail,
+    systemPrimer: systemPrimer,
+    activeCharacter: activeCharacter,
+    sceneTitle: sceneTitle,
+    journalContext: related,
+  );
+}
+
+/// Wrapper for widgets: read the providers, delegate to [fleshOutSeedFrom].
+FleshOutSeed buildFleshOutSeed(
+  WidgetRef ref, {
+  required String entityKind,
+  required String name,
+  required String existingDetail,
+}) =>
+    fleshOutSeedFrom(
+      entityKind: entityKind,
+      name: name,
+      existingDetail: existingDetail,
+      systemPrimer: ref.read(systemPrimerProvider),
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      journal: ref.read(journalProvider).valueOrNull ?? const [],
+    );

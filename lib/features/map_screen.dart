@@ -10,6 +10,8 @@ import '../shared/destination.dart';
 import '../shared/result_card.dart';
 import '../shared/shell_route.dart';
 import '../state/blob_store.dart';
+import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'map_snapshot.dart';
 
@@ -96,6 +98,29 @@ Widget encounterJumpButton({
             onPressed: onJump,
           )
         : const SizedBox.shrink();
+
+/// Append/Cancel review for an AI-generated flesh-out. Returns true on Append.
+Future<bool> showFleshOutReview(BuildContext context, String generated) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      key: const Key('flesh-out-review'),
+      title: const Text('Flesh out'),
+      content: SingleChildScrollView(child: Text(generated)),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel')),
+        FilledButton(
+          key: const Key('flesh-out-append'),
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Append'),
+        ),
+      ],
+    ),
+  );
+  return ok ?? false;
+}
 
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
@@ -353,6 +378,12 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                   onPressed: () => _linger(room),
                   child: const Text('Linger'),
                 ),
+                if (ref.watch(aiReadyProvider))
+                  OutlinedButton(
+                    key: const Key('flesh-out-room'),
+                    onPressed: () => _fleshOutRoom(room),
+                    child: const Text('Flesh out'),
+                  ),
                 Builder(builder: (context) {
                   final enc = ref.watch(encounterProvider);
                   return encounterToggleButton(
@@ -396,6 +427,24 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     final g = widget.oracle.dungeonLinger();
     await ref.read(mapProvider.notifier).appendRoomDetail(room.id, g.asText);
     setState(() => _last = g);
+  }
+
+  Future<void> _fleshOutRoom(DungeonRoom room) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'location', name: room.title, existingDetail: room.detail);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (await showFleshOutReview(context, detail) != true) return;
+    await ref.read(mapProvider.notifier).appendRoomDetail(room.id, detail);
   }
 
   String _dungeonSummary(MapState s) {
@@ -1007,6 +1056,12 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   onPressed: () => _siteCrawl(h),
                   child: const Text('Crawl site'),
                 ),
+                if (ref.watch(aiReadyProvider))
+                  FilledButton.tonal(
+                    key: const Key('flesh-out-site'),
+                    onPressed: () => _fleshOutSite(h),
+                    child: const Text('Flesh out'),
+                  ),
                 FilledButton.tonal(
                   key: const Key('site-full'),
                   onPressed: () => _siteFull(h),
@@ -1087,6 +1142,26 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     await ref
         .read(mapProvider.notifier)
         .generateSite(h.col, h.row, data, widget.oracle.dice);
+  }
+
+  Future<void> _fleshOutSite(HexCell h) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'location',
+        name: h.site ?? 'site',
+        existingDetail: h.siteLines.join('\n'));
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (await showFleshOutReview(context, detail) != true) return;
+    await ref.read(mapProvider.notifier).appendSiteLine(h.col, h.row, detail);
   }
 
   Future<void> _interiorCrawl(HexCell h) async {

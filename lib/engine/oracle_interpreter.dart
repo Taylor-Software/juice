@@ -611,6 +611,85 @@ String parseNarrateResponse(String raw) {
   return out;
 }
 
+// -- Flesh out an entity ------------------------------------------------------
+
+class FleshOutSeed {
+  const FleshOutSeed({
+    required this.entityKind,
+    required this.name,
+    this.existingDetail = '',
+    this.systemPrimer = '',
+    this.activeCharacter = '',
+    this.sceneTitle,
+    this.journalContext = const [],
+  });
+
+  /// Human label for the prompt, e.g. 'NPC' / 'story thread' / 'location'.
+  final String entityKind;
+
+  /// The entity's name/title — the subject of the flesh-out.
+  final String name;
+
+  /// The entity's current free-text detail; the model builds on it.
+  final String existingDetail;
+
+  /// Authored facts-only system primer (see system_primer.dart), or ''.
+  final String systemPrimer;
+
+  /// One-line active-PC descriptor (see [activeCharacterLine]), or '' — the
+  /// shared `pc:` grounding line every seam carries.
+  final String activeCharacter;
+
+  /// Latest scene entry's title, or null.
+  final String? sceneTitle;
+
+  /// Name-query recall lines (entries mentioning the entity); capped in-prompt.
+  final List<String> journalContext;
+}
+
+/// A fixed instruction + the #1 grounding (system/scene/recall via the shared
+/// helpers) + name/existing lines + a trailing `Detail:` cue. Caps mirror
+/// [buildAskGmPrompt].
+String buildFleshOutPrompt(FleshOutSeed seed) {
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
+  final scene = seed.sceneTitle;
+  final sceneLine = (scene == null || scene.trim().isEmpty)
+      ? ''
+      : 'scene: ${_capped(_flat(scene))}\n';
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+  final existing = _flat(seed.existingDetail);
+  final existingLine =
+      existing.isEmpty ? '' : 'existing: ${_capped(existing)}\n';
+  return 'You are the game master for a solo tabletop RPG. Flesh out the '
+      'following ${seed.entityKind} with 2-4 sentences of vivid, concrete '
+      'detail consistent with the established facts. Build on any existing '
+      'notes — do not contradict them. Output only the description — no '
+      'preamble, no headers, no lists.\n\n'
+      'INPUT:\n'
+      '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
+      '$sceneLine'
+      '$recall'
+      'name: ${_capped(_flat(seed.name))}\n'
+      '$existingLine'
+      'Detail:';
+}
+
+/// Plain-text parse (like parseNarrateResponse): strip think, trim, throw empty.
+String parseFleshOutResponse(String raw) {
+  final out = _stripThink(raw).trim();
+  if (out.isEmpty) throw const FormatException('Empty flesh-out response');
+  return out;
+}
+
 // -- Journal recap ------------------------------------------------------------
 
 /// Recap instruction, baked into [buildSummaryPrompt] (like

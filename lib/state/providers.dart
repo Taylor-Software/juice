@@ -860,6 +860,18 @@ class MapNotifier extends AsyncNotifier<MapState> {
     ]));
   }
 
+  /// Append an arbitrary line to a hex site's writeup (AI flesh-out). No-op if
+  /// the hex is absent or has no site. Deliberately uncapped — unlike
+  /// [crawlSite]'s 5-line dice-writeup cap, this is user-initiated free-text
+  /// enrichment and may push the site past 5 lines (which only stops further
+  /// dice crawling, by design).
+  Future<void> appendSiteLine(int col, int row, String text) async {
+    await _updateHex(col, row, (h) {
+      if (h.site == null) return null;
+      return h.copyWith(siteLines: [...h.siteLines, text]);
+    });
+  }
+
   /// Set a room's Lonelog status (Dungeon-Crawling addon); '' clears it.
   Future<void> setRoomStatus(String id, String status) async {
     final s = await _ready;
