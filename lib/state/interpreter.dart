@@ -70,6 +70,10 @@ abstract class InterpreterService {
   /// contract as [voiceLine]: requires phase == ready.
   Future<String> askGm(AskGmSeed seed);
 
+  /// Free-form GM answer continuing a multi-turn conversation (plain text).
+  /// Stateless: the whole transcript rides in the prompt. Requires ready.
+  Future<String> gmChat(GmChatSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }
