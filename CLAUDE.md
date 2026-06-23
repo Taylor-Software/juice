@@ -267,8 +267,9 @@ Working rules for this repo:
   entry (`spreadBody` folds each position's meaning in; no payload — the body is
   the canonical reading). See
   `docs/superpowers/specs/2026-06-23-tarot-spreads-design.md`. (Single-card
-  draws also have `/card` + `/tarot` slash commands and a HUD quick-draw, #133.)
-  Deferred: a `/spread` slash command (needs a picker). See
+  draws have `/card` + `/tarot` slash commands and a HUD quick-draw, #133; the
+  `/spread` command draws a spread, arg-selected — `/spread celtic` — via the
+  pure `resolveSpread` + `DecksNotifier.drawSpreadAndLog`.) See
   `docs/superpowers/specs/2026-06-22-dice-reroll-card-oracles-design.md`.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
