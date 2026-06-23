@@ -108,6 +108,51 @@ void main() {
     expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
   });
 
+  testWidgets('/spread suggestion hidden when cards is off', (tester) async {
+    await pumpPalette(tester, data); // cards off (not in kAllSystems)
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/spr');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-spread')), findsNothing);
+  });
+
+  testWidgets('/spread suggestion appears when cards is on', (tester) async {
+    await pumpPalette(tester, data, prefs: cardsPrefs);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/spr');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-spread')), findsOneWidget);
+  });
+
+  testWidgets('tapping the spread chip logs a default 3-card spread entry',
+      (tester) async {
+    await pumpPalette(tester, data, prefs: cardsPrefs);
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/spread');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('slash-cmd-spread')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
+    expect(entries.first.body, contains('Past'));
+    expect(entries.first.body, contains('Future'));
+  });
+
+  testWidgets('/spread celtic via Enter logs the 10-card spread',
+      (tester) async {
+    await pumpPalette(tester, data, prefs: cardsPrefs);
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/spread celtic');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('journal-send')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
+    expect(entries.first.body, contains('Foundation')); // Celtic-Cross position
+  });
+
   testWidgets('selecting a no-arg command runs it and clears the composer',
       (tester) async {
     await pumpPalette(tester, data);
