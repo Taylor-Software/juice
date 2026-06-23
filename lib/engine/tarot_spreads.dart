@@ -47,3 +47,17 @@ String spreadBody(
   }
   return b.toString();
 }
+
+/// Resolves a spread from free-text [arg]: a case-insensitive match against a
+/// spread's id (prefix) or name (substring). Empty or no match → the first
+/// spread (the 3-card default). Used by the /spread slash command's argument.
+TarotSpread resolveSpread(String arg) {
+  final q = arg.trim().toLowerCase();
+  if (q.isEmpty) return kTarotSpreads.first;
+  for (final s in kTarotSpreads) {
+    if (s.id.toLowerCase().startsWith(q) || s.name.toLowerCase().contains(q)) {
+      return s;
+    }
+  }
+  return kTarotSpreads.first;
+}

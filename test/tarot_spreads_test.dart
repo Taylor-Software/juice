@@ -27,4 +27,20 @@ void main() {
     expect(body, contains('Reversed —')); // the Tower is reversed
     expect(body, contains('Upright —')); // the others upright
   });
+
+  group('resolveSpread', () {
+    test('empty or unknown arg → the default (first) spread', () {
+      expect(resolveSpread(''), kTarotSpreads.first);
+      expect(resolveSpread('   '), kTarotSpreads.first);
+      expect(resolveSpread('zzz'), kTarotSpreads.first);
+    });
+
+    test('matches by id prefix and name substring, case-insensitive', () {
+      expect(resolveSpread('celtic').id, 'celtic-cross');
+      expect(resolveSpread('CELTIC').id, 'celtic-cross');
+      expect(resolveSpread('cross').id, 'cross'); // 5-card, before celtic-cross
+      expect(resolveSpread('five').id, 'cross'); // name "Five-card Cross"
+      expect(resolveSpread('three').id, 'three-card');
+    });
+  });
 }
