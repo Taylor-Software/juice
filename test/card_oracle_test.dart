@@ -216,6 +216,32 @@ void main() {
       await c.read(decksProvider.notifier).draw(oracle, tarot: false);
       expect(c.read(decksProvider).valueOrNull!.standard.order, hasLength(54));
     });
+
+    test('drawSpreadAndLog logs one cards entry with the spread + positions',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final oracle = Oracle(data, Dice(Random(6)));
+      final c = ProviderContainer(
+          overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+      addTearDown(c.dispose);
+      await c.read(decksProvider.future);
+      await c.read(journalProvider.future);
+
+      final spread = kTarotSpreads.first; // three-card
+      await c.read(decksProvider.notifier).drawSpreadAndLog(oracle, spread);
+
+      final entries = c.read(journalProvider).valueOrNull!;
+      expect(entries, hasLength(1));
+      expect(entries.single.sourceTool, 'cards');
+      expect(entries.single.body, contains(spread.name));
+      for (final pos in spread.positions) {
+        expect(entries.single.body, contains(pos));
+      }
+      expect(c.read(decksProvider).valueOrNull!.tarot.drawn, spread.count);
+    });
   });
 
   group('jokers deck + state', () {
