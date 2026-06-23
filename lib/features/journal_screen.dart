@@ -17,6 +17,7 @@ import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
+import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../shared/destination.dart';
 import '../shared/dice_sheet.dart';
@@ -92,6 +93,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinRecap = 'recap';
   static const _builtinCard = 'card';
   static const _builtinTarot = 'tarot';
+  static const _builtinSpread = 'spread';
 
   @override
   void initState() {
@@ -275,6 +277,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+    }
+  }
+
+  /// Draws + logs a tarot spread from the composer; [arg] selects the spread
+  /// (id/name; empty → 3-card default) via resolveSpread.
+  Future<void> _drawSpreadCmd(String arg) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final spread = resolveSpread(arg);
+    await ref.read(decksProvider.notifier).drawSpreadAndLog(oracle, spread);
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Drew ${spread.name}')));
     }
   }
 
@@ -880,6 +895,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showRecap = _builtinRecap.startsWith(tok) && _canVoice;
     final showCard = _builtinCard.startsWith(tok) && cardsOn;
     final showTarot = _builtinTarot.startsWith(tok) && cardsOn;
+    final showSpread = _builtinSpread.startsWith(tok) && cardsOn;
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -970,13 +986,26 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   _drawCardCmd(tarot: true);
                 },
               ),
+            if (showSpread)
+              ListTile(
+                key: const Key('slash-cmd-spread'),
+                dense: true,
+                leading: const Icon(Icons.dashboard_outlined),
+                title: const Text('Draw a tarot spread'),
+                subtitle: const Text('Add a name, e.g. /spread celtic'),
+                onTap: () {
+                  _composer.clear();
+                  _drawSpreadCmd('');
+                },
+              ),
             if (matches.isEmpty &&
                 !showScene &&
                 !showHelp &&
                 !showAsk &&
                 !showRecap &&
                 !showCard &&
-                !showTarot)
+                !showTarot &&
+                !showSpread)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text('No matching command'),
@@ -1309,6 +1338,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinTarot == tok) {
         _composer.clear();
         await _drawCardCmd(tarot: true);
+        return;
+      }
+      if (_builtinSpread == tok) {
+        _composer.clear();
+        await _drawSpreadCmd(parsed.rest);
         return;
       }
       if (_builtinAsk == tok) {
