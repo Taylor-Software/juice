@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/shared/mention_text.dart';
@@ -131,5 +132,69 @@ void main() {
       ),
     ));
     expect(hasRecognizer(tester), isTrue);
+  });
+
+  // -- Inline tappable dice ---------------------------------------------------
+
+  // Collects TextSpans carrying a tap recognizer, as (text, span) pairs.
+  List<(String, TextSpan)> recognizerSpans(WidgetTester t) {
+    final rt = t.widget<RichText>(find.byType(RichText).first);
+    final out = <(String, TextSpan)>[];
+    void walk(InlineSpan s) {
+      if (s is TextSpan) {
+        if (s.recognizer != null && s.text != null) out.add((s.text!, s));
+        s.children?.forEach(walk);
+      }
+    }
+
+    walk(rt.text);
+    return out;
+  }
+
+  testWidgets('a dice token becomes a tappable span that fires onDiceTap',
+      (tester) async {
+    String? rolled;
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: MentionText('hit it for 2d6+3 now', onDiceTap: (n) => rolled = n),
+      ),
+    ));
+    final dice = recognizerSpans(tester).where((p) => p.$1 == '2d6+3').toList();
+    expect(dice, hasLength(1));
+    (dice.single.$2.recognizer as TapGestureRecognizer).onTap!();
+    expect(rolled, '2d6+3');
+  });
+
+  testWidgets('no dice spans under lonelog highlighting', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: MentionText('roll 2d6 now', lonelog: true, onDiceTap: (_) {}),
+      ),
+    ));
+    expect(recognizerSpans(tester).any((p) => p.$1 == '2d6'), isFalse);
+  });
+
+  testWidgets('a body with a mention AND dice yields both links',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: MentionText('@[Mara](char:c1) rolls 2d6',
+            onCharacterTap: (_) {}, onDiceTap: (_) {}),
+      ),
+    ));
+    final spans = recognizerSpans(tester);
+    expect(spans.any((p) => p.$1 == 'Mara'), isTrue); // mention link
+    expect(spans.any((p) => p.$1 == '2d6'), isTrue); // dice link
+  });
+
+  testWidgets('no onDiceTap → dice text stays plain', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.light(),
+      home: const Scaffold(body: MentionText('roll 2d6 now')),
+    ));
+    expect(recognizerSpans(tester).any((p) => p.$1 == '2d6'), isFalse);
   });
 }

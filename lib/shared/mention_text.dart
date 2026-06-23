@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../engine/dice_scan.dart';
 import '../engine/lonelog_highlight.dart';
 import '../engine/mention_parser.dart';
 
@@ -16,12 +17,17 @@ class MentionText extends StatefulWidget {
     this.style,
     this.onCharacterTap,
     this.onThreadTap,
+    this.onDiceTap,
     this.lonelog = false,
   });
   final String body;
   final TextStyle? style;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
+
+  /// Called with the dice notation when a player taps an inline dice token
+  /// (e.g. `2d6+3`) in non-lonelog prose. Null disables dice detection.
+  final void Function(String notation)? onDiceTap;
   final bool lonelog;
 
   @override
@@ -52,7 +58,10 @@ class _MentionTextState extends State<MentionText> {
   /// line by line, preserving the newlines between lines.
   List<InlineSpan> _textSpans(
       String text, TextStyle? base, ColorScheme scheme) {
-    if (!widget.lonelog) return [TextSpan(text: text, style: base)];
+    if (!widget.lonelog) {
+      if (widget.onDiceTap == null) return [TextSpan(text: text, style: base)];
+      return _diceSpans(text, base, scheme);
+    }
     final out = <InlineSpan>[];
     final lines = text.split('\n');
     for (var i = 0; i < lines.length; i++) {
@@ -64,6 +73,36 @@ class _MentionTextState extends State<MentionText> {
         ));
       }
       if (i < lines.length - 1) out.add(TextSpan(text: '\n', style: base));
+    }
+    return out;
+  }
+
+  /// Splits a plain text run into plain spans + tappable dice-notation spans
+  /// (link-styled, like a mention). Recognizers go in [_recognizers], which
+  /// build() clears each frame and dispose() tears down.
+  List<InlineSpan> _diceSpans(
+      String text, TextStyle? base, ColorScheme scheme) {
+    final dice = scanDice(text);
+    if (dice.isEmpty) return [TextSpan(text: text, style: base)];
+    final linkStyle = (base ?? const TextStyle())
+        .copyWith(color: scheme.primary, fontWeight: FontWeight.w600);
+    final out = <InlineSpan>[];
+    var cursor = 0;
+    for (final d in dice) {
+      if (d.start > cursor) {
+        out.add(TextSpan(text: text.substring(cursor, d.start), style: base));
+      }
+      final rec = TapGestureRecognizer()
+        ..onTap = () => widget.onDiceTap!(d.notation);
+      _recognizers.add(rec);
+      out.add(TextSpan(
+          text: text.substring(d.start, d.end),
+          style: linkStyle,
+          recognizer: rec));
+      cursor = d.end;
+    }
+    if (cursor < text.length) {
+      out.add(TextSpan(text: text.substring(cursor), style: base));
     }
     return out;
   }
