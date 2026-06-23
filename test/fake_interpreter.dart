@@ -33,10 +33,10 @@ class FakeInterpreterService implements InterpreterService {
   int gmChatCalls = 0;
   Object? gmChatError;
 
+  final List<String> queuedNarrate = [];
+  NarrateSeed? lastNarrateSeed;
   int narrateCalls = 0;
   Object? narrateError;
-  NarrateSeed? lastNarrateSeed;
-  final List<String> queuedNarrate = [];
 
   /// When set, interpret() blocks on it after counting the call — lets a
   /// test hold a generation in flight (e.g. to probe reentrancy guards).

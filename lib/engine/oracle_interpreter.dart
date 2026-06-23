@@ -542,8 +542,11 @@ String parseGmChatResponse(String raw) {
 
 // -- GM narration -------------------------------------------------------------
 
+/// Which GM-narration prompt to build: continue the scene, or raise the stakes.
 enum NarrateMode { continueScene, complication }
 
+/// Inputs for a one-shot GM narration. Carries the #1 grounding (scene / system
+/// primer / active PC / recalled journal lines) plus the [mode].
 class NarrateSeed {
   const NarrateSeed({
     required this.mode,
@@ -574,7 +577,8 @@ String _narrateInstruction(NarrateMode mode) => switch (mode) {
     };
 
 /// Mode-specific instruction + the #1 grounding (system/pc/scene/recall) + a
-/// trailing `Narration:` cue. Caps mirror the other builders.
+/// trailing `Narration:` cue. Caps mirror [buildAskGmPrompt]: the scene/system
+/// lines go through `_capped`; recall is [kRecallMaxEntries] × [kRecallMaxChars].
 String buildNarratePrompt(NarrateSeed seed) {
   final scene = seed.sceneTitle;
   final sceneLine = (scene == null || scene.trim().isEmpty)

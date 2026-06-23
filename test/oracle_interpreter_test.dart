@@ -458,7 +458,18 @@ result: Fate Check (Likely) — Yes, and…
           buildNarratePrompt(const NarrateSeed(mode: NarrateMode.complication));
       expect(p, contains('complication or twist'));
       expect(p, isNot(contains('system:'))); // empty grounding omitted
+      expect(p, isNot(contains('scene:'))); // null sceneTitle omitted too
       expect(p.trimRight(), endsWith('Narration:'));
+    });
+
+    test('caps an over-long sceneTitle with an ellipsis', () {
+      final long = 'a' * 400; // > kAskGmMaxFieldChars (300)
+      final p = buildNarratePrompt(NarrateSeed(
+        mode: NarrateMode.continueScene,
+        sceneTitle: long,
+      ));
+      expect(p, contains('…')); // truncated
+      expect(p, isNot(contains(long))); // full untruncated title absent
     });
 
     test('parseNarrateResponse strips think + throws on empty', () {
