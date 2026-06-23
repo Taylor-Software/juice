@@ -115,8 +115,18 @@ Working rules for this repo:
   complication, each logging a `narrate` journal entry (title
   "Narration"/"Complication") via the same recap one-tap pattern (`_narrate` in
   `journal_screen.dart`). See
-  `docs/superpowers/specs/2026-06-24-gm-narration-design.md`. Deferred AI
-  affordances: flesh-out an entity (#4), LLM-ranked suggestion chips (#5).
+  `docs/superpowers/specs/2026-06-24-gm-narration-design.md`.
+  **AI expansion #4 (flesh out an entity):** one generic `fleshOut(FleshOutSeed)`
+  seam (`buildFleshOutPrompt` in `lib/engine/oracle_interpreter.dart` — instruction
+  + #1 grounding incl. the shared `pc:` line + `name:`/`existing:` + `Detail:` cue)
+  over four aiReady-gated entry points — roster character + thread (append via the
+  `_EditDialog`, `tracker_screen.dart`), dungeon room + world hex site (append
+  after a `showFleshOutReview` Append/Cancel, `map_screen.dart`). Grounding via the
+  pure `fleshOutSeedFrom` / `buildFleshOutSeed` (`play_context.dart`) using
+  name-query `searchEntries` recall; `MapNotifier.appendSiteLine` mirrors
+  `appendRoomDetail`. See
+  `docs/superpowers/specs/2026-06-24-flesh-out-entity-design.md`. Deferred AI
+  affordance: LLM-ranked suggestion chips (#5).
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,
