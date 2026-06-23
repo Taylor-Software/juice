@@ -992,6 +992,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 dense: true,
                 leading: const Icon(Icons.dashboard_outlined),
                 title: const Text('Draw a tarot spread'),
+                subtitle: const Text('Add a name, e.g. /spread celtic'),
                 onTap: () {
                   _composer.clear();
                   _drawSpreadCmd('');
