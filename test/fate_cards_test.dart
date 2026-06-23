@@ -56,6 +56,15 @@ void main() {
         anyOf(contains('Upright —'), contains('Reversed —')));
   });
 
+  testWidgets('drawing a standard card shows its image but no meaning',
+      (tester) async {
+    await pumpFate(tester);
+    await tester.tap(find.byKey(const Key('cards-draw')));
+    await tester.pumpAndSettle();
+    expect(find.byType(CardImage), findsOneWidget); // bundled SVG renders
+    expect(find.byKey(const Key('card-meaning')), findsNothing); // no meaning
+  });
+
   testWidgets('Card meanings button opens the reference', (tester) async {
     await pumpFate(tester);
     await tester.tap(find.byKey(const Key('cards-reference')));

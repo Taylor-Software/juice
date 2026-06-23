@@ -9,7 +9,7 @@ void main() {
     expect(cardSlug('10 of Clubs'), '10-of-clubs');
     expect(tarotImageAsset('The Tower'), 'assets/tarot/the-tower.jpg');
     expect(playingCardImageAsset('Ace of Spades'),
-        'assets/playing/ace-of-spades.png');
+        'assets/playing/ace-of-spades.svg');
   });
 
   test('cardImageAsset resolves tarot, strips reversed, null otherwise', () {
