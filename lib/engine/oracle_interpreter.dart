@@ -540,6 +540,73 @@ String parseGmChatResponse(String raw) {
   return out;
 }
 
+// -- GM narration -------------------------------------------------------------
+
+enum NarrateMode { continueScene, complication }
+
+class NarrateSeed {
+  const NarrateSeed({
+    required this.mode,
+    this.sceneTitle,
+    this.systemPrimer = '',
+    this.activeCharacter = '',
+    this.journalContext = const [],
+  });
+  final NarrateMode mode;
+  final String? sceneTitle;
+  final String systemPrimer;
+  final String activeCharacter;
+  final List<String> journalContext;
+}
+
+String _narrateInstruction(NarrateMode mode) => switch (mode) {
+      NarrateMode.continueScene =>
+        'You are the game master for a solo tabletop RPG. Narrate the next beat '
+            'of the current scene in 1-3 sentences of vivid present-tense prose, '
+            'advancing the action and staying consistent with the established '
+            'facts. Output only the narration — no preamble, no options, no '
+            'questions.',
+      NarrateMode.complication =>
+        'You are the game master for a solo tabletop RPG. Introduce ONE '
+            'complication or twist that raises the stakes in the current scene, '
+            'in 1-3 sentences of present-tense prose, consistent with the '
+            'established facts. Output only the complication.',
+    };
+
+/// Mode-specific instruction + the #1 grounding (system/pc/scene/recall) + a
+/// trailing `Narration:` cue. Caps mirror the other builders.
+String buildNarratePrompt(NarrateSeed seed) {
+  final scene = seed.sceneTitle;
+  final sceneLine = (scene == null || scene.trim().isEmpty)
+      ? ''
+      : 'scene: ${_capped(_flat(scene))}\n';
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+  return '${_narrateInstruction(seed.mode)}\n\n'
+      'INPUT:\n'
+      '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
+      '$sceneLine'
+      '$recall'
+      'Narration:';
+}
+
+/// Plain-text parse (like parseAskGmResponse): strip think spans, trim, throw
+/// on empty.
+String parseNarrateResponse(String raw) {
+  final out = _stripThink(raw).trim();
+  if (out.isEmpty) throw const FormatException('Empty narration response');
+  return out;
+}
+
 // -- Journal recap ------------------------------------------------------------
 
 /// Recap instruction, baked into [buildSummaryPrompt] (like

@@ -436,6 +436,38 @@ result: Fate Check (Likely) — Yes, and…
     expect(p, contains('pc: Taurin (PC)')); // the player character
   });
 
+  group('buildNarratePrompt', () {
+    test('continueScene grounds + uses the narrate-next-beat instruction', () {
+      final p = buildNarratePrompt(const NarrateSeed(
+        mode: NarrateMode.continueScene,
+        sceneTitle: 'The collapsing bridge',
+        systemPrimer: 'Ironsworn: perilous Iron Lands.',
+        activeCharacter: 'Taurin (PC)',
+        journalContext: ['The rope is fraying.'],
+      ));
+      expect(p, contains('Narrate the next beat'));
+      expect(p, contains('system: Ironsworn'));
+      expect(p, contains('pc: Taurin (PC)'));
+      expect(p, contains('scene: The collapsing bridge'));
+      expect(p, contains('recall: The rope is fraying.'));
+      expect(p.trimRight(), endsWith('Narration:'));
+    });
+
+    test('complication uses the twist instruction', () {
+      final p =
+          buildNarratePrompt(const NarrateSeed(mode: NarrateMode.complication));
+      expect(p, contains('complication or twist'));
+      expect(p, isNot(contains('system:'))); // empty grounding omitted
+      expect(p.trimRight(), endsWith('Narration:'));
+    });
+
+    test('parseNarrateResponse strips think + throws on empty', () {
+      expect(parseNarrateResponse('<think>x</think> The bridge groans. '),
+          'The bridge groans.');
+      expect(() => parseNarrateResponse('  '), throwsFormatException);
+    });
+  });
+
   group('buildGmChatPrompt', () {
     test('grounds the chat + renders the transcript + trailing GM:', () {
       final p = buildGmChatPrompt(const GmChatSeed(
