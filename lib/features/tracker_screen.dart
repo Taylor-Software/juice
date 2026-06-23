@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
@@ -723,6 +724,39 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   Future<void> _editConditions(BuildContext context, Character c) =>
       showConditionsEditor(context, ref, c);
 
+  Future<void> _fleshOutCharacter(BuildContext context, Character c) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: c.role == CharacterRole.npc ? 'NPC' : 'character',
+        name: c.name,
+        existingDetail: c.note);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!mounted) return;
+    final note =
+        [c.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
+    final result = await showDialog<({String title, String note})>(
+      context: context,
+      builder: (_) => _EditDialog(
+        heading: 'Flesh out — ${c.name}',
+        labelA: 'Name',
+        labelB: 'Note',
+        initialA: c.name,
+        initialB: note,
+      ),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    await ref.read(charactersProvider.notifier).replace(
+        c.copyWith(name: result.title.trim(), note: result.note.trim()));
+  }
+
   Future<void> _editNameNote(BuildContext context, Character c) async {
     final result = await showDialog<({String title, String note})>(
       context: context,
@@ -766,6 +800,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   style: theme.textTheme.titleLarge,
                   overflow: TextOverflow.ellipsis),
             ),
+            if (ref.watch(aiReadyProvider))
+              IconButton(
+                key: const Key('flesh-out-character'),
+                icon: const Icon(Icons.auto_fix_high_outlined),
+                tooltip: 'Flesh out (AI)',
+                onPressed: () => _fleshOutCharacter(context, c),
+              ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Edit name & notes',
