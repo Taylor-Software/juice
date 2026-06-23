@@ -73,7 +73,7 @@ void main() {
     expect(find.text('Fate Check (Juice)'), findsNothing);
   });
 
-  const _cardsPrefs = {
+  const cardsPrefs = {
     'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
         '"name":"C1","systems":["cards"]}]}',
   };
@@ -87,7 +87,7 @@ void main() {
 
   testWidgets('/card and /tarot suggestions appear when cards is on',
       (tester) async {
-    await pumpPalette(tester, data, prefs: _cardsPrefs);
+    await pumpPalette(tester, data, prefs: cardsPrefs);
     await tester.enterText(find.byKey(const Key('journal-composer')), '/car');
     await tester.pump();
     expect(find.byKey(const Key('slash-cmd-card')), findsOneWidget);
@@ -97,7 +97,7 @@ void main() {
   });
 
   testWidgets('tapping Draw a tarot card logs a cards entry', (tester) async {
-    await pumpPalette(tester, data, prefs: _cardsPrefs);
+    await pumpPalette(tester, data, prefs: cardsPrefs);
     await tester.enterText(find.byKey(const Key('journal-composer')), '/tarot');
     await tester.pump();
     await tester.tap(find.byKey(const Key('slash-cmd-tarot')));
