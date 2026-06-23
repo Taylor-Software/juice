@@ -332,6 +332,15 @@ Working rules for this repo:
   web PDF import (pdfium WASM), sharper re-render from provenance, blob GC for
   orphans, shapes/text/layers/pan-zoom. No licensed content (user-drawn vectors +
   user-imported images/PDFs; never bundled rulebooks).
+  **Map snapshot → annotate:** the World (`HexMapPane`) and Dungeon
+  (`DungeonMapPane`) panes wrap their `CustomPaint` in a `RepaintBoundary` and
+  show a web-gated `map-snapshot`/`dungeon-snapshot` button that rasterizes the
+  full map to PNG (`captureBoundaryPng`) and opens it as a sketch-image-bg
+  annotation (`snapshotMapToJournal` in `lib/features/map_snapshot.dart`, the
+  shared tail of `_annotatePdf`) — no model change, a map snapshot is an ordinary
+  `backgroundBlobId` sketch (so `referencedBlobIds`'s `bg` scan bundles it on
+  export). Capture primitive unit-tested; the editor route is device-verified.
+  See `docs/superpowers/specs/2026-06-23-map-snapshot-annotate-design.md`.
 - The on-device interpreter model is pinned in
   `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
   `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/
