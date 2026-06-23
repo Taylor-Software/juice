@@ -14,7 +14,7 @@ void main() {
   });
 
   test('finds multiple, in order, with correct ranges', () {
-    final s = 'I rolled 2d6 and d20.';
+    const s = 'I rolled 2d6 and d20.';
     final spans = scanDice(s);
     expect(spans.map((d) => d.notation).toList(), ['2d6', 'd20']);
     for (final d in spans) {

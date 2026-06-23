@@ -717,6 +717,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             title: MentionText(e.body,
                 onCharacterTap: _openCharacter,
                 onThreadTap: _openThread,
+                onDiceTap: _rollDice,
                 lonelog: lonelog),
             subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
             trailing: menu,
@@ -737,6 +738,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                     : null,
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
+            onDiceTap: _rollDice,
             lonelog: lonelog,
           );
         }
@@ -747,6 +749,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               [e.body, ...extras].join('\n'),
               onCharacterTap: _openCharacter,
               onThreadTap: _openThread,
+              onDiceTap: _rollDice,
               lonelog: lonelog,
             ),
             trailing: menu,
@@ -1540,6 +1543,29 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
 
+  /// Rolls an inline dice token tapped in journal prose and logs it as a
+  /// rerollable `dice` entry (same pipeline as the dice-roller reroll).
+  void _rollDice(String notation) {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final DiceRollResult r;
+    try {
+      r = parseDice(notation).roll(oracle.dice);
+    } on FormatException {
+      return; // scanDice already validated; stay defensive
+    }
+    final g = diceRollGenResult(r);
+    ref.read(journalProvider.notifier).addResult(
+      g.title,
+      g.asText,
+      sourceTool: 'dice',
+      payload: {...g.toPayload(), 'expression': r.expression},
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${r.expression} = ${r.total}')),
+    );
+  }
+
   /// Latest scene entry (storage is newest-first), as model context.
   String _sceneContext() {
     final entries = ref.read(journalProvider).valueOrNull ?? const [];
@@ -1925,6 +1951,7 @@ class _PayloadCard extends StatelessWidget {
     this.onOpenTool,
     this.onCharacterTap,
     this.onThreadTap,
+    this.onDiceTap,
     this.lonelog = false,
   });
 
@@ -1935,6 +1962,7 @@ class _PayloadCard extends StatelessWidget {
   final VoidCallback? onOpenTool;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
+  final void Function(String notation)? onDiceTap;
   final bool lonelog;
 
   @override
@@ -2028,6 +2056,7 @@ class _PayloadCard extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
                 onCharacterTap: onCharacterTap,
                 onThreadTap: onThreadTap,
+                onDiceTap: onDiceTap,
                 lonelog: lonelog,
               ),
             ],
