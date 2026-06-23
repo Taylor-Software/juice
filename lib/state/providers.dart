@@ -566,12 +566,16 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
   }
 
+  /// The active standard-deck list: 54 cards with the jokers variant, else 52.
+  List<String> _standardDeck(DecksState s) =>
+      s.jokers ? kPlayingDeckWithJokers : kPlayingDeck;
+
   /// Draws one card (reshuffling if needed), persists the new deck state, and
   /// returns the card result. [tarot] selects the 78-card deck (reversible).
   Future<GenResult> draw(Oracle oracle, {required bool tarot}) async {
     final cur = state.valueOrNull ?? await future;
     final res = oracle.drawCard(
-      deck: tarot ? kTarotDeck : kPlayingDeck,
+      deck: tarot ? kTarotDeck : _standardDeck(cur),
       state: tarot ? cur.tarot : cur.standard,
       title: tarot ? 'Tarot' : 'Card',
       reversible: tarot,
@@ -620,6 +624,14 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
     await _save(tarot
         ? cur.copyWith(tarot: const DeckState())
         : cur.copyWith(standard: const DeckState()));
+  }
+
+  /// Toggles the jokers variant for the standard deck, resetting the standard
+  /// DeckState so the next draw reshuffles a full 52- or 54-card deck (keeps the
+  /// remaining-readout denominator coherent).
+  Future<void> setJokers(bool value) async {
+    final cur = state.valueOrNull ?? await future;
+    await _save(cur.copyWith(jokers: value, standard: const DeckState()));
   }
 }
 

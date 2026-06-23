@@ -192,5 +192,50 @@ void main() {
       final stdEntry = entries.firstWhere((e) => e.body.contains(sg.summary!));
       expect(stdEntry.body, isNot(contains('—')));
     });
+
+    test('setJokers persists the flag, resets the standard deck, and draws 54',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final oracle = Oracle(data, Dice(Random(4)));
+      final c = ProviderContainer(
+          overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+      addTearDown(c.dispose);
+      await c.read(decksProvider.future);
+
+      await c.read(decksProvider.notifier).draw(oracle, tarot: false);
+      expect(c.read(decksProvider).valueOrNull!.standard.order, hasLength(52));
+
+      await c.read(decksProvider.notifier).setJokers(true);
+      final afterToggle = c.read(decksProvider).valueOrNull!;
+      expect(afterToggle.jokers, isTrue);
+      expect(afterToggle.standard.order, isEmpty); // reset
+
+      await c.read(decksProvider.notifier).draw(oracle, tarot: false);
+      expect(c.read(decksProvider).valueOrNull!.standard.order, hasLength(54));
+    });
+  });
+
+  group('jokers deck + state', () {
+    test('kPlayingDeckWithJokers is 54 with both jokers; base deck stays 52',
+        () {
+      expect(kPlayingDeck, hasLength(52));
+      expect(kPlayingDeckWithJokers, hasLength(54));
+      expect(kPlayingDeckWithJokers, containsAll(['Red Joker', 'Black Joker']));
+      expect(kPlayingDeckWithJokers.take(52), kPlayingDeck); // jokers appended
+    });
+
+    test('DecksState.jokers round-trips; missing key defaults false', () {
+      const on = DecksState(jokers: true);
+      expect(DecksState.fromJson(on.toJson()).jokers, isTrue);
+      final legacy = DecksState.fromJson(const {
+        'standard': {'order': <int>[], 'drawn': 0},
+        'tarot': {'order': <int>[], 'drawn': 0},
+      });
+      expect(legacy.jokers, isFalse);
+      expect(const DecksState().copyWith(jokers: true).jokers, isTrue);
+    });
   });
 }

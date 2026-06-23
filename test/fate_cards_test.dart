@@ -72,6 +72,16 @@ void main() {
     expect(find.byType(TarotReference), findsOneWidget);
   });
 
+  testWidgets('jokers toggle switches the standard deck readout to /54',
+      (tester) async {
+    await pumpFate(tester);
+    expect(find.textContaining('/52'), findsOneWidget); // default 52
+    await tester.tap(find.byKey(const Key('cards-jokers-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('/54'), findsOneWidget); // jokers on
+    expect(find.textContaining('/52'), findsNothing);
+  });
+
   testWidgets('drawing a spread renders a card per position and logs one entry',
       (tester) async {
     final container = await pumpFate(tester);

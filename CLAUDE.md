@@ -244,7 +244,9 @@ Working rules for this repo:
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
-  deck (`kPlayingDeck`) and a 78-card tarot deck (`kTarotDeck` = `kTarotMajor` +
+  deck (`kPlayingDeck`, opt-in 54 with the two name-only jokers via
+  `kPlayingDeckWithJokers` + the `cards-jokers-toggle` / `DecksState.jokers`
+  flag) and a 78-card tarot deck (`kTarotDeck` = `kTarotMajor` +
   minor), authored facts-only constants in `models.dart` — card **identities
   only, no divinatory meanings** (those are copyrighted prose). Decks are drawn
   WITHOUT replacement + reshuffle, modeled by `DeckState {order, drawn}` /
@@ -266,7 +268,7 @@ Working rules for this repo:
   the canonical reading). See
   `docs/superpowers/specs/2026-06-23-tarot-spreads-design.md`. (Single-card
   draws also have `/card` + `/tarot` slash commands and a HUD quick-draw, #133.)
-  Deferred: a `/spread` slash command (needs a picker), jokers. See
+  Deferred: a `/spread` slash command (needs a picker). See
   `docs/superpowers/specs/2026-06-22-dice-reroll-card-oracles-design.md`.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device

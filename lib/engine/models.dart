@@ -2332,6 +2332,16 @@ final List<String> kPlayingDeck = [
     for (final r in _kPlayingRanks) '$r of $s',
 ];
 
+/// The two jokers, by identity only (no asserted meaning). Used by the opt-in
+/// 54-card variant.
+const kPlayingJokers = ['Red Joker', 'Black Joker'];
+
+/// The standard deck plus the two jokers (54 cards), for the opt-in variant.
+final List<String> kPlayingDeckWithJokers = [
+  ...kPlayingDeck,
+  ...kPlayingJokers
+];
+
 /// The 22 Major Arcana, in canonical order.
 const kTarotMajor = [
   'The Fool',
@@ -2402,21 +2412,29 @@ class DecksState {
   const DecksState({
     this.standard = const DeckState(),
     this.tarot = const DeckState(),
+    this.jokers = false,
   });
   final DeckState standard;
   final DeckState tarot;
+  final bool jokers;
 
-  DecksState copyWith({DeckState? standard, DeckState? tarot}) => DecksState(
+  DecksState copyWith({DeckState? standard, DeckState? tarot, bool? jokers}) =>
+      DecksState(
         standard: standard ?? this.standard,
         tarot: tarot ?? this.tarot,
+        jokers: jokers ?? this.jokers,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'standard': standard.toJson(), 'tarot': tarot.toJson()};
+  Map<String, dynamic> toJson() => {
+        'standard': standard.toJson(),
+        'tarot': tarot.toJson(),
+        'jokers': jokers,
+      };
 
   factory DecksState.fromJson(Map<String, dynamic> j) => DecksState(
         standard: DeckState.fromJson(j['standard']),
         tarot: DeckState.fromJson(j['tarot']),
+        jokers: j['jokers'] == true, // tolerant: missing/non-bool → false
       );
 }
 
