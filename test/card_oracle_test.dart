@@ -8,6 +8,7 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/tarot_spreads.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -92,6 +93,31 @@ void main() {
     });
   });
 
+  group('Oracle.drawSpread', () {
+    test('draws one card per position, advances state, builds rolls', () {
+      final oracle = Oracle(data, Dice(Random(5)));
+      final spread = kTarotSpreads.first; // three-card
+      final out = oracle.drawSpread(
+        deck: kTarotDeck,
+        state: const DeckState(),
+        spread: spread,
+        reversible: true,
+      );
+      expect(out.cards, hasLength(3));
+      expect(out.cards.map((c) => c.position).toList(), spread.positions);
+      expect(out.next.drawn, 3); // advanced by the spread size
+      expect(out.result.title, 'Tarot Spread');
+      expect(out.result.summary, spread.name);
+      expect(out.result.rolls, hasLength(3));
+      expect(out.result.rolls.map((r) => r.label).toList(), spread.positions);
+      // Every drawn card is a real tarot card (orientation suffix stripped).
+      for (final c in out.cards) {
+        final base = c.shown.replaceAll(' (reversed)', '');
+        expect(kTarotDeck.contains(base), isTrue);
+      }
+    });
+  });
+
   group('DecksNotifier', () {
     test('draw persists deck state; reshuffle resets it', () async {
       SharedPreferences.setMockInitialValues({
@@ -113,6 +139,29 @@ void main() {
 
       await c.read(decksProvider.notifier).reshuffle(tarot: false);
       expect(c.read(decksProvider).valueOrNull!.standard.order, isEmpty);
+    });
+
+    test('drawSpread persists advanced tarot state; returns positioned cards',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final oracle = Oracle(data, Dice(Random(2)));
+      final c = ProviderContainer(
+          overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+      addTearDown(c.dispose);
+      await c.read(decksProvider.future);
+
+      final spread = kTarotSpreads.first; // three-card
+      final out =
+          await c.read(decksProvider.notifier).drawSpread(oracle, spread);
+      expect(out.cards, hasLength(3));
+      expect(out.result.title, 'Tarot Spread');
+      // Tarot deck advanced by 3; standard untouched.
+      final s = c.read(decksProvider).valueOrNull!;
+      expect(s.tarot.drawn, 3);
+      expect(s.standard.order, isEmpty);
     });
 
     test('drawAndLog logs a cards entry; tarot folds in its meaning', () async {

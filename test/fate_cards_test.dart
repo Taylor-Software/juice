@@ -71,4 +71,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(TarotReference), findsOneWidget);
   });
+
+  testWidgets('drawing a spread renders a card per position and logs one entry',
+      (tester) async {
+    final container = await pumpFate(tester);
+    // Default spread is the three-card; draw it.
+    await tester.tap(find.byKey(const Key('cards-draw-spread')));
+    await tester.pumpAndSettle();
+    // Three positions → three card images.
+    expect(find.byType(CardImage), findsNWidgets(3));
+    // Log the whole spread as one entry.
+    await tester.tap(find.byKey(const Key('spread-log')));
+    await tester.pumpAndSettle();
+    final entries = container.read(journalProvider).valueOrNull ?? const [];
+    expect(entries, hasLength(1));
+    expect(entries.single.sourceTool, 'cards');
+    expect(entries.single.body, contains('Past'));
+    expect(entries.single.body, contains('Present'));
+    expect(entries.single.body, contains('Future'));
+  });
+
+  testWidgets('logged spread keeps the drawn spread name after dropdown change',
+      (tester) async {
+    final container = await pumpFate(tester);
+    // Draw the default three-card spread.
+    await tester.tap(find.byKey(const Key('cards-draw-spread')));
+    await tester.pumpAndSettle();
+    // Change the picker to Celtic Cross WITHOUT redrawing.
+    await tester.tap(find.byKey(const Key('spread-picker')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Celtic Cross  (10)').last);
+    await tester.pumpAndSettle();
+    // Log: the entry must reflect the spread that was actually drawn (3-card),
+    // not the picker's current value (Celtic Cross).
+    await tester.tap(find.byKey(const Key('spread-log')));
+    await tester.pumpAndSettle();
+    final entries = container.read(journalProvider).valueOrNull ?? const [];
+    expect(entries.single.body, startsWith('Past · Present · Future'));
+    expect(entries.single.body, isNot(contains('Celtic Cross')));
+  });
 }

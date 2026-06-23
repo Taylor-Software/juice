@@ -256,8 +256,17 @@ Working rules for this repo:
   (gated on `systems.contains('cards')`): Draw card / Draw tarot + remaining
   readout + Reshuffle; a drawn card logs as a `result` entry (sourceTool
   `'cards'`), so it's interpretable via the journal's standard per-entry
-  Interpret (no bespoke card-interpret UI). Deferred: slash commands (stateless,
-  don't fit a stateful deck), HUD quick-draw, jokers. See
+  Interpret (no bespoke card-interpret UI). A **Spreads** sub-block
+  (`spread-picker` + `cards-draw-spread`) draws a positional multi-card layout
+  (`kTarotSpreads`: 3-card, 5-card Cross, 10-card Celtic Cross in
+  `lib/engine/tarot_spreads.dart`) via `Oracle.drawSpread` (threads `drawCard`
+  over the positions) / `DecksNotifier.drawSpread`; the grid is uniform (no
+  bespoke Celtic-Cross geometry) and `spread-log` writes one `cards` journal
+  entry (`spreadBody` folds each position's meaning in; no payload — the body is
+  the canonical reading). See
+  `docs/superpowers/specs/2026-06-23-tarot-spreads-design.md`. (Single-card
+  draws also have `/card` + `/tarot` slash commands and a HUD quick-draw, #133.)
+  Deferred: a `/spread` slash command (needs a picker), jokers. See
   `docs/superpowers/specs/2026-06-22-dice-reroll-card-oracles-design.md`.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device

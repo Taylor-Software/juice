@@ -1,6 +1,7 @@
 import 'dice.dart';
 import 'models.dart';
 import 'oracle_data.dart';
+import 'tarot_spreads.dart';
 
 /// The journal representation of a Fate Check roll. Shared by the Fate screen
 /// and the assistant rail's inline "Roll the oracle" so the mapping lives once.
@@ -115,6 +116,41 @@ class Oracle {
         Roll(label: 'Deck', value: '$drawn/${deck.length}'),
       ]),
       next: DeckState(order: order, drawn: drawn),
+    );
+  }
+
+  /// Draws one card per position in [spread] from [deck], threading [state]
+  /// through [drawCard] (so it reshuffles when exhausted). Each card is
+  /// reversible when [reversible]. Returns the position→card mapping, the next
+  /// DeckState to persist, and an aggregate GenResult (one Roll per position;
+  /// summary = spread name). Meanings are NOT in the GenResult — they are
+  /// folded into the journal body separately by spreadBody.
+  ({
+    List<({String position, String shown})> cards,
+    DeckState next,
+    GenResult result
+  }) drawSpread({
+    required List<String> deck,
+    required DeckState state,
+    required TarotSpread spread,
+    bool reversible = false,
+  }) {
+    var st = state;
+    final cards = <({String position, String shown})>[];
+    for (final pos in spread.positions) {
+      final r =
+          drawCard(deck: deck, state: st, title: pos, reversible: reversible);
+      st = r.next;
+      cards.add((position: pos, shown: r.result.summary!));
+    }
+    return (
+      cards: cards,
+      next: st,
+      result: GenResult(
+        title: 'Tarot Spread',
+        summary: spread.name,
+        rolls: [for (final c in cards) Roll(label: c.position, value: c.shown)],
+      ),
     );
   }
 
