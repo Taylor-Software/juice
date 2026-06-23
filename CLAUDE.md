@@ -277,9 +277,11 @@ Working rules for this repo:
   tolerant `fromJson`). `SketchEditor` + `SketchPainter`
   (`lib/features/sketch_editor.dart`) draw freehand on a fixed paper background
   (so stored colors read the same in light/dark); palette, two widths, a
-  pen/eraser tool toggle (`sketch-tool-pen`/`sketch-tool-eraser`; eraser =
-  whole-stroke delete via pure `eraseStrokesAt`/`distanceToStroke` in
-  `sketch.dart`, radius scales with width), undo (now a snapshot history stack
+  pen/eraser/shape tools (`sketch-tool-pen`/`sketch-tool-eraser`/`sketch-tool-line`/
+  `sketch-tool-rect`/`sketch-tool-ellipse`; eraser = whole-stroke delete via pure
+  `eraseStrokesAt`/`distanceToStroke` in `sketch.dart`, radius scales with width;
+  shapes = `SketchStroke` with computed points — line 2 pts, rect 5 closed pts,
+  ellipse 37-pt polyline — no schema change), undo (now a snapshot history stack
   covering draw+erase+clear), clear, save/cancel. The composer `composer-draw`
   button opens it for a new sketch (→ `JournalNotifier.addSketch`, empty sketches
   dropped); a sketch entry renders an inline `CustomPaint` thumbnail

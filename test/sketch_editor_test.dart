@@ -7,8 +7,8 @@ import 'package:juice_oracle/features/sketch_editor.dart';
 
 Future<ui.Image> _redImage() async {
   final recorder = ui.PictureRecorder();
-  Canvas(recorder).drawRect(
-      const Rect.fromLTWH(0, 0, 4, 4), Paint()..color = const Color(0xFFFF0000));
+  Canvas(recorder).drawRect(const Rect.fromLTWH(0, 0, 4, 4),
+      Paint()..color = const Color(0xFFFF0000));
   return recorder.endRecording().toImage(4, 4);
 }
 
@@ -180,13 +180,58 @@ void main() {
       expect(await decodeSketchBackground(const []), isNull);
     });
     test('valid PNG bytes → an image', () async {
-      final png = await (await _redImage())
-          .toByteData(format: ui.ImageByteFormat.png);
-      final decoded =
-          await decodeSketchBackground(png!.buffer.asUint8List());
+      final png =
+          await (await _redImage()).toByteData(format: ui.ImageByteFormat.png);
+      final decoded = await decodeSketchBackground(png!.buffer.asUint8List());
       expect(decoded, isNotNull);
       expect(decoded!.width, 4);
     });
+  });
+
+  for (final tool in ['line', 'rect', 'ellipse']) {
+    testWidgets('$tool tool drag commits a stroke', (tester) async {
+      SketchData? result;
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+      ));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(Key('sketch-tool-$tool')));
+      await tester.pumpAndSettle();
+      final canvas = find.byKey(const Key('sketch-canvas'));
+      final g = await tester
+          .startGesture(tester.getTopLeft(canvas) + const Offset(10, 10));
+      await g.moveBy(const Offset(80, 60));
+      await g.up();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('sketch-save')));
+      await tester.pumpAndSettle();
+      expect(result!.strokes, hasLength(1));
+      final pts = result!.strokes.single.points;
+      if (tool == 'line') expect(pts, hasLength(2));
+      if (tool == 'rect') expect(pts, hasLength(5));
+      if (tool == 'ellipse') expect(pts, hasLength(37)); // 0..36 inclusive
+    });
+  }
+
+  testWidgets('shape stroke is undoable', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-tool-rect')));
+    await tester.pumpAndSettle();
+    final canvas = find.byKey(const Key('sketch-canvas'));
+    final g = await tester
+        .startGesture(tester.getTopLeft(canvas) + const Offset(10, 10));
+    await g.moveBy(const Offset(50, 40));
+    await g.up();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-undo')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.strokes, isEmpty);
   });
 
   testWidgets('cancel returns null', (tester) async {

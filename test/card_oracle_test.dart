@@ -41,12 +41,12 @@ void main() {
     });
 
     test('round-trips and tolerates junk', () {
-      final s = DeckState(order: const [3, 1, 2], drawn: 1);
+      const s = DeckState(order: [3, 1, 2], drawn: 1);
       final back = DeckState.fromJson(s.toJson());
       expect(back.order, [3, 1, 2]);
       expect(back.drawn, 1);
       expect(DeckState.fromJson('nope').order, isEmpty);
-      final ds = DecksState(standard: s);
+      const ds = DecksState(standard: s);
       expect(DecksState.fromJson(ds.toJson()).standard.drawn, 1);
       expect(DecksState.fromJson(ds.toJson()).tarot.order, isEmpty);
     });
