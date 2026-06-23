@@ -1617,16 +1617,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _interpret(JournalEntry entry) async {
     // Recall: the most relevant past entries ride into the prompt so
     // readings can reference established NPCs, places, and threads.
-    final related = relatedEntries(
-        ref.read(journalProvider).valueOrNull ?? const [], entry);
+    final journal = ref.read(journalProvider).valueOrNull ?? const [];
     final seed = OracleSeed(
       resultText:
           entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
       sceneContext: _sceneContext(),
-      journalContext: [
-        for (final e in related)
-          e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
-      ],
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      journalContext: recallLines(journal, entry),
     );
     final accepted = await showModalBottomSheet<OracleInterpretation>(
       context: context,
@@ -1651,18 +1648,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _voiceEntry(JournalEntry entry) async {
     final settings =
         ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
-    final related = relatedEntries(
-        ref.read(journalProvider).valueOrNull ?? const [], entry);
+    final journal = ref.read(journalProvider).valueOrNull ?? const [];
     final seed = VoiceSeed(
       line: entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
       mood: 'default',
       genre: settings.genre,
       toneSetting: settings.tone,
       systemPrimer: ref.read(systemPrimerProvider),
-      journalContext: [
-        for (final e in related)
-          e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
-      ],
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      journalContext: recallLines(journal, entry),
     );
     String? voiced;
     try {

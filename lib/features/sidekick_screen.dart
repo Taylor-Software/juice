@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
 import '../engine/emulator_data.dart';
-import '../engine/journal_search.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/party_emulator.dart';
 import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 
 /// Sidekick Dialogue — mood-keyed dialogue lines with the doubles →
@@ -305,14 +305,12 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
       final entries = await ref.read(journalProvider.future);
       // Recall mirrors the journal's Interpret wiring: rank past entries
       // against the would-be journal entry for this result.
-      final related = relatedEntries(
-          entries,
-          JournalEntry(
-            id: 'sd-voice-target',
-            timestamp: DateTime.now(),
-            title: 'Sidekick — ${_moodLabel(d.mood)}',
-            body: _dialogueBody(selected, d),
-          ));
+      final target = JournalEntry(
+        id: 'sd-voice-target',
+        timestamp: DateTime.now(),
+        title: 'Sidekick — ${_moodLabel(d.mood)}',
+        body: _dialogueBody(selected, d),
+      );
       final voiced =
           await ref.read(interpreterServiceProvider).voiceLine(VoiceSeed(
                 line: d.line,
@@ -324,10 +322,8 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
                 genre: settings.genre,
                 toneSetting: settings.tone,
                 systemPrimer: ref.read(systemPrimerProvider),
-                journalContext: [
-                  for (final e in related)
-                    e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
-                ],
+                activeCharacter: ref.read(activeCharacterLineProvider),
+                journalContext: recallLines(entries, target),
               ));
       // A reroll while the model wrote makes this line stale — drop it.
       if (!mounted || _dialogue != d) return;
