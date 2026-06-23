@@ -412,6 +412,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
             Consumer(builder: (context, ref, _) {
               final decks =
                   ref.watch(decksProvider).valueOrNull ?? const DecksState();
+              final deckLen = decks.jokers
+                  ? kPlayingDeckWithJokers.length
+                  : kPlayingDeck.length;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -442,8 +445,7 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                          'Deck ${decks.standard.remainingOf(kPlayingDeck.length)}'
-                          '/${kPlayingDeck.length}',
+                          'Deck ${decks.standard.remainingOf(deckLen)}/$deckLen',
                           style: theme.textTheme.bodySmall),
                       TextButton(
                         key: const Key('cards-reshuffle'),
@@ -451,6 +453,13 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                             .read(decksProvider.notifier)
                             .reshuffle(tarot: false),
                         child: const Text('Reshuffle'),
+                      ),
+                      FilterChip(
+                        key: const Key('cards-jokers-toggle'),
+                        label: const Text('Jokers'),
+                        selected: decks.jokers,
+                        onSelected: (v) =>
+                            ref.read(decksProvider.notifier).setJokers(v),
                       ),
                       Text(
                           'Tarot ${decks.tarot.remainingOf(kTarotDeck.length)}'
