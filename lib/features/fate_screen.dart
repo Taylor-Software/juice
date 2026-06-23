@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
+import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
@@ -33,6 +34,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   int _rhOdds = 3; // Unknown
   GenResult? _rhLast;
   GenResult? _cardLast;
+  TarotSpread _spread = kTarotSpreads.first;
+  List<({String position, String shown})>? _spreadLast;
 
   final _fateCheckKey = GlobalKey();
   final _rollHighKey = GlobalKey();
@@ -53,6 +56,13 @@ class _FateScreenState extends ConsumerState<FateScreen> {
     if (mounted) setState(() => _cardLast = g);
   }
 
+  Future<void> _drawSpread() async {
+    final out = await ref
+        .read(decksProvider.notifier)
+        .drawSpread(widget.oracle, _spread);
+    if (mounted) setState(() => _spreadLast = out.cards);
+  }
+
   /// The AI-free authored meaning shown under a drawn tarot card (nothing for a
   /// standard-deck draw, which has no tarot meaning).
   Widget _cardMeaning(ThemeData theme, GenResult g) {
@@ -71,6 +81,36 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   /// present, so the reading is preserved without the AI.
   String _cardBody(GenResult g) =>
       g.asText + tarotMeaningSuffix(g.summary ?? '');
+
+  /// One position tile in the spread grid: label, card art, name + orientation,
+  /// and the authored meaning line. Uniform across all spreads.
+  Widget _spreadTile(ThemeData theme, ({String position, String shown}) c) {
+    final r = readTarot(c.shown);
+    final meaning = r.meaning == null
+        ? null
+        : (r.reversed ? r.meaning!.reversed : r.meaning!.upright);
+    return SizedBox(
+      width: 130,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(c.position,
+              style: theme.textTheme.labelLarge,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          CardImage(r.name, reversed: r.reversed, height: 120),
+          const SizedBox(height: 4),
+          Text('${r.name}${r.reversed ? ' (rev)' : ''}',
+              style: theme.textTheme.bodySmall),
+          if (meaning != null)
+            Text(meaning,
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -460,6 +500,67 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       );
                     }),
                     _cardMeaning(theme, _cardLast!),
+                  ],
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  Text('Spreads', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<TarotSpread>(
+                          key: const Key('spread-picker'),
+                          isExpanded: true,
+                          value: _spread,
+                          items: [
+                            for (final s in kTarotSpreads)
+                              DropdownMenuItem(
+                                value: s,
+                                child: Text('${s.name}  (${s.count})'),
+                              ),
+                          ],
+                          onChanged: (s) {
+                            if (s != null) setState(() => _spread = s);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        key: const Key('cards-draw-spread'),
+                        icon: const Icon(Icons.dashboard_outlined),
+                        label: const Text('Draw spread'),
+                        onPressed: _drawSpread,
+                      ),
+                    ],
+                  ),
+                  if (_spreadLast != null) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        for (final c in _spreadLast!) _spreadTile(theme, c),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.tonalIcon(
+                        key: const Key('spread-log'),
+                        icon: const Icon(Icons.bookmark_add_outlined),
+                        label: const Text('Log spread'),
+                        onPressed: () {
+                          ref.read(journalProvider.notifier).addResult(
+                                'Tarot Spread',
+                                spreadBody(_spread.name, _spreadLast!),
+                                sourceTool: 'cards',
+                              );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Added to journal')),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ],
               );
