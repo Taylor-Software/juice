@@ -53,6 +53,14 @@ class ThreadsPane extends ConsumerWidget {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      if (ref.watch(aiReadyProvider))
+                        IconButton(
+                          key: Key('flesh-out-thread-${t.id}'),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.auto_fix_high_outlined),
+                          tooltip: 'Flesh out (AI)',
+                          onPressed: () => _fleshOutThread(context, ref, t),
+                        ),
                       IconButton(
                         key: Key('pin-thread-${t.id}'),
                         visualDensity: VisualDensity.compact,
@@ -83,6 +91,38 @@ class ThreadsPane extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  Future<void> _fleshOutThread(
+      BuildContext context, WidgetRef ref, Thread t) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'story thread', name: t.title, existingDetail: t.note);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    final note =
+        [t.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
+    final result = await showDialog<({String title, String note})>(
+      context: context,
+      builder: (_) => _EditDialog(
+        heading: 'Flesh out — ${t.title}',
+        labelA: 'Title',
+        labelB: 'Note',
+        initialA: t.title,
+        initialB: note,
+      ),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    await ref.read(threadsProvider.notifier).replace(
+        t.copyWith(title: result.title.trim(), note: result.note.trim()));
   }
 
   Future<void> _editThread(
@@ -733,13 +773,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     try {
       detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
       }
       return;
     }
-    if (!mounted) return;
+    if (!context.mounted) return;
     final note =
         [c.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
     final result = await showDialog<({String title, String note})>(
