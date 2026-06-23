@@ -17,14 +17,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'fake_interpreter.dart';
 
 Future<(ProviderContainer, FakeInterpreterService)> pumpJournal(
-    WidgetTester tester) async {
+    WidgetTester tester,
+    {bool aiEnabled = true}) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     'juice.journal.v2.default':
         '[{"id":"1","timestamp":"2026-06-12T10:00:00.000","title":"Scene",'
             '"body":"At the gate.","kind":"scene"}]',
-    'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'juice.ai_enabled.v1': true,
   });
   final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -75,5 +76,11 @@ void main() {
     final narr = entries.where((e) => e.sourceTool == 'narrate').toList();
     expect(narr, hasLength(1));
     expect(narr.single.title, 'Complication');
+    expect(narr.single.body, 'A canned narration.');
+  });
+
+  testWidgets('narrate button is hidden when AI is not ready', (tester) async {
+    await pumpJournal(tester, aiEnabled: false);
+    expect(find.byKey(const Key('composer-narrate')), findsNothing);
   });
 }

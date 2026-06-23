@@ -274,7 +274,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       return;
     }
     final journal = ref.read(journalProvider).valueOrNull ?? const [];
-    // Recall ranks against the latest scene entry, else the newest entry.
+    // Journal is newest-first, so firstOrNull = the most recent: recall ranks
+    // against the most recent scene entry, else the newest entry of any kind.
     final target =
         journal.where((e) => e.kind == JournalKind.scene).firstOrNull ??
             journal.firstOrNull;
