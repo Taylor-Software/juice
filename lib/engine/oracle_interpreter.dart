@@ -10,6 +10,7 @@ library;
 
 import 'dart:convert';
 
+import 'gm_chat.dart';
 import 'journal_search.dart';
 import 'models.dart';
 
@@ -460,6 +461,82 @@ String buildAskGmPrompt(AskGmSeed seed) {
 String parseAskGmResponse(String raw) {
   final out = _stripThink(raw).trim();
   if (out.isEmpty) throw const FormatException('Empty ask-the-GM response');
+  return out;
+}
+
+// -- Multi-turn GM chat -------------------------------------------------------
+
+const int kGmChatHistoryTurns = 8; // last N turns rendered into the prompt
+const int kGmChatTurnMaxChars = 300; // per-turn cap
+
+const String _gmChatInstruction =
+    'You are the game master for a solo tabletop RPG in an ongoing conversation '
+    "with the player. Continue as the GM: answer the player's latest message in "
+    '1-3 sentences of plain prose, consistent with the conversation and the '
+    "established facts. Be concrete and decisive. Output only the GM's words.";
+
+class GmChatSeed {
+  const GmChatSeed({
+    required this.history,
+    this.sceneTitle,
+    this.systemPrimer = '',
+    this.activeCharacter = '',
+    this.journalContext = const [],
+  });
+
+  /// The full transcript, oldest first, INCLUDING the latest player turn.
+  final List<ChatTurn> history;
+  final String? sceneTitle;
+  final String systemPrimer;
+  final String activeCharacter;
+  final List<String> journalContext;
+}
+
+/// Stateless multi-turn prompt: instruction + the #1 grounding (system/pc/scene/
+/// recall) + a transcript of the last [kGmChatHistoryTurns] turns + a trailing
+/// `GM:` for the model to continue. Caps mirror the other builders.
+String buildGmChatPrompt(GmChatSeed seed) {
+  final scene = seed.sceneTitle;
+  final sceneLine = (scene == null || scene.trim().isEmpty)
+      ? ''
+      : 'scene: ${_capped(_flat(scene))}\n';
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+  final recent = seed.history.length > kGmChatHistoryTurns
+      ? seed.history.sublist(seed.history.length - kGmChatHistoryTurns)
+      : seed.history;
+  final transcript = StringBuffer();
+  for (final t in recent) {
+    final who = t.role == ChatRole.gm ? 'GM' : 'Player';
+    var line = _flat(t.text);
+    if (line.length > kGmChatTurnMaxChars) {
+      line = '${line.substring(0, kGmChatTurnMaxChars)}…';
+    }
+    transcript.write('$who: $line\n');
+  }
+  return '$_gmChatInstruction\n\n'
+      'INPUT:\n'
+      '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
+      '$sceneLine'
+      '$recall'
+      '$transcript'
+      'GM:';
+}
+
+/// Plain-text parse (like parseAskGmResponse): strip think spans, trim, throw
+/// on empty.
+String parseGmChatResponse(String raw) {
+  final out = _stripThink(raw).trim();
+  if (out.isEmpty) throw const FormatException('Empty GM chat response');
   return out;
 }
 
