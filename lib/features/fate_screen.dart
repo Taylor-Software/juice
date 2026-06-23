@@ -35,7 +35,13 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   GenResult? _rhLast;
   GenResult? _cardLast;
   TarotSpread _spread = kTarotSpreads.first;
-  List<({String position, String shown})>? _spreadLast;
+  // The drawn spread + its cards, captured together so logging uses the spread
+  // that was actually drawn — not whatever the picker shows now (changing the
+  // dropdown after a draw must not rename the pending spread).
+  ({
+    TarotSpread spread,
+    List<({String position, String shown})> cards
+  })? _spreadLast;
 
   final _fateCheckKey = GlobalKey();
   final _rollHighKey = GlobalKey();
@@ -60,7 +66,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
     final out = await ref
         .read(decksProvider.notifier)
         .drawSpread(widget.oracle, _spread);
-    if (mounted) setState(() => _spreadLast = out.cards);
+    if (mounted) {
+      setState(() => _spreadLast = (spread: _spread, cards: out.cards));
+    }
   }
 
   /// The AI-free authored meaning shown under a drawn tarot card (nothing for a
@@ -539,7 +547,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        for (final c in _spreadLast!) _spreadTile(theme, c),
+                        for (final c in _spreadLast!.cards)
+                          _spreadTile(theme, c),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -552,7 +561,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         onPressed: () {
                           ref.read(journalProvider.notifier).addResult(
                                 'Tarot Spread',
-                                spreadBody(_spread.name, _spreadLast!),
+                                spreadBody(_spreadLast!.spread.name,
+                                    _spreadLast!.cards),
                                 sourceTool: 'cards',
                               );
                           ScaffoldMessenger.of(context).showSnackBar(
