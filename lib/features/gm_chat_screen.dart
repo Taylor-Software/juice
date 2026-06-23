@@ -49,9 +49,10 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     final t = text.trim();
     if (t.isEmpty || _busy) return;
     _input.clear();
+    setState(() => _busy = true); // before the first await — closes the
+    // double-send window (a tap during appendTurn must hit the guard).
     final notifier = ref.read(gmChatProvider.notifier);
     await notifier.appendTurn(ChatTurn(ChatRole.player, t));
-    setState(() => _busy = true);
     try {
       final journal = ref.read(journalProvider).valueOrNull ?? const [];
       final scene = journal
