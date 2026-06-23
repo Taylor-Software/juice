@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/assistant_rail.dart';
+import 'package:juice_oracle/features/gm_chat_screen.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
@@ -133,8 +134,7 @@ void main() {
     expect(find.text('Add an NPC'), findsNothing);
   });
 
-  testWidgets('ask-the-GM writes a Q&A journal entry via the fake',
-      (tester) async {
+  testWidgets('ask-the-GM box opens the multi-turn GM chat', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
@@ -144,7 +144,7 @@ void main() {
     });
     final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready),
-    )..queuedAskGm.add('The door is barred from within.');
+    );
     final c = ProviderContainer(overrides: [
       interpreterServiceProvider.overrideWith((ref) => fake),
     ]);
@@ -161,42 +161,12 @@ void main() {
     await tester.tap(find.byKey(const Key('ask-gm-send')));
     await tester.pumpAndSettle();
 
-    expect(fake.askGmCalls, 1);
-    final entries = await c.read(journalProvider.future);
-    expect(entries.first.body, contains('The door is barred from within.'));
-    expect(entries.first.body, contains('Locked?'));
-  });
-
-  testWidgets(
-      'ask-the-GM writes nothing and shows an error when the LLM throws',
-      (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
-          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.threads.v1.default': '[]',
-      'juice.ai_enabled.v1': true,
-    });
-    final fake = FakeInterpreterService(
-      initial: const InterpreterStatus(InterpreterPhase.ready),
-    )..askGmError = StateError('boom');
-    final c = ProviderContainer(overrides: [
-      interpreterServiceProvider.overrideWith((ref) => fake),
-    ]);
-    addTearDown(c.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-        container: c,
-        child: MaterialApp(
-            theme: AppTheme.light(),
-            home: const Scaffold(body: AssistantRail()))));
-    await tester.pumpAndSettle();
-    await expandRail(tester);
-    await tester.enterText(find.byKey(const Key('ask-gm-field')), 'Locked?');
-    await tester.tap(find.byKey(const Key('ask-gm-send')));
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Could not reach'), findsOneWidget);
-    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
+    // Opens the multi-turn chat (no single-shot auto-log); the first message
+    // is sent into it.
+    expect(find.byType(GmChatScreen), findsOneWidget);
+    expect(fake.gmChatCalls, 1);
+    final entries = c.read(journalProvider).valueOrNull ?? const [];
+    expect(entries.where((e) => e.sourceTool == 'ask-gm'), isEmpty);
   });
 
   testWidgets('ask-the-GM box is hidden when the model is not ready',

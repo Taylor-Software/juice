@@ -52,6 +52,32 @@ void main() {
     expect(entries.where((e) => e.sourceTool == 'gm-chat'), hasLength(1));
   });
 
+  testWidgets('a GM error keeps the player turn + shows a snackbar',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final fake = FakeInterpreterService()..gmChatError = StateError('boom');
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        interpreterServiceProvider.overrideWithValue(fake),
+        aiReadyProvider.overrideWith((ref) => true),
+      ],
+      child: const MaterialApp(home: GmChatScreen()),
+    ));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(GmChatScreen)));
+    await tester.enterText(find.byKey(const Key('gm-chat-input')), 'Hi?');
+    await tester.tap(find.byKey(const Key('gm-chat-send')));
+    await tester.pumpAndSettle();
+    final turns = container.read(gmChatProvider).valueOrNull!.turns;
+    expect(turns, hasLength(1)); // player turn stays; no GM turn
+    expect(turns.single.text, 'Hi?');
+    expect(find.textContaining('did not answer'), findsOneWidget);
+  });
+
   testWidgets('clear empties the thread', (tester) async {
     final container = await pumpChat(tester);
     await tester.enterText(find.byKey(const Key('gm-chat-input')), 'Hi');

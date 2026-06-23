@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
-import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
-import '../state/interpreter.dart';
-import '../state/play_context.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
+import 'gm_chat_screen.dart';
 
 /// The assistant strip atop the Journal verb: rule-based suggestion chips
 /// plus a budget-safe ask-the-GM box.
@@ -23,8 +21,6 @@ class AssistantRail extends ConsumerStatefulWidget {
 
 class _AssistantRailState extends ConsumerState<AssistantRail> {
   final TextEditingController _controller = TextEditingController();
-  bool _busy = false;
-  String? _error;
   // Collapsed by default: a thin header keeps the journal primary; one tap
   // reveals the suggestion chips + ask-the-GM box.
   bool _expanded = false;
@@ -38,39 +34,10 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
   Future<void> _ask() async {
     final q = _controller.text.trim();
     if (q.isEmpty) return;
-    final service = ref.read(interpreterServiceProvider);
-    if (service.status.value.phase != InterpreterPhase.ready) {
-      setState(() => _error = 'Assistant not ready.');
-      return;
-    }
-    final entries = ref.read(journalProvider).valueOrNull ?? const [];
-    final scene = entries
-        .where((e) => e.kind == JournalKind.scene)
-        .map((e) => e.title)
-        .firstOrNull;
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
-    try {
-      final qTarget = JournalEntry(
-          id: 'ask-gm-target', timestamp: DateTime.now(), title: '', body: q);
-      final answer = await service.askGm(AskGmSeed(
-        question: q,
-        sceneTitle: scene,
-        systemPrimer: ref.read(systemPrimerProvider),
-        activeCharacter: ref.read(activeCharacterLineProvider),
-        journalContext: recallLines(entries, qTarget),
-      ));
-      await ref
-          .read(journalProvider.notifier)
-          .addResult('Ask the GM', 'Q: $q\n\n$answer', sourceTool: 'ask-gm');
-      if (mounted) _controller.clear();
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Could not reach the assistant.');
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    _controller.clear();
+    // The box now opens the persisted multi-turn GM chat (manual save, no
+    // auto-log), seeded with this first message.
+    await showGmChat(context, initialMessage: q);
   }
 
   void _onTap(Suggestion s) {
@@ -168,7 +135,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                             border: OutlineInputBorder(),
                             isDense: true,
                           ),
-                          onSubmitted: (_) => _busy ? null : _ask(),
+                          onSubmitted: (_) => _ask(),
                         ),
                       ),
                       const SizedBox(width: 4),
@@ -176,19 +143,10 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                         key: const Key('ask-gm-send'),
                         icon: const Icon(Icons.send),
                         tooltip: 'Ask the GM',
-                        onPressed: _busy ? null : _ask,
+                        onPressed: _ask,
                       ),
                     ],
                   ),
-                  if (_error != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        _error!,
-                        style: TextStyle(
-                            color: theme.colorScheme.error, fontSize: 12),
-                      ),
-                    ),
                 ],
               ],
             ),

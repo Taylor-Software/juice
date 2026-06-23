@@ -1,5 +1,5 @@
-/// A multi-turn GM conversation: ordered player/GM turns. Pure; JSON round-trips
-/// for per-campaign persistence (see GmChatNotifier).
+// A multi-turn GM conversation: ordered player/GM turns. Pure; JSON round-trips
+// for per-campaign persistence (see GmChatNotifier).
 
 enum ChatRole { player, gm }
 
@@ -27,8 +27,10 @@ class GmChatState {
       {'turns': turns.map((t) => t.toJson()).toList()};
 
   factory GmChatState.fromJson(Map<String, dynamic> j) => GmChatState(
-        turns: (j['turns'] is List ? j['turns'] as List : const [])
-            .whereType<Map>()
+        turns: (j['turns'] is List
+                ? (j['turns'] as List<dynamic>)
+                : const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
             .map((m) => ChatTurn.fromJson(m.cast<String, dynamic>()))
             .toList(),
       );
