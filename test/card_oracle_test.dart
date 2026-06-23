@@ -193,4 +193,25 @@ void main() {
       expect(stdEntry.body, isNot(contains('—')));
     });
   });
+
+  group('jokers deck + state', () {
+    test('kPlayingDeckWithJokers is 54 with both jokers; base deck stays 52',
+        () {
+      expect(kPlayingDeck, hasLength(52));
+      expect(kPlayingDeckWithJokers, hasLength(54));
+      expect(kPlayingDeckWithJokers, containsAll(['Red Joker', 'Black Joker']));
+      expect(kPlayingDeckWithJokers.take(52), kPlayingDeck); // jokers appended
+    });
+
+    test('DecksState.jokers round-trips; missing key defaults false', () {
+      const on = DecksState(jokers: true);
+      expect(DecksState.fromJson(on.toJson()).jokers, isTrue);
+      final legacy = DecksState.fromJson(const {
+        'standard': {'order': <int>[], 'drawn': 0},
+        'tarot': {'order': <int>[], 'drawn': 0},
+      });
+      expect(legacy.jokers, isFalse);
+      expect(const DecksState().copyWith(jokers: true).jokers, isTrue);
+    });
+  });
 }
