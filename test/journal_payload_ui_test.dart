@@ -9,6 +9,7 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/shared/card_image.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
@@ -90,6 +91,21 @@ Future<void> pumpShell(
 }
 
 void main() {
+  const cardEntryJson = '{'
+      '"id":"c1","timestamp":"2026-06-12T10:00:00.000Z","title":"Tarot",'
+      '"body":"The Tower (reversed)\\nReversed — clinging.","kind":"result",'
+      '"tags":[],"sourceTool":"cards",'
+      '"payload":{"v":1,"summary":"The Tower (reversed)",'
+      '"rolls":[{"label":"Card","display":"The Tower (reversed)"},'
+      '{"label":"Deck","display":"1/78"}]}}';
+
+  testWidgets('a logged tarot card entry renders its bundled image',
+      (tester) async {
+    await pumpJournal(tester, _journalPrefs(cardEntryJson));
+    expect(find.text('The Tower (reversed)'), findsWidgets); // summary + body
+    expect(find.byType(CardImage), findsOneWidget);
+  });
+
   testWidgets('payload entry renders summary, roll rows, and actions',
       (tester) async {
     await pumpJournal(tester, _journalPrefs(_entryJson));

@@ -16,6 +16,8 @@ import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
+import '../engine/tarot_meanings.dart';
+import '../shared/card_image.dart';
 import '../shared/destination.dart';
 import '../shared/dice_sheet.dart';
 import '../shared/help_nav.dart';
@@ -1935,6 +1937,17 @@ class _PayloadCard extends StatelessWidget {
                 summary,
                 style: theme.textTheme.titleLarge
                     ?.copyWith(color: theme.colorScheme.primary),
+              ),
+            if (entry.sourceTool == 'cards' && summary != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Builder(builder: (_) {
+                    final r = readTarot(summary);
+                    return CardImage(r.name, reversed: r.reversed, height: 120);
+                  }),
+                ),
               ),
             const SizedBox(height: 4),
             for (final r in rolls)

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/features/tarot_reference.dart';
+import 'package:juice_oracle/shared/card_image.dart';
 
 Future<void> pump(WidgetTester tester) async {
   tester.view.physicalSize = const Size(900, 3000);
@@ -34,5 +35,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('Upright —'), findsWidgets);
     expect(find.textContaining('Reversed —'), findsWidgets);
+    expect(find.byType(CardImage), findsWidgets); // thumbnail per row
   });
 }
