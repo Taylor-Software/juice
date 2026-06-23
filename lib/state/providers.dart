@@ -18,6 +18,7 @@ import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/tarot_meanings.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/system_primer.dart';
@@ -578,6 +579,21 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
         ? cur.copyWith(tarot: res.next)
         : cur.copyWith(standard: res.next));
     return res.result;
+  }
+
+  /// Draws a card (persisting deck state) AND logs it to the journal with its
+  /// tarot meaning folded in. Used by the HUD quick-draw button and the /card
+  /// and /tarot slash commands (the Cards section shows the card before logging,
+  /// so it uses draw() + manual log instead).
+  Future<GenResult> drawAndLog(Oracle oracle, {required bool tarot}) async {
+    final g = await draw(oracle, tarot: tarot);
+    await ref.read(journalProvider.notifier).addResult(
+          g.title,
+          g.asText + tarotMeaningSuffix(g.summary ?? ''),
+          sourceTool: 'cards',
+          payload: g.toPayload(),
+        );
+    return g;
   }
 
   /// Clears a deck so the next draw reshuffles a full deck.

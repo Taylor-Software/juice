@@ -90,6 +90,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinHelp = 'help';
   static const _builtinAsk = 'ask';
   static const _builtinRecap = 'recap';
+  static const _builtinCard = 'card';
+  static const _builtinTarot = 'tarot';
 
   @override
   void initState() {
@@ -261,6 +263,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         ],
       ),
     );
+  }
+
+  /// /card and /tarot: draw from the persisted deck and log it (with the tarot
+  /// meaning folded in), from the composer on any verb.
+  Future<void> _drawCardCmd({required bool tarot}) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final g =
+        await ref.read(decksProvider.notifier).drawAndLog(oracle, tarot: tarot);
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+    }
   }
 
   /// "Previously on…" nudge shown when there are entries the player hasn't
@@ -855,10 +870,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final registry = commandsForSystems(buildCommandRegistry(), systems);
     // Built-ins surface when their name prefixes the token.
     final tok = parsed.token.toLowerCase();
+    final cardsOn = systems.contains('cards');
     final showScene = _builtinScene.startsWith(tok);
     final showHelp = _builtinHelp.startsWith(tok);
     final showAsk = _builtinAsk.startsWith(tok);
     final showRecap = _builtinRecap.startsWith(tok) && _canVoice;
+    final showCard = _builtinCard.startsWith(tok) && cardsOn;
+    final showTarot = _builtinTarot.startsWith(tok) && cardsOn;
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     return Material(
@@ -927,11 +945,35 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   _recap();
                 },
               ),
+            if (showCard)
+              ListTile(
+                key: const Key('slash-cmd-card'),
+                dense: true,
+                leading: const Icon(Icons.style_outlined),
+                title: const Text('Draw a card'),
+                onTap: () {
+                  _composer.clear();
+                  _drawCardCmd(tarot: false);
+                },
+              ),
+            if (showTarot)
+              ListTile(
+                key: const Key('slash-cmd-tarot'),
+                dense: true,
+                leading: const Icon(Icons.auto_awesome),
+                title: const Text('Draw a tarot card'),
+                onTap: () {
+                  _composer.clear();
+                  _drawCardCmd(tarot: true);
+                },
+              ),
             if (matches.isEmpty &&
                 !showScene &&
                 !showHelp &&
                 !showAsk &&
-                !showRecap)
+                !showRecap &&
+                !showCard &&
+                !showTarot)
               const Padding(
                 padding: EdgeInsets.all(12),
                 child: Text('No matching command'),
@@ -1254,6 +1296,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinRecap == tok) {
         _composer.clear();
         await _recap();
+        return;
+      }
+      if (_builtinCard == tok) {
+        _composer.clear();
+        await _drawCardCmd(tarot: false);
+        return;
+      }
+      if (_builtinTarot == tok) {
+        _composer.clear();
+        await _drawCardCmd(tarot: true);
         return;
       }
       if (_builtinAsk == tok) {

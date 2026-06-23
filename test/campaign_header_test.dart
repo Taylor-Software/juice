@@ -287,4 +287,29 @@ void main() {
     // Default oracle is Juice → a Fate Check entry was logged.
     expect(entries.where((e) => e.sourceTool == 'fate-check'), hasLength(1));
   });
+
+  testWidgets('quick-draw button is hidden when the cards system is off',
+      (tester) async {
+    // Default prefs omit `systems` → all enabled, but cards is opt-in (not in
+    // kAllSystems) → button absent.
+    await _pump(tester, data, _prefs(journalJson: '[$_sceneJson]'));
+    expect(find.byKey(const Key('hdr-quick-draw')), findsNothing);
+  });
+
+  testWidgets('quick-draw button draws tarot and logs it when cards is on',
+      (tester) async {
+    final prefs = {
+      ..._prefs(journalJson: '[$_sceneJson]'),
+      'juice.sessions.v1': '{"active":"$_sid","sessions":[{"id":"$_sid",'
+          '"name":"C1","systems":["cards"]}]}',
+    };
+    await _pump(tester, data, prefs);
+    expect(find.byKey(const Key('hdr-quick-draw')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('hdr-quick-draw')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
+  });
 }

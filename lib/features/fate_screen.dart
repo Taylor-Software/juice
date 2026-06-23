@@ -69,12 +69,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
 
   /// Journal body for a logged card: the card text plus its tarot meaning when
   /// present, so the reading is preserved without the AI.
-  String _cardBody(GenResult g) {
-    final r = readTarot(g.summary ?? '');
-    if (r.meaning == null) return g.asText;
-    final text = r.reversed ? r.meaning!.reversed : r.meaning!.upright;
-    return '${g.asText}\n${r.reversed ? 'Reversed' : 'Upright'} — $text';
-  }
+  String _cardBody(GenResult g) =>
+      g.asText + tarotMeaningSuffix(g.summary ?? '');
 
   @override
   void initState() {

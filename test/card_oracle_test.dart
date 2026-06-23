@@ -114,5 +114,34 @@ void main() {
       await c.read(decksProvider.notifier).reshuffle(tarot: false);
       expect(c.read(decksProvider).valueOrNull!.standard.order, isEmpty);
     });
+
+    test('drawAndLog logs a cards entry; tarot folds in its meaning', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final oracle = Oracle(data, Dice(Random(1)));
+      final c = ProviderContainer(
+          overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+      addTearDown(c.dispose);
+      await c.read(decksProvider.future);
+      await c.read(journalProvider.future);
+
+      final tg =
+          await c.read(decksProvider.notifier).drawAndLog(oracle, tarot: true);
+      final sg =
+          await c.read(decksProvider.notifier).drawAndLog(oracle, tarot: false);
+
+      final entries = c.read(journalProvider).valueOrNull!;
+      expect(entries, hasLength(2));
+      expect(entries.every((e) => e.sourceTool == 'cards'), isTrue);
+      // Tarot entry carries an orientation+meaning line; standard does not.
+      final tarotEntry =
+          entries.firstWhere((e) => e.body.contains(tg.summary!));
+      expect(tarotEntry.body,
+          anyOf(contains('Upright —'), contains('Reversed —')));
+      final stdEntry = entries.firstWhere((e) => e.body.contains(sg.summary!));
+      expect(stdEntry.body, isNot(contains('—')));
+    });
   });
 }

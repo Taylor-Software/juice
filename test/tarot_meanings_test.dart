@@ -22,6 +22,14 @@ void main() {
     expect(r.meaning, isNull);
   });
 
+  test('tarotMeaningSuffix folds in orientation + meaning, empty for non-tarot',
+      () {
+    expect(tarotMeaningSuffix('The Tower'), startsWith('\nUpright — '));
+    expect(tarotMeaningSuffix('The Tower (reversed)'),
+        startsWith('\nReversed — '));
+    expect(tarotMeaningSuffix('Ace of Spades'), ''); // standard deck
+  });
+
   test('every tarot card has an authored meaning, upright != reversed', () {
     for (final card in kTarotDeck) {
       final m = kTarotMeanings[card];

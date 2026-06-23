@@ -73,6 +73,41 @@ void main() {
     expect(find.text('Fate Check (Juice)'), findsNothing);
   });
 
+  const cardsPrefs = {
+    'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+        '"name":"C1","systems":["cards"]}]}',
+  };
+
+  testWidgets('/card suggestion hidden when cards is off', (tester) async {
+    await pumpPalette(tester, data); // default: cards off (not in kAllSystems)
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/car');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-card')), findsNothing);
+  });
+
+  testWidgets('/card and /tarot suggestions appear when cards is on',
+      (tester) async {
+    await pumpPalette(tester, data, prefs: cardsPrefs);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/car');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-card')), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/tar');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-tarot')), findsOneWidget);
+  });
+
+  testWidgets('tapping Draw a tarot card logs a cards entry', (tester) async {
+    await pumpPalette(tester, data, prefs: cardsPrefs);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/tarot');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('slash-cmd-tarot')));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
+  });
+
   testWidgets('selecting a no-arg command runs it and clears the composer',
       (tester) async {
     await pumpPalette(tester, data);
