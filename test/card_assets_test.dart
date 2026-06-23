@@ -12,4 +12,11 @@ void main() {
       expect(File(path).existsSync(), isTrue, reason: path);
     }
   });
+
+  test('every standard playing card has a bundled image asset', () {
+    for (final card in kPlayingDeck) {
+      final path = playingCardImageAsset(card)!;
+      expect(File(path).existsSync(), isTrue, reason: path);
+    }
+  });
 }

@@ -17,6 +17,7 @@ dependencies:
   shared_preferences: ^2.2.3
   archive: ^4.0.9
   pdfrx: ^2.4.4
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +40,7 @@ flutter:
     - assets/ruleset_sundered_isles.json
     - assets/abstract_icons/
     - assets/tarot/
+    - assets/playing/
 
 # App icon generation: `dart run flutter_launcher_icons`. Source art is the
 # user-provided 1024px image at assets/icon/app_icon.png (full-bleed circular
