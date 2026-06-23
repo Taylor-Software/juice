@@ -8,6 +8,7 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/tarot_spreads.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -89,6 +90,31 @@ void main() {
         state = r.next;
       }
       expect(up && rev, isTrue);
+    });
+  });
+
+  group('Oracle.drawSpread', () {
+    test('draws one card per position, advances state, builds rolls', () {
+      final oracle = Oracle(data, Dice(Random(5)));
+      final spread = kTarotSpreads.first; // three-card
+      final out = oracle.drawSpread(
+        deck: kTarotDeck,
+        state: const DeckState(),
+        spread: spread,
+        reversible: true,
+      );
+      expect(out.cards, hasLength(3));
+      expect(out.cards.map((c) => c.position).toList(), spread.positions);
+      expect(out.next.drawn, 3); // advanced by the spread size
+      expect(out.result.title, 'Tarot Spread');
+      expect(out.result.summary, spread.name);
+      expect(out.result.rolls, hasLength(3));
+      expect(out.result.rolls.map((r) => r.label).toList(), spread.positions);
+      // Every drawn card is a real tarot card (orientation suffix stripped).
+      for (final c in out.cards) {
+        final base = c.shown.replaceAll(' (reversed)', '');
+        expect(kTarotDeck.contains(base), isTrue);
+      }
     });
   });
 
