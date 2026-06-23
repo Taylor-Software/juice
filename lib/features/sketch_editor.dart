@@ -65,6 +65,16 @@ class SketchPainter extends CustomPainter {
         canvas.drawPath(path, paint);
       }
     }
+    for (final t in data.texts) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: t.text,
+          style: TextStyle(color: Color(t.color), fontSize: t.size * sy),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(t.x * sx, t.y * sy));
+    }
   }
 
   @override
@@ -104,14 +114,18 @@ class SketchEditor extends StatefulWidget {
 
 class _SketchEditorState extends State<SketchEditor> {
   late List<SketchStroke> _strokes = [...?widget.initial?.strokes];
+  late List<SketchText> _texts = [...?widget.initial?.texts];
   List<List<double>> _current = [];
   int _color = _palette.first;
   double _width = 3;
   Size _canvas = const Size(1, 1);
   _SketchTool _tool = _SketchTool.pen;
-  // Undo history: snapshots of [_strokes] taken before each mutation (draw,
-  // erase, clear), so all three are undoable. Replaces a plain removeLast.
-  final List<List<SketchStroke>> _undo = [];
+  // Undo history: snapshots of (strokes, texts) before each mutation, so every
+  // op (draw, shape, erase, clear, text add/edit) is one undo step.
+  final List<({List<SketchStroke> strokes, List<SketchText> texts})> _undo = [];
+
+  void _snapshot() => _undo.add((strokes: _strokes, texts: _texts));
+
   // True once the current erase drag has captured its pre-erase snapshot, so a
   // single drag-to-erase is one undo step.
   bool _erasing = false;
@@ -122,14 +136,23 @@ class _SketchEditorState extends State<SketchEditor> {
   double get _eraserRadius => math.max(_width * 1.5, 10);
 
   void _eraseAt(Offset o) {
-    final before = _strokes;
-    final after = eraseStrokesAt(before, o.dx, o.dy, _eraserRadius);
-    if (after.length == before.length) return; // nothing under the pointer
+    final beforeStrokes = _strokes;
+    final beforeTexts = _texts;
+    final afterStrokes =
+        eraseStrokesAt(beforeStrokes, o.dx, o.dy, _eraserRadius);
+    final afterTexts = eraseTextsAt(beforeTexts, o.dx, o.dy, _eraserRadius);
+    if (afterStrokes.length == beforeStrokes.length &&
+        afterTexts.length == beforeTexts.length) {
+      return; // nothing under the pointer
+    }
     if (!_erasing) {
-      _undo.add(before);
+      _undo.add((strokes: beforeStrokes, texts: beforeTexts));
       _erasing = true;
     }
-    setState(() => _strokes = after);
+    setState(() {
+      _strokes = afterStrokes;
+      _texts = afterTexts;
+    });
   }
 
   // Returns computed points for the active shape tool from [start] to [end],
@@ -171,6 +194,7 @@ class _SketchEditorState extends State<SketchEditor> {
       canvasWidth: _canvas.width,
       canvasHeight: _canvas.height,
       strokes: _strokes,
+      texts: _texts,
       backgroundBlobId: widget.backgroundBlobId,
       pdfBlobId: widget.pdfBlobId,
       pdfPage: widget.pdfPage,
@@ -187,6 +211,7 @@ class _SketchEditorState extends State<SketchEditor> {
         if (_current.isNotEmpty)
           SketchStroke(color: _color, width: _width, points: _current),
       ],
+      texts: _texts,
     );
     return Scaffold(
       appBar: AppBar(
@@ -203,15 +228,20 @@ class _SketchEditorState extends State<SketchEditor> {
             tooltip: 'Undo',
             onPressed: _undo.isEmpty
                 ? null
-                : () => setState(() => _strokes = _undo.removeLast()),
+                : () => setState(() {
+                      final snap = _undo.removeLast();
+                      _strokes = snap.strokes;
+                      _texts = snap.texts;
+                    }),
           ),
           IconButton(
             key: const Key('sketch-clear'),
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Clear',
             onPressed: () => setState(() {
-              if (_strokes.isNotEmpty) _undo.add(_strokes);
+              if (_strokes.isNotEmpty || _texts.isNotEmpty) _snapshot();
               _strokes = [];
+              _texts = [];
               _current = [];
             }),
           ),
@@ -271,7 +301,7 @@ class _SketchEditorState extends State<SketchEditor> {
           }
           setState(() {
             if (_current.isNotEmpty) {
-              _undo.add(_strokes);
+              _snapshot();
               _strokes = [
                 ..._strokes,
                 SketchStroke(color: _color, width: _width, points: _current),

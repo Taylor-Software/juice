@@ -249,4 +249,26 @@ void main() {
     expect(called, isTrue);
     expect(result, isNull);
   });
+
+  testWidgets('initial texts are preserved on save', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SketchEditor(
+          initial: const SketchData(
+            canvasWidth: 100,
+            canvasHeight: 100,
+            texts: [SketchText(text: 'Keep', x: 5, y: 5, color: 0xFF000000)],
+          ),
+          onDone: (d) => result = d,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result, isNotNull);
+    expect(result!.texts, hasLength(1));
+    expect(result!.texts.single.text, 'Keep');
+  });
 }
