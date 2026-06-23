@@ -51,11 +51,6 @@ Future<void> snapshotMapToJournal(
       if (context.mounted) _snack(context, 'Saved to journal.');
     }
   } finally {
-    // Defer disposal: the editor's exit transition keeps painting [bg] for a
-    // few frames after showSketchEditor's future resolves, so disposing inline
-    // races the pop animation ("Cannot paint an image that is disposed"). One
-    // second is well past the ~300ms transition.
-    final img = bg;
-    if (img != null) Future.delayed(const Duration(seconds: 1), img.dispose);
+    disposeSketchBackgroundLater(bg); // after the editor's exit transition
   }
 }

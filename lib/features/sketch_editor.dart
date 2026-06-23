@@ -509,6 +509,15 @@ Future<ui.Image?> decodeSketchBackground(List<int>? bytes) async {
   }
 }
 
+/// Disposes a sketch-editor background image AFTER the editor's pop transition
+/// has finished painting it. Disposing inline (right after [showSketchEditor]
+/// resolves) races the exit animation — the painter keeps drawing the image for
+/// a few frames and would paint a freed one ("Cannot paint an image that is
+/// disposed"). One second is well past the ~300ms transition. No-op for null.
+void disposeSketchBackgroundLater(ui.Image? bg) {
+  if (bg != null) Future.delayed(const Duration(seconds: 1), bg.dispose);
+}
+
 /// A tiny dialog that prompts for a text-label string. Owns its
 /// [TextEditingController] so it is disposed after the dialog's exit transition
 /// (disposing it inline in the caller would tear it down mid-animation).

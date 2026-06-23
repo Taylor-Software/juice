@@ -1128,7 +1128,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             .replace(e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
       }
     } finally {
-      bg?.dispose(); // we own the decoded image; release its native memory
+      // We own the decoded image; release it after the editor's exit
+      // transition (disposing inline races the pop animation).
+      disposeSketchBackgroundLater(bg);
     }
   }
 
@@ -1151,7 +1153,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         await ref.read(journalProvider.notifier).addSketch(data);
       }
     } finally {
-      bg?.dispose(); // release the decoded image's native memory
+      disposeSketchBackgroundLater(bg); // after the editor's exit transition
     }
     // A cancelled import leaves an orphan blob; blob GC is a later epic step
     // (BlobStore.list() supports it) — kept simple here to avoid deleting a
@@ -1199,7 +1201,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         await ref.read(journalProvider.notifier).addSketch(data);
       }
     } finally {
-      bg?.dispose();
+      disposeSketchBackgroundLater(bg); // after the editor's exit transition
     }
   }
 
