@@ -40,13 +40,14 @@ FakeInterpreterService _fake() => FakeInterpreterService(
     initial: const InterpreterStatus(InterpreterPhase.ready));
 
 Future<ProviderContainer> _pumpCharacters(
-    WidgetTester tester, FakeInterpreterService fake) async {
+    WidgetTester tester, FakeInterpreterService fake,
+    {bool aiEnabled = true}) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     'juice.characters.v1.default':
         '[{"id":"c1","name":"Ash","note":"A scout.","stats":[],"tracks":[],"tags":[],"role":"npc"}]',
-    'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'juice.ai_enabled.v1': true,
   });
   await tester.pumpWidget(ProviderScope(
     overrides: [interpreterServiceProvider.overrideWithValue(fake)],
@@ -69,6 +70,14 @@ void main() {
     final chars = c.read(charactersProvider).valueOrNull!;
     expect(chars.single.note, contains('A scout.')); // preserved
     expect(chars.single.note, contains('Fleshed-out detail.')); // appended
+  });
+
+  testWidgets('flesh-out button is hidden when AI is not ready',
+      (tester) async {
+    await _pumpCharacters(tester, _fake(), aiEnabled: false);
+    await tester.tap(find.text('Ash')); // open the sheet
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('flesh-out-character')), findsNothing);
   });
 
   testWidgets('thread flesh-out appends detail to the note', (tester) async {
