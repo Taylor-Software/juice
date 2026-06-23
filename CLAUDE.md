@@ -85,6 +85,17 @@ Working rules for this repo:
   INPUT line in the oracle + voice prompts (NOT recap), kept tiny
   (`kSystemPrimerMaxChars`) for the web model's ~1280-token budget. See
   `docs/superpowers/specs/2026-06-17-system-primer-design.md`.
+  **AI expansion #1 (richer context):** all four seams now share a grounded
+  context block — recall-ranked recent journal (`recallLines` →
+  `relatedEntries`), the active scene, and the active PC (`activeCharacterLine`
+  / `activeCharacterLineProvider` in `play_context.dart`, a `pc:` line distinct
+  from voiceLine's spoken-NPC `character:` line). `askGm` was brought to parity
+  (was question + scene title only). Recall caps were loosened from the retired
+  web budget (`kRecallMaxEntries` 2→6, `kRecallMaxChars` 100→280) since AI is
+  desktop/mobile-only (Gemma 4 E2B). See
+  `docs/superpowers/specs/2026-06-24-ai-richer-context-design.md`. This is
+  foundation #1 of the AI-expansion epic; multi-turn GM chat (#2) + new
+  affordances (#3) ride on it.
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,

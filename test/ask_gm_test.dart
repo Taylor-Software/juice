@@ -35,4 +35,31 @@ void main() {
       expect(() => parseAskGmResponse('  '), throwsFormatException);
     });
   });
+
+  group('buildAskGmPrompt grounding', () {
+    test('grounds the question in system/pc/scene/recall', () {
+      final p = buildAskGmPrompt(const AskGmSeed(
+        question: 'Does the guard let me pass?',
+        sceneTitle: 'The city gate at dusk',
+        systemPrimer:
+            'Ironsworn: perilous Iron Lands; roll action vs challenge.',
+        activeCharacter: 'Taurin (PC)',
+        journalContext: ['The gate captain owes Taurin a favor.'],
+      ));
+      expect(p, contains('system: Ironsworn'));
+      expect(p, contains('pc: Taurin (PC)'));
+      expect(p, contains('scene: The city gate at dusk'));
+      expect(p, contains('recall: The gate captain owes Taurin a favor.'));
+      expect(p, contains('question: Does the guard let me pass?'));
+    });
+
+    test('omits empty grounding lines', () {
+      final p = buildAskGmPrompt(const AskGmSeed(question: 'What now?'));
+      expect(p, isNot(contains('system:')));
+      expect(p, isNot(contains('pc:')));
+      expect(p, isNot(contains('scene:')));
+      expect(p, isNot(contains('recall:')));
+      expect(p, contains('question: What now?'));
+    });
+  });
 }

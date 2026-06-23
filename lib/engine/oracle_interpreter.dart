@@ -10,11 +10,14 @@ library;
 
 import 'dart:convert';
 
-/// Hard caps on the prompt's `recall:` block. The web model is only proven
-/// at 1280 total tokens (system instruction ≈700, output ≈250); two
-/// 100-char excerpts are ≈70 tokens worst case, which fits the remainder.
-const int kRecallMaxEntries = 2;
-const int kRecallMaxChars = 100;
+import 'journal_search.dart';
+import 'models.dart';
+
+/// Hard caps on the prompt's `recall:` block. AI is desktop/mobile-only now
+/// (Gemma 4 E2B, ample context window) — these were tiny holdovers from the
+/// retired ~1280-token web model and have been loosened to feed real grounding.
+const int kRecallMaxEntries = 6;
+const int kRecallMaxChars = 280;
 
 /// Everything the model needs to interpret one logged oracle result.
 class OracleSeed {
@@ -25,6 +28,7 @@ class OracleSeed {
     this.sceneContext = '',
     this.journalContext = const [],
     this.systemPrimer = '',
+    this.activeCharacter = '',
   });
 
   /// The journal entry's title + body, verbatim.
@@ -45,6 +49,42 @@ class OracleSeed {
   /// journal_search.dart), one string each. The prompt renders at most
   /// [kRecallMaxEntries] of them as `recall:` lines.
   final List<String> journalContext;
+
+  /// One-line active-PC descriptor (see activeCharacterLine), or '' for none.
+  /// Renders as a `pc:` line.
+  final String activeCharacter;
+}
+
+/// The recall-ranked journal lines for [target] (most-relevant past entries via
+/// [relatedEntries]), formatted "Title — body" (or body only when untitled) for
+/// any seam's `journalContext`. The prompt builders still take [kRecallMaxEntries]
+/// and cap each at [kRecallMaxChars]. Pure.
+List<String> recallLines(List<JournalEntry> journal, JournalEntry target) => [
+      for (final e in relatedEntries(journal, target))
+        e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
+    ];
+
+/// A short "who the PC is" line for the prompt, or '' when none. Facts-only:
+/// name + role + any conditions. Pure.
+String activeCharacterLine(Character? c) {
+  if (c == null) return '';
+  final role = switch (c.role) {
+    CharacterRole.pc => 'PC',
+    CharacterRole.companion => 'companion',
+    CharacterRole.npc => 'NPC',
+  };
+  final cond = c.conditions.isEmpty ? '' : ' — ${c.conditions.join(', ')}';
+  return '${c.name} ($role)$cond';
+}
+
+/// A capped `pc:` prompt line for the active player character, or '' when empty.
+/// Distinct from voiceLine's `character:` line (the spoken NPC).
+String _pcLine(String activeCharacter) {
+  final f = _flat(activeCharacter);
+  if (f.isEmpty) return '';
+  final cut =
+      f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+  return 'pc: $cut\n';
 }
 
 /// A single interpretation card; [lens] is the register it was written in.
@@ -64,8 +104,8 @@ const List<String> kLenses = <String>[
 ];
 
 /// Role + rules + JSON shape + two compact few-shot examples. Examples move
-/// small-model quality more than rules do. Kept tight: the web model's
-/// context may be as small as 1280 tokens total.
+/// small-model quality more than rules do. Kept reasonably tight for the
+/// on-device Gemma 4 E2B model (desktop/mobile only; web ships no AI).
 const String oracleSystemInstruction = '''
 You interpret oracle results for a solo tabletop RPG player journaling their
 own story. You offer possibilities; the player decides what is true. Never
@@ -122,8 +162,7 @@ String _orElse(String v, String fallback) {
 /// (one field per line, matching the few-shot examples), so runs of
 /// whitespace/newlines in seed fields collapse to single spaces.
 String buildOraclePrompt(OracleSeed seed) {
-  // Recall block, capped engine-side so no caller can blow the web
-  // model's 1280-token budget (see kRecallMaxEntries/kRecallMaxChars).
+  // Recall block, capped engine-side (see kRecallMaxEntries/kRecallMaxChars).
   final recall = StringBuffer();
   for (final context in seed.journalContext.take(kRecallMaxEntries)) {
     final f = _flat(context);
@@ -140,6 +179,7 @@ String buildOraclePrompt(OracleSeed seed) {
       'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${_orElse(seed.tone, '(unspecified)')}\n'
       '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
       'result: ${_flat(seed.resultText)}\n'
       '$recall'
       'scene: ${_orElse(seed.sceneContext, '(none given)')}\n'
@@ -268,6 +308,7 @@ class VoiceSeed {
     this.toneSetting = '',
     this.journalContext = const [],
     this.systemPrimer = '',
+    this.activeCharacter = '',
   });
 
   /// The rolled dialogue line, verbatim.
@@ -294,6 +335,10 @@ class VoiceSeed {
 
   /// Recall lines (see relatedEntries); capped like the oracle prompt.
   final List<String> journalContext;
+
+  /// One-line active-PC descriptor (see activeCharacterLine), or '' for none.
+  /// Renders as a `pc:` line (distinct from [characterName], the spoken NPC).
+  final String activeCharacter;
 }
 
 /// Compact instruction (~150 tokens, well under the lens prompt's budget):
@@ -333,6 +378,7 @@ String buildVoicePrompt(VoiceSeed seed) {
       'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
       'tone: ${_orElse(seed.toneSetting, '(unspecified)')}\n'
       '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
       '${name == null ? '' : 'character: ${_flat(name)}\n'}'
       '${seed.characterTags.isEmpty ? '' : 'traits: ${_flat(seed.characterTags.join(', '))}\n'}'
       'mood: ${_flat(seed.mood)}\n'
@@ -359,8 +405,8 @@ const String _askGmInstruction =
     'question in 1-3 sentences of plain prose. Be concrete and decisive.';
 
 /// Hard cap on the user question (and scene title) fed to the model, so a long
-/// pasted question can't blow the web model's ~1280-token window. Mirrors the
-/// budget discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
+/// pasted question can't crowd out the grounding lines. Mirrors the budget
+/// discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
 const int kAskGmMaxFieldChars = 300;
 
 String _capped(String s) => s.length > kAskGmMaxFieldChars
@@ -368,21 +414,45 @@ String _capped(String s) => s.length > kAskGmMaxFieldChars
     : s;
 
 class AskGmSeed {
-  const AskGmSeed({required this.question, this.sceneTitle});
+  const AskGmSeed({
+    required this.question,
+    this.sceneTitle,
+    this.systemPrimer = '',
+    this.activeCharacter = '',
+    this.journalContext = const [],
+  });
   final String question;
   final String? sceneTitle;
+  final String systemPrimer;
+  final String activeCharacter;
+  final List<String> journalContext;
 }
 
-/// Tiny, budget-safe prompt: instruction + optional scene line + question.
-/// The question and scene title are length-capped (see [kAskGmMaxFieldChars]).
+/// Grounded prompt: instruction + optional system/pc/scene/recall lines, then
+/// the question. The same line-keyed shape interpret/voice use. The question and
+/// scene title are length-capped (see [kAskGmMaxFieldChars]); recall takes
+/// [kRecallMaxEntries] lines capped at [kRecallMaxChars].
 String buildAskGmPrompt(AskGmSeed seed) {
   final scene = seed.sceneTitle;
   final sceneLine = (scene == null || scene.trim().isEmpty)
       ? ''
       : 'scene: ${_capped(_flat(scene))}\n';
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
   return '$_askGmInstruction\n\n'
       'INPUT:\n'
+      '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
       '$sceneLine'
+      '$recall'
       'question: ${_capped(_flat(seed.question))}\n'
       'OUTPUT:';
 }

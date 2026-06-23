@@ -8,6 +8,7 @@ import '../engine/suggestions.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
 
@@ -52,8 +53,15 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
       _error = null;
     });
     try {
-      final answer =
-          await service.askGm(AskGmSeed(question: q, sceneTitle: scene));
+      final qTarget = JournalEntry(
+          id: 'ask-gm-target', timestamp: DateTime.now(), title: '', body: q);
+      final answer = await service.askGm(AskGmSeed(
+        question: q,
+        sceneTitle: scene,
+        systemPrimer: ref.read(systemPrimerProvider),
+        activeCharacter: ref.read(activeCharacterLineProvider),
+        journalContext: recallLines(entries, qTarget),
+      ));
       await ref
           .read(journalProvider.notifier)
           .addResult('Ask the GM', 'Q: $q\n\n$answer', sourceTool: 'ask-gm');
