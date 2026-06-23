@@ -251,12 +251,14 @@ void main() {
       name: 'Vane',
       existingDetail: 'grim',
       systemPrimer: 'Ironsworn',
+      activeCharacter: 'Taurin (PC)',
       journal: journal,
     );
     expect(seed.entityKind, 'NPC');
     expect(seed.name, 'Vane');
     expect(seed.existingDetail, 'grim');
     expect(seed.systemPrimer, 'Ironsworn');
+    expect(seed.activeCharacter, 'Taurin (PC)');
     expect(seed.sceneTitle, 'Scene Two'); // newest scene's title
     expect(seed.journalContext.any((l) => l.contains('Vane')), isTrue);
   });
@@ -267,6 +269,7 @@ void main() {
       name: 'Mill',
       existingDetail: '',
       systemPrimer: '',
+      activeCharacter: '',
       journal: const [],
     );
     expect(seed.sceneTitle, isNull);
@@ -299,6 +302,7 @@ FleshOutSeed fleshOutSeedFrom({
   required String name,
   required String existingDetail,
   required String systemPrimer,
+  required String activeCharacter,
   required List<JournalEntry> journal,
 }) {
   final sceneTitle = journal
@@ -314,6 +318,7 @@ FleshOutSeed fleshOutSeedFrom({
     name: name,
     existingDetail: existingDetail,
     systemPrimer: systemPrimer,
+    activeCharacter: activeCharacter,
     sceneTitle: sceneTitle,
     journalContext: related,
   );
@@ -331,6 +336,7 @@ FleshOutSeed buildFleshOutSeed(
       name: name,
       existingDetail: existingDetail,
       systemPrimer: ref.read(systemPrimerProvider),
+      activeCharacter: ref.read(activeCharacterLineProvider),
       journal: ref.read(journalProvider).valueOrNull ?? const [],
     );
 ```
