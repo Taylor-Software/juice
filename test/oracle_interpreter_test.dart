@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 
 import 'fake_interpreter.dart';
@@ -64,20 +65,18 @@ void main() {
     });
 
     test('recall lines are capped and truncated for the token budget', () {
-      // The web model is only proven at 1280 total tokens; these caps are
-      // load-bearing, not tuning knobs.
-      expect(kRecallMaxEntries, 2);
-      expect(kRecallMaxChars, 100);
+      // Caps are load-bearing budget discipline (see kRecallMaxEntries/Chars).
       final seed = OracleSeed(
         resultText: 'r',
-        journalContext: ['x' * 300, 'b', 'c'],
+        // More entries than the cap; the first is over the char cap.
+        journalContext: ['x' * 400, 'b', 'c', 'd', 'e', 'f', 'g'],
       );
       final recalls = buildOraclePrompt(seed)
           .split('\n')
           .where((l) => l.startsWith('recall: '))
           .toList();
-      expect(recalls, hasLength(kRecallMaxEntries));
-      expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…');
+      expect(recalls, hasLength(kRecallMaxEntries)); // capped (7 → 6)
+      expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…'); // truncated
       expect(recalls[1], 'recall: b');
     });
 
@@ -302,13 +301,13 @@ result: Fate Check (Likely) — Yes, and…
       final seed = VoiceSeed(
         line: 'Go.',
         mood: 'default',
-        journalContext: ['x' * 300, 'b', 'c'],
+        journalContext: ['x' * 400, 'b', 'c', 'd', 'e', 'f', 'g'],
       );
       final recalls = buildVoicePrompt(seed)
           .split('\n')
           .where((l) => l.startsWith('recall: '))
           .toList();
-      expect(recalls, hasLength(kRecallMaxEntries));
+      expect(recalls, hasLength(kRecallMaxEntries)); // capped (7 → 6)
       expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…');
       expect(recalls[1], 'recall: b');
     });
@@ -366,5 +365,73 @@ result: Fate Check (Likely) — Yes, and…
     }
     expect(oracleSystemInstruction, contains('ONLY a JSON object'));
     expect(oracleSystemInstruction, contains('recall:'));
+  });
+
+  group('recallLines', () {
+    test('formats relatedEntries output as "Title — body" / body-only', () {
+      final journal = [
+        JournalEntry(
+            id: '1',
+            timestamp: DateTime(2026, 1, 1),
+            title: 'The Tower',
+            body: 'A black gate guards the ruined tower.'),
+        JournalEntry(
+            id: '2',
+            timestamp: DateTime(2026, 1, 2),
+            title: '',
+            body: 'The black gate is sealed with old runes.'),
+      ];
+      final target = JournalEntry(
+          id: 't',
+          timestamp: DateTime(2026, 1, 3),
+          title: 'gate',
+          body: 'the black gate and the tower');
+      final lines = recallLines(journal, target);
+      expect(lines, isNotEmpty);
+      expect(lines.any((l) => l.startsWith('The Tower — ')), isTrue);
+      expect(lines.any((l) => l == 'The black gate is sealed with old runes.'),
+          isTrue);
+    });
+  });
+
+  test('recall budget is loosened for the on-device model', () {
+    expect(kRecallMaxEntries, 6);
+    expect(kRecallMaxChars, 280);
+  });
+
+  group('activeCharacterLine', () {
+    test('null → empty', () => expect(activeCharacterLine(null), ''));
+    test('PC with conditions → "Name (PC) — cond"', () {
+      const c = Character(
+          id: 'c1',
+          name: 'Taurin',
+          role: CharacterRole.pc,
+          conditions: ['wounded', 'hexed']);
+      expect(activeCharacterLine(c), 'Taurin (PC) — wounded, hexed');
+    });
+    test('companion, no conditions → "Name (companion)"', () {
+      const c = Character(id: 'c2', name: 'Vex', role: CharacterRole.companion);
+      expect(activeCharacterLine(c), 'Vex (companion)');
+    });
+  });
+
+  test('buildOraclePrompt renders a pc: line when present, omits when empty',
+      () {
+    final withPc = buildOraclePrompt(const OracleSeed(
+        resultText: 'A door opens.', activeCharacter: 'Taurin (PC)'));
+    expect(withPc, contains('\npc: Taurin (PC)\n'));
+    final noPc =
+        buildOraclePrompt(const OracleSeed(resultText: 'A door opens.'));
+    expect(noPc, isNot(contains('pc:')));
+  });
+
+  test('buildVoicePrompt renders pc: distinct from the spoken character:', () {
+    final p = buildVoicePrompt(const VoiceSeed(
+        line: 'Hello there.',
+        mood: 'default',
+        characterName: 'The Innkeeper',
+        activeCharacter: 'Taurin (PC)'));
+    expect(p, contains('character: The Innkeeper')); // the spoken NPC
+    expect(p, contains('pc: Taurin (PC)')); // the player character
   });
 }
