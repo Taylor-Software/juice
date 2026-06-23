@@ -262,7 +262,10 @@ Working rules for this repo:
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
   oracle interpreter; service seam in `lib/state/interpreter.dart`, tests
-  always use the fake — never construct `GemmaInterpreterService` in tests).
+  always use the fake — never construct `GemmaInterpreterService` in tests) +
+  `flutter_svg` (renders the bundled CC0 standard-deck card SVGs in
+  `assets/playing/`; tarot art in `assets/tarot/` is raster JPG — `CardImage`
+  in `lib/shared/card_image.dart` picks the renderer by extension).
   No dio/repository (no network), no codegen (static data), no router (the
   journal is the single home screen; tools open in a keep-alive panel via
   `lib/shared/tool_host.dart` + the declarative registry in
