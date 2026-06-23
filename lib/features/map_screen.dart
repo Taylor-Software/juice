@@ -9,7 +9,9 @@ import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/result_card.dart';
 import '../shared/shell_route.dart';
+import '../state/blob_store.dart';
 import '../state/providers.dart';
+import 'map_snapshot.dart';
 
 /// Grid cell size for the dungeon canvas, in logical pixels.
 const _cell = 56.0;
@@ -72,9 +74,7 @@ Widget encounterToggleButton({
       key: key,
       onPressed: !enabled ? null : (linked ? onUnlink : onLink),
       icon: Icon(
-        linked
-            ? Icons.local_fire_department
-            : Icons.add_location_alt_outlined,
+        linked ? Icons.local_fire_department : Icons.add_location_alt_outlined,
         size: 18,
       ),
       label: Text(linked ? 'Encounter here ✓' : 'Set encounter here'),
@@ -108,6 +108,7 @@ class DungeonMapPane extends ConsumerStatefulWidget {
 
 class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   GenResult? _last; // latest linger result
+  final GlobalKey _dungeonSnapKey = GlobalKey();
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
   @override
@@ -167,6 +168,14 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                 ? null
                 : () => _log('Dungeon map', _dungeonSummary(s)),
           ),
+          if (ref.watch(blobStoreAvailableProvider))
+            IconButton(
+              key: const Key('dungeon-snapshot'),
+              icon: const Icon(Icons.draw_outlined),
+              tooltip: 'Annotate in journal',
+              onPressed: () =>
+                  snapshotMapToJournal(context, ref, _dungeonSnapKey),
+            ),
           IconButton(
             key: const Key('dungeon-reset'),
             icon: const Icon(Icons.delete_sweep_outlined),
@@ -216,16 +225,22 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
             final id = roomIdAt(s.rooms, d.localPosition, _cell);
             if (id != null) ref.read(mapProvider.notifier).selectRoom(id);
           },
-          child: CustomPaint(
-            key: const Key('dungeon-canvas'),
-            size: Size(width, height),
-            painter: _DungeonPainter(
-              rooms: s.rooms,
-              corridors: s.corridors,
-              currentRoomId: s.currentRoomId,
-              scheme: scheme,
-              encounterRoomId:
-                  ref.watch(encounterProvider).valueOrNull?.locationRef?.roomId,
+          child: RepaintBoundary(
+            key: _dungeonSnapKey,
+            child: CustomPaint(
+              key: const Key('dungeon-canvas'),
+              size: Size(width, height),
+              painter: _DungeonPainter(
+                rooms: s.rooms,
+                corridors: s.corridors,
+                currentRoomId: s.currentRoomId,
+                scheme: scheme,
+                encounterRoomId: ref
+                    .watch(encounterProvider)
+                    .valueOrNull
+                    ?.locationRef
+                    ?.roomId,
+              ),
             ),
           ),
         ),
@@ -609,6 +624,7 @@ enum _HexZoom { region, flower, interior }
 
 class HexMapPaneState extends ConsumerState<HexMapPane> {
   GenResult? _last; // latest travel result
+  final GlobalKey _hexSnapKey = GlobalKey();
   String _hcClimate = 'temperate';
   int _hcCount = 10;
   int _hcInteriorCount = 6; // site interior "Generate" area count
@@ -773,6 +789,13 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                 ? null
                 : () => _log('Wilderness map', _hexSummary(s)),
           ),
+          if (ref.watch(blobStoreAvailableProvider))
+            IconButton(
+              key: const Key('map-snapshot'),
+              icon: const Icon(Icons.draw_outlined),
+              tooltip: 'Annotate in journal',
+              onPressed: () => snapshotMapToJournal(context, ref, _hexSnapKey),
+            ),
           IconButton(
             key: const Key('hex-reset'),
             icon: const Icon(Icons.delete_sweep_outlined),
@@ -850,20 +873,23 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
             }
             _manualReveal(hit.col, hit.row);
           },
-          child: CustomPaint(
-            key: const Key('hex-canvas'),
-            size: Size(width, height),
-            painter: _HexPainter(
-              hexes: s.hexes,
-              ghosts: ghosts,
-              currentCol: s.currentHexCol,
-              currentRow: s.currentHexRow,
-              minCol: minCol,
-              minRow: minRow,
-              envNames: _envNames,
-              scheme: scheme,
-              encounterCol: encounterRef?.hexCol,
-              encounterRow: encounterRef?.hexRow,
+          child: RepaintBoundary(
+            key: _hexSnapKey,
+            child: CustomPaint(
+              key: const Key('hex-canvas'),
+              size: Size(width, height),
+              painter: _HexPainter(
+                hexes: s.hexes,
+                ghosts: ghosts,
+                currentCol: s.currentHexCol,
+                currentRow: s.currentHexRow,
+                minCol: minCol,
+                minRow: minRow,
+                envNames: _envNames,
+                scheme: scheme,
+                encounterCol: encounterRef?.hexCol,
+                encounterRow: encounterRef?.hexRow,
+              ),
             ),
           ),
         ),
@@ -1012,7 +1038,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                 );
               }),
               Builder(builder: (context) {
-                final ref0 = ref.watch(encounterProvider).valueOrNull?.locationRef;
+                final ref0 =
+                    ref.watch(encounterProvider).valueOrNull?.locationRef;
                 return encounterJumpButton(
                   key: const Key('hex-encounter-goto'),
                   show: ref0?.hexCol == h.col && ref0?.hexRow == h.row,
