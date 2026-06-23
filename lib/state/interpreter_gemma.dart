@@ -203,6 +203,11 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   @override
+  Future<String> narrate(NarrateSeed seed) async {
+    return parseNarrateResponse(await _generate(buildNarratePrompt(seed)));
+  }
+
+  @override
   Future<void> dispose() async {
     _disposed = true; // an in-flight warm-up must not resurrect us
     await _model?.close();

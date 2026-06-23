@@ -33,6 +33,11 @@ class FakeInterpreterService implements InterpreterService {
   int gmChatCalls = 0;
   Object? gmChatError;
 
+  int narrateCalls = 0;
+  Object? narrateError;
+  NarrateSeed? lastNarrateSeed;
+  final List<String> queuedNarrate = [];
+
   /// When set, interpret() blocks on it after counting the call — lets a
   /// test hold a generation in flight (e.g. to probe reentrancy guards).
   Completer<void>? interpretGate;
@@ -103,6 +108,15 @@ class FakeInterpreterService implements InterpreterService {
     if (gmChatError != null) throw gmChatError!;
     if (queuedGmChat.isEmpty) return 'A canned GM reply.';
     return queuedGmChat.removeAt(0);
+  }
+
+  @override
+  Future<String> narrate(NarrateSeed seed) async {
+    lastNarrateSeed = seed;
+    narrateCalls++;
+    if (narrateError != null) throw narrateError!;
+    if (queuedNarrate.isEmpty) return 'A canned narration.';
+    return queuedNarrate.removeAt(0);
   }
 
   @override
