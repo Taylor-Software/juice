@@ -78,6 +78,10 @@ abstract class InterpreterService {
   /// readiness contract as the other seams. Requires ready.
   Future<String> narrate(NarrateSeed seed);
 
+  /// Flesh out an entity (NPC / thread / location) into richer detail (plain
+  /// text). Same readiness contract as the other seams. Requires ready.
+  Future<String> fleshOut(FleshOutSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }

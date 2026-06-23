@@ -38,6 +38,11 @@ class FakeInterpreterService implements InterpreterService {
   int narrateCalls = 0;
   Object? narrateError;
 
+  final List<String> queuedFleshOut = [];
+  FleshOutSeed? lastFleshOutSeed;
+  int fleshOutCalls = 0;
+  Object? fleshOutError;
+
   /// When set, interpret() blocks on it after counting the call — lets a
   /// test hold a generation in flight (e.g. to probe reentrancy guards).
   Completer<void>? interpretGate;
@@ -117,6 +122,15 @@ class FakeInterpreterService implements InterpreterService {
     if (narrateError != null) throw narrateError!;
     if (queuedNarrate.isEmpty) return 'A canned narration.';
     return queuedNarrate.removeAt(0);
+  }
+
+  @override
+  Future<String> fleshOut(FleshOutSeed seed) async {
+    lastFleshOutSeed = seed;
+    fleshOutCalls++;
+    if (fleshOutError != null) throw fleshOutError!;
+    if (queuedFleshOut.isEmpty) return 'Fleshed-out detail.';
+    return queuedFleshOut.removeAt(0);
   }
 
   @override
