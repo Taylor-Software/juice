@@ -344,3 +344,13 @@ const _reversedSuffix = ' (reversed)';
       : shown;
   return (name: name, reversed: reversed, meaning: kTarotMeanings[name]);
 }
+
+/// The "\n<Orientation> — <meaning>" line for a drawn tarot card, or '' when
+/// [shown] isn't a tarot card (e.g. a standard-deck draw). Folded into a logged
+/// card entry so the reading is preserved without the AI.
+String tarotMeaningSuffix(String shown) {
+  final r = readTarot(shown);
+  if (r.meaning == null) return '';
+  return '\n${r.reversed ? 'Reversed' : 'Upright'} — '
+      '${r.reversed ? r.meaning!.reversed : r.meaning!.upright}';
+}
