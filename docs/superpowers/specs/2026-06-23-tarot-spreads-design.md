@@ -77,8 +77,8 @@ Position labels are functional descriptors authored for this app.
 - The aggregate `GenResult` itself carries no meanings (just position→card in
   its rolls). Meanings are folded into the **journal body** separately, by the
   `spreadBody` helper (§4), so the logged entry reads as a full spread with
-  meanings — interpretable by the standard per-entry Interpret. The `GenResult`
-  is still stored as the entry payload for re-render.
+  meanings — interpretable by the standard per-entry Interpret. (The logged
+  entry stores no structured payload — see §4.)
 
 `drawSpread` is pure (no persistence); the provider persists `next`.
 
@@ -117,8 +117,13 @@ Below the existing single-card draw row, gated by the same
   name + orientation + meaning line. Uniform for all three spreads — no
   bespoke geometry.
 - A **Log** button (`Key('spread-log')`) writes **one** journal entry:
-  `addResult('Tarot Spread', _spreadBody(...), sourceTool: 'cards',
-  payload: result.toPayload())`, then a "Added to journal" snackbar.
+  `addResult('Tarot Spread', spreadBody(...), sourceTool: 'cards')`, then an
+  "Added to journal" snackbar. **No `payload`** — unlike the single-card path
+  (which stores `g.toPayload()` so the journal re-renders the card art), a
+  spread's `GenResult.summary` is the spread *name*, not a card, so a
+  single-card-shaped payload would be dead data and could mis-trigger the
+  journal's single-card `CardImage` render. The `spreadBody` text is the
+  canonical, fully-interpretable reading.
 
 Shared pure helper for the journal body (so engine GenResult + logged text
 agree), e.g. in `tarot_spreads.dart`:
