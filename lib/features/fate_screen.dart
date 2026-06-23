@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
+import '../shared/card_image.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 import 'tarot_reference.dart';
@@ -452,6 +453,16 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         );
                       },
                     ),
+                    Builder(builder: (context) {
+                      final r = readTarot(_cardLast!.summary ?? '');
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: CardImage(r.name, reversed: r.reversed),
+                        ),
+                      );
+                    }),
                     _cardMeaning(theme, _cardLast!),
                   ],
                 ],

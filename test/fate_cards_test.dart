@@ -8,6 +8,7 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/fate_screen.dart';
 import 'package:juice_oracle/features/tarot_reference.dart';
+import 'package:juice_oracle/shared/card_image.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +39,7 @@ void main() {
     await tester.tap(find.byKey(const Key('cards-draw-tarot')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('card-meaning')), findsOneWidget);
+    expect(find.byType(CardImage), findsOneWidget); // bundled art renders
   });
 
   testWidgets('logging a tarot card writes the meaning into the entry',

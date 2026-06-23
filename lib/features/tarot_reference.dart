@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
 import '../engine/tarot_meanings.dart';
+import '../shared/card_image.dart';
 
 /// Browsable reference for the 78 tarot cards, grouped into Major Arcana + the
 /// four suits, with a name filter. Each row shows the authored upright and
@@ -93,16 +94,26 @@ class _TarotReferenceState extends State<TarotReference> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(card, style: theme.textTheme.titleSmall),
-            if (m != null) ...[
-              const SizedBox(height: 4),
-              Text('Upright — ${m.upright}', style: theme.textTheme.bodySmall),
-              Text('Reversed — ${m.reversed}',
-                  style: theme.textTheme.bodySmall),
-            ],
+            CardImage(card, height: 88),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(card, style: theme.textTheme.titleSmall),
+                  if (m != null) ...[
+                    const SizedBox(height: 4),
+                    Text('Upright — ${m.upright}',
+                        style: theme.textTheme.bodySmall),
+                    Text('Reversed — ${m.reversed}',
+                        style: theme.textTheme.bodySmall),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
