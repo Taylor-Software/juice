@@ -62,9 +62,9 @@ final List<SketchText> texts; // defaults to const []
 ```
 
 - Constructor: `this.texts = const []`.
-- `toJson`: add `'t': texts.map((t) => t.toJson()).toList()` (always emit, like
-  `strokes`).
-- `fromJson`: parse `j['t']` the same tolerant way as `strokes` (whereType
+- `toJson`: add `'texts': texts.map((t) => t.toJson()).toList()` (always emit,
+  beside — and consistent with — the existing `'strokes'` key).
+- `fromJson`: parse `j['texts']` the same tolerant way as `strokes` (whereType
   `Map`, map to `SketchText.fromJson`).
 - `isEmpty`: becomes `strokes.isEmpty && texts.isEmpty && backgroundBlobId ==
   null` (a sketch with only text labels is worth keeping).

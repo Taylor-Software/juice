@@ -332,6 +332,26 @@ void main() {
     expect(result!.texts.single.text, 'Pit'); // replaced, not duplicated
   });
 
+  testWidgets('clearing an existing label on edit deletes it', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap', at: const Offset(40, 40));
+    // Reopen the label and clear its text → it should be removed.
+    await tester.tapAt(
+        tester.getTopLeft(find.byKey(const Key('sketch-canvas'))) +
+            const Offset(40, 40));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('sketch-text-field')), '');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts, isEmpty);
+  });
+
   testWidgets('eraser removes a placed label', (tester) async {
     SketchData? result;
     await tester.pumpWidget(MaterialApp(

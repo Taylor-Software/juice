@@ -147,7 +147,7 @@ class _SketchEditorState extends State<SketchEditor> {
       return; // nothing under the pointer
     }
     if (!_erasing) {
-      _undo.add((strokes: beforeStrokes, texts: beforeTexts));
+      _snapshot(); // _strokes/_texts still hold the pre-erase values here
       _erasing = true;
     }
     setState(() {
@@ -170,7 +170,7 @@ class _SketchEditorState extends State<SketchEditor> {
       context: context,
       builder: (_) => _TextLabelDialog(initial: hit?.text ?? ''),
     );
-    if (result == null || !mounted) return; // cancelled
+    if (!mounted || result == null) return; // cancelled / disposed
     final value = result.trim();
     setState(() {
       if (hit != null) {
