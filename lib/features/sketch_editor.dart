@@ -15,8 +15,8 @@ const _palette = <int>[
   0xFFFFFFFF,
 ];
 
-/// Active drawing tool: freehand pen or whole-stroke eraser.
-enum _SketchTool { pen, eraser }
+/// Active drawing tool.
+enum _SketchTool { pen, eraser, line, rect, ellipse }
 
 /// Paints a [SketchData]'s strokes on a paper background (theme-independent so
 /// stored colors render the same in light and dark mode).
@@ -115,6 +115,9 @@ class _SketchEditorState extends State<SketchEditor> {
   // True once the current erase drag has captured its pre-erase snapshot, so a
   // single drag-to-erase is one undo step.
   bool _erasing = false;
+  // Anchor point for shape tools (line/rect/ellipse): set on pan-start, cleared
+  // on pan-end. Null when a freehand pen or eraser is active.
+  Offset? _shapeStart;
 
   double get _eraserRadius => math.max(_width * 1.5, 10);
 
@@ -127,6 +130,40 @@ class _SketchEditorState extends State<SketchEditor> {
       _erasing = true;
     }
     setState(() => _strokes = after);
+  }
+
+  // Returns computed points for the active shape tool from [start] to [end],
+  // in canvas coordinates. Rect = 5 closed corners; ellipse = 36-segment polyline.
+  List<List<double>> _shapePoints(Offset start, Offset end) {
+    final sx = start.dx, sy = start.dy, ex = end.dx, ey = end.dy;
+    switch (_tool) {
+      case _SketchTool.line:
+        return [
+          [sx, sy],
+          [ex, ey]
+        ];
+      case _SketchTool.rect:
+        return [
+          [sx, sy],
+          [ex, sy],
+          [ex, ey],
+          [sx, ey],
+          [sx, sy],
+        ];
+      case _SketchTool.ellipse:
+        final cx = (sx + ex) / 2, cy = (sy + ey) / 2;
+        final rx = (ex - sx).abs() / 2, ry = (ey - sy).abs() / 2;
+        const steps = 36;
+        return [
+          for (var i = 0; i <= steps; i++)
+            [
+              cx + rx * math.cos(2 * math.pi * i / steps),
+              cy + ry * math.sin(2 * math.pi * i / steps),
+            ],
+        ];
+      default:
+        return [];
+    }
   }
 
   void _save() {
@@ -208,15 +245,23 @@ class _SketchEditorState extends State<SketchEditor> {
           if (_tool == _SketchTool.eraser) {
             _erasing = false;
             _eraseAt(d.localPosition);
-          } else {
+          } else if (_tool == _SketchTool.pen) {
             setState(() => _current = [_xy(d.localPosition)]);
+          } else {
+            setState(() {
+              _shapeStart = d.localPosition;
+              _current = [];
+            });
           }
         },
         onPanUpdate: (d) {
           if (_tool == _SketchTool.eraser) {
             _eraseAt(d.localPosition);
-          } else {
+          } else if (_tool == _SketchTool.pen) {
             setState(() => _current.add(_xy(d.localPosition)));
+          } else if (_shapeStart != null) {
+            setState(
+                () => _current = _shapePoints(_shapeStart!, d.localPosition));
           }
         },
         onPanEnd: (_) {
@@ -233,6 +278,7 @@ class _SketchEditorState extends State<SketchEditor> {
               ];
             }
             _current = [];
+            _shapeStart = null;
           });
         },
         child: CustomPaint(
@@ -300,6 +346,30 @@ class _SketchEditorState extends State<SketchEditor> {
                 isSelected: _tool == _SketchTool.eraser,
                 color: _tool == _SketchTool.eraser ? Colors.blue : null,
                 onPressed: () => setState(() => _tool = _SketchTool.eraser),
+              ),
+              IconButton(
+                key: const Key('sketch-tool-line'),
+                icon: const Icon(Icons.remove),
+                tooltip: 'Line',
+                isSelected: _tool == _SketchTool.line,
+                color: _tool == _SketchTool.line ? Colors.blue : null,
+                onPressed: () => setState(() => _tool = _SketchTool.line),
+              ),
+              IconButton(
+                key: const Key('sketch-tool-rect'),
+                icon: const Icon(Icons.crop_square),
+                tooltip: 'Rectangle',
+                isSelected: _tool == _SketchTool.rect,
+                color: _tool == _SketchTool.rect ? Colors.blue : null,
+                onPressed: () => setState(() => _tool = _SketchTool.rect),
+              ),
+              IconButton(
+                key: const Key('sketch-tool-ellipse'),
+                icon: const Icon(Icons.radio_button_unchecked),
+                tooltip: 'Ellipse',
+                isSelected: _tool == _SketchTool.ellipse,
+                color: _tool == _SketchTool.ellipse ? Colors.blue : null,
+                onPressed: () => setState(() => _tool = _SketchTool.ellipse),
               ),
             ],
           ),
