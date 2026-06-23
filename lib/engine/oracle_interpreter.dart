@@ -619,16 +619,31 @@ class FleshOutSeed {
     required this.name,
     this.existingDetail = '',
     this.systemPrimer = '',
+    this.activeCharacter = '',
     this.sceneTitle,
     this.journalContext = const [],
   });
 
   /// Human label for the prompt, e.g. 'NPC' / 'story thread' / 'location'.
   final String entityKind;
+
+  /// The entity's name/title — the subject of the flesh-out.
   final String name;
+
+  /// The entity's current free-text detail; the model builds on it.
   final String existingDetail;
+
+  /// Authored facts-only system primer (see system_primer.dart), or ''.
   final String systemPrimer;
+
+  /// One-line active-PC descriptor (see [activeCharacterLine]), or '' — the
+  /// shared `pc:` grounding line every seam carries.
+  final String activeCharacter;
+
+  /// Latest scene entry's title, or null.
   final String? sceneTitle;
+
+  /// Name-query recall lines (entries mentioning the entity); capped in-prompt.
   final List<String> journalContext;
 }
 
@@ -660,6 +675,7 @@ String buildFleshOutPrompt(FleshOutSeed seed) {
       'preamble, no headers, no lists.\n\n'
       'INPUT:\n'
       '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
       '$sceneLine'
       '$recall'
       'name: ${_capped(_flat(seed.name))}\n'

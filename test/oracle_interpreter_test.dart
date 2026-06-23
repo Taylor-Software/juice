@@ -486,11 +486,13 @@ result: Fate Check (Likely) — Yes, and…
         name: 'Sister Vane',
         existingDetail: 'A grim cleric.',
         systemPrimer: 'Ironsworn: perilous Iron Lands.',
+        activeCharacter: 'Taurin (PC)',
         sceneTitle: 'The crypt',
         journalContext: ['Sister Vane barred the door.'],
       ));
       expect(p, contains('Flesh out the following NPC'));
       expect(p, contains('system: Ironsworn'));
+      expect(p, contains('pc: Taurin (PC)'));
       expect(p, contains('scene: The crypt'));
       expect(p, contains('recall: Sister Vane barred the door.'));
       expect(p, contains('name: Sister Vane'));
@@ -502,8 +504,11 @@ result: Fate Check (Likely) — Yes, and…
       final p = buildFleshOutPrompt(
           const FleshOutSeed(entityKind: 'location', name: 'The Old Mill'));
       expect(p, contains('Flesh out the following location'));
+      expect(p, contains('name: The Old Mill')); // name always present
       expect(p, isNot(contains('existing:')));
       expect(p, isNot(contains('system:')));
+      expect(p, isNot(contains('pc:')));
+      expect(p, isNot(contains('recall:')));
       expect(p.trimRight(), endsWith('Detail:'));
     });
 
