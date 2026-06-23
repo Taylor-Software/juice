@@ -789,7 +789,9 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                 ? null
                 : () => _log('Wilderness map', _hexSummary(s)),
           ),
-          if (ref.watch(blobStoreAvailableProvider))
+          // Only in the full-map (region) view — the snapshot boundary isn't in
+          // the tree during flower/interior zoom.
+          if (_zoom == _HexZoom.region && ref.watch(blobStoreAvailableProvider))
             IconButton(
               key: const Key('map-snapshot'),
               icon: const Icon(Icons.draw_outlined),

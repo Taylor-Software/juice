@@ -40,6 +40,7 @@ Future<void> snapshotMapToJournal(
     return;
   }
   final bgBlobId = await ref.read(blobStoreProvider).put(png, ext: 'png');
+  // A cancelled editor leaves an orphan blob; blob GC is a later epic step.
   final bg = await decodeSketchBackground(png);
   try {
     if (!context.mounted) return;
