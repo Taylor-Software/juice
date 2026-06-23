@@ -74,6 +74,10 @@ abstract class InterpreterService {
   /// Stateless: the whole transcript rides in the prompt. Requires ready.
   Future<String> gmChat(GmChatSeed seed);
 
+  /// GM narration: the next scene beat or a complication (plain text). Same
+  /// readiness contract as the other seams. Requires ready.
+  Future<String> narrate(NarrateSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }

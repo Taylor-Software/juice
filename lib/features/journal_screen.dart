@@ -267,6 +267,46 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
   }
 
+  Future<void> _narrate(NarrateMode mode) async {
+    if (!_canVoice) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Enable AI in Settings to narrate.')));
+      return;
+    }
+    final journal = ref.read(journalProvider).valueOrNull ?? const [];
+    // Journal is newest-first, so firstOrNull = the most recent: recall ranks
+    // against the most recent scene entry, else the newest entry of any kind.
+    final target =
+        journal.where((e) => e.kind == JournalKind.scene).firstOrNull ??
+            journal.firstOrNull;
+    final seed = NarrateSeed(
+      mode: mode,
+      sceneTitle: _sceneContext(),
+      systemPrimer: ref.read(systemPrimerProvider),
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      journalContext: target == null ? const [] : recallLines(journal, target),
+    );
+    final String text;
+    try {
+      text = await ref.read(interpreterServiceProvider).narrate(seed);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Narration failed: $e')));
+      }
+      return;
+    }
+    await ref.read(journalProvider.notifier).addResult(
+          mode == NarrateMode.continueScene ? 'Narration' : 'Complication',
+          text,
+          sourceTool: 'narrate',
+        );
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Added to journal')));
+    }
+  }
+
   /// /card and /tarot: draw from the persisted deck and log it (with the tarot
   /// meaning folded in), from the composer on any verb.
   Future<void> _drawCardCmd({required bool tarot}) async {
@@ -1266,6 +1306,25 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               tooltip: 'Inspire (generators)',
               onPressed: () => showGenerateSheet(context),
             ),
+            if (ref.watch(aiReadyProvider))
+              PopupMenuButton<NarrateMode>(
+                key: const Key('composer-narrate'),
+                icon: const Icon(Icons.auto_stories_outlined),
+                tooltip: 'GM narration',
+                onSelected: _narrate,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    key: Key('narrate-continue'),
+                    value: NarrateMode.continueScene,
+                    child: Text('Continue the scene'),
+                  ),
+                  PopupMenuItem(
+                    key: Key('narrate-complication'),
+                    value: NarrateMode.complication,
+                    child: Text('Add a complication'),
+                  ),
+                ],
+              ),
             IconButton(
               key: const Key('composer-draw'),
               icon: const Icon(Icons.draw_outlined),

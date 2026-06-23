@@ -107,6 +107,16 @@ Working rules for this repo:
   `gm-chat` journal entry. The single-shot `askGm` seam is retained but
   app-unused. See
   `docs/superpowers/specs/2026-06-24-multi-turn-gm-chat-design.md`.
+  **AI expansion #3 (GM narration):** a one-tap `narrate(NarrateSeed)` seam
+  (`NarrateMode {continueScene, complication}` in `lib/engine/oracle_interpreter.dart`)
+  — a mode-specific instruction + the #1 grounding + a `Narration:` cue via the
+  fresh-chat `_generate`. The journal composer's `composer-narrate` popup
+  (aiReady-gated, hidden when AI off) offers Continue the scene / Add a
+  complication, each logging a `narrate` journal entry (title
+  "Narration"/"Complication") via the same recap one-tap pattern (`_narrate` in
+  `journal_screen.dart`). See
+  `docs/superpowers/specs/2026-06-24-gm-narration-design.md`. Deferred AI
+  affordances: flesh-out an entity (#4), LLM-ranked suggestion chips (#5).
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,
