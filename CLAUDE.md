@@ -286,12 +286,16 @@ Working rules for this repo:
   tolerant `fromJson`). `SketchEditor` + `SketchPainter`
   (`lib/features/sketch_editor.dart`) draw freehand on a fixed paper background
   (so stored colors read the same in light/dark); palette, two widths, a
-  pen/eraser/shape tools (`sketch-tool-pen`/`sketch-tool-eraser`/`sketch-tool-line`/
-  `sketch-tool-rect`/`sketch-tool-ellipse`; eraser = whole-stroke delete via pure
-  `eraseStrokesAt`/`distanceToStroke` in `sketch.dart`, radius scales with width;
-  shapes = `SketchStroke` with computed points — line 2 pts, rect 5 closed pts,
-  ellipse 37-pt polyline — no schema change), undo (now a snapshot history stack
-  covering draw+erase+clear), clear, save/cancel. The composer `composer-draw`
+  pen/eraser/shape/text tools (`sketch-tool-pen`/`sketch-tool-eraser`/`sketch-tool-line`/
+  `sketch-tool-rect`/`sketch-tool-ellipse`/`sketch-tool-text`; eraser = whole-element
+  delete via pure `eraseStrokesAt`/`distanceToStroke` + `eraseTextsAt`/`distanceToText`
+  in `sketch.dart`, radius scales with width; shapes = `SketchStroke` with computed
+  points — line 2 pts, rect 5 closed pts, ellipse 37-pt polyline; text = `SketchText`
+  {text,x,y,color,size} on `SketchData.texts`, tap-to-place/edit via a dialog, drawn
+  with `TextPainter` — both no-blob, JSON round-trip; the text tool rides `onTapUp`
+  with tap/pan recognizers wired mutually-exclusively by mode to avoid an arena
+  conflict), undo (a snapshot history stack of (strokes,texts) covering
+  draw+shape+text+erase+clear), clear, save/cancel. The composer `composer-draw`
   button opens it for a new sketch (→ `JournalNotifier.addSketch`, empty sketches
   dropped); a sketch entry renders an inline `CustomPaint` thumbnail
   (`sketch-thumb-<id>`) and taps open the editor seeded with its strokes, saving

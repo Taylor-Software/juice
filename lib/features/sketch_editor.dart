@@ -16,7 +16,7 @@ const _palette = <int>[
 ];
 
 /// Active drawing tool.
-enum _SketchTool { pen, eraser, line, rect, ellipse }
+enum _SketchTool { pen, eraser, line, rect, ellipse, text }
 
 /// Paints a [SketchData]'s strokes on a paper background (theme-independent so
 /// stored colors render the same in light and dark mode).
@@ -65,6 +65,16 @@ class SketchPainter extends CustomPainter {
         canvas.drawPath(path, paint);
       }
     }
+    for (final t in data.texts) {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: t.text,
+          style: TextStyle(color: Color(t.color), fontSize: t.size * sy),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      tp.paint(canvas, Offset(t.x * sx, t.y * sy));
+    }
   }
 
   @override
@@ -104,14 +114,18 @@ class SketchEditor extends StatefulWidget {
 
 class _SketchEditorState extends State<SketchEditor> {
   late List<SketchStroke> _strokes = [...?widget.initial?.strokes];
+  late List<SketchText> _texts = [...?widget.initial?.texts];
   List<List<double>> _current = [];
   int _color = _palette.first;
   double _width = 3;
   Size _canvas = const Size(1, 1);
   _SketchTool _tool = _SketchTool.pen;
-  // Undo history: snapshots of [_strokes] taken before each mutation (draw,
-  // erase, clear), so all three are undoable. Replaces a plain removeLast.
-  final List<List<SketchStroke>> _undo = [];
+  // Undo history: snapshots of (strokes, texts) before each mutation, so every
+  // op (draw, shape, erase, clear, text add/edit) is one undo step.
+  final List<({List<SketchStroke> strokes, List<SketchText> texts})> _undo = [];
+
+  void _snapshot() => _undo.add((strokes: _strokes, texts: _texts));
+
   // True once the current erase drag has captured its pre-erase snapshot, so a
   // single drag-to-erase is one undo step.
   bool _erasing = false;
@@ -120,16 +134,63 @@ class _SketchEditorState extends State<SketchEditor> {
   Offset? _shapeStart;
 
   double get _eraserRadius => math.max(_width * 1.5, 10);
+  static const _textHitRadius = 22.0;
 
   void _eraseAt(Offset o) {
-    final before = _strokes;
-    final after = eraseStrokesAt(before, o.dx, o.dy, _eraserRadius);
-    if (after.length == before.length) return; // nothing under the pointer
+    final beforeStrokes = _strokes;
+    final beforeTexts = _texts;
+    final afterStrokes =
+        eraseStrokesAt(beforeStrokes, o.dx, o.dy, _eraserRadius);
+    final afterTexts = eraseTextsAt(beforeTexts, o.dx, o.dy, _eraserRadius);
+    if (afterStrokes.length == beforeStrokes.length &&
+        afterTexts.length == beforeTexts.length) {
+      return; // nothing under the pointer
+    }
     if (!_erasing) {
-      _undo.add(before);
+      _snapshot(); // _strokes/_texts still hold the pre-erase values here
       _erasing = true;
     }
-    setState(() => _strokes = after);
+    setState(() {
+      _strokes = afterStrokes;
+      _texts = afterTexts;
+    });
+  }
+
+  /// Text-tool tap: edit the label under the tap if one is near, else place a
+  /// new one. Cancel (null) leaves everything unchanged.
+  Future<void> _handleTextTap(Offset o) async {
+    SketchText? hit;
+    for (final t in _texts) {
+      if (distanceToText(t, o.dx, o.dy) <= _textHitRadius) {
+        hit = t;
+        break;
+      }
+    }
+    final result = await showDialog<String>(
+      context: context,
+      builder: (_) => _TextLabelDialog(initial: hit?.text ?? ''),
+    );
+    if (!mounted || result == null) return; // cancelled / disposed
+    final value = result.trim();
+    setState(() {
+      if (hit != null) {
+        _snapshot();
+        _texts = [
+          for (final t in _texts)
+            if (!identical(t, hit))
+              t
+            else if (value.isNotEmpty)
+              SketchText(
+                  text: value, x: t.x, y: t.y, color: t.color, size: t.size),
+        ];
+      } else if (value.isNotEmpty) {
+        _snapshot();
+        _texts = [
+          ..._texts,
+          SketchText(text: value, x: o.dx, y: o.dy, color: _color),
+        ];
+      }
+    });
   }
 
   // Returns computed points for the active shape tool from [start] to [end],
@@ -171,6 +232,7 @@ class _SketchEditorState extends State<SketchEditor> {
       canvasWidth: _canvas.width,
       canvasHeight: _canvas.height,
       strokes: _strokes,
+      texts: _texts,
       backgroundBlobId: widget.backgroundBlobId,
       pdfBlobId: widget.pdfBlobId,
       pdfPage: widget.pdfPage,
@@ -187,6 +249,7 @@ class _SketchEditorState extends State<SketchEditor> {
         if (_current.isNotEmpty)
           SketchStroke(color: _color, width: _width, points: _current),
       ],
+      texts: _texts,
     );
     return Scaffold(
       appBar: AppBar(
@@ -203,15 +266,20 @@ class _SketchEditorState extends State<SketchEditor> {
             tooltip: 'Undo',
             onPressed: _undo.isEmpty
                 ? null
-                : () => setState(() => _strokes = _undo.removeLast()),
+                : () => setState(() {
+                      final snap = _undo.removeLast();
+                      _strokes = snap.strokes;
+                      _texts = snap.texts;
+                    }),
           ),
           IconButton(
             key: const Key('sketch-clear'),
             icon: const Icon(Icons.delete_outline),
             tooltip: 'Clear',
             onPressed: () => setState(() {
-              if (_strokes.isNotEmpty) _undo.add(_strokes);
+              if (_strokes.isNotEmpty || _texts.isNotEmpty) _snapshot();
               _strokes = [];
+              _texts = [];
               _current = [];
             }),
           ),
@@ -241,46 +309,60 @@ class _SketchEditorState extends State<SketchEditor> {
       _canvas = Size(constraints.maxWidth, constraints.maxHeight);
       return GestureDetector(
         key: const Key('sketch-canvas'),
-        onPanStart: (d) {
-          if (_tool == _SketchTool.eraser) {
-            _erasing = false;
-            _eraseAt(d.localPosition);
-          } else if (_tool == _SketchTool.pen) {
-            setState(() => _current = [_xy(d.localPosition)]);
-          } else {
-            setState(() {
-              _shapeStart = d.localPosition;
-              _current = [];
-            });
-          }
-        },
-        onPanUpdate: (d) {
-          if (_tool == _SketchTool.eraser) {
-            _eraseAt(d.localPosition);
-          } else if (_tool == _SketchTool.pen) {
-            setState(() => _current.add(_xy(d.localPosition)));
-          } else if (_shapeStart != null) {
-            setState(
-                () => _current = _shapePoints(_shapeStart!, d.localPosition));
-          }
-        },
-        onPanEnd: (_) {
-          if (_tool == _SketchTool.eraser) {
-            _erasing = false;
-            return;
-          }
-          setState(() {
-            if (_current.isNotEmpty) {
-              _undo.add(_strokes);
-              _strokes = [
-                ..._strokes,
-                SketchStroke(color: _color, width: _width, points: _current),
-              ];
-            }
-            _current = [];
-            _shapeStart = null;
-          });
-        },
+        // Tap and pan recognizers are mutually exclusive by mode: the text tool
+        // places labels on a clean tap (onTapUp), every other tool draws on a
+        // pan. Wiring only one family at a time avoids a tap-vs-pan arena
+        // conflict (which would otherwise swallow drag-end events).
+        onTapUp: _tool == _SketchTool.text
+            ? (d) => _handleTextTap(d.localPosition)
+            : null,
+        onPanStart: _tool == _SketchTool.text
+            ? null
+            : (d) {
+                if (_tool == _SketchTool.eraser) {
+                  _erasing = false;
+                  _eraseAt(d.localPosition);
+                } else if (_tool == _SketchTool.pen) {
+                  setState(() => _current = [_xy(d.localPosition)]);
+                } else {
+                  setState(() {
+                    _shapeStart = d.localPosition;
+                    _current = [];
+                  });
+                }
+              },
+        onPanUpdate: _tool == _SketchTool.text
+            ? null
+            : (d) {
+                if (_tool == _SketchTool.eraser) {
+                  _eraseAt(d.localPosition);
+                } else if (_tool == _SketchTool.pen) {
+                  setState(() => _current.add(_xy(d.localPosition)));
+                } else if (_shapeStart != null) {
+                  setState(() =>
+                      _current = _shapePoints(_shapeStart!, d.localPosition));
+                }
+              },
+        onPanEnd: _tool == _SketchTool.text
+            ? null
+            : (_) {
+                if (_tool == _SketchTool.eraser) {
+                  _erasing = false;
+                  return;
+                }
+                setState(() {
+                  if (_current.isNotEmpty) {
+                    _snapshot();
+                    _strokes = [
+                      ..._strokes,
+                      SketchStroke(
+                          color: _color, width: _width, points: _current),
+                    ];
+                  }
+                  _current = [];
+                  _shapeStart = null;
+                });
+              },
         child: CustomPaint(
           painter: SketchPainter(preview, background: widget.background),
           size: Size.infinite,
@@ -300,78 +382,89 @@ class _SketchEditorState extends State<SketchEditor> {
         top: false,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              for (final c in _palette)
-                GestureDetector(
-                  onTap: () => setState(() => _color = c),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: Color(c),
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: _color == c ? Colors.blue : Colors.black26,
-                        width: _color == c ? 3 : 1,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final c in _palette)
+                  GestureDetector(
+                    onTap: () => setState(() => _color = c),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 4),
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: Color(c),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _color == c ? Colors.blue : Colors.black26,
+                          width: _color == c ? 3 : 1,
+                        ),
                       ),
                     ),
                   ),
+                const SizedBox(width: 16),
+                IconButton(
+                  icon: Icon(Icons.circle, size: _width <= 3 ? 22 : 14),
+                  tooltip: 'Thin',
+                  onPressed: () => setState(() => _width = 3),
                 ),
-              const Spacer(),
-              IconButton(
-                icon: Icon(Icons.circle, size: _width <= 3 ? 22 : 14),
-                tooltip: 'Thin',
-                onPressed: () => setState(() => _width = 3),
-              ),
-              IconButton(
-                icon: Icon(Icons.circle, size: _width > 3 ? 22 : 14),
-                tooltip: 'Thick',
-                onPressed: () => setState(() => _width = 8),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                key: const Key('sketch-tool-pen'),
-                icon: const Icon(Icons.edit),
-                tooltip: 'Pen',
-                isSelected: _tool == _SketchTool.pen,
-                color: _tool == _SketchTool.pen ? Colors.blue : null,
-                onPressed: () => setState(() => _tool = _SketchTool.pen),
-              ),
-              IconButton(
-                key: const Key('sketch-tool-eraser'),
-                icon: const Icon(Icons.auto_fix_normal),
-                tooltip: 'Eraser',
-                isSelected: _tool == _SketchTool.eraser,
-                color: _tool == _SketchTool.eraser ? Colors.blue : null,
-                onPressed: () => setState(() => _tool = _SketchTool.eraser),
-              ),
-              IconButton(
-                key: const Key('sketch-tool-line'),
-                icon: const Icon(Icons.remove),
-                tooltip: 'Line',
-                isSelected: _tool == _SketchTool.line,
-                color: _tool == _SketchTool.line ? Colors.blue : null,
-                onPressed: () => setState(() => _tool = _SketchTool.line),
-              ),
-              IconButton(
-                key: const Key('sketch-tool-rect'),
-                icon: const Icon(Icons.crop_square),
-                tooltip: 'Rectangle',
-                isSelected: _tool == _SketchTool.rect,
-                color: _tool == _SketchTool.rect ? Colors.blue : null,
-                onPressed: () => setState(() => _tool = _SketchTool.rect),
-              ),
-              IconButton(
-                key: const Key('sketch-tool-ellipse'),
-                icon: const Icon(Icons.radio_button_unchecked),
-                tooltip: 'Ellipse',
-                isSelected: _tool == _SketchTool.ellipse,
-                color: _tool == _SketchTool.ellipse ? Colors.blue : null,
-                onPressed: () => setState(() => _tool = _SketchTool.ellipse),
-              ),
-            ],
+                IconButton(
+                  icon: Icon(Icons.circle, size: _width > 3 ? 22 : 14),
+                  tooltip: 'Thick',
+                  onPressed: () => setState(() => _width = 8),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  key: const Key('sketch-tool-pen'),
+                  icon: const Icon(Icons.edit),
+                  tooltip: 'Pen',
+                  isSelected: _tool == _SketchTool.pen,
+                  color: _tool == _SketchTool.pen ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.pen),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-eraser'),
+                  icon: const Icon(Icons.auto_fix_normal),
+                  tooltip: 'Eraser',
+                  isSelected: _tool == _SketchTool.eraser,
+                  color: _tool == _SketchTool.eraser ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.eraser),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-line'),
+                  icon: const Icon(Icons.remove),
+                  tooltip: 'Line',
+                  isSelected: _tool == _SketchTool.line,
+                  color: _tool == _SketchTool.line ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.line),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-rect'),
+                  icon: const Icon(Icons.crop_square),
+                  tooltip: 'Rectangle',
+                  isSelected: _tool == _SketchTool.rect,
+                  color: _tool == _SketchTool.rect ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.rect),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-ellipse'),
+                  icon: const Icon(Icons.radio_button_unchecked),
+                  tooltip: 'Ellipse',
+                  isSelected: _tool == _SketchTool.ellipse,
+                  color: _tool == _SketchTool.ellipse ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.ellipse),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-text'),
+                  icon: const Icon(Icons.title),
+                  tooltip: 'Text',
+                  isSelected: _tool == _SketchTool.text,
+                  color: _tool == _SketchTool.text ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.text),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -414,4 +507,46 @@ Future<ui.Image?> decodeSketchBackground(List<int>? bytes) async {
   } catch (_) {
     return null; // unsupported/corrupt image → fall back to paper
   }
+}
+
+/// A tiny dialog that prompts for a text-label string. Owns its
+/// [TextEditingController] so it is disposed after the dialog's exit transition
+/// (disposing it inline in the caller would tear it down mid-animation).
+/// Pops the entered text on OK / submit, or null on Cancel.
+class _TextLabelDialog extends StatefulWidget {
+  const _TextLabelDialog({required this.initial});
+  final String initial;
+
+  @override
+  State<_TextLabelDialog> createState() => _TextLabelDialogState();
+}
+
+class _TextLabelDialogState extends State<_TextLabelDialog> {
+  late final _controller = TextEditingController(text: widget.initial);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        key: const Key('sketch-text-dialog'),
+        title: const Text('Text label'),
+        content: TextField(
+          key: const Key('sketch-text-field'),
+          controller: _controller,
+          autofocus: true,
+          onSubmitted: (v) => Navigator.of(context).pop(v),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(_controller.text),
+              child: const Text('OK')),
+        ],
+      );
 }

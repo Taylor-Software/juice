@@ -30,8 +30,8 @@ void main() {
     });
 
     test('round-trips backgroundBlobId; an image-only sketch is not empty', () {
-      const d = SketchData(
-          canvasWidth: 10, canvasHeight: 10, backgroundBlobId: 'b1');
+      const d =
+          SketchData(canvasWidth: 10, canvasHeight: 10, backgroundBlobId: 'b1');
       expect(d.isEmpty, isFalse); // a background image alone is worth keeping
       final back = SketchData.fromJson(d.toJson());
       expect(back.backgroundBlobId, 'b1');
@@ -79,7 +79,8 @@ void main() {
       expect(distanceToStroke(line(const []), 0, 0), double.infinity);
     });
 
-    test('eraseStrokesAt removes hits, keeps misses, preserves & no mutate', () {
+    test('eraseStrokesAt removes hits, keeps misses, preserves & no mutate',
+        () {
       final a = line([
         [0, 0],
         [10, 0]
@@ -94,6 +95,57 @@ void main() {
       expect(input, [a, b]); // input untouched
       // A miss removes nothing.
       expect(eraseStrokesAt(input, 500, 500, 4), [a, b]);
+    });
+  });
+
+  group('SketchText', () {
+    test('round-trips through JSON', () {
+      const t =
+          SketchText(text: 'Throne', x: 10, y: 20, color: 0xFF112233, size: 22);
+      final back = SketchText.fromJson(t.toJson());
+      expect(back.text, 'Throne');
+      expect(back.x, 10);
+      expect(back.y, 20);
+      expect(back.color, 0xFF112233);
+      expect(back.size, 22);
+    });
+
+    test('fromJson tolerates missing keys with defaults', () {
+      final t = SketchText.fromJson(const {});
+      expect(t.text, '');
+      expect(t.x, 0);
+      expect(t.y, 0);
+      expect(t.size, 18); // default
+    });
+  });
+
+  group('SketchData.texts', () {
+    test('texts round-trip and a text-only sketch is not empty', () {
+      const data = SketchData(
+        canvasWidth: 100,
+        canvasHeight: 100,
+        texts: [SketchText(text: 'Hi', x: 1, y: 2, color: 0xFF000000)],
+      );
+      expect(data.isEmpty, isFalse); // text-only is worth keeping
+      final back = SketchData.fromJson(data.toJson());
+      expect(back.texts, hasLength(1));
+      expect(back.texts.single.text, 'Hi');
+    });
+
+    test('empty when no strokes, texts, or background', () {
+      const data = SketchData(canvasWidth: 1, canvasHeight: 1);
+      expect(data.isEmpty, isTrue);
+    });
+  });
+
+  group('eraseTextsAt', () {
+    test('removes a label within radius, keeps one outside', () {
+      const texts = [
+        SketchText(text: 'near', x: 10, y: 10, color: 0xFF000000),
+        SketchText(text: 'far', x: 200, y: 200, color: 0xFF000000),
+      ];
+      final after = eraseTextsAt(texts, 12, 12, 20);
+      expect(after.map((t) => t.text), ['far']);
     });
   });
 }

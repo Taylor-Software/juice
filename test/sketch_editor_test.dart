@@ -249,4 +249,126 @@ void main() {
     expect(called, isTrue);
     expect(result, isNull);
   });
+
+  testWidgets('initial texts are preserved on save', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SketchEditor(
+          initial: const SketchData(
+            canvasWidth: 100,
+            canvasHeight: 100,
+            texts: [SketchText(text: 'Keep', x: 5, y: 5, color: 0xFF000000)],
+          ),
+          onDone: (d) => result = d,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result, isNotNull);
+    expect(result!.texts, hasLength(1));
+    expect(result!.texts.single.text, 'Keep');
+  });
+
+  Future<void> placeText(WidgetTester tester, String value,
+      {Offset at = const Offset(40, 40)}) async {
+    await tester.tap(find.byKey(const Key('sketch-tool-text')));
+    await tester.pumpAndSettle();
+    final canvas = find.byKey(const Key('sketch-canvas'));
+    await tester.tapAt(tester.getTopLeft(canvas) + at);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('sketch-text-field')), value);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('text tool places a label that is saved', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap');
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts, hasLength(1));
+    expect(result!.texts.single.text, 'Trap');
+  });
+
+  testWidgets('placing a label is undoable', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap');
+    await tester.tap(find.byKey(const Key('sketch-undo')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts, isEmpty);
+  });
+
+  testWidgets('tapping an existing label reopens the dialog to edit it',
+      (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap', at: const Offset(40, 40));
+    await tester.tapAt(
+        tester.getTopLeft(find.byKey(const Key('sketch-canvas'))) +
+            const Offset(40, 40));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'Trap'), findsOneWidget); // seeded
+    await tester.enterText(find.byKey(const Key('sketch-text-field')), 'Pit');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts.single.text, 'Pit'); // replaced, not duplicated
+  });
+
+  testWidgets('clearing an existing label on edit deletes it', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap', at: const Offset(40, 40));
+    // Reopen the label and clear its text → it should be removed.
+    await tester.tapAt(
+        tester.getTopLeft(find.byKey(const Key('sketch-canvas'))) +
+            const Offset(40, 40));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('sketch-text-field')), '');
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts, isEmpty);
+  });
+
+  testWidgets('eraser removes a placed label', (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    await placeText(tester, 'Trap', at: const Offset(40, 40));
+    await tester.tap(find.byKey(const Key('sketch-tool-eraser')));
+    await tester.pumpAndSettle();
+    final canvas = find.byKey(const Key('sketch-canvas'));
+    final g = await tester
+        .startGesture(tester.getTopLeft(canvas) + const Offset(38, 38));
+    await g.moveBy(const Offset(8, 8));
+    await g.up();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    expect(result!.texts, isEmpty);
+  });
 }
