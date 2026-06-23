@@ -1180,6 +1180,7 @@ const sessionScopedKeys = [
   'juice.settings.v1',
   'juice.context.v1',
   'juice.decks.v1',
+  'juice.gmchat.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
