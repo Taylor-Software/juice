@@ -479,6 +479,41 @@ result: Fate Check (Likely) — Yes, and…
     });
   });
 
+  group('buildFleshOutPrompt', () {
+    test('renders instruction + grounding + name/existing + Detail cue', () {
+      final p = buildFleshOutPrompt(const FleshOutSeed(
+        entityKind: 'NPC',
+        name: 'Sister Vane',
+        existingDetail: 'A grim cleric.',
+        systemPrimer: 'Ironsworn: perilous Iron Lands.',
+        sceneTitle: 'The crypt',
+        journalContext: ['Sister Vane barred the door.'],
+      ));
+      expect(p, contains('Flesh out the following NPC'));
+      expect(p, contains('system: Ironsworn'));
+      expect(p, contains('scene: The crypt'));
+      expect(p, contains('recall: Sister Vane barred the door.'));
+      expect(p, contains('name: Sister Vane'));
+      expect(p, contains('existing: A grim cleric.'));
+      expect(p.trimRight(), endsWith('Detail:'));
+    });
+
+    test('omits the existing line + empty grounding', () {
+      final p = buildFleshOutPrompt(
+          const FleshOutSeed(entityKind: 'location', name: 'The Old Mill'));
+      expect(p, contains('Flesh out the following location'));
+      expect(p, isNot(contains('existing:')));
+      expect(p, isNot(contains('system:')));
+      expect(p.trimRight(), endsWith('Detail:'));
+    });
+
+    test('parseFleshOutResponse strips think + throws on empty', () {
+      expect(parseFleshOutResponse('<think>x</think> A damp vault. '),
+          'A damp vault.');
+      expect(() => parseFleshOutResponse('   '), throwsFormatException);
+    });
+  });
+
   group('buildGmChatPrompt', () {
     test('grounds the chat + renders the transcript + trailing GM:', () {
       final p = buildGmChatPrompt(const GmChatSeed(
