@@ -19,6 +19,7 @@ import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
+import '../engine/tarot_spreads.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/system_primer.dart';
@@ -594,6 +595,23 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
           payload: g.toPayload(),
         );
     return g;
+  }
+
+  /// Draws a [spread] from the tarot deck, persisting the advanced DeckState.
+  /// Returns the positioned cards + aggregate GenResult for the caller to
+  /// render and log (mirrors draw() + manual log, since the Cards section shows
+  /// the spread before logging). Tarot-only — spreads use the 78-card deck.
+  Future<({List<({String position, String shown})> cards, GenResult result})>
+      drawSpread(Oracle oracle, TarotSpread spread) async {
+    final cur = state.valueOrNull ?? await future;
+    final out = oracle.drawSpread(
+      deck: kTarotDeck,
+      state: cur.tarot,
+      spread: spread,
+      reversible: true,
+    );
+    await _save(cur.copyWith(tarot: out.next));
+    return (cards: out.cards, result: out.result);
   }
 
   /// Clears a deck so the next draw reshuffles a full deck.

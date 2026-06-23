@@ -141,6 +141,29 @@ void main() {
       expect(c.read(decksProvider).valueOrNull!.standard.order, isEmpty);
     });
 
+    test('drawSpread persists advanced tarot state; returns positioned cards',
+        () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final oracle = Oracle(data, Dice(Random(2)));
+      final c = ProviderContainer(
+          overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+      addTearDown(c.dispose);
+      await c.read(decksProvider.future);
+
+      final spread = kTarotSpreads.first; // three-card
+      final out =
+          await c.read(decksProvider.notifier).drawSpread(oracle, spread);
+      expect(out.cards, hasLength(3));
+      expect(out.result.title, 'Tarot Spread');
+      // Tarot deck advanced by 3; standard untouched.
+      final s = c.read(decksProvider).valueOrNull!;
+      expect(s.tarot.drawn, 3);
+      expect(s.standard.order, isEmpty);
+    });
+
     test('drawAndLog logs a cards entry; tarot folds in its meaning', () async {
       SharedPreferences.setMockInitialValues({
         'juice.sessions.v1':
