@@ -25,6 +25,33 @@ class SketchStroke {
       );
 }
 
+/// A text label at a logical canvas position ([x],[y] = top-left anchor).
+/// [size] is in logical px and scales with the canvas like stroke coordinates.
+class SketchText {
+  const SketchText(
+      {required this.text,
+      required this.x,
+      required this.y,
+      required this.color,
+      this.size = 18});
+  final String text;
+  final double x;
+  final double y;
+  final int color;
+  final double size;
+
+  Map<String, dynamic> toJson() =>
+      {'s': text, 'x': x, 'y': y, 'c': color, 'z': size};
+
+  factory SketchText.fromJson(Map<String, dynamic> j) => SketchText(
+        text: (j['s'] as String?) ?? '',
+        x: (j['x'] as num?)?.toDouble() ?? 0,
+        y: (j['y'] as num?)?.toDouble() ?? 0,
+        color: (j['c'] as num?)?.toInt() ?? 0xFF000000,
+        size: (j['z'] as num?)?.toDouble() ?? 18,
+      );
+}
+
 /// A vector sketch drawn at a known logical canvas size; round-trips via JSON.
 /// [backgroundBlobId] optionally references a background image in the BlobStore
 /// (e.g. an imported photo, map/handout, or a rendered PDF page) the strokes
@@ -34,6 +61,7 @@ class SketchData {
     required this.canvasWidth,
     required this.canvasHeight,
     this.strokes = const [],
+    this.texts = const [],
     this.backgroundBlobId,
     this.pdfBlobId,
     this.pdfPage,
@@ -41,6 +69,7 @@ class SketchData {
   final double canvasWidth;
   final double canvasHeight;
   final List<SketchStroke> strokes;
+  final List<SketchText> texts;
   final String? backgroundBlobId;
 
   /// Provenance for a PDF-page annotation: the source PDF blob id + 0-based page
@@ -51,13 +80,15 @@ class SketchData {
 
   /// Empty only when there is nothing to keep: no strokes AND no background
   /// image (an imported image with no annotations is still worth saving).
-  bool get isEmpty => strokes.isEmpty && backgroundBlobId == null;
+  bool get isEmpty =>
+      strokes.isEmpty && texts.isEmpty && backgroundBlobId == null;
 
   Map<String, dynamic> toJson() => {
         'v': 1,
         'w': canvasWidth,
         'h': canvasHeight,
         'strokes': strokes.map((s) => s.toJson()).toList(),
+        'texts': texts.map((t) => t.toJson()).toList(),
         if (backgroundBlobId != null) 'bg': backgroundBlobId,
         if (pdfBlobId != null) 'pdf': pdfBlobId,
         if (pdfPage != null) 'pp': pdfPage,
@@ -72,6 +103,12 @@ class SketchData {
             .whereType<Map<dynamic, dynamic>>()
             .map((m) => SketchStroke.fromJson(m.cast<String, dynamic>()))
             .toList(),
+        texts: (j['texts'] is List
+                ? (j['texts'] as List<dynamic>)
+                : const <dynamic>[])
+            .whereType<Map<dynamic, dynamic>>()
+            .map((m) => SketchText.fromJson(m.cast<String, dynamic>()))
+            .toList(),
         backgroundBlobId: j['bg'] as String?,
         pdfBlobId: j['pdf'] as String?,
         pdfPage: (j['pp'] as num?)?.toInt(),
@@ -79,8 +116,8 @@ class SketchData {
 }
 
 /// Minimum distance from `(x,y)` to the segment `a`–`b`.
-double _distanceToSegment(double px, double py, double ax, double ay, double bx,
-    double by) {
+double _distanceToSegment(
+    double px, double py, double ax, double ay, double bx, double by) {
   final dx = bx - ax;
   final dy = by - ay;
   final len2 = dx * dx + dy * dy;
@@ -122,4 +159,17 @@ List<SketchStroke> eraseStrokesAt(
     [
       for (final s in strokes)
         if (distanceToStroke(s, x, y) > radius + s.width / 2) s,
+    ];
+
+/// Distance from `(x,y)` to a text label's anchor point.
+double distanceToText(SketchText t, double x, double y) =>
+    math.sqrt((x - t.x) * (x - t.x) + (y - t.y) * (y - t.y));
+
+/// Returns [texts] with every label whose anchor the eraser at `(x,y)` touches
+/// (within [radius]) removed. Order preserved; input not mutated.
+List<SketchText> eraseTextsAt(
+        List<SketchText> texts, double x, double y, double radius) =>
+    [
+      for (final t in texts)
+        if (distanceToText(t, x, y) > radius) t
     ];
