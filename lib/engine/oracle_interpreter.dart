@@ -13,11 +13,9 @@ import 'dart:convert';
 import 'journal_search.dart';
 import 'models.dart';
 
-/// Hard caps on the prompt's `recall:` block. The web model is only proven
-/// at 1280 total tokens (system instruction ≈700, output ≈250); two
-/// 100-char excerpts are ≈70 tokens worst case, which fits the remainder.
-// Recall budget. AI is desktop/mobile-only now (Gemma 4 E2B, ample window);
-// these were tiny holdovers from the retired ~1280-token web model.
+/// Hard caps on the prompt's `recall:` block. AI is desktop/mobile-only now
+/// (Gemma 4 E2B, ample context window) — these were tiny holdovers from the
+/// retired ~1280-token web model and have been loosened to feed real grounding.
 const int kRecallMaxEntries = 6;
 const int kRecallMaxChars = 280;
 
@@ -106,8 +104,8 @@ const List<String> kLenses = <String>[
 ];
 
 /// Role + rules + JSON shape + two compact few-shot examples. Examples move
-/// small-model quality more than rules do. Kept tight: the web model's
-/// context may be as small as 1280 tokens total.
+/// small-model quality more than rules do. Kept reasonably tight for the
+/// on-device Gemma 4 E2B model (desktop/mobile only; web ships no AI).
 const String oracleSystemInstruction = '''
 You interpret oracle results for a solo tabletop RPG player journaling their
 own story. You offer possibilities; the player decides what is true. Never
@@ -164,8 +162,7 @@ String _orElse(String v, String fallback) {
 /// (one field per line, matching the few-shot examples), so runs of
 /// whitespace/newlines in seed fields collapse to single spaces.
 String buildOraclePrompt(OracleSeed seed) {
-  // Recall block, capped engine-side so no caller can blow the web
-  // model's 1280-token budget (see kRecallMaxEntries/kRecallMaxChars).
+  // Recall block, capped engine-side (see kRecallMaxEntries/kRecallMaxChars).
   final recall = StringBuffer();
   for (final context in seed.journalContext.take(kRecallMaxEntries)) {
     final f = _flat(context);
@@ -408,8 +405,8 @@ const String _askGmInstruction =
     'question in 1-3 sentences of plain prose. Be concrete and decisive.';
 
 /// Hard cap on the user question (and scene title) fed to the model, so a long
-/// pasted question can't blow the web model's ~1280-token window. Mirrors the
-/// budget discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
+/// pasted question can't crowd out the grounding lines. Mirrors the budget
+/// discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
 const int kAskGmMaxFieldChars = 300;
 
 String _capped(String s) => s.length > kAskGmMaxFieldChars
