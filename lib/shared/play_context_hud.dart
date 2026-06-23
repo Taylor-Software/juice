@@ -86,6 +86,18 @@ class CampaignHeader extends ConsumerWidget {
                   : () => _quickRoll(context, ref, oracle,
                       crawl?.chaosFactor ?? 5, settings.defaultOracle),
             ),
+            // One-tap tarot draw (art + meaning, logged) when the cards system
+            // is on — the rich card oracle reachable from any verb.
+            if (systems.contains('cards'))
+              IconButton(
+                key: const Key('hdr-quick-draw'),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.style_outlined),
+                tooltip: 'Draw tarot',
+                onPressed: oracle == null
+                    ? null
+                    : () => _quickDraw(context, ref, oracle),
+              ),
             IconButton(
               key: const Key('hdr-collapse'),
               visualDensity: VisualDensity.compact,
@@ -178,6 +190,16 @@ class CampaignHeader extends ConsumerWidget {
 
   /// Rolls the campaign's default oracle with sensible neutral odds (50/50 /
   /// Unknown) and logs it — a quick yes/no without opening the Ask verb.
+  Future<void> _quickDraw(
+      BuildContext context, WidgetRef ref, Oracle oracle) async {
+    final g =
+        await ref.read(decksProvider.notifier).drawAndLog(oracle, tarot: true);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+    }
+  }
+
   void _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle, int chaos,
       String defaultOracle) {
     final GenResult g;
