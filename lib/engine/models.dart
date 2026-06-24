@@ -1763,6 +1763,130 @@ class ArgosaSheet {
   }
 }
 
+// ── Cairn ────────────────────────────────────────────────────────────────────
+
+const kCairnStats = <String>['str', 'dex', 'wil'];
+
+const kCairnStatLabels = <String, String>{
+  'str': 'STR',
+  'dex': 'DEX',
+  'wil': 'WIL',
+};
+
+const kCairnBackgrounds = <String>[
+  'Alchemist',
+  'Blacksmith',
+  'Burglar',
+  'Butcher',
+  'Carpenter',
+  'Cleric',
+  'Gambler',
+  'Gravedigger',
+  'Herbalist',
+  'Hunter',
+  'Magician',
+  'Mercenary',
+  'Merchant',
+  'Miner',
+  'Outlaw',
+  'Performer',
+  'Pickpocket',
+  'Ranger',
+  'Servant',
+  'Smuggler',
+];
+
+class CairnSheet {
+  const CairnSheet({
+    this.background = 'Hunter',
+    this.str = 10,
+    this.dex = 10,
+    this.wil = 10,
+    this.maxHp = 4,
+    this.currentHp = 4,
+    this.armor = 0,
+    this.deprived = false,
+    this.fatigue = 0,
+    this.coins = '',
+    this.notes = '',
+  });
+
+  final String background;
+  final int str;
+  final int dex;
+  final int wil;
+  final int maxHp;
+  final int currentHp;
+  final int armor;
+  final bool deprived;
+  final int fatigue;
+  final String coins;
+  final String notes;
+
+  CairnSheet copyWith({
+    String? background,
+    int? str,
+    int? dex,
+    int? wil,
+    int? maxHp,
+    int? currentHp,
+    int? armor,
+    bool? deprived,
+    int? fatigue,
+    String? coins,
+    String? notes,
+  }) {
+    final bg = background ?? this.background;
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    return CairnSheet(
+      background: kCairnBackgrounds.contains(bg) ? bg : kCairnBackgrounds.first,
+      str: (str ?? this.str).clamp(3, 18),
+      dex: (dex ?? this.dex).clamp(3, 18),
+      wil: (wil ?? this.wil).clamp(3, 18),
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      armor: (armor ?? this.armor).clamp(0, 3),
+      deprived: deprived ?? this.deprived,
+      fatigue: (fatigue ?? this.fatigue).clamp(0, 10),
+      coins: coins ?? this.coins,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'background': background,
+        'str': str,
+        'dex': dex,
+        'wil': wil,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'armor': armor,
+        'deprived': deprived,
+        'fatigue': fatigue,
+        'coins': coins,
+        'notes': notes,
+      };
+
+  static CairnSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final bg = j['background'] as String?;
+    return CairnSheet(
+      background:
+          kCairnBackgrounds.contains(bg) ? bg! : kCairnBackgrounds.first,
+      str: ((j['str'] as num?)?.round() ?? 10).clamp(3, 18),
+      dex: ((j['dex'] as num?)?.round() ?? 10).clamp(3, 18),
+      wil: ((j['wil'] as num?)?.round() ?? 10).clamp(3, 18),
+      maxHp: (j['maxHp'] as num?)?.round() ?? 4,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 4,
+      armor: ((j['armor'] as num?)?.round() ?? 0).clamp(0, 3),
+      deprived: j['deprived'] as bool? ?? false,
+      fatigue: ((j['fatigue'] as num?)?.round() ?? 0).clamp(0, 10),
+      coins: j['coins'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2508,6 +2632,7 @@ class Character {
     this.nimble,
     this.drawSteel,
     this.argosa,
+    this.cairn,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2543,6 +2668,9 @@ class Character {
   /// Bespoke Tales of Argosa sheet; null unless this is an Argosa PC.
   final ArgosaSheet? argosa;
 
+  /// Bespoke Cairn sheet; null unless this is a Cairn PC.
+  final CairnSheet? cairn;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2575,6 +2703,8 @@ class Character {
     bool clearDrawSteel = false,
     ArgosaSheet? argosa,
     bool clearArgosa = false,
+    CairnSheet? cairn,
+    bool clearCairn = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2594,6 +2724,7 @@ class Character {
         nimble: clearNimble ? null : (nimble ?? this.nimble),
         drawSteel: clearDrawSteel ? null : (drawSteel ?? this.drawSteel),
         argosa: clearArgosa ? null : (argosa ?? this.argosa),
+        cairn: clearCairn ? null : (cairn ?? this.cairn),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2633,6 +2764,11 @@ class Character {
           argosa: argosa!.copyWith(
               currentHp: (argosa!.currentHp + delta).clamp(0, argosa!.maxHp)));
     }
+    if (cairn != null) {
+      return copyWith(
+          cairn: cairn!.copyWith(
+              currentHp: (cairn!.currentHp + delta).clamp(0, cairn!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -2659,6 +2795,7 @@ class Character {
         if (nimble != null) 'nimble': nimble!.toJson(),
         if (drawSteel != null) 'drawSteel': drawSteel!.toJson(),
         if (argosa != null) 'argosa': argosa!.toJson(),
+        if (cairn != null) 'cairn': cairn!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2685,6 +2822,7 @@ class Character {
         nimble: NimbleSheet.maybeFromJson(j['nimble']),
         drawSteel: DrawSteelSheet.maybeFromJson(j['drawSteel']),
         argosa: ArgosaSheet.maybeFromJson(j['argosa']),
+        cairn: CairnSheet.maybeFromJson(j['cairn']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])

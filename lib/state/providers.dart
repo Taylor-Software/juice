@@ -340,6 +340,15 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  Future<String> addCairn() async {
+    final id = _newId();
+    await _persist([
+      Character(id: id, name: 'New Cairn character', cairn: const CairnSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)

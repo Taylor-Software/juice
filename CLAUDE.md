@@ -103,6 +103,16 @@ Working rules for this repo:
   `currentHp * 2 <= maxHp && currentHp > 0`). **Licensing:** CC BY-SA 4.0 (Pickpocket
   Press / S J Grodzicki); attribution in `kSystemBlurbs['argosa']` + settings sheet. See
   `docs/superpowers/specs/2026-06-24-argosa-sheet-design.md`.
+- A facts-only **Cairn** sheet (`lib/features/cairn_sheet.dart`, rendered when
+  `Character.cairn` is set; opt-in `cairn` system, NOT in `kAllSystems`) follows the
+  Argosa facts-only approach: authored constants only (`kCairnStats` / `kCairnStatLabels`
+  / `kCairnBackgrounds`, 20 backgrounds, no classes) with notes/inventory freeform.
+  Per-stat **save** buttons (d20 ≤ stat → Pass, snackbar "STR save: 14 — Pass"; ephemeral).
+  **Deprived** checkbox (cannot recover HP or ability scores). **Fatigue** stepper (0-10).
+  Armor stepper (0-3). HP = Hit Protection (avoidance/luck); note explains 0 HP → excess
+  damage reduces STR (player-managed). **Licensing:** CC BY-SA 4.0 (Yochai Gal); attribution
+  in `kSystemBlurbs['cairn']` + settings sheet. See
+  `docs/superpowers/specs/2026-06-24-cairn-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
