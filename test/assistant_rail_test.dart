@@ -251,4 +251,14 @@ void main() {
         .toList();
     expect(keys.first, 'suggest-roll-oracle');
   });
+
+  testWidgets('collapsed rail does not call the LLM (no spend)',
+      (tester) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    fake.queuedRank.add(const RankResult(order: ['scene-event'], why: 'x'));
+    await _pumpRankRail(tester, fake); // AI ready, but never expanded
+    await tester.pumpAndSettle();
+    expect(fake.rankCalls, 0);
+  });
 }
