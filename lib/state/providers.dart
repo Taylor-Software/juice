@@ -330,6 +330,16 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  Future<String> addArgosa() async {
+    final id = _newId();
+    await _persist([
+      Character(
+          id: id, name: 'New Argosa character', argosa: const ArgosaSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)
