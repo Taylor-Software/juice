@@ -126,6 +126,11 @@ void main() {
       expect(r.why, isNull);
     });
 
+    test('whitespace-only why -> null', () {
+      final r = applyRanking(rule, const RankResult(order: ['a'], why: '   '));
+      expect(r.why, isNull);
+    });
+
     test('duplicate ids in order are taken once', () {
       final r = applyRanking(rule, const RankResult(order: ['b', 'b', 'a']));
       expect(r.chips.map((s) => s.id).toList(), ['b', 'a', 'c']);

@@ -552,6 +552,9 @@ result: Fate Check (Likely) — Yes, and…
       expect(parseRankResult('no json here').order, isEmpty);
       expect(parseRankResult('no json here').why, '');
       expect(parseRankResult('{"order":"notalist"}').order, isEmpty);
+      // Non-string ids (int / null / nested) are dropped, not coerced.
+      expect(parseRankResult('{"order":[1,null,["x"],"keep"],"why":"y"}').order,
+          ['keep']);
     });
   });
 

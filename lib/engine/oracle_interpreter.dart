@@ -703,9 +703,17 @@ class RankSuggestionsSeed {
 
   /// Candidate next-move chips in rule order: (stable id, display label).
   final List<({String id, String label})> candidates;
+
+  /// Authored facts-only system primer (see system_primer.dart), or ''.
   final String systemPrimer;
+
+  /// Latest scene entry's title, or null.
   final String? sceneTitle;
+
+  /// One-line active-PC descriptor (see [activeCharacterLine]), or ''.
   final String activeCharacter;
+
+  /// Recall lines for the current scene; capped in-prompt.
   final List<String> journalContext;
 }
 
@@ -713,7 +721,12 @@ class RankSuggestionsSeed {
 /// (the caller keeps rule order); [why] is the top pick's one-line rationale.
 class RankResult {
   const RankResult({this.order = const [], this.why = ''});
+
+  /// Suggestion ids, most→least useful. Unknown/duplicate ids are ignored by
+  /// the caller ([applyRanking]).
   final List<String> order;
+
+  /// One-line rationale for the top pick, or '' when none.
   final String why;
 }
 
@@ -764,7 +777,8 @@ RankResult parseRankResult(String raw) {
     final orderRaw = decoded['order'];
     final order = <String>[
       if (orderRaw is List)
-        for (final e in orderRaw) e.toString(),
+        for (final e in orderRaw)
+          if (e is String) e, // drop non-string ids (null/int/nested)
     ];
     final why = (decoded['why'] ?? '').toString().trim();
     return RankResult(order: order, why: why);
