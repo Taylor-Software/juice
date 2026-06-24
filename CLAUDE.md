@@ -125,7 +125,17 @@ Working rules for this repo:
   pure `fleshOutSeedFrom` / `buildFleshOutSeed` (`play_context.dart`) using
   name-query `searchEntries` recall; `MapNotifier.appendSiteLine` mirrors
   `appendRoomDetail`. See
-  `docs/superpowers/specs/2026-06-24-flesh-out-entity-design.md`.
+  `docs/superpowers/specs/2026-06-24-flesh-out-entity-design.md`. **Scenes**
+  were added as a 5th flesh-out surface: `JournalKind.scene` entries (a
+  title+chaos divider whose `body` was previously always-empty + unrendered) now
+  carry a visible, editable **description** — rendered under the journal scene
+  divider (`scene-body-<id>`) + in the scenes-pane row subtitle. The scenes pane
+  gained a per-row manual edit (`scene-edit-<id>` → `_SceneEditDialog` →
+  `replace`) and an aiReady-gated `flesh-out-scene-<id>` (`fleshOut` with
+  `entityKind: 'scene'` → `showFleshOutReview` → append to `body`). The
+  Append/Cancel review dialog was extracted to the shared
+  `lib/features/flesh_out_review.dart` (now used by room/hex/scene). See
+  `docs/superpowers/specs/2026-06-24-scene-description-flesh-out-design.md`.
   **AI expansion #5 (LLM-ranked suggestion chips):** the assistant rail reorders
   its fixed rule-based chips by LLM relevance and annotates the top pick with a
   one-line `💡 why` caption. `rankSuggestions(RankSuggestionsSeed)` returns a

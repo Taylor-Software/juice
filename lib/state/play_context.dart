@@ -84,12 +84,16 @@ FleshOutSeed fleshOutSeedFrom({
   required String systemPrimer,
   required String activeCharacter,
   required List<JournalEntry> journal,
+  String? excludeId,
 }) {
   final sceneTitle = journal
       .where((e) => e.kind == JournalKind.scene && e.title.trim().isNotEmpty)
       .map((e) => e.title)
       .firstOrNull;
+  // When the entity IS a journal entry (a scene), drop it from the name-query
+  // recall so its body isn't fed twice (once as `existing:`, once as `recall:`).
   final related = searchEntries(journal, name)
+      .where((e) => e.id != excludeId)
       .take(kRecallMaxEntries)
       .map((e) => e.title.isEmpty ? e.body : '${e.title}: ${e.body}')
       .toList();
@@ -110,6 +114,7 @@ FleshOutSeed buildFleshOutSeed(
   required String entityKind,
   required String name,
   required String existingDetail,
+  String? excludeId,
 }) =>
     fleshOutSeedFrom(
       entityKind: entityKind,
@@ -118,4 +123,5 @@ FleshOutSeed buildFleshOutSeed(
       systemPrimer: ref.read(systemPrimerProvider),
       activeCharacter: ref.read(activeCharacterLineProvider),
       journal: ref.read(journalProvider).valueOrNull ?? const [],
+      excludeId: excludeId,
     );
