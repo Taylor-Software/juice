@@ -44,8 +44,15 @@ void main() {
         container: container,
         child: MaterialApp(
             theme: AppTheme.light(),
-            home: Scaffold(
-                body: NimbleSheetView(character: char, onBack: () {})))));
+            // Mirror the roster: re-pass the LIVE character on each change so
+            // the view re-reads state (it takes character as a prop, like the
+            // other sheets — the parent feeds updates).
+            home: Scaffold(body: Consumer(builder: (_, ref, __) {
+              final live =
+                  ref.watch(charactersProvider).valueOrNull?.firstOrNull ??
+                      char;
+              return NimbleSheetView(character: live, onBack: () {});
+            })))));
     await tester.pumpAndSettle();
     return container;
   }
@@ -133,5 +140,24 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(backCalled, isTrue);
+  });
+
+  testWidgets('save toggle cycles none -> adv -> dis -> none', (tester) async {
+    tester.view.physicalSize = const Size(1200, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = await pumpSheet(tester);
+    NimbleSheet s() => c.read(charactersProvider).value!.single.nimble!;
+    final btn = find.byKey(const Key('nimble-save-str'));
+    await tester.tap(btn);
+    await tester.pumpAndSettle();
+    expect(s().saveAdv['str'], 1); // advantaged
+    await tester.tap(btn);
+    await tester.pumpAndSettle();
+    expect(s().saveAdv['str'], -1); // disadvantaged
+    await tester.tap(btn);
+    await tester.pumpAndSettle();
+    expect(s().saveAdv['str'], isNull); // back to none (zero omitted)
   });
 }
