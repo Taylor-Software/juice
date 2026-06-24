@@ -25,7 +25,8 @@ void main() {
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default':
-          '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"A cold mist clings.","kind":"scene"}]',
+          '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"A cold mist clings.","kind":"scene"},'
+              '{"id":"s2","timestamp":"2026-06-12T10:01:00.000","title":"Empty","body":"","kind":"scene"}]',
     });
     await tester.pumpWidget(ProviderScope(
       overrides: [oracleProvider.overrideWith((ref) async => _oracle())],
@@ -35,6 +36,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('scene-body-s1')), findsOneWidget);
     expect(find.text('A cold mist clings.'), findsOneWidget);
+    // Empty-body scene renders no description widget.
+    expect(find.byKey(const Key('scene-body-s2')), findsNothing);
   });
 
   testWidgets('scenes pane shows the description in the row', (tester) async {
@@ -56,5 +59,22 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(find.textContaining('A cold mist clings.'), findsOneWidget);
+  });
+
+  testWidgets('bare scene (no chaos, no body) has no subtitle', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(journalProvider.future);
+    await c.read(journalProvider.notifier).addScene('Bare');
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: c,
+      child: const MaterialApp(home: Scaffold(body: ScenesPane())),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.widget<ListTile>(find.byType(ListTile)).subtitle, isNull);
   });
 }
