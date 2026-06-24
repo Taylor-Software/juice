@@ -389,6 +389,10 @@ class _SketchEditorState extends State<SketchEditor> {
             transformationController: _tc,
             panEnabled: isPan,
             scaleEnabled: isPan,
+            // minScale 1 = never shrink below fit (the canvas already fits the
+            // viewport); zoom in to pan within the canvas bounds. Keep the
+            // default constrained:true — the child is `Size.infinite`, so
+            // constrained:false would give it an unbounded layout.
             minScale: 1.0,
             maxScale: 6.0,
             child: CustomPaint(
