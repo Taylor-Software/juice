@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
 import '../state/providers.dart';
+import 'dice_roll_animation.dart';
 
 /// Free-form dice roller: notation input, quick chips, breakdown, history.
 class DiceRollerScreen extends ConsumerStatefulWidget {
@@ -31,6 +32,7 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
   String? _error;
   DiceRollResult? _last;
   final List<DiceRollResult> _history = [];
+  int _rollCount = 0;
 
   @override
   void dispose() {
@@ -90,6 +92,7 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
 
   void _record(DiceRollResult result) {
     _last = result;
+    _rollCount++;
     _history.insert(0, result);
     if (_history.length > _historyCap) {
       _history.removeRange(_historyCap, _history.length);
@@ -185,37 +188,7 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
                       ),
                     ],
                   ),
-                  Text(
-                    '${last.total}',
-                    key: const Key('dice-total'),
-                    style: theme.textTheme.displaySmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                  for (final g in last.groups)
-                    if (g.dice.isNotEmpty)
-                      Text.rich(
-                        TextSpan(
-                          children: [
-                            TextSpan(text: '${g.label}: '),
-                            for (var i = 0; i < g.dice.length; i++) ...[
-                              if (i > 0) const TextSpan(text: ', '),
-                              TextSpan(
-                                text: g.dice[i].display,
-                                style: g.dice[i].kept
-                                    ? null
-                                    : TextStyle(
-                                        decoration: TextDecoration.lineThrough,
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        style: theme.textTheme.bodyMedium,
-                      )
-                    else
-                      Text(g.label, style: theme.textTheme.bodyMedium),
+                  DiceRollAnimation(result: last, rollId: _rollCount),
                 ],
               ),
             ),
