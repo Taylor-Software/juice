@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   test('OseSheet round-trips toJson/maybeFromJson', () {
@@ -82,5 +83,11 @@ void main() {
     expect(c.withHpDelta(-4).ose!.currentHp, 6);
     expect(c.withHpDelta(99).ose!.currentHp, 10);
     expect(c.withHpDelta(-99).ose!.currentHp, 0);
+  });
+
+  test('kSystemBlurbs ose contains non-affiliation note', () {
+    final blurb = kSystemBlurbs['ose'] ?? '';
+    expect(blurb.toLowerCase(), contains('necrotic gnome'));
+    expect(blurb.toLowerCase(), contains('not affiliated'));
   });
 }

@@ -83,6 +83,13 @@ class _SettingsSheet extends ConsumerWidget {
               'Not affiliated with Questing Beast.',
               style: TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'OSE / B/X sheet uses only non-copyrightable B/X game-mechanic facts '
+              '(stat/class/save names). Compatible with Old-School Essentials '
+              '(Necrotic Gnome / Gavin Norman). Not affiliated with Necrotic Gnome.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),
