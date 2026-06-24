@@ -12,6 +12,26 @@ JournalEntry _e(String id, String title, String body, String kind) =>
     });
 
 void main() {
+  group('activeSceneEntry', () {
+    final journal = [
+      _e('3', 'Scene Three', 'newest', 'scene'),
+      _e('2', 'Note', 'a note', 'text'),
+      _e('1', 'Scene One', 'oldest', 'scene'),
+    ];
+    test('pinned id present -> that scene', () {
+      expect(activeSceneEntry(journal, '1')?.title, 'Scene One');
+    });
+    test('null pin -> newest scene', () {
+      expect(activeSceneEntry(journal, null)?.title, 'Scene Three');
+    });
+    test('pin not found -> newest scene', () {
+      expect(activeSceneEntry(journal, 'zzz')?.title, 'Scene Three');
+    });
+    test('no scene entries -> null', () {
+      expect(activeSceneEntry([_e('2', 'Note', 'x', 'text')], '1'), isNull);
+    });
+  });
+
   test('fleshOutSeedFrom: name recall + newest scene + primer passthrough', () {
     // journal is newest-first
     final journal = [
@@ -69,5 +89,23 @@ void main() {
     );
     expect(seed.sceneTitle, isNull);
     expect(seed.journalContext, isEmpty);
+  });
+
+  test('fleshOutSeedFrom: activeSceneId pins an older scene as sceneTitle', () {
+    final journal = [
+      _e('s2', 'Newer Scene', 'recent', 'scene'),
+      _e('s1', 'Pinned Scene', 'older', 'scene'),
+    ];
+    final seed = fleshOutSeedFrom(
+      entityKind: 'NPC',
+      name: 'Vane',
+      existingDetail: '',
+      systemPrimer: '',
+      activeCharacter: '',
+      journal: journal,
+      activeSceneId: 's1',
+    );
+    expect(
+        seed.sceneTitle, 'Pinned Scene'); // the pinned older scene, not newest
   });
 }

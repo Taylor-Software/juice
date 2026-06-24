@@ -11,6 +11,7 @@ import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/play_context.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -82,5 +83,46 @@ void main() {
   testWidgets('narrate button is hidden when AI is not ready', (tester) async {
     await pumpJournal(tester, aiEnabled: false);
     expect(find.byKey(const Key('composer-narrate')), findsNothing);
+  });
+
+  testWidgets('narrate grounds on the pinned (older) scene', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default':
+          '[{"id":"s2","timestamp":"2026-06-12T10:02:00.000","title":"Newer Scene","body":"","kind":"scene"},'
+              '{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"Pinned Scene","body":"","kind":"scene"}]',
+      'juice.ai_enabled.v1': true,
+    });
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    final data = OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>);
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        oracleProvider
+            .overrideWith((ref) async => Oracle(data, Dice(Random(1)))),
+        interpreterServiceProvider.overrideWithValue(fake),
+      ],
+      child: MaterialApp(
+          theme: AppTheme.light(), home: const Scaffold(body: JournalScreen())),
+    ));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    await c
+        .read(playContextProvider.notifier)
+        .setActiveScene('s1'); // pin older
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('composer-narrate')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('narrate-continue')));
+    await tester.pumpAndSettle();
+    expect(fake.lastNarrateSeed!.sceneTitle, contains('Pinned Scene'));
   });
 }

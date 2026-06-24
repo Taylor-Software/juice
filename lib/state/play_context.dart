@@ -74,9 +74,22 @@ final activeCharacterLineProvider = Provider<String>((ref) {
   return activeCharacterLine(c);
 });
 
+/// The campaign's current scene: the spine's pinned [activeSceneId] when set
+/// and present, else the newest scene entry (journal is newest-first), else
+/// null. The single source of truth for "which scene" across the HUD + AI seams.
+JournalEntry? activeSceneEntry(
+    List<JournalEntry> journal, String? activeSceneId) {
+  final scenes = journal.where((e) => e.kind == JournalKind.scene);
+  return (activeSceneId == null
+          ? null
+          : scenes.where((e) => e.id == activeSceneId).firstOrNull) ??
+      scenes.firstOrNull;
+}
+
 /// Pure: assemble a [FleshOutSeed] from already-read campaign state.
-/// `sceneTitle` = the newest scene entry's title (journal is newest-first);
-/// `journalContext` = entries mentioning [name] by text (name-query recall).
+/// `sceneTitle` = the active scene's title (see [activeSceneEntry] — the pinned
+/// [activeSceneId] else the newest scene); `journalContext` = entries mentioning
+/// [name] by text (name-query recall).
 FleshOutSeed fleshOutSeedFrom({
   required String entityKind,
   required String name,
@@ -85,11 +98,12 @@ FleshOutSeed fleshOutSeedFrom({
   required String activeCharacter,
   required List<JournalEntry> journal,
   String? excludeId,
+  String? activeSceneId,
 }) {
-  final sceneTitle = journal
-      .where((e) => e.kind == JournalKind.scene && e.title.trim().isNotEmpty)
-      .map((e) => e.title)
-      .firstOrNull;
+  final sceneEntry = activeSceneEntry(journal, activeSceneId);
+  final sceneTitle = (sceneEntry != null && sceneEntry.title.trim().isNotEmpty)
+      ? sceneEntry.title
+      : null;
   // When the entity IS a journal entry (a scene), drop it from the name-query
   // recall so its body isn't fed twice (once as `existing:`, once as `recall:`).
   final related = searchEntries(journal, name)
@@ -124,4 +138,5 @@ FleshOutSeed buildFleshOutSeed(
       activeCharacter: ref.read(activeCharacterLineProvider),
       journal: ref.read(journalProvider).valueOrNull ?? const [],
       excludeId: excludeId,
+      activeSceneId: ref.read(playContextProvider).valueOrNull?.activeSceneId,
     );

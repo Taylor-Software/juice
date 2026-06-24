@@ -36,14 +36,8 @@ class CampaignHeader extends ConsumerWidget {
     final oracle = ref.watch(oracleProvider).valueOrNull;
     // Current scene: prefer the spine's active pointer, fall back to the latest
     // scene entry (storage newest-first).
-    final activeSceneId =
-        ref.watch(playContextProvider).valueOrNull?.activeSceneId;
-    final sceneEntries =
-        entries.where((e) => e.kind == JournalKind.scene).toList();
-    final scene = (activeSceneId == null
-            ? null
-            : sceneEntries.where((e) => e.id == activeSceneId).firstOrNull) ??
-        sceneEntries.firstOrNull;
+    final scene = activeSceneEntry(
+        entries, ref.watch(playContextProvider).valueOrNull?.activeSceneId);
     // Chaos belongs to Mythic — show it only when the campaign's profile
     // enables that system.
     final systems =
