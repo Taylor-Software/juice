@@ -13,6 +13,7 @@ import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'flesh_out_review.dart';
 import 'map_snapshot.dart';
 
 /// Grid cell size for the dungeon canvas, in logical pixels.
@@ -98,29 +99,6 @@ Widget encounterJumpButton({
             onPressed: onJump,
           )
         : const SizedBox.shrink();
-
-/// Append/Cancel review for an AI-generated flesh-out. Returns true on Append.
-Future<bool> showFleshOutReview(BuildContext context, String generated) async {
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (_) => AlertDialog(
-      key: const Key('flesh-out-review'),
-      title: const Text('Flesh out'),
-      content: SingleChildScrollView(child: Text(generated)),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel')),
-        FilledButton(
-          key: const Key('flesh-out-append'),
-          onPressed: () => Navigator.pop(context, true),
-          child: const Text('Append'),
-        ),
-      ],
-    ),
-  );
-  return ok ?? false;
-}
 
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
