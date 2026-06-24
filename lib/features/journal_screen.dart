@@ -1629,8 +1629,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           ),
         );
         if (result == null) return;
-        // Text entries have no title; scenes have no body. Require only the
-        // field that actually carries the entry's content.
+        // Text entries have no title; a scene's title is required but its
+        // description (body) is optional. Require only the content-carrier.
         final relevant =
             entry.kind == JournalKind.text ? result.note : result.title;
         if (relevant.trim().isEmpty) return;

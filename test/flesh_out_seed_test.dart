@@ -36,6 +36,28 @@ void main() {
     expect(seed.journalContext.any((l) => l.contains('Vane')), isTrue);
   });
 
+  test('fleshOutSeedFrom: excludeId drops the subject entry from recall', () {
+    // The scene IS a journal entry; its title is the name-query, so it would
+    // self-match. excludeId keeps it out of recall (it's already `existing:`).
+    final journal = [
+      _e('s1', 'The Crypt', 'A damp vault.', 'scene'),
+      _e('2', 'The Crypt revisited', 'Bones everywhere', 'text'),
+    ];
+    final seed = fleshOutSeedFrom(
+      entityKind: 'scene',
+      name: 'The Crypt',
+      existingDetail: 'A damp vault.',
+      systemPrimer: '',
+      activeCharacter: '',
+      journal: journal,
+      excludeId: 's1',
+    );
+    expect(
+        seed.journalContext.any((l) => l.contains('A damp vault.')), isFalse);
+    expect(seed.journalContext.any((l) => l.contains('Bones everywhere')),
+        isTrue); // the other matching entry still recalled
+  });
+
   test('fleshOutSeedFrom: empty journal -> null scene + empty context', () {
     final seed = fleshOutSeedFrom(
       entityKind: 'location',

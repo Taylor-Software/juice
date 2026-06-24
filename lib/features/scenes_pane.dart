@@ -165,7 +165,11 @@ class ScenesPane extends ConsumerWidget {
   Future<void> _fleshOutScene(
       BuildContext context, WidgetRef ref, JournalEntry s) async {
     final seed = buildFleshOutSeed(ref,
-        entityKind: 'scene', name: s.title, existingDetail: s.body);
+        entityKind: 'scene',
+        name: s.title,
+        existingDetail: s.body,
+        excludeId:
+            s.id); // the scene is itself a journal entry — skip in recall
     final String detail;
     try {
       detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
