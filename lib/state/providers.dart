@@ -662,6 +662,30 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
 final decksProvider =
     AsyncNotifierProvider<DecksNotifier, DecksState>(DecksNotifier.new);
 
+// -- Light timer (campaign-wide, session-scoped, ungated) -------------------
+class LightNotifier extends AsyncNotifier<int> {
+  static const _baseKey = 'juice.light.v1';
+  late String _scopedKey;
+
+  @override
+  Future<int> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    return int.tryParse(prefs.getString(_scopedKey) ?? '') ?? 0;
+  }
+
+  Future<void> set(int value) async {
+    final v = value.clamp(0, 9999);
+    state = AsyncData(v);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, '$v');
+  }
+}
+
+final lightProvider =
+    AsyncNotifierProvider<LightNotifier, int>(LightNotifier.new);
+
 // -- Encounter tracker (initiative order, turns, rounds) ---------------------
 class EncounterNotifier extends AsyncNotifier<EncounterState> {
   static const _baseKey = 'juice.encounter.v1';
@@ -1204,6 +1228,7 @@ const sessionScopedKeys = [
   'juice.context.v1',
   'juice.decks.v1',
   'juice.gmchat.v1',
+  'juice.light.v1',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {

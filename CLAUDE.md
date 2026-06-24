@@ -186,6 +186,12 @@ Working rules for this repo:
   button (`hdr-quick-roll`) that rolls the default oracle (juice/mythic/roll-high)
   and logs it from any verb (audit #4/G6). Covered by `test/campaign_header_test.dart` (pumps `CampaignHeader`
   directly). See `docs/superpowers/audits/2026-06-21-play-loop-ux-audit.md`.
+  The HUD also carries a **global light timer** (`lightProvider`, session-scoped
+  `juice.light.v1` in `sessionScopedKeys` → persisted + exported) — an ungated
+  flame chip + `hdr-light-dec`/`hdr-light-inc` steppers with a lit/out indicator,
+  available in every campaign on every verb (no system gate), distinct from the
+  Shadowdark sheet's per-character `torch`; a neutral player timer, no rulebook
+  duration asserted. See `docs/superpowers/specs/2026-06-24-global-light-timer-design.md`.
   `resolveSystem(systems, rulesets)` (sibling of `resolveSystemPrimer`) yields
   the active system key; `resolvedSystemProvider` exposes it. The home shell now
   uses 5 verbs — `Destination { journal, sheet, ask, map, track }`: Sheet =
