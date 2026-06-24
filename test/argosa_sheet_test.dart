@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   test('ArgosaSheet round-trips toJson/maybeFromJson', () {
@@ -81,5 +82,11 @@ void main() {
     expect(c.withHpDelta(-4).argosa!.currentHp, 10);
     expect(c.withHpDelta(99).argosa!.currentHp, 14);
     expect(c.withHpDelta(-99).argosa!.currentHp, 0);
+  });
+
+  test('kSystemBlurbs argosa contains CC BY-SA attribution', () {
+    final blurb = kSystemBlurbs['argosa'] ?? '';
+    expect(blurb.toLowerCase(), contains('pickpocket press'));
+    expect(blurb.toLowerCase(), contains('cc by-sa'));
   });
 }
