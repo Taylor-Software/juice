@@ -72,6 +72,18 @@ Working rules for this repo:
   player-controlled −/+ timer + lit/out indicator, 0 = out; no rulebook duration
   asserted) — the signature light-pressure mechanic, added per the play-loop
   audit (`docs/superpowers/audits/2026-06-21-play-loop-ux-audit.md`, #6).
+- A facts-only **Nimble** sheet (`lib/features/nimble_sheet.dart`, rendered when
+  `Character.nimble` is set; opt-in `nimble` system, NOT in `kAllSystems`) follows
+  the Shadowdark facts-only approach: authored mechanic constants only
+  (`kNimbleStats` = str/dex/int/wis as modifiers, `kNimbleClasses` = the 10
+  classes), everything else editable/freeform, with a signature **Wounds**
+  dying-track stepper + adv/dis save toggles. Created via `CharacterNotifier.addNimble`
+  (roster `new-nimble`, gated on the `nimble` system). **Licensing differs from
+  Shadowdark:** Nimble's 3rd-party license is OPEN + app-friendly, so a P2 with
+  Nimble class-feature/spell text + pickers (under the Nimble 3rd-Party Creator
+  License + the SRD-5.1/WotC attribution chain) is genuinely allowed later — P1
+  stays facts-only for consistency + speed. See
+  `docs/superpowers/specs/2026-06-24-nimble-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
