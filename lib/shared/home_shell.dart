@@ -884,12 +884,12 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _nimble,
               onChanged: (v) => setState(() => _nimble = v ?? false),
             ),
-            SwitchListTile(
+            CheckboxListTile(
               key: const Key('sys-draw-steel'),
               title: const Text('Draw Steel'),
               subtitle: Text(kSystemBlurbs['draw-steel']!),
               value: _drawSteel,
-              onChanged: (v) => setState(() => _drawSteel = v),
+              onChanged: (v) => setState(() => _drawSteel = v ?? false),
             ),
             CheckboxListTile(
               key: const Key('sys-cards'),
