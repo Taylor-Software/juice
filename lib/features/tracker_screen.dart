@@ -10,6 +10,7 @@ import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
+import 'knave_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
@@ -228,6 +229,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.knave != null) {
+                return KnaveSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.cairn != null) {
                 return CairnSheetView(
                   character: c,
@@ -428,7 +440,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('nimble') &&
         !systems.contains('draw-steel') &&
         !systems.contains('argosa') &&
-        !systems.contains('cairn')) {
+        !systems.contains('cairn') &&
+        !systems.contains('knave')) {
       await _addCharacter(context);
       return;
     }
@@ -497,6 +510,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Tales of Argosa',
           blurb: 'Stats, Luck, roll-under checks, Stagger.'
         ),
+      if (systems.contains('knave'))
+        (
+          key: 'new-knave',
+          value: 'knave',
+          label: 'Knave',
+          blurb: 'Abilities, inventory slots, wounds, d20+score saves.'
+        ),
       if (systems.contains('cairn'))
         (
           key: 'new-cairn',
@@ -533,11 +553,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     !systems.contains('nimble') ||
                     !systems.contains('draw-steel') ||
                     !systems.contains('argosa') ||
-                    !systems.contains('cairn'))
+                    !systems.contains('cairn') ||
+                    !systems.contains('knave'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, or Cairn in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, or Knave in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -574,6 +595,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newDrawSteel();
     } else if (choice == 'argosa') {
       await _newArgosa();
+    } else if (choice == 'knave') {
+      await _newKnave();
     } else if (choice == 'cairn') {
       await _newCairn();
     }
@@ -628,6 +651,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newCairn() async {
     final id = await ref.read(charactersProvider.notifier).addCairn();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newKnave() async {
+    final id = await ref.read(charactersProvider.notifier).addKnave();
     if (mounted) setState(() => _editingId = id);
   }
 

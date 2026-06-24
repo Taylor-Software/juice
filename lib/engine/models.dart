@@ -1887,6 +1887,112 @@ class CairnSheet {
   }
 }
 
+// ── Knave ────────────────────────────────────────────────────────────────────
+
+const kKnaveStats = <String>['str', 'dex', 'con', 'int', 'wis', 'cha'];
+
+const kKnaveStatLabels = <String, String>{
+  'str': 'STR',
+  'dex': 'DEX',
+  'con': 'CON',
+  'int': 'INT',
+  'wis': 'WIS',
+  'cha': 'CHA',
+};
+
+class KnaveSheet {
+  const KnaveSheet({
+    this.career = '',
+    this.stats = const {
+      'str': 0,
+      'dex': 0,
+      'con': 0,
+      'int': 0,
+      'wis': 0,
+      'cha': 0,
+    },
+    this.level = 1,
+    this.maxHp = 4,
+    this.currentHp = 4,
+    this.wounds = 0,
+    this.ac = 11,
+    this.coins = '',
+    this.notes = '',
+  });
+
+  final String career;
+  final Map<String, int> stats;
+  final int level;
+  final int maxHp;
+  final int currentHp;
+  final int wounds;
+  final int ac;
+  final String coins;
+  final String notes;
+
+  int get inventorySlots => 10 + (stats['con'] ?? 0);
+
+  KnaveSheet copyWith({
+    String? career,
+    Map<String, int>? stats,
+    int? level,
+    int? maxHp,
+    int? currentHp,
+    int? wounds,
+    int? ac,
+    String? coins,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    return KnaveSheet(
+      career: career ?? this.career,
+      stats: {
+        for (final k in kKnaveStats)
+          k: ((st[k] ?? 0) as num).round().clamp(0, 10)
+      },
+      level: (level ?? this.level).clamp(1, 20),
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      wounds: (wounds ?? this.wounds).clamp(0, 99),
+      ac: (ac ?? this.ac).clamp(0, 99),
+      coins: coins ?? this.coins,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'career': career,
+        'stats': stats,
+        'level': level,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'wounds': wounds,
+        'ac': ac,
+        'coins': coins,
+        'notes': notes,
+      };
+
+  static KnaveSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? {};
+    return KnaveSheet(
+      career: j['career'] as String? ?? '',
+      stats: {
+        for (final k in kKnaveStats)
+          k: ((st[k] ?? 0) as num).round().clamp(0, 10),
+      },
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 20),
+      maxHp: (j['maxHp'] as num?)?.round() ?? 4,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 4,
+      wounds: ((j['wounds'] as num?)?.round() ?? 0).clamp(0, 99),
+      ac: ((j['ac'] as num?)?.round() ?? 11).clamp(0, 99),
+      coins: j['coins'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2633,6 +2739,7 @@ class Character {
     this.drawSteel,
     this.argosa,
     this.cairn,
+    this.knave,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2671,6 +2778,9 @@ class Character {
   /// Bespoke Cairn sheet; null unless this is a Cairn PC.
   final CairnSheet? cairn;
 
+  /// Bespoke Knave sheet; null unless this is a Knave PC.
+  final KnaveSheet? knave;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2705,6 +2815,8 @@ class Character {
     bool clearArgosa = false,
     CairnSheet? cairn,
     bool clearCairn = false,
+    KnaveSheet? knave,
+    bool clearKnave = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2725,6 +2837,7 @@ class Character {
         drawSteel: clearDrawSteel ? null : (drawSteel ?? this.drawSteel),
         argosa: clearArgosa ? null : (argosa ?? this.argosa),
         cairn: clearCairn ? null : (cairn ?? this.cairn),
+        knave: clearKnave ? null : (knave ?? this.knave),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2769,6 +2882,11 @@ class Character {
           cairn: cairn!.copyWith(
               currentHp: (cairn!.currentHp + delta).clamp(0, cairn!.maxHp)));
     }
+    if (knave != null) {
+      return copyWith(
+          knave: knave!.copyWith(
+              currentHp: (knave!.currentHp + delta).clamp(0, knave!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -2796,6 +2914,7 @@ class Character {
         if (drawSteel != null) 'drawSteel': drawSteel!.toJson(),
         if (argosa != null) 'argosa': argosa!.toJson(),
         if (cairn != null) 'cairn': cairn!.toJson(),
+        if (knave != null) 'knave': knave!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2823,6 +2942,7 @@ class Character {
         drawSteel: DrawSteelSheet.maybeFromJson(j['drawSteel']),
         argosa: ArgosaSheet.maybeFromJson(j['argosa']),
         cairn: CairnSheet.maybeFromJson(j['cairn']),
+        knave: KnaveSheet.maybeFromJson(j['knave']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
