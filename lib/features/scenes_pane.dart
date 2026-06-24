@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'flesh_out_review.dart';
 
 /// Tracking → Scenes: derived list of journal scene dividers, newest first.
 class ScenesPane extends ConsumerWidget {
@@ -67,6 +69,27 @@ class ScenesPane extends ConsumerWidget {
                         onTap: () => ref
                             .read(shellRouteProvider.notifier)
                             .goTo(Destination.journal),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              key: Key('scene-edit-${s.id}'),
+                              icon: const Icon(Icons.edit_outlined),
+                              tooltip: 'Edit scene',
+                              visualDensity: VisualDensity.compact,
+                              onPressed: () => _editScene(context, ref, s),
+                            ),
+                            if (ref.watch(aiReadyProvider))
+                              IconButton(
+                                key: Key('flesh-out-scene-${s.id}'),
+                                icon: const Icon(Icons.auto_fix_high_outlined),
+                                tooltip: 'Flesh out (AI)',
+                                visualDensity: VisualDensity.compact,
+                                onPressed: () =>
+                                    _fleshOutScene(context, ref, s),
+                              ),
+                          ],
+                        ),
                       ),
                   ],
                 ),
@@ -127,11 +150,104 @@ class ScenesPane extends ConsumerWidget {
     }
   }
 
+  Future<void> _editScene(
+      BuildContext context, WidgetRef ref, JournalEntry s) async {
+    final result = await showDialog<({String title, String body})>(
+      context: context,
+      builder: (_) =>
+          _SceneEditDialog(initialTitle: s.title, initialBody: s.body),
+    );
+    if (result == null || result.title.trim().isEmpty) return;
+    await ref.read(journalProvider.notifier).replace(
+        s.copyWith(title: result.title.trim(), body: result.body.trim()));
+  }
+
+  Future<void> _fleshOutScene(
+      BuildContext context, WidgetRef ref, JournalEntry s) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'scene', name: s.title, existingDetail: s.body);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (await showFleshOutReview(context, detail) != true) return;
+    final body =
+        [s.body, detail].where((t) => t.trim().isNotEmpty).join('\n\n');
+    await ref.read(journalProvider.notifier).replace(s.copyWith(body: body));
+  }
+
   Future<void> _generateScene(BuildContext context, WidgetRef ref) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final g = oracle.newScene();
     await _newScene(context, ref, initialTitle: g.summary ?? g.title);
+  }
+}
+
+/// Edit a scene's title + free-text description. Pops `({title, body})` or null.
+class _SceneEditDialog extends StatefulWidget {
+  const _SceneEditDialog(
+      {required this.initialTitle, required this.initialBody});
+  final String initialTitle;
+  final String initialBody;
+
+  @override
+  State<_SceneEditDialog> createState() => _SceneEditDialogState();
+}
+
+class _SceneEditDialogState extends State<_SceneEditDialog> {
+  late final TextEditingController _title =
+      TextEditingController(text: widget.initialTitle);
+  late final TextEditingController _body =
+      TextEditingController(text: widget.initialBody);
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit scene'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            key: const Key('scene-edit-title'),
+            controller: _title,
+            decoration: const InputDecoration(labelText: 'Scene title'),
+          ),
+          TextField(
+            key: const Key('scene-edit-body'),
+            controller: _body,
+            minLines: 2,
+            maxLines: 5,
+            decoration: const InputDecoration(labelText: 'Description'),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel')),
+        FilledButton(
+          key: const Key('scene-edit-save'),
+          onPressed: () =>
+              Navigator.pop(context, (title: _title.text, body: _body.text)),
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
 
