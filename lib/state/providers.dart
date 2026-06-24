@@ -349,6 +349,15 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  Future<String> addKnave() async {
+    final id = _newId();
+    await _persist([
+      Character(id: id, name: 'New Knave', knave: const KnaveSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)
