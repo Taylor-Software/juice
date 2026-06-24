@@ -306,6 +306,17 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  /// Creates a pre-made Nimble PC at the top and returns its id.
+  Future<String> addNimble() async {
+    final id = _newId();
+    await _persist([
+      Character(
+          id: id, name: 'New Nimble character', nimble: const NimbleSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)

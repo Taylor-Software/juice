@@ -1356,6 +1356,140 @@ class DndSheet {
   }
 }
 
+// --- Nimble (facts-only: authored class/stat names only) --------------------
+
+const kNimbleStats = <String>['str', 'dex', 'int', 'wis'];
+const kNimbleClasses = <String>[
+  'The Cheat',
+  'Commander',
+  'Hunter',
+  'Mage',
+  'Oathsworn',
+  'Shadowmancer',
+  'Shepherd',
+  'Songweaver',
+  'Stormshifter',
+  'Zephyr',
+];
+
+/// Facts-only Nimble sheet. Authored class/stat NAMES only (non-copyrightable);
+/// all values are player-editable. Stats are MODIFIERS (small ± numbers).
+class NimbleSheet {
+  const NimbleSheet({
+    this.stats = const {'str': 0, 'dex': 0, 'int': 0, 'wis': 0},
+    this.saveAdv = const {},
+    this.className = 'The Cheat',
+    this.ancestry = '',
+    this.level = 1,
+    this.hitDieSize = 6,
+    this.maxHp = 1,
+    this.currentHp = 1,
+    this.wounds = 0,
+    this.maxWounds = 6,
+    this.speed = 6,
+    this.gearSlotsUsed = 0,
+    this.talents = '',
+    this.notes = '',
+  });
+
+  final Map<String, int> stats; // keys = kNimbleStats; values are modifiers
+  final Map<String, int> saveAdv; // per stat: 1 adv / -1 dis / 0 none
+  final String className, ancestry;
+  final int level,
+      hitDieSize,
+      maxHp,
+      currentHp,
+      wounds,
+      maxWounds,
+      speed,
+      gearSlotsUsed;
+  final String talents, notes;
+
+  int get slotCap => 10 + (stats['str'] ?? 0);
+
+  NimbleSheet copyWith({
+    Map<String, int>? stats,
+    Map<String, int>? saveAdv,
+    String? className,
+    String? ancestry,
+    int? level,
+    int? hitDieSize,
+    int? maxHp,
+    int? currentHp,
+    int? wounds,
+    int? maxWounds,
+    int? speed,
+    int? gearSlotsUsed,
+    String? talents,
+    String? notes,
+  }) {
+    final st = stats ?? this.stats;
+    final sv = saveAdv ?? this.saveAdv;
+    final cls = className ?? this.className;
+    return NimbleSheet(
+      stats: {for (final k in kNimbleStats) k: (st[k] ?? 0).clamp(-9, 9)},
+      saveAdv: {
+        for (final k in kNimbleStats)
+          if ((sv[k] ?? 0) != 0) k: (sv[k] ?? 0).clamp(-1, 1),
+      },
+      className: kNimbleClasses.contains(cls) ? cls : 'The Cheat',
+      ancestry: ancestry ?? this.ancestry,
+      level: (level ?? this.level).clamp(1, 10),
+      hitDieSize: (hitDieSize ?? this.hitDieSize).clamp(1, 100),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
+      wounds: (wounds ?? this.wounds).clamp(0, 99),
+      maxWounds: (maxWounds ?? this.maxWounds).clamp(1, 99),
+      speed: (speed ?? this.speed).clamp(0, 99),
+      gearSlotsUsed: (gearSlotsUsed ?? this.gearSlotsUsed).clamp(0, 999),
+      talents: talents ?? this.talents,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'stats': stats,
+        if (saveAdv.isNotEmpty) 'saveAdv': saveAdv,
+        'className': className,
+        'ancestry': ancestry,
+        'level': level,
+        'hitDieSize': hitDieSize,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'wounds': wounds,
+        'maxWounds': maxWounds,
+        'speed': speed,
+        'gearSlotsUsed': gearSlotsUsed,
+        'talents': talents,
+        'notes': notes,
+      };
+
+  static NimbleSheet? maybeFromJson(Object? j) {
+    if (j is! Map) return null;
+    int i(String k, int d) => (j[k] as num?)?.toInt() ?? d;
+    Map<String, int> intMap(String k) => {
+          for (final e in ((j[k] as Map?) ?? const {}).entries)
+            '${e.key}': (e.value as num?)?.toInt() ?? 0,
+        };
+    return const NimbleSheet().copyWith(
+      stats: intMap('stats'),
+      saveAdv: intMap('saveAdv'),
+      className: j['className'] as String?,
+      ancestry: j['ancestry'] as String?,
+      level: i('level', 1),
+      hitDieSize: i('hitDieSize', 6),
+      maxHp: i('maxHp', 1),
+      currentHp: i('currentHp', 1),
+      wounds: i('wounds', 0),
+      maxWounds: i('maxWounds', 6),
+      speed: i('speed', 6),
+      gearSlotsUsed: i('gearSlotsUsed', 0),
+      talents: j['talents'] as String?,
+      notes: j['notes'] as String?,
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2098,6 +2232,7 @@ class Character {
     this.starforged,
     this.dnd,
     this.shadowdark,
+    this.nimble,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2123,6 +2258,9 @@ class Character {
 
   /// Bespoke Shadowdark sheet; null unless this is a Shadowdark PC.
   final ShadowdarkSheet? shadowdark;
+
+  /// Bespoke Nimble sheet; null unless this is a Nimble PC.
+  final NimbleSheet? nimble;
 
   /// Whether this character is starred in the campaign header.
   final bool starred;
@@ -2150,6 +2288,8 @@ class Character {
     bool clearDnd = false,
     ShadowdarkSheet? shadowdark,
     bool clearShadowdark = false,
+    NimbleSheet? nimble,
+    bool clearNimble = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2166,6 +2306,7 @@ class Character {
         starforged: clearStarforged ? null : (starforged ?? this.starforged),
         dnd: clearDnd ? null : (dnd ?? this.dnd),
         shadowdark: clearShadowdark ? null : (shadowdark ?? this.shadowdark),
+        nimble: clearNimble ? null : (nimble ?? this.nimble),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2188,6 +2329,11 @@ class Character {
           shadowdark: shadowdark!.copyWith(
               currentHp:
                   (shadowdark!.currentHp + delta).clamp(0, shadowdark!.maxHp)));
+    }
+    if (nimble != null) {
+      return copyWith(
+          nimble: nimble!.copyWith(
+              currentHp: (nimble!.currentHp + delta).clamp(0, nimble!.maxHp)));
     }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
@@ -2212,6 +2358,7 @@ class Character {
         if (starforged != null) 'starforged': starforged!.toJson(),
         if (dnd != null) 'dnd': dnd!.toJson(),
         if (shadowdark != null) 'shadowdark': shadowdark!.toJson(),
+        if (nimble != null) 'nimble': nimble!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2235,6 +2382,7 @@ class Character {
         starforged: StarforgedSheet.maybeFromJson(j['starforged']),
         dnd: DndSheet.maybeFromJson(j['dnd']),
         shadowdark: ShadowdarkSheet.maybeFromJson(j['shadowdark']),
+        nimble: NimbleSheet.maybeFromJson(j['nimble']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
@@ -2315,6 +2463,7 @@ const kSystemLabels = <String, String>{
   'hexcrawl': 'Hexcrawl',
   'dnd': 'D&D',
   'shadowdark': 'Shadowdark',
+  'nimble': 'Nimble',
   'cards': 'Cards',
 };
 
@@ -2444,6 +2593,7 @@ String formatSystems(Set<String> systems) {
   const order = [
     'dnd',
     'shadowdark',
+    'nimble',
     'ironsworn',
     'mythic',
     'juice',

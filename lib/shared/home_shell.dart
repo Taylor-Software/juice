@@ -688,6 +688,7 @@ const kSystemBlurbs = <String, String>{
   'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
   'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
   'shadowdark': 'Shadowdark character sheet: stats, HP, AC, gear, luck.',
+  'nimble': 'Nimble character sheet: stats, wounds, AC, slots, gear.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -711,6 +712,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _hexcrawl = false;
   bool _dnd = false;
   bool _shadowdark = false;
+  bool _nimble = false;
   bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
@@ -733,6 +735,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_hexcrawl) 'hexcrawl',
       if (_dnd) 'dnd',
       if (_shadowdark) 'shadowdark',
+      if (_nimble) 'nimble',
       if (_cards) 'cards',
     };
     Navigator.of(context).pop((
@@ -870,6 +873,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onChanged: (v) => setState(() => _shadowdark = v ?? false),
             ),
             CheckboxListTile(
+              key: const Key('sys-nimble'),
+              title: const Text('Nimble'),
+              subtitle: Text(kSystemBlurbs['nimble']!),
+              value: _nimble,
+              onChanged: (v) => setState(() => _nimble = v ?? false),
+            ),
+            CheckboxListTile(
               key: const Key('sys-cards'),
               title: const Text('Cards'),
               subtitle: Text(kSystemBlurbs['cards']!),
@@ -937,6 +947,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('hexcrawl', 'Hexcrawl toolkit'),
             _row('dnd', 'D&D 5e'),
             _row('shadowdark', 'Shadowdark'),
+            _row('nimble', 'Nimble'),
             _row('cards', 'Cards'),
           ],
         ),

@@ -125,6 +125,9 @@ class EncounterScreen extends ConsumerWidget {
         } else if (linked.shadowdark != null) {
           curHp = linked.shadowdark!.currentHp;
           maxHp = linked.shadowdark!.maxHp;
+        } else if (linked.nimble != null) {
+          curHp = linked.nimble!.currentHp;
+          maxHp = linked.nimble!.maxHp;
         } else if (linked.tracks.isNotEmpty) {
           curHp = linked.tracks.first.current;
           maxHp = linked.tracks.first.max;
