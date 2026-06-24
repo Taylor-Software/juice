@@ -8,6 +8,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
+import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
 import 'sheet_widgets.dart';
 import 'starforged_sheet.dart';
@@ -224,6 +225,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.nimble != null) {
+                return NimbleSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.dnd != null) {
                 return DndSheetView(
                   character: c,
@@ -376,7 +388,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             kAllSystems;
     if (!systems.contains('ironsworn') &&
         !systems.contains('dnd') &&
-        !systems.contains('shadowdark')) {
+        !systems.contains('shadowdark') &&
+        !systems.contains('nimble')) {
       await _addCharacter(context);
       return;
     }
@@ -424,6 +437,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Shadowdark',
           blurb: 'Stats, HP, AC, gear, luck.'
         ),
+      if (systems.contains('nimble'))
+        (
+          key: 'new-nimble',
+          value: 'nimble',
+          label: 'Nimble',
+          blurb: 'Stats, wounds, slots, talents.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -448,12 +468,14 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     subtitle: Text(o.blurb),
                     onTap: () => Navigator.pop(context, o.value),
                   ),
-                if (!systems.contains('dnd') || !systems.contains('shadowdark'))
+                if (!systems.contains('dnd') ||
+                    !systems.contains('shadowdark') ||
+                    !systems.contains('nimble'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e or Shadowdark in Campaigns → Edit '
-                      'systems to add those sheets.',
+                      'Enable D&D 5e, Shadowdark, or Nimble in Campaigns → '
+                      'Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -483,6 +505,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newDnd();
     } else if (choice == 'shadowdark') {
       await _newShadowdark();
+    } else if (choice == 'nimble') {
+      await _newNimble();
     }
   }
 
@@ -515,6 +539,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newShadowdark() async {
     final id = await ref.read(charactersProvider.notifier).addShadowdark();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newNimble() async {
+    final id = await ref.read(charactersProvider.notifier).addNimble();
     if (mounted) setState(() => _editingId = id);
   }
 

@@ -1070,12 +1070,13 @@ void main() {
     expect(find.textContaining('Edit systems'), findsOneWidget);
   });
 
-  testWidgets('sheet picker omits the hint when D&D and Shadowdark are on',
+  testWidgets(
+      'sheet picker omits the hint when D&D, Shadowdark, and Nimble are on',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
-              '"systems":["dnd","shadowdark"]}]}',
+              '"systems":["dnd","shadowdark","nimble"]}]}',
       'juice.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
@@ -1091,6 +1092,7 @@ void main() {
     expect(find.textContaining('Edit systems'), findsNothing);
     expect(find.byKey(const Key('new-dnd')), findsOneWidget);
     expect(find.byKey(const Key('new-shadowdark')), findsOneWidget);
+    expect(find.byKey(const Key('new-nimble')), findsOneWidget);
   });
 
   testWidgets(
