@@ -70,6 +70,12 @@ class _SettingsSheet extends ConsumerWidget {
               'Not affiliated with Pickpocket Press.',
               style: TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Cairn text is used under Creative Commons Attribution-ShareAlike 4.0 '
+              '(CC BY-SA 4.0), © Yochai Gal. Not affiliated with Yochai Gal.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),

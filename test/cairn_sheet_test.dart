@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   test('CairnSheet round-trips toJson/maybeFromJson', () {
@@ -69,5 +70,11 @@ void main() {
     expect(c.withHpDelta(-2).cairn!.currentHp, 3);
     expect(c.withHpDelta(99).cairn!.currentHp, 5);
     expect(c.withHpDelta(-99).cairn!.currentHp, 0);
+  });
+
+  test('kSystemBlurbs cairn contains CC BY-SA attribution', () {
+    final blurb = kSystemBlurbs['cairn'] ?? '';
+    expect(blurb.toLowerCase(), contains('yochai gal'));
+    expect(blurb.toLowerCase(), contains('cc by-sa'));
   });
 }
