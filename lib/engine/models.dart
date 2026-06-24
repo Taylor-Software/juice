@@ -1530,7 +1530,7 @@ const kDrawSteelHeroicResource = <String, String>{
 
 class DrawSteelSheet {
   const DrawSteelSheet({
-    this.className = 'Conduit',
+    this.className = 'Censor',
     this.ancestry = '',
     this.level = 1,
     this.characteristics = const {

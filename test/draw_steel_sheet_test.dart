@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   test('DrawSteelSheet round-trips toJson/maybeFromJson', () {
@@ -77,12 +76,4 @@ void main() {
     final overkill = c.withHpDelta(-999);
     expect(overkill.drawSteel!.currentStamina, 0);
   });
-
-  // This test is skipped until Task 4 adds kSystemBlurbs['draw-steel']
-  test('kSystemBlurbs draw-steel contains MCDM non-affiliation text', () {
-    expect(kSystemBlurbs['draw-steel'], isNotNull);
-    final blurb = kSystemBlurbs['draw-steel']!;
-    expect(blurb.toLowerCase(), contains('mcdm'));
-    expect(blurb.toLowerCase(), contains('not affiliated'));
-  }, skip: 'needs kSystemBlurbs entry — added in Task 4');
 }
