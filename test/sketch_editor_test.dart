@@ -389,4 +389,66 @@ void main() {
     await tester.pumpAndSettle();
     expect(result!.texts, isEmpty);
   });
+
+  testWidgets('pan tool enables InteractiveViewer pan/zoom', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (_) {})),
+    ));
+    await tester.pumpAndSettle();
+    InteractiveViewer iv() =>
+        tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(iv().panEnabled, isFalse);
+    expect(iv().scaleEnabled, isFalse);
+    await tester.tap(find.byKey(const Key('sketch-tool-pan')));
+    await tester.pumpAndSettle();
+    expect(iv().panEnabled, isTrue);
+    expect(iv().scaleEnabled, isTrue);
+    await tester.tap(find.byKey(const Key('sketch-tool-pen')));
+    await tester.pumpAndSettle();
+    expect(iv().panEnabled, isFalse);
+  });
+
+  testWidgets('reset-zoom restores the identity transform', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (_) {})),
+    ));
+    await tester.pumpAndSettle();
+    final tc = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    tc.value = Matrix4.identity()..scaleByDouble(2.0, 2.0, 2.0, 1.0);
+    expect(tc.value, isNot(Matrix4.identity()));
+    await tester.tap(find.byKey(const Key('sketch-zoom-reset')));
+    await tester.pumpAndSettle();
+    expect(tc.value, Matrix4.identity());
+  });
+
+  testWidgets('drawing while zoomed stores un-transformed (scene) coords',
+      (tester) async {
+    SketchData? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (d) => result = d)),
+    ));
+    await tester.pumpAndSettle();
+    // Simulate the pan tool having zoomed 2x (the controller drives the view).
+    tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!
+        .value = Matrix4.identity()..scaleByDouble(2.0, 2.0, 2.0, 1.0);
+    await tester.pumpAndSettle();
+    // Draw with the pen (default tool) at the canvas center.
+    final canvas = find.byKey(const Key('sketch-canvas'));
+    final center = tester.getCenter(canvas);
+    final gesture = await tester.startGesture(center);
+    await gesture.moveBy(const Offset(40, 0));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-save')));
+    await tester.pumpAndSettle();
+    // At 2x zoom, _scene (toScene) halves viewport coords, so the stored point
+    // lands well inside center.dx — without the un-transform it would equal the
+    // raw pointer x (~center.dx). Proves strokes record canvas, not viewport.
+    expect(result!.strokes, isNotEmpty);
+    expect(result!.strokes.first.points.first[0], lessThan(center.dx * 0.75));
+  });
 }
