@@ -690,6 +690,103 @@ String parseFleshOutResponse(String raw) {
   return out;
 }
 
+// -- Ranked suggestions -------------------------------------------------------
+
+class RankSuggestionsSeed {
+  const RankSuggestionsSeed({
+    required this.candidates,
+    this.systemPrimer = '',
+    this.sceneTitle,
+    this.activeCharacter = '',
+    this.journalContext = const [],
+  });
+
+  /// Candidate next-move chips in rule order: (stable id, display label).
+  final List<({String id, String label})> candidates;
+
+  /// Authored facts-only system primer (see system_primer.dart), or ''.
+  final String systemPrimer;
+
+  /// Latest scene entry's title, or null.
+  final String? sceneTitle;
+
+  /// One-line active-PC descriptor (see [activeCharacterLine]), or ''.
+  final String activeCharacter;
+
+  /// Recall lines for the current scene; capped in-prompt.
+  final List<String> journalContext;
+}
+
+/// The model's ranking output. Best-effort: an empty [order] means "no opinion"
+/// (the caller keeps rule order); [why] is the top pick's one-line rationale.
+class RankResult {
+  const RankResult({this.order = const [], this.why = ''});
+
+  /// Suggestion ids, most→least useful. Unknown/duplicate ids are ignored by
+  /// the caller ([applyRanking]).
+  final List<String> order;
+
+  /// One-line rationale for the top pick, or '' when none.
+  final String why;
+}
+
+/// Instruction + the #1 grounding (system/pc/scene/recall) + the candidate
+/// lines + a JSON cue. Caps mirror the other builders.
+String buildRankPrompt(RankSuggestionsSeed seed) {
+  final primer = _flat(seed.systemPrimer);
+  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
+  final scene = seed.sceneTitle;
+  final sceneLine = (scene == null || scene.trim().isEmpty)
+      ? ''
+      : 'scene: ${_capped(_flat(scene))}\n';
+  final recall = StringBuffer();
+  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    recall.write('recall: $cut\n');
+  }
+  final cand = StringBuffer();
+  for (final c in seed.candidates) {
+    cand.write('- ${c.id}: ${_flat(c.label)}\n');
+  }
+  return 'You are the game master for a solo tabletop RPG. Given the current '
+      'scene and these candidate next moves, output the move ids ordered '
+      'most-to-least useful right now, and one short sentence on why the top '
+      'one fits. Output ONLY a JSON object, no prose: '
+      '{"order":["id",...],"why":"..."}.\n\n'
+      'INPUT:\n'
+      '$systemLine'
+      '${_pcLine(seed.activeCharacter)}'
+      '$sceneLine'
+      '$recall'
+      'candidates:\n'
+      '$cand'
+      'OUTPUT:';
+}
+
+/// Tolerant parse — NEVER throws (ranking is best-effort; an empty result means
+/// keep rule order). Isolates the first JSON object, coerces `order` to strings.
+RankResult parseRankResult(String raw) {
+  final json = _isolateJson(raw);
+  if (json == null) return const RankResult();
+  try {
+    final decoded = jsonDecode(json);
+    if (decoded is! Map) return const RankResult();
+    final orderRaw = decoded['order'];
+    final order = <String>[
+      if (orderRaw is List)
+        for (final e in orderRaw)
+          if (e is String) e, // drop non-string ids (null/int/nested)
+    ];
+    final why = (decoded['why'] ?? '').toString().trim();
+    return RankResult(order: order, why: why);
+  } catch (_) {
+    return const RankResult();
+  }
+}
+
 // -- Journal recap ------------------------------------------------------------
 
 /// Recap instruction, baked into [buildSummaryPrompt] (like

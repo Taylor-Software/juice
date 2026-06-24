@@ -519,6 +519,45 @@ result: Fate Check (Likely) — Yes, and…
     });
   });
 
+  group('buildRankPrompt / parseRankResult', () {
+    test('renders grounding + candidate lines + JSON cue', () {
+      final p = buildRankPrompt(const RankSuggestionsSeed(
+        candidates: [
+          (id: 'roll-oracle', label: 'Roll the oracle'),
+          (id: 'scene-event', label: 'Scene event'),
+        ],
+        systemPrimer: 'Ironsworn: perilous Iron Lands.',
+        sceneTitle: 'The crypt',
+        activeCharacter: 'Taurin (PC)',
+        journalContext: ['The door was barred.'],
+      ));
+      expect(p, contains('system: Ironsworn'));
+      expect(p, contains('pc: Taurin (PC)'));
+      expect(p, contains('scene: The crypt'));
+      expect(p, contains('recall: The door was barred.'));
+      expect(p, contains('- roll-oracle: Roll the oracle'));
+      expect(p, contains('- scene-event: Scene event'));
+      expect(p, contains('"order"'));
+      expect(p.trimRight(), endsWith('OUTPUT:'));
+    });
+
+    test('parses a clean object (think/fence tolerant)', () {
+      final r = parseRankResult(
+          '<think>x</think>```json\n{"order":["scene-event","roll-oracle"],"why":"It is live"}\n```');
+      expect(r.order, ['scene-event', 'roll-oracle']);
+      expect(r.why, 'It is live');
+    });
+
+    test('garbage / missing JSON -> empty result, never throws', () {
+      expect(parseRankResult('no json here').order, isEmpty);
+      expect(parseRankResult('no json here').why, '');
+      expect(parseRankResult('{"order":"notalist"}').order, isEmpty);
+      // Non-string ids (int / null / nested) are dropped, not coerced.
+      expect(parseRankResult('{"order":[1,null,["x"],"keep"],"why":"y"}').order,
+          ['keep']);
+    });
+  });
+
   group('buildGmChatPrompt', () {
     test('grounds the chat + renders the transcript + trailing GM:', () {
       final p = buildGmChatPrompt(const GmChatSeed(

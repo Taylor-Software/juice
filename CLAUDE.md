@@ -125,8 +125,20 @@ Working rules for this repo:
   pure `fleshOutSeedFrom` / `buildFleshOutSeed` (`play_context.dart`) using
   name-query `searchEntries` recall; `MapNotifier.appendSiteLine` mirrors
   `appendRoomDetail`. See
-  `docs/superpowers/specs/2026-06-24-flesh-out-entity-design.md`. Deferred AI
-  affordance: LLM-ranked suggestion chips (#5).
+  `docs/superpowers/specs/2026-06-24-flesh-out-entity-design.md`.
+  **AI expansion #5 (LLM-ranked suggestion chips):** the assistant rail reorders
+  its fixed rule-based chips by LLM relevance and annotates the top pick with a
+  one-line `💡 why` caption. `rankSuggestions(RankSuggestionsSeed)` returns a
+  tolerant `RankResult {order, why}` (`parseRankResult` never throws — drops
+  non-string ids; best-effort); the pure `applyRanking` (`suggestions.dart`)
+  reorders the rule chips (drops unknown ids, appends omitted, so the set +
+  handlers never break). The rail (`assistant_rail.dart`) calls the seam only
+  when expanded + aiReady, cached by a play-state signature (newest entry id +
+  newest-scene id + candidate ids) via a post-frame trigger, with a rule-order
+  fallback on loading/error/AI-off. Scene context uses the newest scene entry
+  (consistent with #3/#4, not the `activeSceneId` spine pointer). See
+  `docs/superpowers/specs/2026-06-24-ranked-suggestions-design.md`. This
+  completes the AI-expansion epic (#1–#5).
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/features/assistant_rail.dart';
 import 'package:juice_oracle/features/gm_chat_screen.dart';
 import 'package:juice_oracle/shared/destination.dart';
@@ -21,6 +22,29 @@ import 'fake_interpreter.dart';
 Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
         as Map<String, dynamic>));
+
+Future<ProviderContainer> _pumpRankRail(
+    WidgetTester tester, FakeInterpreterService fake,
+    {bool aiEnabled = true}) async {
+  SharedPreferences.setMockInitialValues({
+    'juice.sessions.v1':
+        '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    'juice.journal.v2.default':
+        '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"x","kind":"scene"}]',
+    'juice.threads.v1.default': '[]',
+    if (aiEnabled) 'juice.ai_enabled.v1': true,
+  });
+  final c = ProviderContainer(
+      overrides: [interpreterServiceProvider.overrideWithValue(fake)]);
+  addTearDown(c.dispose);
+  await tester.pumpWidget(UncontrolledProviderScope(
+      container: c,
+      child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(body: AssistantRail()))));
+  await tester.pumpAndSettle();
+  return c;
+}
 
 Future<ProviderContainer> pumpRail(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
@@ -193,5 +217,48 @@ void main() {
     // Suggestion chips still render; the AI ask box is gone.
     expect(find.byKey(const Key('ask-gm-field')), findsNothing);
     expect(find.byKey(const Key('ask-gm-send')), findsNothing);
+  });
+
+  testWidgets('AI-ranked: chips reordered + why caption when AI ready',
+      (tester) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    fake.queuedRank.add(const RankResult(
+        order: ['scene-event', 'roll-oracle'], why: 'The scene is live'));
+    await _pumpRankRail(tester, fake);
+    await tester.tap(find.byKey(const Key('assistant-expand')));
+    await tester.pumpAndSettle(); // expand + post-frame rank + setState
+    final keys = tester
+        .widgetList<ActionChip>(find.byType(ActionChip))
+        .map((w) => (w.key as ValueKey).value)
+        .toList();
+    expect(keys.indexOf('suggest-scene-event'),
+        lessThan(keys.indexOf('suggest-roll-oracle')));
+    expect(find.byKey(const Key('suggest-why')), findsOneWidget);
+    expect(find.textContaining('The scene is live'), findsOneWidget);
+  });
+
+  testWidgets('AI off: rule order, no why caption', (tester) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.unsupported));
+    await _pumpRankRail(tester, fake, aiEnabled: false);
+    await tester.tap(find.byKey(const Key('assistant-expand')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('suggest-why')), findsNothing);
+    final keys = tester
+        .widgetList<ActionChip>(find.byType(ActionChip))
+        .map((w) => (w.key as ValueKey).value)
+        .toList();
+    expect(keys.first, 'suggest-roll-oracle');
+  });
+
+  testWidgets('collapsed rail does not call the LLM (no spend)',
+      (tester) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    fake.queuedRank.add(const RankResult(order: ['scene-event'], why: 'x'));
+    await _pumpRankRail(tester, fake); // AI ready, but never expanded
+    await tester.pumpAndSettle();
+    expect(fake.rankCalls, 0);
   });
 }
