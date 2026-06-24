@@ -1490,6 +1490,156 @@ class NimbleSheet {
   }
 }
 
+// --- Draw Steel (facts-only: class/characteristic NAMES only; published under
+// the Draw Steel Creator License — not affiliated with MCDM Productions, LLC)
+
+const kDrawSteelCharacteristics = <String>[
+  'might',
+  'agility',
+  'reason',
+  'intuition',
+  'presence',
+];
+
+/// The nine classes from Draw Steel: Heroes (MCDM Productions).
+/// Verified against https://steelcompendium.io (Steel Compendium).
+const kDrawSteelClasses = <String>[
+  'Censor',
+  'Conduit',
+  'Elementalist',
+  'Fury',
+  'Null',
+  'Shadow',
+  'Tactician',
+  'Talent',
+  'Troubadour',
+];
+
+/// Heroic resource name per class. Verified against Steel Compendium class pages.
+const kDrawSteelHeroicResource = <String, String>{
+  'Censor': 'Wrath',
+  'Conduit': 'Piety',
+  'Elementalist': 'Essence',
+  'Fury': 'Ferocity',
+  'Null': 'Discipline',
+  'Shadow': 'Insight',
+  'Tactician': 'Focus',
+  'Talent': 'Clarity',
+  'Troubadour': 'Drama',
+};
+
+class DrawSteelSheet {
+  const DrawSteelSheet({
+    this.className = 'Censor',
+    this.ancestry = '',
+    this.level = 1,
+    this.characteristics = const {
+      'might': 0,
+      'agility': 0,
+      'reason': 0,
+      'intuition': 0,
+      'presence': 0,
+    },
+    this.maxStamina = 1,
+    this.currentStamina = 1,
+    this.recoveries = 0,
+    this.maxRecoveries = 0,
+    this.stability = 0,
+    this.heroicResource = 0,
+    this.skills = '',
+    this.notes = '',
+  });
+
+  final String className;
+  final String ancestry;
+  final int level;
+  final Map<String, int> characteristics;
+  final int maxStamina;
+  final int currentStamina;
+  final int recoveries;
+  final int maxRecoveries;
+  final int stability;
+  final int heroicResource;
+  final String skills;
+  final String notes;
+
+  String get resourceLabel => kDrawSteelHeroicResource[className] ?? 'Resource';
+
+  DrawSteelSheet copyWith({
+    String? className,
+    String? ancestry,
+    int? level,
+    Map<String, int>? characteristics,
+    int? maxStamina,
+    int? currentStamina,
+    int? recoveries,
+    int? maxRecoveries,
+    int? stability,
+    int? heroicResource,
+    String? skills,
+    String? notes,
+  }) {
+    final cls = className ?? this.className;
+    final ms = (maxStamina ?? this.maxStamina).clamp(0, 1 << 20);
+    final ch = characteristics ?? this.characteristics;
+    return DrawSteelSheet(
+      className:
+          kDrawSteelClasses.contains(cls) ? cls : kDrawSteelClasses.first,
+      ancestry: ancestry ?? this.ancestry,
+      level: (level ?? this.level).clamp(1, 10),
+      characteristics: {
+        for (final k in kDrawSteelCharacteristics) k: (ch[k] ?? 0).clamp(-5, 5),
+      },
+      maxStamina: ms,
+      currentStamina: (currentStamina ?? this.currentStamina).clamp(0, ms),
+      recoveries: (recoveries ?? this.recoveries).clamp(0, 1 << 20),
+      maxRecoveries: (maxRecoveries ?? this.maxRecoveries).clamp(0, 1 << 20),
+      stability: (stability ?? this.stability).clamp(0, 99),
+      heroicResource: (heroicResource ?? this.heroicResource).clamp(0, 1 << 20),
+      skills: skills ?? this.skills,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'className': className,
+        'ancestry': ancestry,
+        'level': level,
+        'characteristics': characteristics,
+        'maxStamina': maxStamina,
+        'currentStamina': currentStamina,
+        'recoveries': recoveries,
+        'maxRecoveries': maxRecoveries,
+        'stability': stability,
+        'heroicResource': heroicResource,
+        if (skills.isNotEmpty) 'skills': skills,
+        if (notes.isNotEmpty) 'notes': notes,
+      };
+
+  static DrawSteelSheet? maybeFromJson(Object? j) {
+    if (j is! Map) return null;
+    int i(String k, int d) => (j[k] as num?)?.toInt() ?? d;
+    Map<String, int> intMap(String k) => {
+          for (final e in ((j[k] as Map?) ?? const {}).entries)
+            '${e.key}': (e.value as num?)?.toInt() ?? 0,
+        };
+    return const DrawSteelSheet().copyWith(
+      className: j['className'] as String?,
+      ancestry: j['ancestry'] as String?,
+      level: i('level', 1),
+      characteristics: intMap('characteristics'),
+      maxStamina: i('maxStamina', 1),
+      currentStamina: i('currentStamina', 1),
+      recoveries: i('recoveries', 0),
+      maxRecoveries: i('maxRecoveries', 0),
+      stability: i('stability', 0),
+      heroicResource: i('heroicResource', 0),
+      skills: j['skills'] as String?,
+      notes: j['notes'] as String?,
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2233,6 +2383,7 @@ class Character {
     this.dnd,
     this.shadowdark,
     this.nimble,
+    this.drawSteel,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2262,6 +2413,9 @@ class Character {
   /// Bespoke Nimble sheet; null unless this is a Nimble PC.
   final NimbleSheet? nimble;
 
+  /// Bespoke Draw Steel sheet; null unless this is a Draw Steel hero.
+  final DrawSteelSheet? drawSteel;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2290,6 +2444,8 @@ class Character {
     bool clearShadowdark = false,
     NimbleSheet? nimble,
     bool clearNimble = false,
+    DrawSteelSheet? drawSteel,
+    bool clearDrawSteel = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2307,6 +2463,7 @@ class Character {
         dnd: clearDnd ? null : (dnd ?? this.dnd),
         shadowdark: clearShadowdark ? null : (shadowdark ?? this.shadowdark),
         nimble: clearNimble ? null : (nimble ?? this.nimble),
+        drawSteel: clearDrawSteel ? null : (drawSteel ?? this.drawSteel),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2335,6 +2492,12 @@ class Character {
           nimble: nimble!.copyWith(
               currentHp: (nimble!.currentHp + delta).clamp(0, nimble!.maxHp)));
     }
+    if (drawSteel != null) {
+      return copyWith(
+          drawSteel: drawSteel!.copyWith(
+              currentStamina: (drawSteel!.currentStamina + delta)
+                  .clamp(0, drawSteel!.maxStamina)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -2359,6 +2522,7 @@ class Character {
         if (dnd != null) 'dnd': dnd!.toJson(),
         if (shadowdark != null) 'shadowdark': shadowdark!.toJson(),
         if (nimble != null) 'nimble': nimble!.toJson(),
+        if (drawSteel != null) 'drawSteel': drawSteel!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2383,6 +2547,7 @@ class Character {
         dnd: DndSheet.maybeFromJson(j['dnd']),
         shadowdark: ShadowdarkSheet.maybeFromJson(j['shadowdark']),
         nimble: NimbleSheet.maybeFromJson(j['nimble']),
+        drawSteel: DrawSteelSheet.maybeFromJson(j['drawSteel']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])

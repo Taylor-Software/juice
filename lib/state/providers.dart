@@ -317,6 +317,19 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  /// Creates a pre-made Draw Steel hero at the top and returns its id.
+  Future<String> addDrawSteel() async {
+    final id = _newId();
+    await _persist([
+      Character(
+          id: id,
+          name: 'New Draw Steel hero',
+          drawSteel: const DrawSteelSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)

@@ -53,6 +53,15 @@ class _SettingsSheet extends ConsumerWidget {
               ),
               if (enabled) _statusBlock(context, ref, status),
             ],
+            const SizedBox(height: 16),
+            Text('Third-party content', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            const Text(
+              'Draw Steel content is an independent product published under '
+              'the Draw Steel Creator License and is not affiliated with '
+              'MCDM Productions, LLC.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),

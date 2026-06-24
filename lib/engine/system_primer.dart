@@ -24,6 +24,8 @@ const Map<String, String> kSystemPrimers = {
       'Shadowdark: lethal, gritty old-school dungeon-crawling where light and time are deadly resources. Resolution: d20 + modifier vs DC or AC; luck tokens; swift death.',
   'nimble':
       'Nimble: fast, tactical 5e-compatible fantasy. Resolution: d20 + stat vs DC or armor; advantage/disadvantage; a wounds dying-track; slot inventory.',
+  'draw-steel':
+      'Draw Steel: cinematic tactical fantasy. Resolution: power roll 2d10+characteristic → Tier 1 (≤11), Tier 2 (12-16), Tier 3 (≥17); heroic resources; stamina and recoveries.',
 };
 
 /// Resolves a campaign's enabled [systems] + [rulesets] to one primer, or ''
@@ -35,6 +37,7 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('dnd')) return kSystemPrimers['dnd']!;
   if (systems.contains('shadowdark')) return kSystemPrimers['shadowdark']!;
   if (systems.contains('nimble')) return kSystemPrimers['nimble']!;
+  if (systems.contains('draw-steel')) return kSystemPrimers['draw-steel']!;
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) {
       return kSystemPrimers['sundered_isles']!;
@@ -52,6 +55,7 @@ String resolveSystem(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('dnd')) return 'dnd';
   if (systems.contains('shadowdark')) return 'shadowdark';
   if (systems.contains('nimble')) return 'nimble';
+  if (systems.contains('draw-steel')) return 'draw-steel';
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) return 'sundered_isles';
     if (rulesets.contains('starforged')) return 'starforged';
