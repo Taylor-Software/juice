@@ -722,23 +722,34 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         final theme = Theme.of(context);
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Text(e.title, style: theme.textTheme.titleSmall),
-              ),
-              if (e.chaosFactor != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Chip(
-                    label: Text('Chaos ${e.chaosFactor}'),
-                    visualDensity: VisualDensity.compact,
+              Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(e.title, style: theme.textTheme.titleSmall),
                   ),
+                  if (e.chaosFactor != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Chip(
+                        label: Text('Chaos ${e.chaosFactor}'),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                  const Expanded(child: Divider()),
+                  menu,
+                ],
+              ),
+              if (e.body.trim().isNotEmpty)
+                Padding(
+                  key: Key('scene-body-${e.id}'),
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Text(e.body, style: theme.textTheme.bodyMedium),
                 ),
-              const Expanded(child: Divider()),
-              menu,
             ],
           ),
         );

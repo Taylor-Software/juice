@@ -56,9 +56,14 @@ class ScenesPane extends ConsumerWidget {
                       ListTile(
                         leading: const Icon(Icons.movie_outlined),
                         title: Text(s.title),
-                        subtitle: s.chaosFactor != null
-                            ? Text('Chaos ${s.chaosFactor}')
-                            : null,
+                        subtitle:
+                            (s.chaosFactor != null || s.body.trim().isNotEmpty)
+                                ? Text([
+                                    if (s.chaosFactor != null)
+                                      'Chaos ${s.chaosFactor}',
+                                    if (s.body.trim().isNotEmpty) s.body.trim(),
+                                  ].join('\n'))
+                                : null,
                         onTap: () => ref
                             .read(shellRouteProvider.notifier)
                             .goTo(Destination.journal),
