@@ -274,11 +274,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       return;
     }
     final journal = ref.read(journalProvider).valueOrNull ?? const [];
-    // Journal is newest-first, so firstOrNull = the most recent: recall ranks
-    // against the most recent scene entry, else the newest entry of any kind.
-    final target =
-        journal.where((e) => e.kind == JournalKind.scene).firstOrNull ??
-            journal.firstOrNull;
+    // Recall ranks against the active scene (the pinned one, else newest) so it
+    // matches the `sceneTitle` _sceneContext() sends; else the newest entry.
+    final target = activeSceneEntry(journal,
+            ref.read(playContextProvider).valueOrNull?.activeSceneId) ??
+        journal.firstOrNull;
     final seed = NarrateSeed(
       mode: mode,
       sceneTitle: _sceneContext(),

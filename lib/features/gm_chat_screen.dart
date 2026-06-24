@@ -55,10 +55,10 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     await notifier.appendTurn(ChatTurn(ChatRole.player, t));
     try {
       final journal = ref.read(journalProvider).valueOrNull ?? const [];
-      final scene = journal
-          .where((e) => e.kind == JournalKind.scene)
-          .map((e) => e.title)
-          .firstOrNull;
+      // The active scene (pinned else newest) — consistent with every other seam.
+      final scene = activeSceneEntry(
+              journal, ref.read(playContextProvider).valueOrNull?.activeSceneId)
+          ?.title;
       final target = JournalEntry(
           id: 'gm-chat-target', timestamp: DateTime.now(), title: '', body: t);
       final history = ref.read(gmChatProvider).valueOrNull?.turns ?? const [];

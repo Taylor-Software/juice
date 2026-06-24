@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/features/gm_chat_screen.dart';
 import 'package:juice_oracle/state/gm_chat.dart';
 import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/play_context.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,6 +40,38 @@ void main() {
     expect(turns.first.text, 'Is the bridge safe?');
     expect(turns.last.text, 'A canned GM reply.'); // from the fake
     expect(find.text('A canned GM reply.'), findsOneWidget);
+  });
+
+  testWidgets('gm chat grounds on the pinned (older) scene', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default':
+          '[{"id":"s2","timestamp":"2026-06-12T10:02:00.000","title":"Newer Scene","body":"","kind":"scene"},'
+              '{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"Pinned Scene","body":"","kind":"scene"}]',
+    });
+    final fake = FakeInterpreterService();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        interpreterServiceProvider.overrideWithValue(fake),
+        aiReadyProvider.overrideWith((ref) => true),
+      ],
+      child: const MaterialApp(home: GmChatScreen()),
+    ));
+    await tester.pumpAndSettle();
+    final c =
+        ProviderScope.containerOf(tester.element(find.byType(GmChatScreen)));
+    // The standalone chat screen doesn't display the journal, so load it
+    // explicitly (in-app it's opened from the Journal verb, already loaded).
+    await c.read(journalProvider.future);
+    await c
+        .read(playContextProvider.notifier)
+        .setActiveScene('s1'); // pin older
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('gm-chat-input')), 'What now?');
+    await tester.tap(find.byKey(const Key('gm-chat-send')));
+    await tester.pumpAndSettle();
+    expect(fake.lastGmChatSeed!.sceneTitle, 'Pinned Scene');
   });
 
   testWidgets('save-to-journal writes a gm-chat entry', (tester) async {

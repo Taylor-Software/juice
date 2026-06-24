@@ -87,8 +87,9 @@ JournalEntry? activeSceneEntry(
 }
 
 /// Pure: assemble a [FleshOutSeed] from already-read campaign state.
-/// `sceneTitle` = the newest scene entry's title (journal is newest-first);
-/// `journalContext` = entries mentioning [name] by text (name-query recall).
+/// `sceneTitle` = the active scene's title (see [activeSceneEntry] — the pinned
+/// [activeSceneId] else the newest scene); `journalContext` = entries mentioning
+/// [name] by text (name-query recall).
 FleshOutSeed fleshOutSeedFrom({
   required String entityKind,
   required String name,
