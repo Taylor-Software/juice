@@ -689,6 +689,9 @@ const kSystemBlurbs = <String, String>{
   'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
   'shadowdark': 'Shadowdark character sheet: stats, HP, AC, gear, luck.',
   'nimble': 'Nimble character sheet: stats, wounds, AC, slots, gear.',
+  'draw-steel':
+      'Draw Steel hero sheet: characteristics, stamina, heroic resource, power rolls. '
+          'Independent product; not affiliated with MCDM Productions, LLC.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -713,6 +716,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _dnd = false;
   bool _shadowdark = false;
   bool _nimble = false;
+  bool _drawSteel = false;
   bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
@@ -736,6 +740,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_dnd) 'dnd',
       if (_shadowdark) 'shadowdark',
       if (_nimble) 'nimble',
+      if (_drawSteel) 'draw-steel',
       if (_cards) 'cards',
     };
     Navigator.of(context).pop((
@@ -879,6 +884,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               value: _nimble,
               onChanged: (v) => setState(() => _nimble = v ?? false),
             ),
+            SwitchListTile(
+              key: const Key('sys-draw-steel'),
+              title: const Text('Draw Steel'),
+              subtitle: Text(kSystemBlurbs['draw-steel']!),
+              value: _drawSteel,
+              onChanged: (v) => setState(() => _drawSteel = v),
+            ),
             CheckboxListTile(
               key: const Key('sys-cards'),
               title: const Text('Cards'),
@@ -948,6 +960,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('dnd', 'D&D 5e'),
             _row('shadowdark', 'Shadowdark'),
             _row('nimble', 'Nimble'),
+            _row('draw-steel', 'Draw Steel'),
             _row('cards', 'Cards'),
           ],
         ),

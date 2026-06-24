@@ -8,6 +8,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
+import 'draw_steel_sheet.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
 import 'sheet_widgets.dart';
@@ -225,6 +226,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.drawSteel != null) {
+                return DrawSteelSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.nimble != null) {
                 return NimbleSheetView(
                   character: c,
@@ -389,7 +401,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     if (!systems.contains('ironsworn') &&
         !systems.contains('dnd') &&
         !systems.contains('shadowdark') &&
-        !systems.contains('nimble')) {
+        !systems.contains('nimble') &&
+        !systems.contains('draw-steel')) {
       await _addCharacter(context);
       return;
     }
@@ -444,6 +457,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Nimble',
           blurb: 'Stats, wounds, slots, talents.'
         ),
+      if (systems.contains('draw-steel'))
+        (
+          key: 'new-draw-steel',
+          value: 'draw-steel',
+          label: 'Draw Steel',
+          blurb: 'Characteristics, stamina, heroic resource, power rolls.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -470,12 +490,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   ),
                 if (!systems.contains('dnd') ||
                     !systems.contains('shadowdark') ||
-                    !systems.contains('nimble'))
+                    !systems.contains('nimble') ||
+                    !systems.contains('draw-steel'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, or Nimble in Campaigns → '
-                      'Edit systems to add those sheets.',
+                      'Enable D&D 5e, Shadowdark, Nimble, or Draw Steel in '
+                      'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -507,6 +528,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newShadowdark();
     } else if (choice == 'nimble') {
       await _newNimble();
+    } else if (choice == 'draw-steel') {
+      await _newDrawSteel();
     }
   }
 
@@ -544,6 +567,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newNimble() async {
     final id = await ref.read(charactersProvider.notifier).addNimble();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newDrawSteel() async {
+    final id = await ref.read(charactersProvider.notifier).addDrawSteel();
     if (mounted) setState(() => _editingId = id);
   }
 
