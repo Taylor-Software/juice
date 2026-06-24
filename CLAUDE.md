@@ -338,7 +338,11 @@ Working rules for this repo:
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
   oracle interpreter; service seam in `lib/state/interpreter.dart`, tests
-  always use the fake — never construct `GemmaInterpreterService` in tests) +
+  always use the fake — never construct `GemmaInterpreterService` in tests; the
+  AI affordances also have an end-to-end harness, `integration_test/ai_flows_test.dart`,
+  that pumps the real `HomeShell` with the fake interpreter and drives
+  narrate / gm-chat / ranked-chips / scene-flesh-out through real navigation +
+  pushed routes — run with `flutter test integration_test/ai_flows_test.dart -d macos`) +
   `flutter_svg` (renders the bundled CC0 standard-deck card SVGs in
   `assets/playing/`; tarot art in `assets/tarot/` is raster JPG — `CardImage`
   in `lib/shared/card_image.dart` picks the renderer by extension).
