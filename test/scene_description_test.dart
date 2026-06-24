@@ -115,6 +115,25 @@ void main() {
     expect(scene.body, contains('Fleshed-out detail.'));
   });
 
+  testWidgets('flesh-out preserves an existing scene body', (tester) async {
+    final c = await pumpScenes(tester, aiReady: true);
+    final id = c.read(journalProvider).value!.first.id;
+    final scene = c.read(journalProvider).value!.firstWhere((e) => e.id == id);
+    await c
+        .read(journalProvider.notifier)
+        .replace(scene.copyWith(body: 'Existing.'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(Key('flesh-out-scene-$id')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('flesh-out-append')));
+    await tester.pumpAndSettle();
+    final updated =
+        c.read(journalProvider).value!.firstWhere((e) => e.id == id);
+    expect(updated.body, contains('Existing.')); // preserved
+    expect(updated.body, contains('Fleshed-out detail.')); // appended
+    expect(updated.body, contains('\n\n')); // separated
+  });
+
   testWidgets('flesh-out button hidden when AI not ready', (tester) async {
     final c = await pumpScenes(tester, aiReady: false);
     final id = c.read(journalProvider).value!.first.id;
