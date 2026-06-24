@@ -389,4 +389,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(result!.texts, isEmpty);
   });
+
+  testWidgets('pan tool enables InteractiveViewer pan/zoom', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (_) {})),
+    ));
+    await tester.pumpAndSettle();
+    InteractiveViewer iv() =>
+        tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(iv().panEnabled, isFalse);
+    expect(iv().scaleEnabled, isFalse);
+    await tester.tap(find.byKey(const Key('sketch-tool-pan')));
+    await tester.pumpAndSettle();
+    expect(iv().panEnabled, isTrue);
+    expect(iv().scaleEnabled, isTrue);
+    await tester.tap(find.byKey(const Key('sketch-tool-pen')));
+    await tester.pumpAndSettle();
+    expect(iv().panEnabled, isFalse);
+  });
 }

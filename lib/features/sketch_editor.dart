@@ -16,7 +16,7 @@ const _palette = <int>[
 ];
 
 /// Active drawing tool.
-enum _SketchTool { pen, eraser, line, rect, ellipse, text }
+enum _SketchTool { pen, eraser, line, rect, ellipse, text, pan }
 
 /// Paints a [SketchData]'s strokes on a paper background (theme-independent so
 /// stored colors render the same in light and dark mode).
@@ -120,9 +120,17 @@ class _SketchEditorState extends State<SketchEditor> {
   double _width = 3;
   Size _canvas = const Size(1, 1);
   _SketchTool _tool = _SketchTool.pen;
+  // Pan/zoom viewport transform (view-only — never saved into the sketch).
+  final TransformationController _tc = TransformationController();
   // Undo history: snapshots of (strokes, texts) before each mutation, so every
   // op (draw, shape, erase, clear, text add/edit) is one undo step.
   final List<({List<SketchStroke> strokes, List<SketchText> texts})> _undo = [];
+
+  @override
+  void dispose() {
+    _tc.dispose();
+    super.dispose();
+  }
 
   void _snapshot() => _undo.add((strokes: _strokes, texts: _texts));
 
@@ -307,43 +315,45 @@ class _SketchEditorState extends State<SketchEditor> {
   Widget _canvasArea(SketchData preview) {
     final surface = LayoutBuilder(builder: (context, constraints) {
       _canvas = Size(constraints.maxWidth, constraints.maxHeight);
+      final isPan = _tool == _SketchTool.pan;
+      final canDraw = _tool != _SketchTool.text && !isPan;
+      // The GestureDetector is the outer widget so it wins the gesture arena
+      // against InteractiveViewer's internal recognizers. In pan mode its
+      // callbacks are nulled out so the InteractiveViewer below handles panning.
       return GestureDetector(
         key: const Key('sketch-canvas'),
-        // Tap and pan recognizers are mutually exclusive by mode: the text tool
-        // places labels on a clean tap (onTapUp), every other tool draws on a
-        // pan. Wiring only one family at a time avoids a tap-vs-pan arena
-        // conflict (which would otherwise swallow drag-end events).
         onTapUp: _tool == _SketchTool.text
-            ? (d) => _handleTextTap(d.localPosition)
+            ? (d) => _handleTextTap(_scene(d.localPosition))
             : null,
-        onPanStart: _tool == _SketchTool.text
+        onPanStart: !canDraw
             ? null
             : (d) {
+                final p = _scene(d.localPosition);
                 if (_tool == _SketchTool.eraser) {
                   _erasing = false;
-                  _eraseAt(d.localPosition);
+                  _eraseAt(p);
                 } else if (_tool == _SketchTool.pen) {
-                  setState(() => _current = [_xy(d.localPosition)]);
+                  setState(() => _current = [_xy(p)]);
                 } else {
                   setState(() {
-                    _shapeStart = d.localPosition;
+                    _shapeStart = p;
                     _current = [];
                   });
                 }
               },
-        onPanUpdate: _tool == _SketchTool.text
+        onPanUpdate: !canDraw
             ? null
             : (d) {
+                final p = _scene(d.localPosition);
                 if (_tool == _SketchTool.eraser) {
-                  _eraseAt(d.localPosition);
+                  _eraseAt(p);
                 } else if (_tool == _SketchTool.pen) {
-                  setState(() => _current.add(_xy(d.localPosition)));
+                  setState(() => _current.add(_xy(p)));
                 } else if (_shapeStart != null) {
-                  setState(() =>
-                      _current = _shapePoints(_shapeStart!, d.localPosition));
+                  setState(() => _current = _shapePoints(_shapeStart!, p));
                 }
               },
-        onPanEnd: _tool == _SketchTool.text
+        onPanEnd: !canDraw
             ? null
             : (_) {
                 if (_tool == _SketchTool.eraser) {
@@ -363,9 +373,23 @@ class _SketchEditorState extends State<SketchEditor> {
                   _shapeStart = null;
                 });
               },
-        child: CustomPaint(
-          painter: SketchPainter(preview, background: widget.background),
-          size: Size.infinite,
+        child: AbsorbPointer(
+          // In drawing/text mode the InteractiveViewer must not participate in
+          // hit-testing, otherwise its internal recognizers compete with the
+          // outer GestureDetector and win. In pan mode we let it through so its
+          // pan/scale recognizers handle the interaction directly.
+          absorbing: !isPan,
+          child: InteractiveViewer(
+            transformationController: _tc,
+            panEnabled: isPan,
+            scaleEnabled: isPan,
+            minScale: 1.0,
+            maxScale: 6.0,
+            child: CustomPaint(
+              painter: SketchPainter(preview, background: widget.background),
+              size: Size.infinite,
+            ),
+          ),
         ),
       );
     });
@@ -375,6 +399,10 @@ class _SketchEditorState extends State<SketchEditor> {
       child: AspectRatio(aspectRatio: bg.width / bg.height, child: surface),
     );
   }
+
+  /// Viewport point → canvas (scene) point, inverting the zoom/pan transform.
+  /// At scale 1 / no pan this is the identity, so drawing is unchanged.
+  Offset _scene(Offset viewport) => _tc.toScene(viewport);
 
   List<double> _xy(Offset o) => [o.dx, o.dy];
 
@@ -462,6 +490,14 @@ class _SketchEditorState extends State<SketchEditor> {
                   isSelected: _tool == _SketchTool.text,
                   color: _tool == _SketchTool.text ? Colors.blue : null,
                   onPressed: () => setState(() => _tool = _SketchTool.text),
+                ),
+                IconButton(
+                  key: const Key('sketch-tool-pan'),
+                  icon: const Icon(Icons.pan_tool_outlined),
+                  tooltip: 'Pan & zoom',
+                  isSelected: _tool == _SketchTool.pan,
+                  color: _tool == _SketchTool.pan ? Colors.blue : null,
+                  onPressed: () => setState(() => _tool = _SketchTool.pan),
                 ),
               ],
             ),
