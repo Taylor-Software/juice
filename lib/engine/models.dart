@@ -2463,6 +2463,7 @@ const kSystemLabels = <String, String>{
   'hexcrawl': 'Hexcrawl',
   'dnd': 'D&D',
   'shadowdark': 'Shadowdark',
+  'nimble': 'Nimble',
   'cards': 'Cards',
 };
 
@@ -2592,6 +2593,7 @@ String formatSystems(Set<String> systems) {
   const order = [
     'dnd',
     'shadowdark',
+    'nimble',
     'ironsworn',
     'mythic',
     'juice',
