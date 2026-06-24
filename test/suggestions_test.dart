@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/engine/suggestions.dart';
 
 List<String> ids(List<Suggestion> s) => s.map((e) => e.id).toList();
@@ -101,6 +102,33 @@ void main() {
       expect(run(false), containsAll(['develop-rumor', 'seed-npc']));
       expect(run(true), isNot(contains('develop-rumor')));
       expect(run(true), isNot(contains('seed-npc')));
+    });
+  });
+
+  group('applyRanking', () {
+    final rule = [
+      const Suggestion('a', 'A', SuggestionAction.inline),
+      const Suggestion('b', 'B', SuggestionAction.navigate),
+      const Suggestion('c', 'C', SuggestionAction.navigate),
+    ];
+
+    test('reorders by order, drops unknown ids, appends omitted, trims why',
+        () {
+      final r = applyRanking(
+          rule, const RankResult(order: ['c', 'zzz', 'a'], why: ' do C '));
+      expect(r.chips.map((s) => s.id).toList(), ['c', 'a', 'b']);
+      expect(r.why, 'do C');
+    });
+
+    test('empty result -> rule order, null why', () {
+      final r = applyRanking(rule, const RankResult());
+      expect(r.chips.map((s) => s.id).toList(), ['a', 'b', 'c']);
+      expect(r.why, isNull);
+    });
+
+    test('duplicate ids in order are taken once', () {
+      final r = applyRanking(rule, const RankResult(order: ['b', 'b', 'a']));
+      expect(r.chips.map((s) => s.id).toList(), ['b', 'a', 'c']);
     });
   });
 

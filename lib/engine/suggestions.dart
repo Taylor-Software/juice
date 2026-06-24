@@ -1,3 +1,5 @@
+import 'oracle_interpreter.dart';
+
 /// How a [Suggestion] resolves when tapped. The rail maps the suggestion's
 /// [Suggestion.id] to the concrete inline roll or navigation target; the
 /// engine stays free of UI/routing types.
@@ -43,4 +45,24 @@ List<Suggestion> suggestionsFor({
       const Suggestion('seed-npc', 'Add an NPC', SuggestionAction.navigate),
     ],
   ];
+}
+
+/// Reorders [ruleOrder] by an LLM [RankResult]: each known id once in the
+/// model's order, then any rule chips the model omitted appended (the set never
+/// shrinks); unknown ids are ignored (handlers always valid). `why` is the
+/// trimmed rationale, or null when empty. Pure.
+({List<Suggestion> chips, String? why}) applyRanking(
+    List<Suggestion> ruleOrder, RankResult llm) {
+  final byId = {for (final s in ruleOrder) s.id: s};
+  final seen = <String>{};
+  final ordered = <Suggestion>[];
+  for (final id in llm.order) {
+    final s = byId[id];
+    if (s != null && seen.add(id)) ordered.add(s);
+  }
+  for (final s in ruleOrder) {
+    if (seen.add(s.id)) ordered.add(s);
+  }
+  final why = llm.why.trim();
+  return (chips: ordered, why: why.isEmpty ? null : why);
 }
