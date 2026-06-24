@@ -12,6 +12,26 @@ JournalEntry _e(String id, String title, String body, String kind) =>
     });
 
 void main() {
+  group('activeSceneEntry', () {
+    final journal = [
+      _e('3', 'Scene Three', 'newest', 'scene'),
+      _e('2', 'Note', 'a note', 'text'),
+      _e('1', 'Scene One', 'oldest', 'scene'),
+    ];
+    test('pinned id present -> that scene', () {
+      expect(activeSceneEntry(journal, '1')?.title, 'Scene One');
+    });
+    test('null pin -> newest scene', () {
+      expect(activeSceneEntry(journal, null)?.title, 'Scene Three');
+    });
+    test('pin not found -> newest scene', () {
+      expect(activeSceneEntry(journal, 'zzz')?.title, 'Scene Three');
+    });
+    test('no scene entries -> null', () {
+      expect(activeSceneEntry([_e('2', 'Note', 'x', 'text')], '1'), isNull);
+    });
+  });
+
   test('fleshOutSeedFrom: name recall + newest scene + primer passthrough', () {
     // journal is newest-first
     final journal = [

@@ -74,6 +74,18 @@ final activeCharacterLineProvider = Provider<String>((ref) {
   return activeCharacterLine(c);
 });
 
+/// The campaign's current scene: the spine's pinned [activeSceneId] when set
+/// and present, else the newest scene entry (journal is newest-first), else
+/// null. The single source of truth for "which scene" across the HUD + AI seams.
+JournalEntry? activeSceneEntry(
+    List<JournalEntry> journal, String? activeSceneId) {
+  final scenes = journal.where((e) => e.kind == JournalKind.scene);
+  return (activeSceneId == null
+          ? null
+          : scenes.where((e) => e.id == activeSceneId).firstOrNull) ??
+      scenes.firstOrNull;
+}
+
 /// Pure: assemble a [FleshOutSeed] from already-read campaign state.
 /// `sceneTitle` = the newest scene entry's title (journal is newest-first);
 /// `journalContext` = entries mentioning [name] by text (name-query recall).
