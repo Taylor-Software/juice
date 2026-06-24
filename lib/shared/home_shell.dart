@@ -698,6 +698,9 @@ const kSystemBlurbs = <String, String>{
   'cairn':
       'Cairn: d20-under saves, HP as hit protection (avoidance), armor reduces damage, Deprived condition. '
           'Based on Cairn by Yochai Gal, CC BY-SA 4.0.',
+  'knave':
+      'Knave 2e: d20 + score >= 11 saves, wounds fill inventory slots, 10 + CON slot budget. No classes. '
+          'Based on Knave 2e by Ben Milton (Questing Beast), CC BY 4.0.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -725,6 +728,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _drawSteel = false;
   bool _argosa = false;
   bool _cairn = false;
+  bool _knave = false;
   bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
@@ -751,6 +755,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_drawSteel) 'draw-steel',
       if (_argosa) 'argosa',
       if (_cairn) 'cairn',
+      if (_knave) 'knave',
       if (_cards) 'cards',
     };
     Navigator.of(context).pop((
@@ -916,6 +921,14 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onChanged: (v) => setState(() => _cairn = v ?? false),
             ),
             CheckboxListTile(
+              key: const Key('sys-knave'),
+              title: const Text('Knave'),
+              subtitle: Text(kSystemBlurbs['knave']!,
+                  style: const TextStyle(fontSize: 11)),
+              value: _knave,
+              onChanged: (v) => setState(() => _knave = v!),
+            ),
+            CheckboxListTile(
               key: const Key('sys-cards'),
               title: const Text('Cards'),
               subtitle: Text(kSystemBlurbs['cards']!),
@@ -987,6 +1000,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('draw-steel', 'Draw Steel'),
             _row('argosa', 'Tales of Argosa'),
             _row('cairn', 'Cairn'),
+            _row('knave', 'Knave'),
             _row('cards', 'Cards'),
           ],
         ),

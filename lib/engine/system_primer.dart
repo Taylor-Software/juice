@@ -30,6 +30,8 @@ const Map<String, String> kSystemPrimers = {
       'Tales of Argosa: perilous sword & sorcery. Resolution: roll d20 under stat → Success; under half → Great Success; Luck = 10 + half level, degrades through the adventure.',
   'cairn':
       'Cairn: gritty OSR adventure. Saves: roll d20 equal or under stat to pass. HP is hit protection (avoidance); at 0 HP excess damage reduces STR. Deprived characters cannot heal.',
+  'knave':
+      'Knave 2e: classless OSR. Saves: d20 + ability score >= 11 to pass. No classes. Wounds fill inventory slots; 10 + CON slots total.',
 };
 
 /// Resolves a campaign's enabled [systems] + [rulesets] to one primer, or ''
@@ -44,6 +46,7 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('draw-steel')) return kSystemPrimers['draw-steel']!;
   if (systems.contains('argosa')) return kSystemPrimers['argosa']!;
   if (systems.contains('cairn')) return kSystemPrimers['cairn']!;
+  if (systems.contains('knave')) return kSystemPrimers['knave']!;
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) {
       return kSystemPrimers['sundered_isles']!;
@@ -64,6 +67,7 @@ String resolveSystem(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('draw-steel')) return 'draw-steel';
   if (systems.contains('argosa')) return 'argosa';
   if (systems.contains('cairn')) return 'cairn';
+  if (systems.contains('knave')) return 'knave';
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) return 'sundered_isles';
     if (rulesets.contains('starforged')) return 'starforged';
