@@ -188,6 +188,24 @@ void main() {
     });
   });
 
+  group('disposeSketchBackgroundLater', () {
+    test('null is a no-op', () {
+      expect(() => disposeSketchBackgroundLater(null), returnsNormally);
+    });
+    testWidgets('defers dispose past the editor pop, then releases it',
+        (tester) async {
+      final img = await _redImage();
+      disposeSketchBackgroundLater(img);
+      // The regression: disposing inline races the editor's exit transition
+      // (the painter keeps drawing the image for a few frames → "Cannot paint
+      // an image that is disposed"). It must still be live right after the call.
+      expect(img.debugDisposed, isFalse);
+      // ...and freed once the deferral elapses, so we don't leak it.
+      await tester.pump(const Duration(seconds: 1));
+      expect(img.debugDisposed, isTrue);
+    });
+  });
+
   for (final tool in ['line', 'rect', 'ellipse']) {
     testWidgets('$tool tool drag commits a stroke', (tester) async {
       SketchData? result;
