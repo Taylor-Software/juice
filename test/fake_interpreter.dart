@@ -43,6 +43,11 @@ class FakeInterpreterService implements InterpreterService {
   int fleshOutCalls = 0;
   Object? fleshOutError;
 
+  final List<RankResult> queuedRank = [];
+  RankSuggestionsSeed? lastRankSeed;
+  int rankCalls = 0;
+  Object? rankError;
+
   /// When set, interpret() blocks on it after counting the call — lets a
   /// test hold a generation in flight (e.g. to probe reentrancy guards).
   Completer<void>? interpretGate;
@@ -131,6 +136,15 @@ class FakeInterpreterService implements InterpreterService {
     if (fleshOutError != null) throw fleshOutError!;
     if (queuedFleshOut.isEmpty) return 'Fleshed-out detail.';
     return queuedFleshOut.removeAt(0);
+  }
+
+  @override
+  Future<RankResult> rankSuggestions(RankSuggestionsSeed seed) async {
+    lastRankSeed = seed;
+    rankCalls++;
+    if (rankError != null) throw rankError!;
+    if (queuedRank.isEmpty) return const RankResult();
+    return queuedRank.removeAt(0);
   }
 
   @override

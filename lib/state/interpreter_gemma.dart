@@ -213,6 +213,11 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   @override
+  Future<RankResult> rankSuggestions(RankSuggestionsSeed seed) async {
+    return parseRankResult(await _generate(buildRankPrompt(seed)));
+  }
+
+  @override
   Future<void> dispose() async {
     _disposed = true; // an in-flight warm-up must not resurrect us
     await _model?.close();

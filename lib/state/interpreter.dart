@@ -82,6 +82,10 @@ abstract class InterpreterService {
   /// text). Same readiness contract as the other seams. Requires ready.
   Future<String> fleshOut(FleshOutSeed seed);
 
+  /// Rank candidate suggestion chips for the current play state. Best-effort:
+  /// returns an empty [RankResult] rather than throwing on a model miss.
+  Future<RankResult> rankSuggestions(RankSuggestionsSeed seed);
+
   /// Free the native session (model stays on disk). Next use reloads.
   Future<void> dispose();
 }
