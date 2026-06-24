@@ -407,4 +407,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(iv().panEnabled, isFalse);
   });
+
+  testWidgets('reset-zoom restores the identity transform', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: SketchEditor(onDone: (_) {})),
+    ));
+    await tester.pumpAndSettle();
+    final tc = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    tc.value = Matrix4.identity()..scaleByDouble(2.0, 2.0, 2.0, 1.0);
+    expect(tc.value, isNot(Matrix4.identity()));
+    await tester.tap(find.byKey(const Key('sketch-zoom-reset')));
+    await tester.pumpAndSettle();
+    expect(tc.value, Matrix4.identity());
+  });
 }

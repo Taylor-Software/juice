@@ -269,6 +269,12 @@ class _SketchEditorState extends State<SketchEditor> {
         ),
         actions: [
           IconButton(
+            key: const Key('sketch-zoom-reset'),
+            icon: const Icon(Icons.zoom_out_map),
+            tooltip: 'Reset zoom',
+            onPressed: () => setState(() => _tc.value = Matrix4.identity()),
+          ),
+          IconButton(
             key: const Key('sketch-undo'),
             icon: const Icon(Icons.undo),
             tooltip: 'Undo',
