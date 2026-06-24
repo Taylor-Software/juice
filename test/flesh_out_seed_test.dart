@@ -90,4 +90,22 @@ void main() {
     expect(seed.sceneTitle, isNull);
     expect(seed.journalContext, isEmpty);
   });
+
+  test('fleshOutSeedFrom: activeSceneId pins an older scene as sceneTitle', () {
+    final journal = [
+      _e('s2', 'Newer Scene', 'recent', 'scene'),
+      _e('s1', 'Pinned Scene', 'older', 'scene'),
+    ];
+    final seed = fleshOutSeedFrom(
+      entityKind: 'NPC',
+      name: 'Vane',
+      existingDetail: '',
+      systemPrimer: '',
+      activeCharacter: '',
+      journal: journal,
+      activeSceneId: 's1',
+    );
+    expect(
+        seed.sceneTitle, 'Pinned Scene'); // the pinned older scene, not newest
+  });
 }
