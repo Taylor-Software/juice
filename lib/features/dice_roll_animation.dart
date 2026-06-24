@@ -80,7 +80,8 @@ class _DiceRollAnimationState extends State<DiceRollAnimation>
     final m = RegExp(r'd(F|%|\d+)', caseSensitive: false).firstMatch(g.label);
     final spec = m?.group(1)?.toLowerCase();
     if (spec == 'f') return const ['+', '−', '0'][_rng.nextInt(3)];
-    final sides = spec == '%' ? 100 : (int.tryParse(spec ?? '') ?? 6);
+    // d% is normalized to d100 at parse, so the label never carries '%' here.
+    final sides = int.tryParse(spec ?? '') ?? 6;
     return '${_rng.nextInt(sides) + 1}';
   }
 

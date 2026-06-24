@@ -35,4 +35,33 @@ void main() {
     expect(tester.widget<Text>(find.byKey(const Key('dice-total'))).data,
         '${result.total}');
   });
+
+  testWidgets('changing rollId mid-tumble replays then settles',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: DiceRollAnimation(result: result, rollId: 1)),
+    ));
+    await tester.pump(const Duration(milliseconds: 100)); // mid-tumble
+    final r2 = parseDice('1d20').roll(Dice(Random(2)));
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: DiceRollAnimation(result: r2, rollId: 2)),
+    ));
+    await tester
+        .pumpAndSettle(); // the replay settles (no hung/duplicate timer)
+    // dice-total now reflects the SECOND roll — proves the replay re-ran cleanly.
+    expect(tester.widget<Text>(find.byKey(const Key('dice-total'))).data,
+        '${r2.total}');
+  });
+
+  testWidgets('dropped dice settle struck-through', (tester) async {
+    final dropped = parseDice('4d6kh3').roll(Dice(Random(1))); // 1 die dropped
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: DiceRollAnimation(result: dropped, rollId: 1)),
+    ));
+    await tester.pumpAndSettle();
+    final struck = tester
+        .widgetList<Text>(find.byType(Text))
+        .where((t) => t.style?.decoration == TextDecoration.lineThrough);
+    expect(struck, isNotEmpty); // the dropped die's face
+  });
 }
