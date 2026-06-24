@@ -62,6 +62,14 @@ class _SettingsSheet extends ConsumerWidget {
               'MCDM Productions, LLC.',
               style: TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tales of Argosa text is used under Creative Commons '
+              'Attribution-ShareAlike 4.0 (CC BY-SA 4.0), '
+              '© Pickpocket Press / S J Grodzicki. '
+              'Not affiliated with Pickpocket Press.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),

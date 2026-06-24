@@ -93,6 +93,16 @@ Working rules for this repo:
   **Licensing:** Draw Steel Creator License (MCDM) permits apps + commercial use; required
   non-affiliation statement appears in `kSystemBlurbs['draw-steel']` + settings sheet. See
   `docs/superpowers/specs/2026-06-24-draw-steel-sheet-design.md`.
+- A facts-only **Tales of Argosa** sheet (`lib/features/argosa_sheet.dart`, rendered when
+  `Character.argosa` is set; opt-in `argosa` system, NOT in `kAllSystems`) follows the
+  Nimble/Draw Steel facts-only approach: authored mechanic constants only
+  (`kArgosaStats` / `kArgosaStatLabels` / `kArgosaClasses`) with skills/notes freeform.
+  Per-stat **roll-under** buttons (d20 ≤ stat → Success; ≤ half → Great Success; snackbar
+  shows "Strength: 7 — Success"; ephemeral, no journal log). **Luck** stepper with Reset
+  button (resets to `10 + ⌈level/2⌉`). Computed **Stagger** badge (shows when
+  `currentHp * 2 <= maxHp && currentHp > 0`). **Licensing:** CC BY-SA 4.0 (Pickpocket
+  Press / S J Grodzicki); attribution in `kSystemBlurbs['argosa']` + settings sheet. See
+  `docs/superpowers/specs/2026-06-24-argosa-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting

@@ -1640,6 +1640,129 @@ class DrawSteelSheet {
   }
 }
 
+// ── Tales of Argosa ──────────────────────────────────────────────────────────
+
+const kArgosaStats = <String>['str', 'dex', 'con', 'int', 'per', 'wil', 'cha'];
+
+const kArgosaStatLabels = <String, String>{
+  'str': 'Strength',
+  'dex': 'Dexterity',
+  'con': 'Constitution',
+  'int': 'Intelligence',
+  'per': 'Perception',
+  'wil': 'Willpower',
+  'cha': 'Charisma',
+};
+
+const kArgosaClasses = <String>[
+  'Artificer',
+  'Barbarian',
+  'Bard',
+  'Cultist',
+  'Fighter',
+  'Magic-User',
+  'Monk',
+  'Ranger',
+  'Rogue',
+];
+
+class ArgosaSheet {
+  const ArgosaSheet({
+    this.className = 'Fighter',
+    this.level = 1,
+    this.stats = const {
+      'str': 10,
+      'dex': 10,
+      'con': 10,
+      'int': 10,
+      'per': 10,
+      'wil': 10,
+      'cha': 10,
+    },
+    this.maxHp = 1,
+    this.currentHp = 1,
+    this.luck = 11,
+    this.rescues = 0,
+    this.skills = '',
+    this.notes = '',
+  });
+
+  final String className;
+  final int level;
+  final Map<String, int> stats;
+  final int maxHp;
+  final int currentHp;
+  final int luck;
+  final int rescues;
+  final String skills;
+  final String notes;
+
+  int get resetLuck => 10 + (level / 2).ceil();
+
+  ArgosaSheet copyWith({
+    String? className,
+    int? level,
+    Map<String, int>? stats,
+    int? maxHp,
+    int? currentHp,
+    int? luck,
+    int? rescues,
+    String? skills,
+    String? notes,
+  }) {
+    final cls = className ?? this.className;
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    return ArgosaSheet(
+      className: kArgosaClasses.contains(cls) ? cls : kArgosaClasses.first,
+      level: (level ?? this.level).clamp(1, 9),
+      stats: {
+        for (final k in kArgosaStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      luck: (luck ?? this.luck).clamp(0, 99),
+      rescues: (rescues ?? this.rescues).clamp(0, 99),
+      skills: skills ?? this.skills,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'className': className,
+        'level': level,
+        'stats': stats,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'luck': luck,
+        'rescues': rescues,
+        'skills': skills,
+        'notes': notes,
+      };
+
+  static ArgosaSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? {};
+    return ArgosaSheet(
+      className: kArgosaClasses.contains(j['className'])
+          ? j['className'] as String
+          : kArgosaClasses.first,
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 9),
+      stats: {
+        for (final k in kArgosaStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      maxHp: (j['maxHp'] as num?)?.round() ?? 1,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 1,
+      luck: ((j['luck'] as num?)?.round() ?? 11).clamp(0, 99),
+      rescues: ((j['rescues'] as num?)?.round() ?? 0).clamp(0, 99),
+      skills: j['skills'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2384,6 +2507,7 @@ class Character {
     this.shadowdark,
     this.nimble,
     this.drawSteel,
+    this.argosa,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2416,6 +2540,9 @@ class Character {
   /// Bespoke Draw Steel sheet; null unless this is a Draw Steel hero.
   final DrawSteelSheet? drawSteel;
 
+  /// Bespoke Tales of Argosa sheet; null unless this is an Argosa PC.
+  final ArgosaSheet? argosa;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2446,6 +2573,8 @@ class Character {
     bool clearNimble = false,
     DrawSteelSheet? drawSteel,
     bool clearDrawSteel = false,
+    ArgosaSheet? argosa,
+    bool clearArgosa = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2464,6 +2593,7 @@ class Character {
         shadowdark: clearShadowdark ? null : (shadowdark ?? this.shadowdark),
         nimble: clearNimble ? null : (nimble ?? this.nimble),
         drawSteel: clearDrawSteel ? null : (drawSteel ?? this.drawSteel),
+        argosa: clearArgosa ? null : (argosa ?? this.argosa),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2498,6 +2628,11 @@ class Character {
               currentStamina: (drawSteel!.currentStamina + delta)
                   .clamp(0, drawSteel!.maxStamina)));
     }
+    if (argosa != null) {
+      return copyWith(
+          argosa: argosa!.copyWith(
+              currentHp: (argosa!.currentHp + delta).clamp(0, argosa!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -2523,6 +2658,7 @@ class Character {
         if (shadowdark != null) 'shadowdark': shadowdark!.toJson(),
         if (nimble != null) 'nimble': nimble!.toJson(),
         if (drawSteel != null) 'drawSteel': drawSteel!.toJson(),
+        if (argosa != null) 'argosa': argosa!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2548,6 +2684,7 @@ class Character {
         shadowdark: ShadowdarkSheet.maybeFromJson(j['shadowdark']),
         nimble: NimbleSheet.maybeFromJson(j['nimble']),
         drawSteel: DrawSteelSheet.maybeFromJson(j['drawSteel']),
+        argosa: ArgosaSheet.maybeFromJson(j['argosa']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])

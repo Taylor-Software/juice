@@ -692,6 +692,9 @@ const kSystemBlurbs = <String, String>{
   'draw-steel':
       'Draw Steel hero sheet: characteristics, stamina, heroic resource, power rolls. '
           'Independent product; not affiliated with MCDM Productions, LLC.',
+  'argosa':
+      'Tales of Argosa: roll d20 under stat (under half = Great Success), Luck degrades each adventure. '
+          'Based on Tales of Argosa by Pickpocket Press (S J Grodzicki), CC BY-SA 4.0.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -717,6 +720,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _shadowdark = false;
   bool _nimble = false;
   bool _drawSteel = false;
+  bool _argosa = false;
   bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
@@ -741,6 +745,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_shadowdark) 'shadowdark',
       if (_nimble) 'nimble',
       if (_drawSteel) 'draw-steel',
+      if (_argosa) 'argosa',
       if (_cards) 'cards',
     };
     Navigator.of(context).pop((
@@ -892,6 +897,13 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onChanged: (v) => setState(() => _drawSteel = v ?? false),
             ),
             CheckboxListTile(
+              key: const Key('sys-argosa'),
+              title: const Text('Tales of Argosa'),
+              subtitle: Text(kSystemBlurbs['argosa']!),
+              value: _argosa,
+              onChanged: (v) => setState(() => _argosa = v ?? false),
+            ),
+            CheckboxListTile(
               key: const Key('sys-cards'),
               title: const Text('Cards'),
               subtitle: Text(kSystemBlurbs['cards']!),
@@ -961,6 +973,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('shadowdark', 'Shadowdark'),
             _row('nimble', 'Nimble'),
             _row('draw-steel', 'Draw Steel'),
+            _row('argosa', 'Tales of Argosa'),
             _row('cards', 'Cards'),
           ],
         ),
