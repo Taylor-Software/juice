@@ -113,6 +113,15 @@ Working rules for this repo:
   damage reduces STR (player-managed). **Licensing:** CC BY-SA 4.0 (Yochai Gal); attribution
   in `kSystemBlurbs['cairn']` + settings sheet. See
   `docs/superpowers/specs/2026-06-24-cairn-sheet-design.md`.
+- A facts-only **Knave 2e** sheet (`lib/features/knave_sheet.dart`, rendered when
+  `Character.knave` is set; opt-in `knave` system, NOT in `kAllSystems`). Authored
+  constants: `kKnaveStats` / `kKnaveStatLabels` (6 stats STR/DEX/CON/INT/WIS/CHA,
+  scores 0-10 = modifiers in Knave 2e). Per-stat **save** buttons (d20 + score >= 11
+  → Pass; snackbar "STR: 14 — Pass"; ephemeral). **Wounds** stepper. **Inventory
+  slots** computed badge (`10 + CON`). Armor class (AC) stepper. Career freeform
+  (no mechanical effect in 2e). **Licensing:** CC BY 4.0 (Ben Milton / Questing
+  Beast); attribution in `kSystemBlurbs['knave']` + settings sheet. See
+  `docs/superpowers/specs/2026-06-24-knave-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting

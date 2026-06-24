@@ -76,6 +76,13 @@ class _SettingsSheet extends ConsumerWidget {
               '(CC BY-SA 4.0), © Yochai Gal. Not affiliated with Yochai Gal.',
               style: TextStyle(fontSize: 12),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Knave 2e text is used under Creative Commons Attribution 4.0 '
+              '(CC BY 4.0), © Ben Milton (Questing Beast). '
+              'Not affiliated with Questing Beast.',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),
