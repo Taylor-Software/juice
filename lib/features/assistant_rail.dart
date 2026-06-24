@@ -75,6 +75,11 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     setState(() {
       _rankCache[sig] = result;
       if (_rankingSig == sig) _rankingSig = null;
+      // Bound the cache — the signature changes on every new journal entry, so
+      // keep only the most-recent few (insertion-ordered; drop the oldest).
+      while (_rankCache.length > 8) {
+        _rankCache.remove(_rankCache.keys.first);
+      }
     });
   }
 
