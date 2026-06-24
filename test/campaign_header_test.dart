@@ -312,4 +312,21 @@ void main() {
     final entries = await container.read(journalProvider.future);
     expect(entries.where((e) => e.sourceTool == 'cards'), hasLength(1));
   });
+
+  testWidgets('light timer: inc lights it, dec darkens, out at 0',
+      (tester) async {
+    await _pump(tester, data, _prefs()); // a bare campaign — ungated
+    expect(find.text('Light: out'), findsOneWidget); // default 0
+    expect(
+        tester
+            .widget<IconButton>(find.byKey(const Key('hdr-light-dec')))
+            .onPressed,
+        isNull); // dec disabled at 0
+    await tester.tap(find.byKey(const Key('hdr-light-inc')));
+    await tester.pumpAndSettle();
+    expect(find.text('Light 1'), findsOneWidget); // lit
+    await tester.tap(find.byKey(const Key('hdr-light-dec')));
+    await tester.pumpAndSettle();
+    expect(find.text('Light: out'), findsOneWidget);
+  });
 }

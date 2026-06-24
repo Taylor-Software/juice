@@ -45,6 +45,7 @@ class CampaignHeader extends ConsumerWidget {
             kAllSystems;
     final usesMythic = systems.contains('mythic');
     final theme = Theme.of(context);
+    final light = ref.watch(lightProvider).valueOrNull ?? 0;
     final collapsed = settings.headerCollapsed;
     return Container(
       key: const Key('campaign-header'),
@@ -110,6 +111,32 @@ class CampaignHeader extends ConsumerWidget {
                 runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
+                  // Global light timer — ungated (every campaign, every verb);
+                  // a neutral player-controlled countdown, no duration asserted.
+                  InputChip(
+                    avatar: Icon(Icons.local_fire_department,
+                        size: 16,
+                        color: light > 0
+                            ? theme.colorScheme.primary
+                            : theme.colorScheme.onSurfaceVariant),
+                    label: Text(light > 0 ? 'Light $light' : 'Light: out'),
+                    onPressed: null,
+                  ),
+                  IconButton(
+                    key: const Key('hdr-light-dec'),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.remove, size: 18),
+                    onPressed: light > 0
+                        ? () => ref.read(lightProvider.notifier).set(light - 1)
+                        : null,
+                  ),
+                  IconButton(
+                    key: const Key('hdr-light-inc'),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add, size: 18),
+                    onPressed: () =>
+                        ref.read(lightProvider.notifier).set(light + 1),
+                  ),
                   if (usesMythic && crawl != null) ...[
                     InputChip(
                       label: Text('Chaos ${crawl.chaosFactor}'),
