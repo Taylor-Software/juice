@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
 import 'gm_chat_screen.dart';
@@ -25,10 +28,54 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
   // reveals the suggestion chips + ask-the-GM box.
   bool _expanded = false;
 
+  // LLM ranking, cached by a play-state signature so we call the model only
+  // when the state actually changes. Empty cached result = keep rule order.
+  final Map<String, RankResult> _rankCache = {};
+  String? _rankingSig; // signature currently in flight
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  String _signature(List<JournalEntry> journal, List<Suggestion> candidates) {
+    final top = journal.isEmpty ? '' : journal.first.id;
+    final scene = journal
+            .where((e) => e.kind == JournalKind.scene)
+            .map((e) => e.id)
+            .firstOrNull ??
+        '';
+    return '$top|$scene|${candidates.map((s) => s.id).join(',')}';
+  }
+
+  Future<void> _maybeRank(String sig, List<JournalEntry> journal,
+      List<Suggestion> candidates) async {
+    if (_rankCache.containsKey(sig) || _rankingSig == sig) return;
+    _rankingSig = sig;
+    final scene =
+        journal.where((e) => e.kind == JournalKind.scene).firstOrNull ??
+            journal.firstOrNull;
+    final seed = RankSuggestionsSeed(
+      candidates: [for (final s in candidates) (id: s.id, label: s.label)],
+      systemPrimer: ref.read(systemPrimerProvider),
+      sceneTitle: scene == null
+          ? null
+          : (scene.title.isEmpty ? scene.body : scene.title),
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      journalContext: scene == null ? const [] : recallLines(journal, scene),
+    );
+    RankResult result;
+    try {
+      result = await ref.read(interpreterServiceProvider).rankSuggestions(seed);
+    } catch (_) {
+      result = const RankResult(); // fall back to rule order; don't retry-loop
+    }
+    if (!mounted) return;
+    setState(() {
+      _rankCache[sig] = result;
+      if (_rankingSig == sig) _rankingSig = null;
+    });
   }
 
   Future<void> _ask() async {
@@ -78,6 +125,20 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     // enabled in Settings. Rule-based suggestion chips stay regardless.
     final aiReady = ref.watch(aiReadyProvider);
     final theme = Theme.of(context);
+    final journal =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final sig = _signature(journal, suggestions);
+    if (_expanded &&
+        aiReady &&
+        !_rankCache.containsKey(sig) &&
+        _rankingSig != sig) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _maybeRank(sig, journal, suggestions);
+      });
+    }
+    final ranked = (aiReady && _rankCache[sig] != null)
+        ? applyRanking(suggestions, _rankCache[sig]!)
+        : (chips: suggestions, why: null);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -114,7 +175,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final s in suggestions)
+                    for (final s in ranked.chips)
                       ActionChip(
                         key: Key('suggest-${s.id}'),
                         label: Text(s.label),
@@ -122,6 +183,13 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                       ),
                   ],
                 ),
+                if (ranked.why != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text('💡 ${ranked.why}',
+                        key: const Key('suggest-why'),
+                        style: theme.textTheme.bodySmall),
+                  ),
                 if (aiReady) ...[
                   const SizedBox(height: 8),
                   Row(
