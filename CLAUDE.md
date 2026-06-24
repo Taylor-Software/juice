@@ -342,6 +342,14 @@ Working rules for this repo:
   `/spread` command draws a spread, arg-selected — `/spread celtic` — via the
   pure `resolveSpread` + `DecksNotifier.drawSpreadAndLog`.) See
   `docs/superpowers/specs/2026-06-22-dice-reroll-card-oracles-design.md`.
+  The dice roller's result card animates each roll via `DiceRollAnimation`
+  (`lib/features/dice_roll_animation.dart`) — a no-deps tumble (`AnimationController`
+  + a face-flash `Timer` cancelled on settle + dispose) that flashes random faces
+  then settles on the rolled `display`s, total revealing after; honors
+  `MediaQuery.disableAnimations` (reduced-motion → instant). Roller screen only
+  (inline journal-dice + HUD quick-roll stay instant). Settled/reduced-motion/
+  replay/dropped-die states are widget-tested; the tumble feel is device-verified.
+  See `docs/superpowers/specs/2026-06-24-animated-dice-design.md`.
 - Stack is deliberately lean: `flutter_riverpod` + `shared_preferences` +
   `file_picker` (campaign file export/import) + `flutter_gemma` (on-device
   oracle interpreter; service seam in `lib/state/interpreter.dart`, tests
