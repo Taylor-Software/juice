@@ -1993,6 +1993,170 @@ class KnaveSheet {
   }
 }
 
+// ── Old-School Essentials (B/X) ──────────────────────────────────────────────
+
+const kOseStats = <String>['str', 'int', 'wis', 'dex', 'con', 'cha'];
+
+const kOseStatLabels = <String, String>{
+  'str': 'STR',
+  'int': 'INT',
+  'wis': 'WIS',
+  'dex': 'DEX',
+  'con': 'CON',
+  'cha': 'CHA',
+};
+
+const kOseClasses = <String>[
+  'Cleric',
+  'Fighter',
+  'Magic-User',
+  'Thief',
+  'Dwarf',
+  'Elf',
+  'Halfling',
+];
+
+const kOseSaveKeys = <String>[
+  'death',
+  'wands',
+  'paralysis',
+  'breath',
+  'spells',
+];
+
+const kOseSaveLabels = <String, String>{
+  'death': 'Death/Poison',
+  'wands': 'Wands',
+  'paralysis': 'Paralysis/Petrify',
+  'breath': 'Breath',
+  'spells': 'Spells/Rods/Staves',
+};
+
+const kOseAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
+
+class OseSheet {
+  const OseSheet({
+    this.className = 'Fighter',
+    this.level = 1,
+    this.xp = '',
+    this.alignment = 'Neutral',
+    this.stats = const {
+      'str': 10,
+      'int': 10,
+      'wis': 10,
+      'dex': 10,
+      'con': 10,
+      'cha': 10,
+    },
+    this.saves = const {
+      'death': 12,
+      'wands': 13,
+      'paralysis': 14,
+      'breath': 15,
+      'spells': 16,
+    },
+    this.maxHp = 4,
+    this.currentHp = 4,
+    this.ac = 9,
+    this.thac0 = 19,
+    this.coins = '',
+    this.notes = '',
+  });
+
+  final String className;
+  final int level;
+  final String xp;
+  final String alignment;
+  final Map<String, int> stats;
+  final Map<String, int> saves;
+  final int maxHp;
+  final int currentHp;
+  final int ac;
+  final int thac0;
+  final String coins;
+  final String notes;
+
+  OseSheet copyWith({
+    String? className,
+    int? level,
+    String? xp,
+    String? alignment,
+    Map<String, int>? stats,
+    Map<String, int>? saves,
+    int? maxHp,
+    int? currentHp,
+    int? ac,
+    int? thac0,
+    String? coins,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    final sv = saves ?? this.saves;
+    return OseSheet(
+      className: className ?? this.className,
+      level: (level ?? this.level).clamp(1, 20),
+      xp: xp ?? this.xp,
+      alignment: alignment ?? this.alignment,
+      stats: {
+        for (final k in kOseStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      saves: {
+        for (final k in kOseSaveKeys)
+          k: ((sv[k] ?? 12) as num).round().clamp(2, 20),
+      },
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      ac: ac ?? this.ac,
+      thac0: thac0 ?? this.thac0,
+      coins: coins ?? this.coins,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'className': className,
+        'level': level,
+        'xp': xp,
+        'alignment': alignment,
+        'stats': stats,
+        'saves': saves,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'ac': ac,
+        'thac0': thac0,
+        'coins': coins,
+        'notes': notes,
+      };
+
+  static OseSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? {};
+    final sv = (j['saves'] as Map?) ?? {};
+    return OseSheet(
+      className: j['className'] as String? ?? 'Fighter',
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 20),
+      xp: j['xp'] as String? ?? '',
+      alignment: j['alignment'] as String? ?? 'Neutral',
+      stats: {
+        for (final k in kOseStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      saves: {
+        for (final k in kOseSaveKeys)
+          k: ((sv[k] ?? 12) as num).round().clamp(2, 20),
+      },
+      maxHp: (j['maxHp'] as num?)?.round() ?? 4,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 4,
+      ac: (j['ac'] as num?)?.round() ?? 9,
+      thac0: (j['thac0'] as num?)?.round() ?? 19,
+      coins: j['coins'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2740,6 +2904,7 @@ class Character {
     this.argosa,
     this.cairn,
     this.knave,
+    this.ose,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2781,6 +2946,9 @@ class Character {
   /// Bespoke Knave sheet; null unless this is a Knave PC.
   final KnaveSheet? knave;
 
+  /// Bespoke Old-School Essentials sheet; null unless this is an OSE PC.
+  final OseSheet? ose;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2817,6 +2985,8 @@ class Character {
     bool clearCairn = false,
     KnaveSheet? knave,
     bool clearKnave = false,
+    OseSheet? ose,
+    bool clearOse = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -2838,6 +3008,7 @@ class Character {
         argosa: clearArgosa ? null : (argosa ?? this.argosa),
         cairn: clearCairn ? null : (cairn ?? this.cairn),
         knave: clearKnave ? null : (knave ?? this.knave),
+        ose: clearOse ? null : (ose ?? this.ose),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -2887,6 +3058,11 @@ class Character {
           knave: knave!.copyWith(
               currentHp: (knave!.currentHp + delta).clamp(0, knave!.maxHp)));
     }
+    if (ose != null) {
+      return copyWith(
+          ose: ose!.copyWith(
+              currentHp: (ose!.currentHp + delta).clamp(0, ose!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -2915,6 +3091,7 @@ class Character {
         if (argosa != null) 'argosa': argosa!.toJson(),
         if (cairn != null) 'cairn': cairn!.toJson(),
         if (knave != null) 'knave': knave!.toJson(),
+        if (ose != null) 'ose': ose!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -2943,6 +3120,7 @@ class Character {
         argosa: ArgosaSheet.maybeFromJson(j['argosa']),
         cairn: CairnSheet.maybeFromJson(j['cairn']),
         knave: KnaveSheet.maybeFromJson(j['knave']),
+        ose: OseSheet.maybeFromJson(j['ose']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
