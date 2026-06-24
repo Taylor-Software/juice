@@ -8,6 +8,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
+import 'argosa_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
@@ -226,6 +227,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.argosa != null) {
+                return ArgosaSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.drawSteel != null) {
                 return DrawSteelSheetView(
                   character: c,
@@ -402,7 +414,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('dnd') &&
         !systems.contains('shadowdark') &&
         !systems.contains('nimble') &&
-        !systems.contains('draw-steel')) {
+        !systems.contains('draw-steel') &&
+        !systems.contains('argosa')) {
       await _addCharacter(context);
       return;
     }
@@ -464,6 +477,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Draw Steel',
           blurb: 'Characteristics, stamina, heroic resource, power rolls.'
         ),
+      if (systems.contains('argosa'))
+        (
+          key: 'new-argosa',
+          value: 'argosa',
+          label: 'Tales of Argosa',
+          blurb: 'Stats, Luck, roll-under checks, Stagger.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -491,11 +511,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                 if (!systems.contains('dnd') ||
                     !systems.contains('shadowdark') ||
                     !systems.contains('nimble') ||
-                    !systems.contains('draw-steel'))
+                    !systems.contains('draw-steel') ||
+                    !systems.contains('argosa'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, or Draw Steel in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, or Tales of Argosa in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -530,6 +551,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newNimble();
     } else if (choice == 'draw-steel') {
       await _newDrawSteel();
+    } else if (choice == 'argosa') {
+      await _newArgosa();
     }
   }
 
@@ -572,6 +595,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newDrawSteel() async {
     final id = await ref.read(charactersProvider.notifier).addDrawSteel();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newArgosa() async {
+    final id = await ref.read(charactersProvider.notifier).addArgosa();
     if (mounted) setState(() => _editingId = id);
   }
 
