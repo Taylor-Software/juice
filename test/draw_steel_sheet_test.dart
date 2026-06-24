@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   test('DrawSteelSheet round-trips toJson/maybeFromJson', () {
@@ -75,5 +76,11 @@ void main() {
 
     final overkill = c.withHpDelta(-999);
     expect(overkill.drawSteel!.currentStamina, 0);
+  });
+
+  test('kSystemBlurbs draw-steel contains MCDM disclaimer', () {
+    final blurb = kSystemBlurbs['draw-steel'] ?? '';
+    expect(blurb, contains('MCDM Productions'));
+    expect(blurb.toLowerCase(), contains('not affiliated'));
   });
 }

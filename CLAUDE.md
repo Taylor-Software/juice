@@ -84,6 +84,15 @@ Working rules for this repo:
   License + the SRD-5.1/WotC attribution chain) is genuinely allowed later — P1
   stays facts-only for consistency + speed. See
   `docs/superpowers/specs/2026-06-24-nimble-sheet-design.md`.
+- A facts-only **Draw Steel** sheet (`lib/features/draw_steel_sheet.dart`, rendered when
+  `Character.drawSteel` is set; opt-in `draw-steel` system, NOT in `kAllSystems`) follows
+  the Nimble facts-only approach: authored mechanic constants only
+  (`kDrawSteelCharacteristics` / `kDrawSteelClasses` / `kDrawSteelHeroicResource`) with
+  ancestry/skills/notes freeform. Per-characteristic **power roll** buttons (2d10 + score
+  → snackbar: "Might: 14 — Tier 2"; tiers ≤11/12-16/≥17; ephemeral, no journal log).
+  **Licensing:** Draw Steel Creator License (MCDM) permits apps + commercial use; required
+  non-affiliation statement appears in `kSystemBlurbs['draw-steel']` + settings sheet. See
+  `docs/superpowers/specs/2026-06-24-draw-steel-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
