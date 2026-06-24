@@ -27,6 +27,7 @@ import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/providers.dart';
 
 import '../test/fake_interpreter.dart';
 
@@ -39,7 +40,8 @@ Future<Oracle> _oracle() async {
 /// Pump the real HomeShell with a seeded AI-enabled campaign + the fake
 /// interpreter. HomeShell lands on the Journal verb (its `build` default), which
 /// hosts the assistant rail + the journal composer.
-Future<FakeInterpreterService> _pumpShell(WidgetTester tester,
+Future<(ProviderContainer, FakeInterpreterService)> _pumpShell(
+    WidgetTester tester,
     {Map<String, Object> extraPrefs = const {}}) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
@@ -58,7 +60,8 @@ Future<FakeInterpreterService> _pumpShell(WidgetTester tester,
     ),
   ));
   await tester.pumpAndSettle();
-  return fake;
+  final c = ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+  return (c, fake);
 }
 
 void main() {
@@ -93,7 +96,7 @@ void main() {
 
   testWidgets('ranked chips: expanding the rail shows the AI why caption',
       (tester) async {
-    final fake = await _pumpShell(tester);
+    final (_, fake) = await _pumpShell(tester);
     fake.queuedRank.add(const RankResult(
         order: ['scene-event', 'roll-oracle'], why: 'The scene is live'));
     await tester.tap(find.byKey(const Key('assistant-expand')));
@@ -118,5 +121,47 @@ void main() {
     await tester.pumpAndSettle();
     // The fake's default flesh-out text now shows in the scene row subtitle.
     expect(find.textContaining('Fleshed-out detail.'), findsWidgets);
+  });
+
+  // The #146 character + thread flesh-out use the _EditDialog append path (not
+  // showFleshOutReview), so they add coverage the scene test doesn't.
+
+  testWidgets('character flesh-out: Sheet roster appends to the note',
+      (tester) async {
+    final (c, _) = await _pumpShell(tester, extraPrefs: {
+      'juice.characters.v1.default':
+          '[{"id":"ch1","name":"Ash","note":"A scout.","stats":[],"tracks":[],"tags":[],"role":"npc"}]',
+    });
+    await tester.tap(find.text('Sheet'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash')); // open the character sheet
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('flesh-out-character')));
+    await tester
+        .pumpAndSettle(); // fleshOut() + the _EditDialog (note appended)
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final chars = c.read(charactersProvider).valueOrNull!;
+    expect(chars.single.note, contains('A scout.')); // preserved
+    expect(chars.single.note, contains('Fleshed-out detail.')); // appended
+  });
+
+  testWidgets('thread flesh-out: Track > Threads appends to the note',
+      (tester) async {
+    final (c, _) = await _pumpShell(tester, extraPrefs: {
+      'juice.threads.v1.default':
+          '[{"id":"t1","title":"Find the Relic","note":"Rumored lost.","open":true}]',
+    });
+    await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Threads')); // Track defaults to Scenes; switch
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('flesh-out-thread-t1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final threads = c.read(threadsProvider).valueOrNull!;
+    expect(threads.single.note, contains('Rumored lost.')); // preserved
+    expect(threads.single.note, contains('Fleshed-out detail.')); // appended
   });
 }
