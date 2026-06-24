@@ -39,23 +39,19 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     super.dispose();
   }
 
-  String _signature(List<JournalEntry> journal, List<Suggestion> candidates) {
+  String _signature(List<JournalEntry> journal, List<Suggestion> candidates,
+      String? activeSceneId) {
     final top = journal.isEmpty ? '' : journal.first.id;
-    final scene = journal
-            .where((e) => e.kind == JournalKind.scene)
-            .map((e) => e.id)
-            .firstOrNull ??
-        '';
+    final scene = activeSceneEntry(journal, activeSceneId)?.id ?? '';
     return '$top|$scene|${candidates.map((s) => s.id).join(',')}';
   }
 
   Future<void> _maybeRank(String sig, List<JournalEntry> journal,
-      List<Suggestion> candidates) async {
+      List<Suggestion> candidates, String? activeSceneId) async {
     if (_rankCache.containsKey(sig) || _rankingSig == sig) return;
     _rankingSig = sig;
     final scene =
-        journal.where((e) => e.kind == JournalKind.scene).firstOrNull ??
-            journal.firstOrNull;
+        activeSceneEntry(journal, activeSceneId) ?? journal.firstOrNull;
     final seed = RankSuggestionsSeed(
       candidates: [for (final s in candidates) (id: s.id, label: s.label)],
       systemPrimer: ref.read(systemPrimerProvider),
@@ -132,13 +128,15 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     final theme = Theme.of(context);
     final journal =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
-    final sig = _signature(journal, suggestions);
+    final activeSceneId =
+        ref.watch(playContextProvider).valueOrNull?.activeSceneId;
+    final sig = _signature(journal, suggestions, activeSceneId);
     if (_expanded &&
         aiReady &&
         !_rankCache.containsKey(sig) &&
         _rankingSig != sig) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _maybeRank(sig, journal, suggestions);
+        if (mounted) _maybeRank(sig, journal, suggestions, activeSceneId);
       });
     }
     final ranked = (aiReady && _rankCache[sig] != null)
