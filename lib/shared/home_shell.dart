@@ -701,6 +701,8 @@ const kSystemBlurbs = <String, String>{
   'knave':
       'Knave 2e: d20 + score >= 11 saves, wounds fill inventory slots, 10 + CON slot budget. No classes. '
           'Based on Knave 2e by Ben Milton (Questing Beast), CC BY 4.0.',
+  'ose': 'OSE/B/X: classic fantasy with 7 classes, 5 saving throws, descending AC, THAC0. '
+      'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -729,6 +731,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   bool _argosa = false;
   bool _cairn = false;
   bool _knave = false;
+  bool _ose = false;
   bool _cards = false;
   CampaignMode _mode = CampaignMode.party;
 
@@ -756,6 +759,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       if (_argosa) 'argosa',
       if (_cairn) 'cairn',
       if (_knave) 'knave',
+      if (_ose) 'ose',
       if (_cards) 'cards',
     };
     Navigator.of(context).pop((
@@ -929,6 +933,14 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onChanged: (v) => setState(() => _knave = v!),
             ),
             CheckboxListTile(
+              key: const Key('sys-ose'),
+              title: const Text('OSE / B/X'),
+              subtitle: Text(kSystemBlurbs['ose']!,
+                  style: const TextStyle(fontSize: 11)),
+              value: _ose,
+              onChanged: (v) => setState(() => _ose = v!),
+            ),
+            CheckboxListTile(
               key: const Key('sys-cards'),
               title: const Text('Cards'),
               subtitle: Text(kSystemBlurbs['cards']!),
@@ -1001,6 +1013,7 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
             _row('argosa', 'Tales of Argosa'),
             _row('cairn', 'Cairn'),
             _row('knave', 'Knave'),
+            _row('ose', 'OSE / B/X'),
             _row('cards', 'Cards'),
           ],
         ),

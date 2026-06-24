@@ -11,6 +11,7 @@ import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
 import 'knave_sheet.dart';
+import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
@@ -220,6 +221,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               }
               if (c.shadowdark != null) {
                 return ShadowdarkSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
+              if (c.ose != null) {
+                return OseSheetView(
                   character: c,
                   onBack: () {
                     ref
@@ -441,7 +453,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('draw-steel') &&
         !systems.contains('argosa') &&
         !systems.contains('cairn') &&
-        !systems.contains('knave')) {
+        !systems.contains('knave') &&
+        !systems.contains('ose')) {
       await _addCharacter(context);
       return;
     }
@@ -510,6 +523,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Tales of Argosa',
           blurb: 'Stats, Luck, roll-under checks, Stagger.'
         ),
+      if (systems.contains('ose'))
+        (
+          key: 'new-ose',
+          value: 'ose',
+          label: 'OSE / B/X',
+          blurb: 'Stats, 5 saves (descending targets), descending AC, THAC0.'
+        ),
       if (systems.contains('knave'))
         (
           key: 'new-knave',
@@ -554,11 +574,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     !systems.contains('draw-steel') ||
                     !systems.contains('argosa') ||
                     !systems.contains('cairn') ||
-                    !systems.contains('knave'))
+                    !systems.contains('knave') ||
+                    !systems.contains('ose'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, or Knave in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, or OSE in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -599,6 +620,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newKnave();
     } else if (choice == 'cairn') {
       await _newCairn();
+    } else if (choice == 'ose') {
+      await _newOse();
     }
   }
 
@@ -656,6 +679,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newKnave() async {
     final id = await ref.read(charactersProvider.notifier).addKnave();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newOse() async {
+    final id = await ref.read(charactersProvider.notifier).addOse();
     if (mounted) setState(() => _editingId = id);
   }
 
