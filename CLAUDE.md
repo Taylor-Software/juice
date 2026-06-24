@@ -394,8 +394,19 @@ Working rules for this repo:
   is device-verified only (native/WASM), not unit-tested. See
   `docs/superpowers/specs/2026-06-19-pdf-annotation-pdfrx-design.md`. Deferred:
   web PDF import (pdfium WASM), sharper re-render from provenance, blob GC for
-  orphans, shapes/text/layers/pan-zoom. No licensed content (user-drawn vectors +
-  user-imported images/PDFs; never bundled rulebooks).
+  orphans, layers. No licensed content (user-drawn vectors +
+  user-imported images/PDFs; never bundled rulebooks). **Pan-zoom shipped:** a
+  `_SketchTool.pan` hand tool wraps the canvas in an `InteractiveViewer`
+  (`TransformationController _tc`, `panEnabled`/`scaleEnabled` gated on the tool,
+  `minScale 1`/`maxScale 6`). To keep `InteractiveViewer`'s greedy internal
+  recognizers from stealing draw gestures, the nesting is `GestureDetector`
+  (outer, draw handlers gated) → `AbsorbPointer(absorbing: !isPan)` →
+  `InteractiveViewer` → `CustomPaint`; every gesture point is un-transformed via
+  `_tc.toScene` so strokes record canvas (not viewport) coords at any zoom. A
+  `sketch-zoom-reset` app-bar button refits. View-only (no `SketchData`/export
+  change). Tool-flip + reset + draw-while-zoomed coords are widget-tested; the
+  pan/zoom feel is device-verified. See
+  `docs/superpowers/specs/2026-06-24-sketch-pan-zoom-design.md`.
   **Map snapshot → annotate:** the World (`HexMapPane`) and Dungeon
   (`DungeonMapPane`) panes wrap their `CustomPaint` in a `RepaintBoundary` and
   show a web-gated `map-snapshot`/`dungeon-snapshot` button that rasterizes the
