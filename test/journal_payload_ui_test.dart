@@ -280,6 +280,46 @@ void main() {
     expect(find.byKey(const Key('entry-reroll-e3')), findsNothing);
   });
 
+  testWidgets('hero card renders the comma summary + a working Pin button',
+      (tester) async {
+    // A fate-check result with a comma summary ("Yes, and…") — the trailing
+    // qualifier renders as a separate italic span but the combined plain text
+    // is still findable.
+    const heroEntry = '{'
+        '"id":"h1",'
+        '"timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"Fate Check (Likely)",'
+        '"body":"Yes, and…\\nAnswer: Yes (+04)",'
+        '"kind":"result",'
+        '"tags":[],'
+        '"sourceTool":"fate-juice",'
+        '"payload":{"v":1,"command":"fate-juice","args":{"odds":"likely"},'
+        '"summary":"Yes, and…",'
+        '"rolls":[{"label":"Answer","display":"Yes (+04)"}],'
+        '"rerollable":true}'
+        '}';
+    await pumpJournal(tester, _journalPrefs(heroEntry));
+
+    // Big serif answer renders (combined rich-text run).
+    expect(find.text('Yes, and…'), findsOneWidget);
+    // The on-card Pin button exists and starts outlined (not pinned).
+    final pin = find.byKey(const Key('pin-h1'));
+    expect(pin, findsOneWidget);
+    expect(find.byIcon(Icons.push_pin_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.push_pin), findsNothing);
+
+    // Tapping Pin flips the entry's pinned flag and the icon fills in.
+    await tester.tap(pin);
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.single.pinned, isTrue);
+    expect(find.byIcon(Icons.push_pin), findsOneWidget);
+    expect(find.byIcon(Icons.push_pin_outlined), findsNothing);
+  });
+
   testWidgets('gen-story sourceTool shows chip text but no open-in-tool button',
       (tester) async {
     // Entries produced by the inspire sheet (gen-story etc.) have a sourceTool
