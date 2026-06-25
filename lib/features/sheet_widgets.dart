@@ -394,30 +394,92 @@ Future<IronswornAssetDef?> addAssetDialog(
 /// Rename dialog; returns the trimmed new name or null. [nameKey] keys the field.
 Future<String?> renameDialog(BuildContext context,
     {required String nameKey, required String current}) async {
-  final ctrl = TextEditingController(text: current);
   final name = await showDialog<String>(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Rename'),
-      content: TextField(
-        key: Key(nameKey),
-        controller: ctrl,
-        autofocus: true,
-        decoration: const InputDecoration(labelText: 'Name'),
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel')),
-        FilledButton(
-            onPressed: () => Navigator.pop(context, ctrl.text),
-            child: const Text('Save')),
-      ],
-    ),
+    builder: (_) => _RenameDialog(nameKey: nameKey, current: current),
   );
-  ctrl.dispose();
   if (name == null || name.trim().isEmpty) return null;
   return name.trim();
+}
+
+/// Owns the rename field's controller so it is disposed only after the dialog
+/// route fully unmounts (disposing synchronously after `showDialog` returns
+/// throws "controller used after dispose" during the dismiss animation).
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.nameKey, required this.current});
+  final String nameKey;
+  final String current;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _ctrl =
+      TextEditingController(text: widget.current);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Rename'),
+        content: TextField(
+          key: Key(widget.nameKey),
+          controller: _ctrl,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: 'Name'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, _ctrl.text),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+/// Shared sheet header: back button, the character name, and an edit pencil
+/// that opens [renameDialog] to rename. Used by the bespoke system sheets so
+/// every sheet can rename its character. [nameKey] keys the rename field.
+Widget sheetNameHeader(
+  BuildContext context,
+  WidgetRef ref,
+  Character character, {
+  required VoidCallback onBack,
+  required String nameKey,
+}) {
+  final theme = Theme.of(context);
+  return Row(children: [
+    IconButton(
+      key: const Key('sheet-back'),
+      icon: const Icon(Icons.arrow_back),
+      onPressed: onBack,
+    ),
+    Expanded(
+      child: Text(character.name,
+          style: theme.textTheme.titleLarge, overflow: TextOverflow.ellipsis),
+    ),
+    IconButton(
+      key: Key('$nameKey-edit'),
+      icon: const Icon(Icons.edit_outlined),
+      tooltip: 'Rename',
+      onPressed: () async {
+        final name = await renameDialog(context,
+            nameKey: nameKey, current: character.name);
+        if (name != null) {
+          await ref
+              .read(charactersProvider.notifier)
+              .replace(character.copyWith(name: name));
+        }
+      },
+    ),
+  ]);
 }
 
 /// Conditions editor shared by the roster row and the open sheets. Presents the
@@ -477,7 +539,9 @@ Future<void> showConditionsEditor(
   } finally {
     customCtrl.dispose();
   }
-  await ref.read(charactersProvider.notifier).setConditions(c.id, selected.toList());
+  await ref
+      .read(charactersProvider.notifier)
+      .setConditions(c.id, selected.toList());
 }
 
 /// A "Status" section for the open sheets: the character's active conditions as
@@ -495,12 +559,14 @@ Widget conditionsSection(
               child: c.conditions.isEmpty
                   ? Text('No conditions',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant))
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant))
                   : Wrap(
                       spacing: 6,
                       runSpacing: 4,
                       children: [
-                        for (final cond in c.conditions) Chip(label: Text(cond)),
+                        for (final cond in c.conditions)
+                          Chip(label: Text(cond)),
                       ],
                     ),
             ),
