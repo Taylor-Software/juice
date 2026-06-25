@@ -135,7 +135,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('sheet-back')), findsNothing);
-    expect(find.textContaining('No characters yet'), findsOneWidget);
+    // Empty roster now shows the directive EmptyState.
+    expect(find.byKey(const Key('empty-state-primary')), findsOneWidget);
+    expect(find.text('Every story needs a hero.'), findsOneWidget);
   });
 
   testWidgets('character list row has star IconButton that toggles starred',

@@ -29,6 +29,18 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # Bundled OFL variable fonts (Newsreader serif = narrative, Hanken Grotesk
+  # sans = UI). Variable fonts honor FontWeight via the wght axis at runtime, so
+  # one asset per family suffices (Newsreader ships a separate italic file).
+  fonts:
+    - family: Newsreader
+      fonts:
+        - asset: assets/fonts/newsreader/Newsreader.ttf
+        - asset: assets/fonts/newsreader/Newsreader-Italic.ttf
+          style: italic
+    - family: HankenGrotesk
+      fonts:
+        - asset: assets/fonts/hanken/HankenGrotesk.ttf
   assets:
     - assets/oracle_data.json
     - assets/emulator_data.json

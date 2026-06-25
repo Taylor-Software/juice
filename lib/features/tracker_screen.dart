@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../shared/empty_state.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -334,7 +335,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             }
           }
           if (chars.isEmpty) {
-            return const _Empty('No characters yet. Track NPCs and PCs.');
+            return EmptyState(
+              title: 'Every story needs a hero.',
+              body: 'Create your first character.',
+              primaryLabel: 'Create character',
+              onPrimary: () => _onAdd(context),
+            );
           }
           final active =
               ref.watch(playContextProvider).valueOrNull?.activeCharacterId;
