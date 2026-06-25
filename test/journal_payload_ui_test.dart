@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
@@ -280,6 +281,46 @@ void main() {
     expect(find.byKey(const Key('entry-reroll-e3')), findsNothing);
   });
 
+  testWidgets('hero card renders the comma summary + a working Pin button',
+      (tester) async {
+    // A fate-check result with a comma summary ("Yes, and…") — the trailing
+    // qualifier renders as a separate italic span but the combined plain text
+    // is still findable.
+    const heroEntry = '{'
+        '"id":"h1",'
+        '"timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"Fate Check (Likely)",'
+        '"body":"Yes, and…\\nAnswer: Yes (+04)",'
+        '"kind":"result",'
+        '"tags":[],'
+        '"sourceTool":"fate-juice",'
+        '"payload":{"v":1,"command":"fate-juice","args":{"odds":"likely"},'
+        '"summary":"Yes, and…",'
+        '"rolls":[{"label":"Answer","display":"Yes (+04)"}],'
+        '"rerollable":true}'
+        '}';
+    await pumpJournal(tester, _journalPrefs(heroEntry));
+
+    // Big serif answer renders (combined rich-text run).
+    expect(find.text('Yes, and…'), findsOneWidget);
+    // The on-card Pin button exists and starts outlined (not pinned).
+    final pin = find.byKey(const Key('pin-h1'));
+    expect(pin, findsOneWidget);
+    expect(find.byIcon(Icons.push_pin_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.push_pin), findsNothing);
+
+    // Tapping Pin flips the entry's pinned flag and the icon fills in.
+    await tester.tap(pin);
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries.single.pinned, isTrue);
+    expect(find.byIcon(Icons.push_pin), findsOneWidget);
+    expect(find.byIcon(Icons.push_pin_outlined), findsNothing);
+  });
+
   testWidgets('gen-story sourceTool shows chip text but no open-in-tool button',
       (tester) async {
     // Entries produced by the inspire sheet (gen-story etc.) have a sourceTool
@@ -300,5 +341,43 @@ void main() {
     expect(find.byKey(const Key('entry-open-tool-e4')), findsNothing);
     // No snackbar (nothing tappable to trigger it).
     expect(find.text('Tool not available'), findsNothing);
+  });
+
+  testWidgets(
+      'inline roll dock is always visible and writes a fate result on tap',
+      (tester) async {
+    final oracle = Oracle(_loadData(), Dice(Random(1)));
+    SharedPreferences.setMockInitialValues(_journalPrefs(_entryJson));
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [oracleProvider.overrideWith((ref) async => oracle)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // The dock's Roll-oracle chip is visible WITHOUT expanding the rail (the
+    // rail's expand header is still collapsed).
+    expect(find.byKey(const Key('dock-roll-oracle')), findsOneWidget);
+    expect(
+        find.byKey(const Key('ask-gm-field')), findsNothing); // rail collapsed
+
+    await tester.tap(find.byKey(const Key('dock-roll-oracle')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    // Seeded fixture + the new dock roll.
+    expect(entries.length, 2);
+    final newest = entries.first; // storage is newest-first
+    expect(newest.kind, JournalKind.result);
+    expect(newest.sourceTool, 'fate-check');
+    expect(newest.title, contains('Fate Check'));
   });
 }

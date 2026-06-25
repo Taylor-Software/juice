@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/oracle.dart';
 import '../engine/suggestions.dart';
 import 'play_context.dart';
 import 'providers.dart';
@@ -35,3 +36,24 @@ final suggestionsProvider = Provider<List<Suggestion>>((ref) {
     partyMode: mode == CampaignMode.party,
   );
 });
+
+/// Executes an `inline`-action [Suggestion] (`roll-oracle` / `scene-event`) by
+/// rolling against [oracle] and appending the result to the journal. Shared by
+/// the assistant rail and the always-visible inline roll dock so the roll
+/// behavior lives in exactly one place. Returns the journal write Future so
+/// callers can await it (e.g. to scroll to the new entry). Unknown ids are a
+/// no-op.
+Future<void> rollInlineSuggestion(WidgetRef ref, Oracle oracle, Suggestion s) {
+  switch (s.id) {
+    case 'roll-oracle':
+      final g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
+      return ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+          sourceTool: 'fate-check', payload: g.toPayload());
+    case 'scene-event':
+      final g = oracle.randomEvent();
+      return ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+          sourceTool: 'mythic', payload: g.toPayload());
+    default:
+      return Future<void>.value();
+  }
+}

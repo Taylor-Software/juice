@@ -167,6 +167,14 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     ]);
   }
 
+  /// Flips the per-entry [JournalEntry.pinned] flag and persists.
+  Future<void> togglePin(String id) async {
+    await _persist([
+      for (final e in await _ready)
+        if (e.id == id) e.copyWith(pinned: !e.pinned) else e,
+    ]);
+  }
+
   Future<void> remove(String id) async {
     await _persist((await _ready).where((e) => e.id != id).toList());
   }

@@ -35,9 +35,9 @@ void main() {
         .read(journalProvider.notifier)
         .addScene('The gatehouse', chaosFactor: 6);
     await tester.pumpAndSettle();
-    expect(find.text('The gatehouse'), findsWidgets);
-    // 'Chaos 6' appears in both the scene divider and the campaign header.
-    expect(find.text('Chaos 6'), findsWidgets);
+    // The scene divider now renders a combined eyebrow:
+    // "SCENE <n> · <TITLE> · CHAOS <n>" (uppercased) as a single rich-text run.
+    expect(find.text('SCENE 1 · THE GATEHOUSE · CHAOS 6'), findsOneWidget);
   });
 
   testWidgets('New session adds and renders a session divider', (tester) async {

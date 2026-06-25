@@ -1,11 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/oracle_interpreter.dart';
 import 'package:juice_oracle/features/assistant_rail.dart';
 import 'package:juice_oracle/features/gm_chat_screen.dart';
@@ -18,20 +13,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
 
-// Reads the real asset via dart:io (not rootBundle), so no test hang.
-Oracle _oracle() => Oracle(OracleData(
-    jsonDecode(File('assets/oracle_data.json').readAsStringSync())
-        as Map<String, dynamic>));
-
 Future<ProviderContainer> _pumpRankRail(
     WidgetTester tester, FakeInterpreterService fake,
     {bool aiEnabled = true}) async {
+  // Empty journal (no scenes) + one open thread → two navigate chips
+  // (start-scene, advance-thread) for the rail to rank. Inline rolls moved to
+  // the dock, so ranking now reorders navigate chips only.
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.journal.v2.default':
-        '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"x","kind":"scene"}]',
-    'juice.threads.v1.default': '[]',
+    'juice.journal.v2.default': '[]',
+    'juice.threads.v1.default':
+        '[{"id":"t1","title":"The missing heir","open":true}]',
     if (aiEnabled) 'juice.ai_enabled.v1': true,
   });
   final c = ProviderContainer(
@@ -70,50 +63,27 @@ Future<void> expandRail(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('collapsed by default; chips hidden until expanded',
+  testWidgets('collapsed by default; navigate chips hidden until expanded',
       (tester) async {
+    // Empty campaign → the 'Start a scene' navigate chip is present.
     await pumpRail(tester);
+    expect(find.text('Start a scene'), findsNothing);
+    await expandRail(tester);
+    expect(find.text('Start a scene'), findsOneWidget);
+  });
+
+  testWidgets('rail no longer renders the inline roll chips (moved to dock)',
+      (tester) async {
+    // The inline rolls (roll-oracle / scene-event) live in the journal's
+    // always-visible InlineRollDock now; the rail shows navigate chips only.
+    await pumpRail(tester);
+    await expandRail(tester);
     expect(find.text('Roll the oracle'), findsNothing);
-    await expandRail(tester);
-    expect(find.text('Roll the oracle'), findsOneWidget);
-  });
-
-  testWidgets('inline oracle chip writes a result to the journal',
-      (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
-          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.threads.v1.default': '[]',
-    });
-    final c = ProviderContainer(overrides: [
-      oracleProvider.overrideWith((ref) async => _oracle()),
-    ]);
-    addTearDown(c.dispose);
-    await tester.pumpWidget(UncontrolledProviderScope(
-        container: c,
-        child: MaterialApp(
-            theme: AppTheme.light(),
-            home: const Scaffold(body: AssistantRail()))));
-    await tester.pumpAndSettle();
-    await c.read(oracleProvider.future); // resolve the FutureProvider first
-    await expandRail(tester);
-    await tester.tap(find.text('Roll the oracle'));
-    await tester.pumpAndSettle();
-    final entries = await c.read(journalProvider.future);
-    expect(entries.length, 1);
-    expect(entries.first.sourceTool, 'fate-check');
-    expect(entries.first.title, contains('Fate Check'));
-  });
-
-  testWidgets('inline chip before oracle loads is a safe no-op',
-      (tester) async {
-    final c = await pumpRail(tester); // oracleProvider not overridden
-    await expandRail(tester);
-    await tester.tap(find.text('Roll the oracle'));
-    await tester.pump();
-    // Oracle data isn't loaded in this harness → guarded skip, no entry, no throw.
-    expect(c.read(journalProvider).valueOrNull ?? const [], isEmpty);
+    expect(find.text('Scene event'), findsNothing);
+    expect(find.byKey(const Key('suggest-roll-oracle')), findsNothing);
+    expect(find.byKey(const Key('suggest-scene-event')), findsNothing);
+    // A navigate chip still renders (empty campaign → start-scene).
+    expect(find.byKey(const Key('suggest-start-scene')), findsOneWidget);
   });
 
   testWidgets('navigate chip routes via shellRouteProvider', (tester) async {
@@ -219,12 +189,13 @@ void main() {
     expect(find.byKey(const Key('ask-gm-send')), findsNothing);
   });
 
-  testWidgets('AI-ranked: chips reordered + why caption when AI ready',
+  testWidgets('AI-ranked: navigate chips reordered + why caption when AI ready',
       (tester) async {
+    // The rail renders navigate chips only now; ranking reorders those.
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     fake.queuedRank.add(const RankResult(
-        order: ['scene-event', 'roll-oracle'], why: 'The scene is live'));
+        order: ['advance-thread', 'start-scene'], why: 'A thread is open'));
     await _pumpRankRail(tester, fake);
     await tester.tap(find.byKey(const Key('assistant-expand')));
     await tester.pumpAndSettle(); // expand + post-frame rank + setState
@@ -232,10 +203,10 @@ void main() {
         .widgetList<ActionChip>(find.byType(ActionChip))
         .map((w) => (w.key as ValueKey).value)
         .toList();
-    expect(keys.indexOf('suggest-scene-event'),
-        lessThan(keys.indexOf('suggest-roll-oracle')));
+    expect(keys.indexOf('suggest-advance-thread'),
+        lessThan(keys.indexOf('suggest-start-scene')));
     expect(find.byKey(const Key('suggest-why')), findsOneWidget);
-    expect(find.textContaining('The scene is live'), findsOneWidget);
+    expect(find.textContaining('A thread is open'), findsOneWidget);
   });
 
   testWidgets('AI off: rule order, no why caption', (tester) async {
@@ -245,18 +216,19 @@ void main() {
     await tester.tap(find.byKey(const Key('assistant-expand')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('suggest-why')), findsNothing);
+    // First navigate chip in rule order is start-scene (inline rolls dropped).
     final keys = tester
         .widgetList<ActionChip>(find.byType(ActionChip))
         .map((w) => (w.key as ValueKey).value)
         .toList();
-    expect(keys.first, 'suggest-roll-oracle');
+    expect(keys.first, 'suggest-start-scene');
   });
 
   testWidgets('collapsed rail does not call the LLM (no spend)',
       (tester) async {
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
-    fake.queuedRank.add(const RankResult(order: ['scene-event'], why: 'x'));
+    fake.queuedRank.add(const RankResult(order: ['start-scene'], why: 'x'));
     await _pumpRankRail(tester, fake); // AI ready, but never expanded
     await tester.pumpAndSettle();
     expect(fake.rankCalls, 0);

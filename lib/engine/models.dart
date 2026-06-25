@@ -99,6 +99,7 @@ class JournalEntry {
     this.tags = const [],
     this.sourceTool,
     this.payload,
+    this.pinned = false,
   });
   final String id;
   final DateTime timestamp;
@@ -121,6 +122,9 @@ class JournalEntry {
   /// text for unknown shapes.
   final Map<String, dynamic>? payload;
 
+  /// Player-pinned flag (shows a ⚑ Pin action on result cards), default false.
+  final bool pinned;
+
   JournalEntry copyWith({
     String? title,
     String? body,
@@ -128,6 +132,7 @@ class JournalEntry {
     bool clearThreadId = false,
     List<String>? tags,
     Map<String, dynamic>? payload,
+    bool? pinned,
   }) =>
       JournalEntry(
         id: id,
@@ -140,6 +145,7 @@ class JournalEntry {
         tags: tags ?? this.tags,
         sourceTool: sourceTool,
         payload: payload ?? this.payload,
+        pinned: pinned ?? this.pinned,
       );
 
   Map<String, dynamic> toJson() => {
@@ -153,6 +159,7 @@ class JournalEntry {
         'tags': tags,
         if (sourceTool != null) 'sourceTool': sourceTool,
         if (payload != null) 'payload': payload,
+        'pinned': pinned,
       };
 
   factory JournalEntry.fromJson(Map<String, dynamic> j) => JournalEntry(
@@ -166,6 +173,7 @@ class JournalEntry {
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         sourceTool: j['sourceTool'] as String?,
         payload: (j['payload'] as Map?)?.cast<String, dynamic>(),
+        pinned: (j['pinned'] as bool?) ?? false,
       );
 }
 

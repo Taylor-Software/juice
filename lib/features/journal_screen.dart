@@ -19,6 +19,7 @@ import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
 import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
+import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
 import '../shared/dice_sheet.dart';
 import '../shared/help_nav.dart';
@@ -31,6 +32,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'assistant_rail.dart';
 import 'generate_sheet.dart';
+import 'inline_roll_dock.dart';
 import 'oracle_interpretation_sheet.dart';
 import 'sketch_editor.dart';
 
@@ -66,6 +68,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final TextEditingController _search = TextEditingController();
+  // Drives the entry ListView so a dock roll can reveal the new newest entry.
+  final ScrollController _entryScroll = ScrollController();
   bool _slashActive = false;
 
   // Active @-mention query (text from the last '@' to the caret), or null.
@@ -434,7 +438,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _composer.removeListener(_onComposerChanged);
     _composer.dispose();
     _search.dispose();
+    _entryScroll.dispose();
     super.dispose();
+  }
+
+  /// Reveals the newest entry after an inline dock roll. The entry ListView is
+  /// `reverse: true` (newest anchored at the bottom = offset 0), so we animate
+  /// to its minScrollExtent. Runs post-frame so the just-appended entry is laid
+  /// out first.
+  void _revealNewest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_entryScroll.hasClients) return;
+      _entryScroll.animateTo(
+        _entryScroll.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   /// Opens a tool by id: dice gets its sheet, everything else navigates to its
@@ -537,6 +557,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   if (_searching) _searchField(),
                   Expanded(
                     child: ListView.builder(
+                      controller: _entryScroll,
                       reverse: true,
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       itemCount: visible.length,
@@ -556,6 +577,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         else if (_askActive)
           _askChip(),
         _suggestionRow(),
+        InlineRollDock(onRolled: _revealNewest),
         _composerBar(),
       ],
     );
@@ -691,17 +713,20 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // Settings. build() watches aiReadyProvider so these reads rebuild on flip.
   bool get _canVoice => ref.read(aiReadyProvider);
 
-  Widget _entry(JournalEntry e, List<Thread> threads,
-      String Function(String) threadTitle, bool lonelog) {
+  /// The per-entry overflow menu. [onCard] is set for the result hero card,
+  /// whose Interpret/Voice actions live on an inline action row instead — so
+  /// those two items are suppressed there to avoid duplicate affordances.
+  PopupMenuButton<String> _entryMenu(JournalEntry e, List<Thread> threads,
+      {bool onCard = false}) {
     final canInterpret =
         e.kind == JournalKind.result && ref.read(aiReadyProvider);
     final saveAs = _saveAsKind(e);
-    final menu = PopupMenuButton<String>(
+    return PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),
       itemBuilder: (_) => [
-        if (canInterpret)
+        if (!onCard && canInterpret)
           const PopupMenuItem(value: 'interpret', child: Text('Interpret…')),
-        if (_canVoice && _isDialogShaped(e))
+        if (!onCard && _canVoice && _isDialogShaped(e))
           const PopupMenuItem(value: 'voice', child: Text('Voice…')),
         if (saveAs != null)
           PopupMenuItem(
@@ -717,9 +742,26 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     );
+  }
+
+  Widget _entry(JournalEntry e, List<Thread> threads,
+      String Function(String) threadTitle, bool lonelog) {
+    // Interpret/Voice move onto the result hero card's inline action row, so the
+    // hero card's menu suppresses them (`onCard: true`); every other weight
+    // (prose, fallback result, scene) keeps them reachable via the menu.
+    final menu = _entryMenu(e, threads);
     switch (e.kind) {
       case JournalKind.scene:
         final theme = Theme.of(context);
+        final tk = context.juice;
+        final num = _sceneNumber(e);
+        // Eyebrow: "SCENE 3 · The gatehouse · CHAOS 5" with chaos tinted.
+        final eyebrow = tk.uiLabel.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.2,
+          color: tk.inkMuted,
+        );
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
@@ -727,20 +769,28 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             children: [
               Row(
                 children: [
-                  const Expanded(child: Divider()),
+                  Expanded(child: Divider(color: tk.hairline)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Text(e.title, style: theme.textTheme.titleSmall),
-                  ),
-                  if (e.chaosFactor != null)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Chip(
-                        label: Text('Chaos ${e.chaosFactor}'),
-                        visualDensity: VisualDensity.compact,
+                    child: Text.rich(
+                      TextSpan(
+                        style: eyebrow,
+                        children: [
+                          TextSpan(
+                              text: num != null
+                                  ? 'SCENE $num · ${e.title.toUpperCase()}'
+                                  : e.title.toUpperCase()),
+                          if (e.chaosFactor != null) ...[
+                            const TextSpan(text: ' · '),
+                            TextSpan(
+                                text: 'CHAOS ${e.chaosFactor}',
+                                style: eyebrow.copyWith(color: tk.chaos)),
+                          ],
+                        ],
                       ),
                     ),
-                  const Expanded(child: Divider()),
+                  ),
+                  Expanded(child: Divider(color: tk.hairline)),
                   menu,
                 ],
               ),
@@ -778,30 +828,76 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         );
       case JournalKind.text:
         final extras = _suffixLines(e, threadTitle);
-        return Card(
-          child: ListTile(
-            title: MentionText(e.body,
-                onCharacterTap: _openCharacter,
-                onThreadTap: _openThread,
-                onDiceTap: _rollDice,
-                lonelog: lonelog),
-            subtitle: extras.isEmpty ? null : Text(extras.join('\n')),
-            trailing: menu,
+        final tk = context.juice;
+        // Prose weight: quiet italic narrative, no card — plain notes sit back
+        // so result heroes carry the visual weight. The overflow menu stays
+        // reachable via a compact trailing button.
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MentionText(
+                      e.body,
+                      style: tk.narrative.copyWith(
+                        fontSize: 14.5,
+                        fontStyle: FontStyle.italic,
+                        color: tk.inkBody,
+                      ),
+                      onCharacterTap: _openCharacter,
+                      onThreadTap: _openThread,
+                      onDiceTap: _rollDice,
+                      lonelog: lonelog,
+                    ),
+                    if (extras.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          extras.join('\n'),
+                          style: tk.uiLabel
+                              .copyWith(fontSize: 11, color: tk.inkMuted),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              menu,
+            ],
           ),
         );
       case JournalKind.result:
         final extras = _suffixLines(e, threadTitle);
         final p = e.payload;
+        // Compact dice/log weight: a slim raised row instead of a hero card so
+        // mechanical rolls don't shout. Branch before the hero card.
+        if (e.sourceTool == 'dice') {
+          return _DiceLogRow(
+            entry: e,
+            menu: menu,
+            onReroll: _canReroll(e) ? () => _reroll(e) : null,
+          );
+        }
         if (p != null && p['v'] == 1 && p['rolls'] is List) {
+          final canInterpret = ref.read(aiReadyProvider);
           return _PayloadCard(
             entry: e,
             extras: extras,
-            menu: menu,
+            // Hero card menu drops Interpret/Voice — those ride the inline row.
+            menu: _entryMenu(e, threads, onCard: true),
             onReroll: _canReroll(e) ? () => _reroll(e) : null,
             onOpenTool:
                 (e.sourceTool != null && toolLocation.containsKey(e.sourceTool))
                     ? () => _openTool(e.sourceTool!)
                     : null,
+            onInterpret: canInterpret ? () => _interpret(e) : null,
+            onVoice:
+                (_canVoice && _isDialogShaped(e)) ? () => _voiceEntry(e) : null,
+            onTogglePin: () =>
+                ref.read(journalProvider.notifier).togglePin(e.id),
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
             onDiceTap: _rollDice,
@@ -927,6 +1023,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (e.threadId != null) '⤷ ${threadTitle(e.threadId!)}',
         if (e.tags.isNotEmpty) e.tags.map((t) => '#$t').join(' '),
       ];
+
+  /// 1-based index of a scene entry among all scene entries, in chronological
+  /// (oldest-first) order — drives the "SCENE 3" eyebrow. Null if not found.
+  int? _sceneNumber(JournalEntry scene) {
+    final entries = ref.read(journalProvider).valueOrNull;
+    if (entries == null) return null;
+    // Storage is newest-first; reverse to chronological then enumerate scenes.
+    final scenes = entries.reversed
+        .where((e) => e.kind == JournalKind.scene)
+        .toList(growable: false);
+    final idx = scenes.indexWhere((e) => e.id == scene.id);
+    return idx < 0 ? null : idx + 1;
+  }
 
   // -- Slash palette ----------------------------------------------------------
 
@@ -2040,8 +2149,93 @@ class _SlashRowState extends State<_SlashRow> {
   }
 }
 
-/// Rich rendering for entries that carry a structured payload: summary +
-/// roll rows + appended-notes remainder + re-roll / open-in-tool actions.
+/// Humanizes a [JournalEntry.sourceTool] id into an uppercase source label
+/// for the hero card's source row, e.g. 'fate-juice' -> 'FATE CHECK',
+/// 'dice' -> 'DICE', 'cards' -> 'CARDS'. Falls back to the de-hyphenated id.
+String _sourceLabel(String? sourceTool) {
+  switch (sourceTool) {
+    case null:
+      return 'RESULT';
+    case 'fate-juice':
+    case 'fate-check':
+    case 'fate-mythic':
+      return 'FATE CHECK';
+    case 'cards':
+      return 'CARDS';
+    case 'dice':
+      return 'DICE';
+    default:
+      return sourceTool.replaceAll('-', ' ').toUpperCase();
+  }
+}
+
+/// A slim, low-weight row for mechanical dice/log results (sourceTool=='dice').
+/// Sits back so oracle hero cards carry the visual weight.
+class _DiceLogRow extends StatelessWidget {
+  const _DiceLogRow({required this.entry, required this.menu, this.onReroll});
+
+  final JournalEntry entry;
+  final Widget menu;
+  final VoidCallback? onReroll;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    // Prefer the structured summary ("2d6 = 7"); else the title/body.
+    final summary = entry.payload?['summary'] as String?;
+    final line = (summary != null && summary.trim().isNotEmpty)
+        ? summary.trim()
+        : (entry.body.trim().isNotEmpty
+            ? entry.body.split('\n').first.trim()
+            : entry.title);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: tk.raised,
+          border: Border.all(color: tk.hairline),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: tk.terracotta,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Icon(Icons.casino, size: 14, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Dice · $line',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tk.uiLabel.copyWith(fontSize: 13, color: tk.inkBody),
+              ),
+            ),
+            if (onReroll != null)
+              IconButton(
+                key: Key('entry-reroll-${entry.id}'),
+                tooltip: 'Roll again',
+                icon: const Icon(Icons.replay, size: 18),
+                visualDensity: VisualDensity.compact,
+                onPressed: onReroll,
+              ),
+            menu,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Rich rendering for entries that carry a structured payload: a warm gradient
+/// hero with a source row, a big serif answer, roll rows, an appended-notes
+/// remainder, and an inline action row (Interpret / Voice / Pin).
 class _PayloadCard extends StatelessWidget {
   const _PayloadCard({
     required this.entry,
@@ -2049,6 +2243,9 @@ class _PayloadCard extends StatelessWidget {
     required this.menu,
     this.onReroll,
     this.onOpenTool,
+    this.onInterpret,
+    this.onVoice,
+    this.onTogglePin,
     this.onCharacterTap,
     this.onThreadTap,
     this.onDiceTap,
@@ -2060,6 +2257,9 @@ class _PayloadCard extends StatelessWidget {
   final Widget menu;
   final VoidCallback? onReroll;
   final VoidCallback? onOpenTool;
+  final VoidCallback? onInterpret;
+  final VoidCallback? onVoice;
+  final VoidCallback? onTogglePin;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
   final void Function(String notation)? onDiceTap;
@@ -2067,16 +2267,33 @@ class _PayloadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tk = context.juice;
     final p = entry.payload!;
     final summary = p['summary'] as String?;
-    final rolls = [
+    final allRolls = [
       for (final r in (p['rolls'] as List))
         if (r is Map) ('${r['label']}', '${r['display']}'),
     ];
+    // The Intensity roll becomes a caption beneath the answer (Mythic/Juice);
+    // the remaining rolls render as label/value rows.
+    final intensity =
+        allRolls.where((r) => r.$1 == 'Intensity').map((r) => r.$2).firstOrNull;
+    final rolls =
+        allRolls.where((r) => r.$1 != 'Intensity').toList(growable: false);
+    // Right-aligned sub-label: the odds, humanized (else the title's
+    // parenthetical, e.g. "Fate Check (Likely)" -> "Likely").
+    final odds = (p['args'] as Map?)?['odds'] as String?;
+    String? subLabel;
+    if (odds != null && odds.isNotEmpty) {
+      subLabel = '${odds[0].toUpperCase()}${odds.substring(1)}';
+    } else {
+      final m = RegExp(r'\(([^)]+)\)$').firstMatch(entry.title);
+      subLabel = m?.group(1);
+    }
+
     // Body content beyond the payload-derived text (e.g. appended oracle
     // readings) still renders; the base text is shown structured instead.
-    final rollsText = rolls.map((r) => '${r.$1}: ${r.$2}').join('\n');
+    final rollsText = allRolls.map((r) => '${r.$1}: ${r.$2}').join('\n');
     final baseText = summary == null ? rollsText : '$summary\n$rollsText';
     var remainder = '';
     if (entry.body != baseText) {
@@ -2084,92 +2301,224 @@ class _PayloadCard extends StatelessWidget {
           ? entry.body.substring(baseText.length).trimLeft()
           : entry.body;
     }
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                    child:
-                        Text(entry.title, style: theme.textTheme.titleSmall)),
-                if (onReroll != null)
-                  IconButton(
-                    key: Key('entry-reroll-${entry.id}'),
-                    tooltip: 'Roll again',
-                    icon: const Icon(Icons.replay, size: 20),
-                    onPressed: onReroll,
-                  ),
-                if (onOpenTool != null)
-                  IconButton(
-                    key: Key('entry-open-tool-${entry.id}'),
-                    tooltip: 'Open in tool',
-                    icon: const Icon(Icons.open_in_new, size: 20),
-                    onPressed: onOpenTool,
-                  ),
-                menu,
-              ],
+
+    final showActions =
+        onInterpret != null || onVoice != null || onTogglePin != null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: tk.resultHeroGradient,
+          ),
+          border: Border.all(color: const Color(0xFFEFC9B4)),
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(
+              color: tk.terracotta.withValues(alpha: 0.16),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
             ),
-            if (summary != null)
-              Text(
-                summary,
-                style: theme.textTheme.titleLarge
-                    ?.copyWith(color: theme.colorScheme.primary),
-              ),
-            if (entry.sourceTool == 'cards' && summary != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Builder(builder: (_) {
-                    final r = readTarot(summary);
-                    return CardImage(r.name, reversed: r.reversed, height: 120);
-                  }),
-                ),
-              ),
-            const SizedBox(height: 4),
-            for (final r in rolls)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 110,
-                      child: Text(
-                        r.$1,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                    ),
-                    Expanded(
-                        child: Text(r.$2, style: theme.textTheme.bodyMedium)),
-                  ],
-                ),
-              ),
-            if (remainder.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              MentionText(
-                remainder,
-                style: theme.textTheme.bodyMedium,
-                onCharacterTap: onCharacterTap,
-                onThreadTap: onThreadTap,
-                onDiceTap: onDiceTap,
-                lonelog: lonelog,
-              ),
-            ],
-            if (extras.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                extras.join('\n'),
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ],
           ],
         ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // SOURCE ROW: icon tile + uppercase source label + reroll/open +
+              // right-aligned sub-label + overflow menu.
+              Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: tk.terracotta,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: const Icon(Icons.auto_stories,
+                        size: 14, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _sourceLabel(entry.sourceTool),
+                      style: tk.uiLabel.copyWith(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: tk.inkFaint,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ),
+                  if (subLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        subLabel,
+                        style: tk.uiLabel
+                            .copyWith(fontSize: 11, color: tk.inkMuted),
+                      ),
+                    ),
+                  if (onReroll != null)
+                    IconButton(
+                      key: Key('entry-reroll-${entry.id}'),
+                      tooltip: 'Roll again',
+                      icon: const Icon(Icons.replay, size: 20),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onReroll,
+                    ),
+                  if (onOpenTool != null)
+                    IconButton(
+                      key: Key('entry-open-tool-${entry.id}'),
+                      tooltip: 'Open in tool',
+                      icon: const Icon(Icons.open_in_new, size: 20),
+                      visualDensity: VisualDensity.compact,
+                      onPressed: onOpenTool,
+                    ),
+                  menu,
+                ],
+              ),
+              // BIG SERIF ANSWER.
+              if (summary != null) _answer(tk, summary),
+              if (intensity != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    intensity,
+                    style:
+                        tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+                  ),
+                ),
+              if (entry.sourceTool == 'cards' && summary != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Builder(builder: (_) {
+                      final r = readTarot(summary);
+                      return CardImage(r.name,
+                          reversed: r.reversed, height: 120);
+                    }),
+                  ),
+                ),
+              const SizedBox(height: 4),
+              for (final r in rolls)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 110,
+                        child: Text(
+                          r.$1,
+                          style: tk.uiLabel
+                              .copyWith(fontSize: 12, color: tk.inkMuted),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          r.$2,
+                          style: tk.narrative
+                              .copyWith(fontSize: 14, color: tk.inkBody),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (remainder.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                MentionText(
+                  remainder,
+                  style: tk.narrative.copyWith(fontSize: 14, color: tk.inkBody),
+                  onCharacterTap: onCharacterTap,
+                  onThreadTap: onThreadTap,
+                  onDiceTap: onDiceTap,
+                  lonelog: lonelog,
+                ),
+              ],
+              if (extras.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  extras.join('\n'),
+                  style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+                ),
+              ],
+              // INLINE ACTION ROW above a hairline divider.
+              if (showActions) ...[
+                const SizedBox(height: 8),
+                Divider(color: tk.hairline, height: 1),
+                Row(
+                  children: [
+                    if (onInterpret != null)
+                      TextButton.icon(
+                        onPressed: onInterpret,
+                        icon: const Icon(Icons.auto_awesome, size: 16),
+                        label: const Text('Interpret'),
+                      ),
+                    if (onVoice != null)
+                      TextButton(
+                        onPressed: onVoice,
+                        child: const Text('Voice line'),
+                      ),
+                    const Spacer(),
+                    if (onTogglePin != null)
+                      TextButton.icon(
+                        key: Key('pin-${entry.id}'),
+                        onPressed: onTogglePin,
+                        icon: Icon(
+                          entry.pinned
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                          size: 16,
+                          color: entry.pinned ? tk.terracotta : null,
+                        ),
+                        label: const Text('Pin'),
+                      ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The big serif answer. If the summary has a comma, the trailing qualifier
+  /// (e.g. "and…", "but…") renders italic in terracotta; otherwise the whole
+  /// summary renders normal.
+  Widget _answer(JuiceTokens tk, String summary) {
+    final base = tk.narrative.copyWith(
+      fontSize: 30,
+      fontWeight: FontWeight.w500,
+      color: tk.ink,
+      height: 1.15,
+    );
+    final comma = summary.indexOf(',');
+    if (comma < 0 || comma == summary.length - 1) {
+      return Text(summary, style: base);
+    }
+    final head = summary.substring(0, comma + 1); // includes the comma
+    final tail = summary.substring(comma + 1);
+    return Text.rich(
+      TextSpan(
+        style: base,
+        children: [
+          TextSpan(text: head),
+          TextSpan(
+            text: tail,
+            style: base.copyWith(
+              fontStyle: FontStyle.italic,
+              color: tk.terracotta,
+            ),
+          ),
+        ],
       ),
     );
   }
