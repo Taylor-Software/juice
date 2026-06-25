@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
-import '../engine/oracle.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
 import '../shared/destination.dart';
@@ -91,18 +90,15 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
   void _onTap(Suggestion s) {
     final route = ref.read(shellRouteProvider.notifier);
     switch (s.id) {
+      // Inline rolls (roll-oracle / scene-event) now live in the journal's
+      // always-visible InlineRollDock; the rail renders only navigate chips.
+      // These arms are kept as a defensive delegate to the shared dispatch so
+      // nothing breaks if an inline chip ever surfaces here again.
       case 'roll-oracle':
-        final oracle = ref.read(oracleProvider).valueOrNull;
-        if (oracle == null) return; // oracle data still loading: skip safely
-        final g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
-        ref.read(journalProvider.notifier).addResult(g.title, g.asText,
-            sourceTool: 'fate-check', payload: g.toPayload());
       case 'scene-event':
         final oracle = ref.read(oracleProvider).valueOrNull;
         if (oracle == null) return; // oracle data still loading: skip safely
-        final g = oracle.randomEvent();
-        ref.read(journalProvider.notifier).addResult(g.title, g.asText,
-            sourceTool: 'mythic', payload: g.toPayload());
+        rollInlineSuggestion(ref, oracle, s);
       case 'start-scene':
         route.goTo(Destination.track, subtab: 'scenes');
       case 'advance-thread':
@@ -178,7 +174,11 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final s in ranked.chips)
+                    // Inline rolls (roll-oracle / scene-event) moved to the
+                    // journal's always-visible dock; the rail keeps navigate
+                    // chips only.
+                    for (final s in ranked.chips
+                        .where((s) => s.action == SuggestionAction.navigate))
                       ActionChip(
                         key: Key('suggest-${s.id}'),
                         label: Text(s.label),

@@ -32,6 +32,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'assistant_rail.dart';
 import 'generate_sheet.dart';
+import 'inline_roll_dock.dart';
 import 'oracle_interpretation_sheet.dart';
 import 'sketch_editor.dart';
 
@@ -67,6 +68,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final TextEditingController _search = TextEditingController();
+  // Drives the entry ListView so a dock roll can reveal the new newest entry.
+  final ScrollController _entryScroll = ScrollController();
   bool _slashActive = false;
 
   // Active @-mention query (text from the last '@' to the caret), or null.
@@ -435,7 +438,23 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _composer.removeListener(_onComposerChanged);
     _composer.dispose();
     _search.dispose();
+    _entryScroll.dispose();
     super.dispose();
+  }
+
+  /// Reveals the newest entry after an inline dock roll. The entry ListView is
+  /// `reverse: true` (newest anchored at the bottom = offset 0), so we animate
+  /// to its minScrollExtent. Runs post-frame so the just-appended entry is laid
+  /// out first.
+  void _revealNewest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_entryScroll.hasClients) return;
+      _entryScroll.animateTo(
+        _entryScroll.position.minScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   /// Opens a tool by id: dice gets its sheet, everything else navigates to its
@@ -538,6 +557,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   if (_searching) _searchField(),
                   Expanded(
                     child: ListView.builder(
+                      controller: _entryScroll,
                       reverse: true,
                       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                       itemCount: visible.length,
@@ -557,6 +577,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         else if (_askActive)
           _askChip(),
         _suggestionRow(),
+        InlineRollDock(onRolled: _revealNewest),
         _composerBar(),
       ],
     );

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
@@ -340,5 +341,43 @@ void main() {
     expect(find.byKey(const Key('entry-open-tool-e4')), findsNothing);
     // No snackbar (nothing tappable to trigger it).
     expect(find.text('Tool not available'), findsNothing);
+  });
+
+  testWidgets(
+      'inline roll dock is always visible and writes a fate result on tap',
+      (tester) async {
+    final oracle = Oracle(_loadData(), Dice(Random(1)));
+    SharedPreferences.setMockInitialValues(_journalPrefs(_entryJson));
+    tester.view.physicalSize = const Size(900, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(ProviderScope(
+      overrides: [oracleProvider.overrideWith((ref) async => oracle)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // The dock's Roll-oracle chip is visible WITHOUT expanding the rail (the
+    // rail's expand header is still collapsed).
+    expect(find.byKey(const Key('dock-roll-oracle')), findsOneWidget);
+    expect(
+        find.byKey(const Key('ask-gm-field')), findsNothing); // rail collapsed
+
+    await tester.tap(find.byKey(const Key('dock-roll-oracle')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    // Seeded fixture + the new dock roll.
+    expect(entries.length, 2);
+    final newest = entries.first; // storage is newest-first
+    expect(newest.kind, JournalKind.result);
+    expect(newest.sourceTool, 'fate-check');
+    expect(newest.title, contains('Fate Check'));
   });
 }
