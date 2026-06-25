@@ -995,22 +995,20 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _row('juice', 'Juice oracle'),
-            _row('mythic', 'Mythic GME'),
-            _row('ironsworn', 'Ironsworn family'),
-            _row('party', 'Party emulator'),
-            _row('verdant', 'Verdant Hexcrawling'),
-            _row('lonelog', 'Lonelog journaling'),
-            _row('hexcrawl', 'Hexcrawl toolkit'),
-            _row('dnd', 'D&D 5e'),
-            _row('shadowdark', 'Shadowdark'),
-            _row('nimble', 'Nimble'),
-            _row('draw-steel', 'Draw Steel'),
-            _row('argosa', 'Tales of Argosa'),
-            _row('cairn', 'Cairn'),
-            _row('knave', 'Knave'),
-            _row('ose', 'OSE / B/X'),
-            _row('cards', 'Cards'),
+            for (final cat in SystemCategory.values) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 4),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(_editCategoryLabel(cat),
+                      style: Theme.of(context).textTheme.labelLarge),
+                ),
+              ),
+              for (final id in kSystemCategory.entries
+                  .where((e) => e.value == cat)
+                  .map((e) => e.key))
+                _row(id, kSystemShortName[id] ?? id),
+            ],
           ],
         ),
       ),
@@ -1025,5 +1023,18 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
         ),
       ],
     );
+  }
+
+  String _editCategoryLabel(SystemCategory c) {
+    switch (c) {
+      case SystemCategory.ruleset:
+        return 'Ruleset';
+      case SystemCategory.oracle:
+        return 'Oracles';
+      case SystemCategory.exploration:
+        return 'Exploration & maps';
+      case SystemCategory.tools:
+        return 'Tools';
+    }
   }
 }
