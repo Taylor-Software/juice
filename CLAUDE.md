@@ -318,6 +318,25 @@ Working rules for this repo:
   mid-session doesn't re-land. Deferred: richer per-mode assistant suggestions
   (beyond `make-move`). See
   `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
+- **Campaign creation is presets-first** (`NewCampaignDialog` in
+  `lib/shared/home_shell.dart`). The 16 systems are categorized by
+  `kSystemCategory` (`SystemCategory {ruleset, oracle, exploration, tools}`,
+  models.dart) against the canonical `kKnownSystems`; **`kAllSystems` (5 ids) is
+  UNCHANGED** — it remains the legacy-null fallback (`SessionMeta.enabledSystems`
+  + ~17 widget defaults), NOT the creation seed. Creation offers `kCampaignPresets`
+  (`lib/engine/campaign_presets.dart`, pure: 9 ruleset presets `solo-*` + `oracle`
+  + `gm-toolkit`; `presetConfig` resolves a preset to `(mode, systems)`); a
+  `Custom` chip (`preset-custom`) reveals a grouped picker (ruleset =
+  single-select `ChoiceChip` incl. `ruleset-none`, others multi `FilterChip`
+  `cat-<id>`) with `preset-back` to return, a `new-campaign-mode` toggle + a
+  GM dead-combo hint. Genre/tone fields show in both modes. `_EditSystemsDialog`
+  is grouped by the same categories (`edit-sys-<id>`, multi-toggle, advanced).
+  The dialog's return record `(name, systems, mode, genre, tone)` is preserved
+  (callers + `SessionsNotifier.create` unchanged). P2 (a stepped wizard + a
+  live-preview pane reusing shared gating predicates + mode auto-suggest) is a
+  separate follow-up plan. See
+  `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md` and the
+  plan `docs/superpowers/plans/2026-06-24-campaign-creation-redesign.md`.
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs
   (empty groups hidden; the active PC `playContextProvider.activeCharacterId` is

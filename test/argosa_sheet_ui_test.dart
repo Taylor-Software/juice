@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<ProviderContainer> _pumpSheet(WidgetTester tester,
     {Map<String, dynamic>? charOverride}) async {
-  final sheet = const ArgosaSheet(
+  const sheet = ArgosaSheet(
     className: 'Fighter',
     level: 3,
     stats: {

@@ -3,94 +3,112 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 
+typedef NewCampaignResult = ({
+  String name,
+  Set<String> systems,
+  CampaignMode mode,
+  String genre,
+  String tone,
+});
+
 void main() {
-  test('kSystemBlurbs describes every system', () {
-    for (final id in {...kAllSystems, 'lonelog', 'hexcrawl'}) {
+  testWidgets('kSystemBlurbs covers every known system', (tester) async {
+    for (final id in kKnownSystems) {
       expect(kSystemBlurbs[id], isNotNull, reason: id);
     }
   });
 
-  testWidgets('returns name + systems + mode + genre + tone', (t) async {
-    ({
-      String name,
-      Set<String> systems,
-      CampaignMode mode,
-      String genre,
-      String tone
-    })? out;
-    await t.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (ctx) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async => out = await showDialog<
-                  ({
-                    String name,
-                    Set<String> systems,
-                    CampaignMode mode,
-                    String genre,
-                    String tone
-                  })>(
-                context: ctx,
-                builder: (_) => const NewCampaignDialog(),
-              ),
-              child: const Text('open'),
-            ),
-          ),
-        ),
-      ),
+  testWidgets('tapping a ruleset preset selects its systems + mode',
+      (tester) async {
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
     ));
-    await t.tap(find.text('open'));
-    await t.pumpAndSettle();
-    // System checkboxes carry their description as a subtitle.
-    expect(find.text(kSystemBlurbs['juice']!), findsOneWidget);
-    await t.enterText(find.byKey(const Key('new-campaign-name')), 'My');
-    await t.enterText(find.byKey(const Key('new-campaign-genre')), 'grimdark');
-    await t.enterText(find.byKey(const Key('new-campaign-tone')), 'tense');
-    await t.tap(find.text('Create'));
-    await t.pumpAndSettle();
-    expect(out!.name, 'My');
-    expect(out!.genre, 'grimdark');
-    expect(out!.tone, 'tense');
-    expect(out!.systems, contains('juice'));
-    // Mode defaults to party.
-    expect(out!.mode, CampaignMode.party);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Cairn Run');
+    await tester.tap(find.byKey(const Key('preset-solo-cairn')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    expect(result!.name, 'Cairn Run');
+    expect(result!.mode, CampaignMode.party);
+    expect(result!.systems, {'cairn', 'juice', 'party'});
   });
 
-  testWidgets('mode selector returns the chosen mode (gm)', (t) async {
-    CampaignMode? mode;
-    await t.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (ctx) => Scaffold(
-          body: Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                final out = await showDialog<
-                    ({
-                      String name,
-                      Set<String> systems,
-                      CampaignMode mode,
-                      String genre,
-                      String tone
-                    })>(
-                  context: ctx,
-                  builder: (_) => const NewCampaignDialog(),
-                );
-                mode = out?.mode;
-              },
-              child: const Text('open'),
-            ),
-          ),
-        ),
-      ),
+  testWidgets('GM toolkit preset returns gm mode', (tester) async {
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
     ));
-    await t.tap(find.text('open'));
-    await t.pumpAndSettle();
-    await t.enterText(find.byKey(const Key('new-campaign-name')), 'GM game');
-    await t.tap(find.text('GM'));
-    await t.pumpAndSettle();
-    await t.tap(find.text('Create'));
-    await t.pumpAndSettle();
-    expect(mode, CampaignMode.gm);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('new-campaign-name')), 'Table');
+    await tester.tap(find.byKey(const Key('preset-gm-toolkit')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    expect(result!.mode, CampaignMode.gm);
+    expect(result!.systems, {'juice', 'mythic'});
+  });
+
+  testWidgets('Custom reveals grouped picker; ruleset is single-select',
+      (tester) async {
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Custom');
+    await tester.tap(find.byKey(const Key('preset-custom')));
+    await tester.pumpAndSettle();
+    // grouped picker is now visible
+    expect(find.byKey(const Key('ruleset-dnd')), findsOneWidget);
+    expect(find.byKey(const Key('cat-cards')), findsOneWidget);
+    // pick a ruleset + an oracle add-on (scroll into view — dialog scrolls)
+    await tester.ensureVisible(find.byKey(const Key('ruleset-dnd')));
+    await tester.tap(find.byKey(const Key('ruleset-dnd')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('cat-cards')));
+    await tester.tap(find.byKey(const Key('cat-cards')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Create'));
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    expect(result!.systems.contains('dnd'), isTrue);
+    expect(result!.systems.contains('cards'), isTrue);
   });
 }

@@ -33,7 +33,8 @@ final _hex = HexcrawlData(
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('New Campaign dialog offers a Lonelog toggle (default off)',
+  testWidgets(
+      'New Campaign Custom picker offers a Lonelog toggle (default off)',
       (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: [
@@ -46,16 +47,19 @@ void main() {
     ));
     await t.pumpAndSettle();
 
-    // Open Campaigns -> New campaign.
+    // Open Campaigns -> New campaign -> Custom.
     await t.tap(find.byTooltip('Campaigns'));
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('preset-custom')));
+    await t.pumpAndSettle();
 
-    final lonelog = find.byKey(const Key('sys-lonelog'));
+    // Lonelog chip present and not selected (opt-in: default off).
+    final lonelog = find.byKey(const Key('cat-lonelog'));
     expect(lonelog, findsOneWidget);
-    final tile = t.widget<CheckboxListTile>(lonelog);
-    expect(tile.value, isFalse); // opt-in: default off
+    final chip = t.widget<FilterChip>(lonelog);
+    expect(chip.selected, isFalse);
   });
 
   testWidgets('Campaigns dialog offers Export as Lonelog', (t) async {
@@ -92,7 +96,8 @@ void main() {
     expect(find.text('Import Lonelog (.md)'), findsOneWidget);
   });
 
-  testWidgets('New Campaign dialog offers a Hexcrawl toggle (default off)',
+  testWidgets(
+      'New Campaign Custom picker offers a Hexcrawl toggle (default off)',
       (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: [
@@ -108,9 +113,11 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('preset-custom')));
+    await t.pumpAndSettle();
 
-    final hex = find.byKey(const Key('sys-hexcrawl'));
+    final hex = find.byKey(const Key('cat-hexcrawl'));
     expect(hex, findsOneWidget);
-    expect(t.widget<CheckboxListTile>(hex).value, isFalse);
+    expect(t.widget<FilterChip>(hex).selected, isFalse);
   });
 }
