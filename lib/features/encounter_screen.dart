@@ -128,6 +128,9 @@ class EncounterScreen extends ConsumerWidget {
         } else if (linked.nimble != null) {
           curHp = linked.nimble!.currentHp;
           maxHp = linked.nimble!.maxHp;
+        } else if (linked.kalArath != null) {
+          curHp = linked.kalArath!.currentHp;
+          maxHp = linked.kalArath!.maxHp;
         } else if (linked.ose != null) {
           curHp = linked.ose!.currentHp;
           maxHp = linked.ose!.maxHp;

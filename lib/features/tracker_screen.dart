@@ -11,6 +11,7 @@ import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
 import 'knave_sheet.dart';
+import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'nimble_sheet.dart';
@@ -221,6 +222,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               }
               if (c.shadowdark != null) {
                 return ShadowdarkSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
+              if (c.kalArath != null) {
+                return KalArathSheetView(
                   character: c,
                   onBack: () {
                     ref
@@ -454,7 +466,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('argosa') &&
         !systems.contains('cairn') &&
         !systems.contains('knave') &&
-        !systems.contains('ose')) {
+        !systems.contains('ose') &&
+        !systems.contains('kal-arath')) {
       await _addCharacter(context);
       return;
     }
@@ -544,6 +557,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Cairn',
           blurb: 'Stats, saves, hit protection, Deprived, Fatigue.'
         ),
+      if (systems.contains('kal-arath'))
+        (
+          key: 'new-kal-arath',
+          value: 'kal-arath',
+          label: 'Kal-Arath',
+          blurb: '5 stats, 2d6+stat rolls, demonic pacts, Fate Points.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -575,11 +595,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     !systems.contains('argosa') ||
                     !systems.contains('cairn') ||
                     !systems.contains('knave') ||
-                    !systems.contains('ose'))
+                    !systems.contains('ose') ||
+                    !systems.contains('kal-arath'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, or OSE in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, or Kal-Arath in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -622,6 +643,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newCairn();
     } else if (choice == 'ose') {
       await _newOse();
+    } else if (choice == 'kal-arath') {
+      await _newKalArath();
     }
   }
 
@@ -684,6 +707,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newOse() async {
     final id = await ref.read(charactersProvider.notifier).addOse();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newKalArath() async {
+    final id = await ref.read(charactersProvider.notifier).addKalArath();
     if (mounted) setState(() => _editingId = id);
   }
 

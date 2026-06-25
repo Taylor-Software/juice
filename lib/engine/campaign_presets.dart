@@ -69,6 +69,11 @@ const kCampaignPresets = <CampaignPreset>[
       mode: CampaignMode.party,
       systems: {'ose', 'juice', 'party'}),
   CampaignPreset(
+      id: 'solo-kal-arath',
+      label: 'Kal-Arath',
+      mode: CampaignMode.party,
+      systems: {'kal-arath', 'juice', 'party'}),
+  CampaignPreset(
       id: 'oracle',
       label: 'System-agnostic oracle',
       mode: CampaignMode.party,

@@ -77,7 +77,7 @@ void main() {
     test('ruleset presets are party mode with juice + party + one ruleset', () {
       final rulesetPresets =
           kCampaignPresets.where((p) => p.id.startsWith('solo-'));
-      expect(rulesetPresets.length, 9);
+      expect(rulesetPresets.length, 10);
       for (final p in rulesetPresets) {
         expect(p.mode, CampaignMode.party, reason: p.id);
         expect(p.systems.contains('juice'), isTrue, reason: p.id);

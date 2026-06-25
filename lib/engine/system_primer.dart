@@ -34,6 +34,8 @@ const Map<String, String> kSystemPrimers = {
       'Knave 2e: classless OSR. Saves: d20 + ability score >= 11 to pass. No classes. Wounds fill inventory slots; 10 + CON slots total.',
   'ose':
       'Old-School Essentials (B/X): classic fantasy. Saves: roll d20 equal or over target (Death/Wands/Paralysis/Breath/Spells). Descending AC (9=unarmored). THAC0 for attacks.',
+  'kal-arath':
+      'Kal-Arath: sword & sorcery OSR. Resolution: roll 2d6 + stat, 8+ to succeed; double 6s crit, double 1s fumble. Five stats; demonic pacts; Fate Points.',
 };
 
 /// Resolves a campaign's enabled [systems] + [rulesets] to one primer, or ''
@@ -50,6 +52,7 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('cairn')) return kSystemPrimers['cairn']!;
   if (systems.contains('knave')) return kSystemPrimers['knave']!;
   if (systems.contains('ose')) return kSystemPrimers['ose']!;
+  if (systems.contains('kal-arath')) return kSystemPrimers['kal-arath']!;
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) {
       return kSystemPrimers['sundered_isles']!;
@@ -72,6 +75,7 @@ String resolveSystem(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('cairn')) return 'cairn';
   if (systems.contains('knave')) return 'knave';
   if (systems.contains('ose')) return 'ose';
+  if (systems.contains('kal-arath')) return 'kal-arath';
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) return 'sundered_isles';
     if (rulesets.contains('starforged')) return 'starforged';
