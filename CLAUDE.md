@@ -332,11 +332,18 @@ Working rules for this repo:
   GM dead-combo hint. Genre/tone fields show in both modes. `_EditSystemsDialog`
   is grouped by the same categories (`edit-sys-<id>`, multi-toggle, advanced).
   The dialog's return record `(name, systems, mode, genre, tone)` is preserved
-  (callers + `SessionsNotifier.create` unchanged). P2 (a stepped wizard + a
-  live-preview pane reusing shared gating predicates + mode auto-suggest) is a
-  separate follow-up plan. See
+  (callers + `SessionsNotifier.create` unchanged). **P2 (live preview)** added a
+  `CampaignPreviewPane` (`lib/shared/campaign_preview_pane.dart`) embedded in the
+  dialog (below genre/tone, live-updating via `_resolved()`): it shows which app
+  surfaces the current (mode, systems) light up, reading the pure `surfacesFor`
+  (`lib/engine/campaign_surfaces.dart`) — an authored surface table whose mode
+  gates call the real `visibleForMode` (role_tags) and whose system gates a test
+  validates against `kKnownSystems`, so the preview can't drift from runtime. A
+  full multi-step stepper was judged unnecessary (P1's grouped Custom picker +
+  the preview cover direction B). See
   `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md` and the
-  plan `docs/superpowers/plans/2026-06-24-campaign-creation-redesign.md`.
+  plans `docs/superpowers/plans/2026-06-24-campaign-creation-redesign.md`
+  (P1) + `docs/superpowers/plans/2026-06-24-campaign-wizard.md` (P2).
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs
   (empty groups hidden; the active PC `playContextProvider.activeCharacterId` is
