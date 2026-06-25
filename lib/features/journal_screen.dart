@@ -18,6 +18,8 @@ import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
 import '../engine/tarot_spreads.dart';
+import '../shared/ai_badge.dart';
+import '../shared/ai_nudge_card.dart';
 import '../shared/card_image.dart';
 import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
@@ -397,6 +399,24 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     }
   }
 
+  /// One-shot contextual nudge to turn on the on-device AI: shown only while AI
+  /// is supported on this platform, not yet ready (downloaded + enabled), and
+  /// the player hasn't dismissed it. Loading states of all three gates count as
+  /// "don't show".
+  Widget _aiNudge() {
+    final supported = ref.watch(aiSupportedProvider);
+    final ready = ref.watch(aiReadyProvider);
+    final seen = ref.watch(aiNudgeSeenProvider).valueOrNull ?? true;
+    if (!supported || ready || seen) return const SizedBox.shrink();
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AiNudgeCard(),
+        _AiFootnote(),
+      ],
+    );
+  }
+
   /// "Previously on…" nudge shown when there are entries the player hasn't
   /// recapped since last visit (and the model is available to do it).
   Widget _recapBanner(List<JournalEntry> entries) {
@@ -425,6 +445,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         children: [
           Icon(Icons.history_edu_outlined,
               size: 18, color: theme.colorScheme.onSecondaryContainer),
+          const SizedBox(width: 8),
+          const AiBadge(),
           const SizedBox(width: 8),
           Expanded(
             child: Text('Returning to this campaign?',
@@ -610,6 +632,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               }
               return Column(
                 children: [
+                  _aiNudge(),
                   _recapBanner(entries),
                   if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     _filterChips(threads, tags, chars),
@@ -1574,8 +1597,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             if (ref.watch(aiReadyProvider))
               PopupMenuButton<NarrateMode>(
                 key: const Key('composer-narrate'),
-                icon: const Icon(Icons.auto_stories_outlined),
-                tooltip: 'GM narration',
+                icon: const AiBadge(),
+                tooltip: 'GM narration (AI)',
                 onSelected: _narrate,
                 itemBuilder: (context) => const [
                   PopupMenuItem(
@@ -2407,6 +2430,23 @@ String _sourceLabel(String? sourceTool) {
   }
 }
 
+/// The single legend explaining the ✦ marker, shown under the AI-enable nudge.
+class _AiFootnote extends StatelessWidget {
+  const _AiFootnote();
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: Text(
+        '✦ marks an AI-assisted action · all on-device',
+        style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+      ),
+    );
+  }
+}
+
 /// A slim, low-weight row for mechanical dice/log results (sourceTool=='dice').
 /// Sits back so oracle hero cards carry the visual weight.
 class _DiceLogRow extends StatelessWidget {
@@ -2694,15 +2734,14 @@ class _PayloadCard extends StatelessWidget {
                 Row(
                   children: [
                     if (onInterpret != null)
-                      TextButton.icon(
+                      TextButton(
                         onPressed: onInterpret,
-                        icon: const Icon(Icons.auto_awesome, size: 16),
-                        label: const Text('Interpret'),
+                        child: const AiBadge(label: 'Interpret'),
                       ),
                     if (onVoice != null)
                       TextButton(
                         onPressed: onVoice,
-                        child: const Text('Voice line'),
+                        child: const AiBadge(label: 'Voice line'),
                       ),
                     const Spacer(),
                     if (onTogglePin != null)
