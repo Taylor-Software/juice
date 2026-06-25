@@ -25,7 +25,7 @@ class _SettingsSheet extends ConsumerWidget {
     final status = ref.watch(interpreterStatusProvider).valueOrNull;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
