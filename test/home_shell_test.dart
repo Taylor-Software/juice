@@ -196,7 +196,7 @@ void main() {
   });
 
   testWidgets(
-      'new campaign dialog shows system checkboxes; unchecking party excludes it',
+      'new campaign dialog Custom picker: excluding party and including verdant',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -211,26 +211,35 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
 
-    // All five system checkboxes are present and checked by default.
-    expect(find.byKey(const Key('sys-juice')), findsOneWidget);
-    expect(find.byKey(const Key('sys-mythic')), findsOneWidget);
-    expect(find.byKey(const Key('sys-ironsworn')), findsOneWidget);
-    expect(find.byKey(const Key('sys-party')), findsOneWidget);
-    expect(find.byKey(const Key('sys-verdant')), findsOneWidget);
+    // Preset chips are shown; open Custom picker.
+    expect(find.byKey(const Key('preset-solo-ironsworn')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('preset-custom')));
+    await tester.pumpAndSettle();
 
-    // Uncheck party (scroll it into view — the dialog also has genre/tone).
-    await tester.ensureVisible(find.byKey(const Key('sys-party')));
-    await tester.tap(find.byKey(const Key('sys-party')));
+    // Custom picker is now visible: ruleset + addon chips.
+    // Pick ironsworn as ruleset.
+    await tester.tap(find.byKey(const Key('ruleset-ironsworn')));
+    await tester.pumpAndSettle();
+    // Add oracle defaults (juice is pre-selected in _addons).
+    // Add verdant exploration.
+    await tester.ensureVisible(find.byKey(const Key('cat-verdant')));
+    await tester.tap(find.byKey(const Key('cat-verdant')));
+    await tester.pumpAndSettle();
+    // Party is pre-checked in _addons; remove it.
+    await tester.ensureVisible(find.byKey(const Key('cat-party')));
+    await tester.tap(find.byKey(const Key('cat-party')));
+    await tester.pumpAndSettle();
+    // Also add mythic.
+    await tester.ensureVisible(find.byKey(const Key('cat-mythic')));
+    await tester.tap(find.byKey(const Key('cat-mythic')));
     await tester.pumpAndSettle();
 
     // Enter a name (keyed — the journal composer also has a TextField).
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'No Party');
-    await tester.pumpAndSettle();
 
     // Tap Create.
     final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.ensureVisible(create);
     await tester.tap(create);
     await tester.pumpAndSettle();
 
@@ -293,7 +302,8 @@ void main() {
     expect(find.byKey(const Key('split-toggle')), findsNothing);
   });
 
-  testWidgets('new campaign dialog can enable the dnd add-on', (tester) async {
+  testWidgets('new campaign dialog preset solo-dnd selects dnd system',
+      (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
@@ -304,11 +314,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Dungeon');
-    await tester.ensureVisible(find.byKey(const Key('sys-dnd')));
-    await tester.tap(find.byKey(const Key('sys-dnd')));
+    await tester.tap(find.byKey(const Key('preset-solo-dnd')));
     await tester.pumpAndSettle();
     final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.ensureVisible(create);
     await tester.tap(create);
     await tester.pumpAndSettle();
     final container =
@@ -318,7 +326,7 @@ void main() {
     expect(s.activeMeta.enabledSystems, contains('dnd'));
   });
 
-  testWidgets('new campaign dialog can enable the shadowdark add-on',
+  testWidgets('new campaign dialog preset solo-shadowdark selects shadowdark',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -330,11 +338,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Gloomhold');
-    await tester.ensureVisible(find.byKey(const Key('sys-shadowdark')));
-    await tester.tap(find.byKey(const Key('sys-shadowdark')));
+    await tester.tap(find.byKey(const Key('preset-solo-shadowdark')));
     await tester.pumpAndSettle();
     final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.ensureVisible(create);
     await tester.tap(create);
     await tester.pumpAndSettle();
     final container =

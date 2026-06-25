@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/campaign_presets.dart';
 import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -706,6 +707,40 @@ const kSystemBlurbs = <String, String>{
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
+const kPresetIcons = <String, IconData>{
+  'solo-ironsworn': Icons.bolt,
+  'solo-dnd': Icons.castle,
+  'solo-shadowdark': Icons.dark_mode,
+  'solo-nimble': Icons.flash_on,
+  'solo-draw-steel': Icons.shield,
+  'solo-argosa': Icons.fort,
+  'solo-cairn': Icons.terrain,
+  'solo-knave': Icons.content_cut,
+  'solo-ose': Icons.auto_stories,
+  'oracle': Icons.casino,
+  'gm-toolkit': Icons.book,
+};
+
+/// Short display names for use in the Custom grouped picker chips.
+const kSystemShortName = <String, String>{
+  'ironsworn': 'Ironsworn',
+  'dnd': 'D&D 5e',
+  'shadowdark': 'Shadowdark',
+  'nimble': 'Nimble',
+  'draw-steel': 'Draw Steel',
+  'argosa': 'Argosa',
+  'cairn': 'Cairn',
+  'knave': 'Knave 2e',
+  'ose': 'OSE/B/X',
+  'juice': 'Juice',
+  'mythic': 'Mythic',
+  'cards': 'Cards',
+  'verdant': 'Verdant',
+  'hexcrawl': 'Hexcrawl',
+  'party': 'Party',
+  'lonelog': 'Lonelog',
+};
+
 class NewCampaignDialog extends StatefulWidget {
   const NewCampaignDialog({super.key});
 
@@ -717,22 +752,12 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   final _controller = TextEditingController();
   final _genre = TextEditingController();
   final _tone = TextEditingController();
-  bool _juice = true;
-  bool _mythic = true;
-  bool _ironsworn = true;
-  bool _party = true;
-  bool _verdant = true;
-  bool _lonelog = false;
-  bool _hexcrawl = false;
-  bool _dnd = false;
-  bool _shadowdark = false;
-  bool _nimble = false;
-  bool _drawSteel = false;
-  bool _argosa = false;
-  bool _cairn = false;
-  bool _knave = false;
-  bool _ose = false;
-  bool _cards = false;
+
+  String? _presetId = 'solo-ironsworn'; // default selection
+  bool _custom = false;
+  // Custom-mode working set:
+  String? _ruleset; // single-select ruleset id, or null
+  final Set<String> _addons = {'juice', 'party'}; // non-ruleset picks
   CampaignMode _mode = CampaignMode.party;
 
   @override
@@ -743,29 +768,21 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
     super.dispose();
   }
 
+  /// The (mode, systems) the Create button will submit.
+  (CampaignMode, Set<String>) _resolved() {
+    if (_custom) {
+      return (_mode, {if (_ruleset != null) _ruleset!, ..._addons});
+    }
+    final p = kCampaignPresets.firstWhere((p) => p.id == _presetId);
+    return presetConfig(p);
+  }
+
   void _submit() {
-    final picked = <String>{
-      if (_juice) 'juice',
-      if (_mythic) 'mythic',
-      if (_ironsworn) 'ironsworn',
-      if (_party) 'party',
-      if (_verdant) 'verdant',
-      if (_lonelog) 'lonelog',
-      if (_hexcrawl) 'hexcrawl',
-      if (_dnd) 'dnd',
-      if (_shadowdark) 'shadowdark',
-      if (_nimble) 'nimble',
-      if (_drawSteel) 'draw-steel',
-      if (_argosa) 'argosa',
-      if (_cairn) 'cairn',
-      if (_knave) 'knave',
-      if (_ose) 'ose',
-      if (_cards) 'cards',
-    };
+    final (mode, systems) = _resolved();
     Navigator.of(context).pop((
       name: _controller.text,
-      systems: picked,
-      mode: _mode,
+      systems: systems,
+      mode: mode,
       genre: _genre.text.trim(),
       tone: _tone.text.trim(),
     ));
@@ -773,19 +790,63 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final rulesetIds = kSystemCategory.entries
+        .where((e) => e.value == SystemCategory.ruleset)
+        .map((e) => e.key)
+        .toList();
+    final addonIds = kSystemCategory.entries
+        .where((e) => e.value != SystemCategory.ruleset)
+        .map((e) => e.key)
+        .toList();
+
     return AlertDialog(
       title: const Text('New campaign'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      content: SizedBox(
+        width: 460,
+        // Fixed height + internal scroll keeps all chips within the visible
+        // area of the dialog regardless of content mode. autofocus is false
+        // to prevent SingleChildScrollView jumping on field focus change.
+        height: 380,
+        child: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
             TextField(
               key: const Key('new-campaign-name'),
               controller: _controller,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Name'),
+              autofocus: false,
+              decoration: const InputDecoration(labelText: 'Campaign name'),
               onSubmitted: (_) => _submit(),
             ),
+            const SizedBox(height: 8),
+            // Show preset grid OR custom picker — not both
+            if (!_custom) ...[
+              const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Choose a starting point')),
+              const SizedBox(height: 6),
+              Wrap(spacing: 6, runSpacing: 4, children: [
+                for (final p in kCampaignPresets)
+                  ChoiceChip(
+                    key: Key('preset-${p.id}'),
+                    avatar: Icon(kPresetIcons[p.id], size: 16),
+                    label: Text(p.label, style: const TextStyle(fontSize: 12)),
+                    visualDensity: VisualDensity.compact,
+                    selected: _presetId == p.id,
+                    onSelected: (_) => setState(() => _presetId = p.id),
+                  ),
+                ChoiceChip(
+                  key: const Key('preset-custom'),
+                  avatar: const Icon(Icons.tune, size: 16),
+                  label: const Text('Custom', style: TextStyle(fontSize: 12)),
+                  visualDensity: VisualDensity.compact,
+                  selected: false,
+                  onSelected: (_) => setState(() => _custom = true),
+                ),
+              ]),
+            ] else ...[
+              _customPicker(rulesetIds, addonIds),
+            ],
+            // Genre/tone are campaign metadata — always available, both modes.
+            const SizedBox(height: 8),
             TextField(
               key: const Key('new-campaign-genre'),
               controller: _genre,
@@ -793,6 +854,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
                   labelText: 'Genre (optional)',
                   hintText: 'e.g. grimdark fantasy'),
             ),
+            const SizedBox(height: 8),
             TextField(
               key: const Key('new-campaign-tone'),
               controller: _tone,
@@ -800,167 +862,101 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
                   labelText: 'Tone (optional)',
                   hintText: 'e.g. tense and dangerous'),
             ),
-            const Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                    padding: EdgeInsets.only(top: 12), child: Text('Mode'))),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: SegmentedButton<CampaignMode>(
-                key: const Key('new-campaign-mode'),
-                segments: const [
-                  ButtonSegment(
-                    value: CampaignMode.party,
-                    label: Text('Party'),
-                    icon: Icon(Icons.groups_outlined),
-                  ),
-                  ButtonSegment(
-                    value: CampaignMode.gm,
-                    label: Text('GM'),
-                    icon: Icon(Icons.shield_outlined),
-                  ),
-                ],
-                selected: {_mode},
-                onSelectionChanged: (s) => setState(() => _mode = s.first),
-              ),
-            ),
-            const Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                    padding: EdgeInsets.only(top: 12),
-                    child: Text('Default systems'))),
-            CheckboxListTile(
-              key: const Key('sys-juice'),
-              title: const Text('Juice oracle'),
-              subtitle: Text(kSystemBlurbs['juice']!),
-              value: _juice,
-              onChanged: (v) => setState(() => _juice = v ?? true),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-mythic'),
-              title: const Text('Mythic GME'),
-              subtitle: Text(kSystemBlurbs['mythic']!),
-              value: _mythic,
-              onChanged: (v) => setState(() => _mythic = v ?? true),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-ironsworn'),
-              title: const Text('Ironsworn family'),
-              subtitle: Text(kSystemBlurbs['ironsworn']!),
-              value: _ironsworn,
-              onChanged: (v) => setState(() => _ironsworn = v ?? true),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-party'),
-              title: const Text('Party emulator'),
-              subtitle: Text(kSystemBlurbs['party']!),
-              value: _party,
-              onChanged: (v) => setState(() => _party = v ?? true),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-verdant'),
-              title: const Text('Verdant Hexcrawling'),
-              subtitle: Text(kSystemBlurbs['verdant']!),
-              value: _verdant,
-              onChanged: (v) => setState(() => _verdant = v ?? true),
-            ),
-            const Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                    padding: EdgeInsets.only(top: 12), child: Text('Add-ons'))),
-            CheckboxListTile(
-              key: const Key('sys-lonelog'),
-              title: const Text('Lonelog journaling'),
-              subtitle: Text(kSystemBlurbs['lonelog']!),
-              value: _lonelog,
-              onChanged: (v) => setState(() => _lonelog = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-hexcrawl'),
-              title: const Text('Hexcrawl toolkit'),
-              subtitle: Text(kSystemBlurbs['hexcrawl']!),
-              value: _hexcrawl,
-              onChanged: (v) => setState(() => _hexcrawl = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-dnd'),
-              title: const Text('D&D 5e'),
-              subtitle: Text(kSystemBlurbs['dnd']!),
-              value: _dnd,
-              onChanged: (v) => setState(() => _dnd = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-shadowdark'),
-              title: const Text('Shadowdark'),
-              subtitle: Text(kSystemBlurbs['shadowdark']!),
-              value: _shadowdark,
-              onChanged: (v) => setState(() => _shadowdark = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-nimble'),
-              title: const Text('Nimble'),
-              subtitle: Text(kSystemBlurbs['nimble']!),
-              value: _nimble,
-              onChanged: (v) => setState(() => _nimble = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-draw-steel'),
-              title: const Text('Draw Steel'),
-              subtitle: Text(kSystemBlurbs['draw-steel']!),
-              value: _drawSteel,
-              onChanged: (v) => setState(() => _drawSteel = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-argosa'),
-              title: const Text('Tales of Argosa'),
-              subtitle: Text(kSystemBlurbs['argosa']!),
-              value: _argosa,
-              onChanged: (v) => setState(() => _argosa = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-cairn'),
-              title: const Text('Cairn'),
-              subtitle: Text(kSystemBlurbs['cairn']!),
-              value: _cairn,
-              onChanged: (v) => setState(() => _cairn = v ?? false),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-knave'),
-              title: const Text('Knave'),
-              subtitle: Text(kSystemBlurbs['knave']!,
-                  style: const TextStyle(fontSize: 11)),
-              value: _knave,
-              onChanged: (v) => setState(() => _knave = v!),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-ose'),
-              title: const Text('OSE / B/X'),
-              subtitle: Text(kSystemBlurbs['ose']!,
-                  style: const TextStyle(fontSize: 11)),
-              value: _ose,
-              onChanged: (v) => setState(() => _ose = v!),
-            ),
-            CheckboxListTile(
-              key: const Key('sys-cards'),
-              title: const Text('Cards'),
-              subtitle: Text(kSystemBlurbs['cards']!),
-              value: _cards,
-              onChanged: (v) => setState(() => _cards = v ?? false),
-            ),
-          ],
+          ]),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Create'),
-        ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel')),
+        FilledButton(onPressed: _submit, child: const Text('Create')),
       ],
     );
+  }
+
+  Widget _customPicker(List<String> rulesetIds, List<String> addonIds) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          key: const Key('preset-back'),
+          onPressed: () => setState(() => _custom = false),
+          icon: const Icon(Icons.arrow_back, size: 16),
+          label: const Text('Back to presets'),
+        ),
+      ),
+      const Text('Ruleset (pick one)'),
+      const SizedBox(height: 4),
+      Wrap(spacing: 6, runSpacing: 6, children: [
+        ChoiceChip(
+          key: const Key('ruleset-none'),
+          label: const Text('None'),
+          selected: _ruleset == null,
+          onSelected: (_) => setState(() => _ruleset = null),
+        ),
+        for (final id in rulesetIds)
+          ChoiceChip(
+            key: Key('ruleset-$id'),
+            label: Text(kSystemShortName[id] ?? id),
+            selected: _ruleset == id,
+            onSelected: (_) => setState(() => _ruleset = id),
+          ),
+      ]),
+      const SizedBox(height: 8),
+      for (final cat in const [
+        SystemCategory.oracle,
+        SystemCategory.exploration,
+        SystemCategory.tools
+      ]) ...[
+        Text(_categoryLabel(cat)),
+        const SizedBox(height: 4),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final id in addonIds.where((i) => kSystemCategory[i] == cat))
+            FilterChip(
+              key: Key('cat-$id'),
+              label: Text(kSystemShortName[id] ?? id),
+              selected: _addons.contains(id),
+              onSelected: (v) => setState(() {
+                if (v) {
+                  _addons.add(id);
+                } else {
+                  _addons.remove(id);
+                }
+              }),
+            ),
+        ]),
+        const SizedBox(height: 6),
+      ],
+      const SizedBox(height: 4),
+      SegmentedButton<CampaignMode>(
+        key: const Key('new-campaign-mode'),
+        segments: const [
+          ButtonSegment(value: CampaignMode.party, label: Text('Party')),
+          ButtonSegment(value: CampaignMode.gm, label: Text('GM')),
+        ],
+        selected: {_mode},
+        onSelectionChanged: (s) => setState(() => _mode = s.first),
+      ),
+      if (_mode == CampaignMode.gm)
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Text('GM mode hides party tools & shows Rumors',
+              style: TextStyle(fontSize: 11)),
+        ),
+    ]);
+  }
+
+  String _categoryLabel(SystemCategory c) {
+    switch (c) {
+      case SystemCategory.oracle:
+        return 'Oracles';
+      case SystemCategory.exploration:
+        return 'Exploration & maps';
+      case SystemCategory.tools:
+        return 'Tools';
+      case SystemCategory.ruleset:
+        return 'Ruleset';
+    }
   }
 }
 
