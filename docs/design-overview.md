@@ -448,4 +448,86 @@ An opt-in journaling notation system (system id: `lonelog`, not in `kAllSystems`
 
 ---
 
+---
+
+## 17. Designer Findings
+
+Observations from hands-on review of the debug macOS build. Organized by concern type. These are starting points for design investigation, not bug reports.
+
+---
+
+### A. Game Flow — The Solo Play Loop
+
+The core loop of solo TTRPG play is roughly:
+
+> **Set scene → roll oracle → interpret result → record in journal → advance thread or track → repeat**
+
+The app has all the pieces but they're distributed across five verbs with no explicit path connecting them.
+
+**Key friction points:**
+
+1. **Oracle rolls leave the journal.** Ask verb is a separate destination. Roll a Fate Check → result auto-logs → player is now on Ask, not Journal. They must navigate back to write about the result. The HUD quick-roll partially addresses this (logs from any verb) but covers only the default oracle.
+
+2. **No session-start ritual.** "Continue" on launch returns to whatever verb was last open. There's no session summary, no "you left off in Scene 3 at Chaos 5 with these open threads" view. Players must mentally reconstruct context across the HUD scene line, journal scroll, and Threads list.
+
+3. **Scenes live in Track but feel like Journal.** Creating a scene from Track > Scenes adds a divider to the journal and updates the HUD. But scenes are conceptually journal structure — a player's first instinct is to look in the journal, not Track. The Assistant Rail's "Start a scene" chip helps, but only when the rail is expanded.
+
+4. **Encounter combat is isolated.** Track > Encounter has no automatic journal logging. Combat results, HP changes, and round notes require the player to manually navigate to the Journal and write. A session of dungeon combat generates zero automatic journal entries.
+
+5. **Verdant Journey is spread across three surfaces.** Map > World (hex reveal), Map > Journey (day/watch tracker), and Campaign Header HUD (terrain chip) must all be used together for a hexcrawl session. There's no single "journey in progress" view.
+
+6. **Thread management is split.** Threads are created and managed in Track > Threads. They appear as filter chips in the Journal's Assistant Rail. A player tracking an active quest moves between two verbs with no deep link between them.
+
+---
+
+### B. UI Consistency — Patterns That Diverge
+
+1. **Two search icons with different behaviors.** The top-right magnifying glass opens Tool Search (navigate to a tool). The Assistant Rail has a separate search icon that filters journal entries. Same icon metaphor, completely different function. Users scanning the top bar will confuse them.
+
+2. **Two light timers.** The Campaign Header HUD has a global light timer (ungated, neutral). The Shadowdark character sheet has a per-character Torch countdown. Both are intentional, but in a Shadowdark campaign both are visible simultaneously with no visual distinction about which governs play.
+
+3. **Numeric input type varies across sheets.** Most stats use steppers (bounded, tap-friendly). OSE/B/X's THAC0 is a freeform text field. Save targets on OSE are steppers. No apparent rule for when a number becomes a text field vs. a stepper.
+
+4. **Flesh Out entry points are different per surface.** Characters and threads: in the edit dialog. Dungeon rooms and world hex sites: inline button on the detail card. Scenes: in the Track > Scenes row. The flow after tapping is the same (Append/Cancel review) but the trigger location varies with no visual common thread.
+
+5. **Mode toggle icon ambiguity.** The person+ icon in the top-right bar toggles Party ↔ GM mode. The same icon shape (person with a +) conventionally means "add a person." The tooltip reads "Party mode (tap for GM)" which clarifies on press, but the resting state gives no affordance that this is a mode switch rather than an add action.
+
+6. **Dice roller history doesn't auto-log to journal.** Inline journal dice (tapping the dice icon in the composer) logs results. The standalone Dice Roller sheet also has a history section, but those rolls don't appear in the journal unless the user manually copies them. Two dice surfaces, different persistence behaviors.
+
+---
+
+### C. Discoverability Gaps
+
+1. **Assistant Rail is collapsed by default.** The thin expand chevron is easily overlooked. The rail contains the most powerful in-session affordances (suggestion chips, Ask the GM, journal filters) but new users may never find it.
+
+2. **AI exists but Settings is the only entry point.** The ~2.6 GB model download and enable toggle are in Settings (gear icon). Nothing on the oracle, journal, or sheet surfaces prompts users toward AI. Users who don't explore Settings won't know on-device AI is available.
+
+3. **Cards system requires upfront configuration.** Card oracles (standard deck, tarot, spreads) must be enabled at campaign creation or via Edit Systems. The Ask verb shows no cards section if the system wasn't configured. There's no in-context prompt to enable it.
+
+4. **Moves tab is inside Sheet verb.** Ironsworn move references live in Sheet > Moves (Party mode). Players mid-session might look in Ask verb for move prompts; the connection between ruleset sheet and moves tab is non-obvious.
+
+5. **Generators are only in the Journal composer.** The Inspire button (sparkle) opens 24 flavor generators + 3 visual generators. This is buried inside the composer flow. Players looking for generators from the Ask verb or Track verb have no direct path.
+
+---
+
+### D. Presentation Optimization Opportunities
+
+1. **Empty states don't direct.** "No characters yet. Track NPCs and PCs." is accurate but passive. The empty journal ("Write in your journal…") similarly gives no guidance on what to do first. Empty states are ideal moments to show the primary action prominently and explain why it matters.
+
+2. **Campaign list tags are text-only.** Campaigns show system tags as small text strings ("Ironsworn · Mythic · Juice · Party · Verdant"). With multiple campaigns, distinguishing them at a glance requires reading. Color, icons, or a short genre/tone label (from campaign creation) could replace or augment raw system id strings.
+
+3. **Oracle result cards and text entries are visually similar.** Oracle results render as distinct cards with source badges. Scene dividers have a visual separator. Plain text entries are minimal. At a scroll-height glance, result cards don't have enough visual weight to anchor the player's eye — they're the most semantically important entries (decisions, rolls) but aren't treated as such visually.
+
+4. **HUD quick-roll feedback is transient.** The snackbar showing "No But (-+5), Major (d6 5)" dismisses in ~3 seconds. From any non-Journal verb, the result is in the journal but not visible. Players in the middle of a map or track session may miss the details before the snackbar disappears.
+
+5. **The Campaign Header HUD carries a lot of density.** At a glance: scene line, light timer, Chaos stepper, oracle picker, terrain chip, quick-roll button. On a Mythic + Verdant + Ironsworn campaign this is seven distinct elements in one persistent row. Priority ordering and visual grouping (oracle-adjacent controls vs. narrative state) could reduce cognitive load.
+
+6. **Presets naming is system-first, not play-fantasy-first.** Preset chips are labeled by system name (Ironsworn, D&D 5e, Cairn, etc.). A player who doesn't know TTRPG system names can't select a preset confidently. Labels like "Ironsworn (gritty fantasy)" or a sub-label with the genre/mood of each system could lower the barrier.
+
+7. **No in-session progress summary.** The Track verb has Scenes, Threads, Tracks, and Encounter separately. There's no aggregated "where am I" view: current scene + active threads + progress tracks + encounter state in one place. This would reduce the tab-switching required to get oriented at the start of a play session.
+
+---
+
+*Designer findings added 2026-06-25. Based on hands-on review of the macOS debug build.*
+
 *Generated 2026-06-25. Screenshots in `docs/screenshots/design/`. App build: debug macOS.*
