@@ -99,16 +99,8 @@ class CairnSheetView extends ConsumerWidget {
       key: const Key('cairn-sheet'),
       padding: const EdgeInsets.all(12),
       children: [
-        Row(children: [
-          IconButton(
-              key: const Key('sheet-back'),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: onBack),
-          Expanded(
-              child: Text(character.name,
-                  style: theme.textTheme.titleLarge,
-                  overflow: TextOverflow.ellipsis)),
-        ]),
+        sheetNameHeader(context, ref, character,
+            onBack: onBack, nameKey: 'cairn-name'),
         Text('Cairn', style: theme.textTheme.labelSmall),
         const SizedBox(height: 8),
         DropdownButton<String>(

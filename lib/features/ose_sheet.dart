@@ -66,16 +66,8 @@ class OseSheetView extends ConsumerWidget {
       key: const Key('ose-sheet'),
       padding: const EdgeInsets.all(12),
       children: [
-        Row(children: [
-          IconButton(
-              key: const Key('sheet-back'),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: onBack),
-          Expanded(
-              child: Text(character.name,
-                  style: theme.textTheme.titleLarge,
-                  overflow: TextOverflow.ellipsis)),
-        ]),
+        sheetNameHeader(context, ref, character,
+            onBack: onBack, nameKey: 'ose-name'),
         Text('OSE / B/X', style: theme.textTheme.labelSmall),
         const SizedBox(height: 8),
         Row(children: [

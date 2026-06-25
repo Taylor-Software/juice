@@ -59,6 +59,21 @@ void main() {
     expect(find.text('Kal-Arath'), findsOneWidget);
   });
 
+  testWidgets('rename pencil edits the character name', (tester) async {
+    tester.view.physicalSize = const Size(1200, 5000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final c = await _pump(tester);
+    await tester.tap(find.byKey(const Key('kal-arath-name-edit')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('kal-arath-name')), 'Skarn');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.single.name, 'Skarn');
+  });
+
   testWidgets('HP stepper persists', (tester) async {
     tester.view.physicalSize = const Size(1200, 5000);
     tester.view.devicePixelRatio = 1.0;

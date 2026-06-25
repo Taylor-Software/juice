@@ -75,16 +75,8 @@ class DrawSteelSheetView extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       children: [
         // ── Header ──────────────────────────────────────────────────────────
-        Row(children: [
-          IconButton(
-              key: const Key('sheet-back'),
-              icon: const Icon(Icons.arrow_back),
-              onPressed: onBack),
-          Expanded(
-              child: Text(character.name,
-                  style: theme.textTheme.titleLarge,
-                  overflow: TextOverflow.ellipsis)),
-        ]),
+        sheetNameHeader(context, ref, character,
+            onBack: onBack, nameKey: 'draw-steel-name'),
         Text('Draw Steel', style: theme.textTheme.labelSmall),
         const SizedBox(height: 8),
 
