@@ -19,6 +19,7 @@ import '../features/tracking_tab.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
+import 'campaign_preview_pane.dart';
 import 'destination.dart';
 import 'help_nav.dart';
 import 'play_context_hud.dart';
@@ -862,6 +863,12 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
                   labelText: 'Tone (optional)',
                   hintText: 'e.g. tense and dangerous'),
             ),
+            const SizedBox(height: 12),
+            const Divider(),
+            Builder(builder: (_) {
+              final (mode, systems) = _resolved();
+              return CampaignPreviewPane(mode: mode, systems: systems);
+            }),
           ]),
         ),
       ),
