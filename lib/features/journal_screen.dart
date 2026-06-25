@@ -18,6 +18,8 @@ import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
 import '../engine/tarot_spreads.dart';
+import '../shared/ai_badge.dart';
+import '../shared/ai_nudge_card.dart';
 import '../shared/card_image.dart';
 import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
@@ -98,6 +100,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinCard = 'card';
   static const _builtinTarot = 'tarot';
   static const _builtinSpread = 'spread';
+  static const _builtinRoll = 'roll';
+  static const _builtinInspire = 'inspire';
+  static const _builtinThread = 'thread';
 
   @override
   void initState() {
@@ -337,6 +342,81 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     }
   }
 
+  /// /roll <expr>: parse [arg] as dice notation, roll it, and log a rerollable
+  /// `dice` result entry (same pipeline as the inline-dice tap). An empty arg
+  /// opens the full dice sheet instead.
+  Future<void> _rollCmd(String arg) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final notation = arg.trim();
+    if (notation.isEmpty) {
+      showDiceSheet(context, oracle.dice);
+      return;
+    }
+    final DiceRollResult r;
+    try {
+      r = parseDice(notation).roll(oracle.dice);
+    } on FormatException {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Bad dice notation, e.g. /roll 2d6+1')));
+      }
+      return;
+    }
+    final g = diceRollGenResult(r);
+    await ref.read(journalProvider.notifier).addResult(
+      g.title,
+      g.asText,
+      sourceTool: 'dice',
+      payload: {...g.toPayload(), 'expression': r.expression},
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${r.expression} = ${r.total}')));
+    }
+  }
+
+  /// /inspire: opens the generators sheet (the same surface as composer-inspire).
+  /// [arg] is accepted for forward-compat but the sheet has no preselect hook,
+  /// so it just opens.
+  void _inspireCmd(String arg) => showGenerateSheet(context);
+
+  /// /thread <title>: creates a story thread with that title via the existing
+  /// ThreadNotifier.add pipeline. An empty title navigates to the Track verb's
+  /// threads pane so the normal new-thread flow is at hand.
+  Future<void> _threadCmd(String arg) async {
+    final title = arg.trim();
+    if (title.isEmpty) {
+      ref
+          .read(shellRouteProvider.notifier)
+          .goTo(Destination.track, subtab: 'threads');
+      return;
+    }
+    await ref.read(threadsProvider.notifier).add(title);
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Tracking "$title"')));
+    }
+  }
+
+  /// One-shot contextual nudge to turn on the on-device AI: shown only while AI
+  /// is supported on this platform, not yet ready (downloaded + enabled), and
+  /// the player hasn't dismissed it. Loading states of all three gates count as
+  /// "don't show".
+  Widget _aiNudge() {
+    final supported = ref.watch(aiSupportedProvider);
+    final ready = ref.watch(aiReadyProvider);
+    final seen = ref.watch(aiNudgeSeenProvider).valueOrNull ?? true;
+    if (!supported || ready || seen) return const SizedBox.shrink();
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AiNudgeCard(),
+        _AiFootnote(),
+      ],
+    );
+  }
+
   /// "Previously on…" nudge shown when there are entries the player hasn't
   /// recapped since last visit (and the model is available to do it).
   Widget _recapBanner(List<JournalEntry> entries) {
@@ -365,6 +445,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         children: [
           Icon(Icons.history_edu_outlined,
               size: 18, color: theme.colorScheme.onSecondaryContainer),
+          const SizedBox(width: 8),
+          const AiBadge(),
           const SizedBox(width: 8),
           Expanded(
             child: Text('Returning to this campaign?',
@@ -550,6 +632,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               }
               return Column(
                 children: [
+                  _aiNudge(),
                   _recapBanner(entries),
                   if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
                     _filterChips(threads, tags, chars),
@@ -1056,8 +1139,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showCard = _builtinCard.startsWith(tok) && cardsOn;
     final showTarot = _builtinTarot.startsWith(tok) && cardsOn;
     final showSpread = _builtinSpread.startsWith(tok) && cardsOn;
+    final showRoll = _builtinRoll.startsWith(tok);
+    final showInspire = _builtinInspire.startsWith(tok);
+    final showThread = _builtinThread.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
+    final tk = context.juice;
     return Material(
       key: const Key('slash-palette'),
       color: theme.colorScheme.surfaceContainerHighest,
@@ -1076,34 +1163,72 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 onRun: ({String? odds}) => _selectCommand(c, odds: odds),
               ),
             if (showScene)
-              ListTile(
-                key: const Key('slash-cmd-scene'),
-                dense: true,
-                leading: const Icon(Icons.movie_outlined),
-                title: const Text('Start a scene'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-scene'),
+                icon: Icons.movie_outlined,
+                command: '/scene',
+                description: 'Start a new scene',
                 onTap: () {
                   _composer.clear();
                   _newScene();
                 },
               ),
+            if (showRoll)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-roll'),
+                icon: Icons.casino_outlined,
+                command: '/roll',
+                description: parsed.rest.trim().isEmpty
+                    ? 'Roll dice — add notation, e.g. /roll 2d6+1'
+                    : 'Roll ${parsed.rest.trim()}',
+                onTap: () {
+                  final rest = parsed.rest;
+                  _composer.clear();
+                  _rollCmd(rest);
+                },
+              ),
+            if (showInspire)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-inspire'),
+                icon: Icons.auto_awesome,
+                command: '/inspire',
+                description: 'Open the generators',
+                onTap: () {
+                  _composer.clear();
+                  _inspireCmd(parsed.rest);
+                },
+              ),
+            if (showThread)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-thread'),
+                icon: Icons.bookmark_add_outlined,
+                command: '/thread',
+                description: parsed.rest.trim().isEmpty
+                    ? 'Track a thread — add a title, e.g. /thread The heist'
+                    : 'Track "${parsed.rest.trim()}"',
+                onTap: () {
+                  final rest = parsed.rest;
+                  _composer.clear();
+                  _threadCmd(rest);
+                },
+              ),
             if (showHelp)
-              ListTile(
-                key: const Key('slash-cmd-help'),
-                dense: true,
-                leading: const Icon(Icons.help_outline),
-                title: const Text('Open Help'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-help'),
+                icon: Icons.help_outline,
+                command: '/help',
+                description: 'Open Help',
                 onTap: () {
                   _composer.clear();
                   openHelp(context, ref);
                 },
               ),
             if (showAsk)
-              ListTile(
-                key: const Key('slash-cmd-ask'),
-                dense: true,
-                leading: const Icon(Icons.psychology_alt_outlined),
-                title: const Text('Ask the oracle'),
-                subtitle: const Text('Type your question after /ask'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-ask'),
+                icon: Icons.psychology_alt_outlined,
+                command: '/ask',
+                description: 'Ask the oracle — type your question after /ask',
                 onTap: () {
                   final question = parsed.rest.trim();
                   if (question.isNotEmpty) {
@@ -1114,45 +1239,45 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 },
               ),
             if (showRecap)
-              ListTile(
-                key: const Key('slash-cmd-recap'),
-                dense: true,
-                leading: const Icon(Icons.history_edu_outlined),
-                title: const Text('Recap recent play'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-recap'),
+                icon: Icons.history_edu_outlined,
+                command: '/recap',
+                description: 'Recap recent play',
                 onTap: () {
                   _composer.clear();
                   _recap();
                 },
               ),
             if (showCard)
-              ListTile(
-                key: const Key('slash-cmd-card'),
-                dense: true,
-                leading: const Icon(Icons.style_outlined),
-                title: const Text('Draw a card'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-card'),
+                icon: Icons.style_outlined,
+                command: '/card',
+                description: 'Draw a card',
                 onTap: () {
                   _composer.clear();
                   _drawCardCmd(tarot: false);
                 },
               ),
             if (showTarot)
-              ListTile(
-                key: const Key('slash-cmd-tarot'),
-                dense: true,
-                leading: const Icon(Icons.auto_awesome),
-                title: const Text('Draw a tarot card'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-tarot'),
+                icon: Icons.auto_awesome,
+                command: '/tarot',
+                description: 'Draw a tarot card',
                 onTap: () {
                   _composer.clear();
                   _drawCardCmd(tarot: true);
                 },
               ),
             if (showSpread)
-              ListTile(
-                key: const Key('slash-cmd-spread'),
-                dense: true,
-                leading: const Icon(Icons.dashboard_outlined),
-                title: const Text('Draw a tarot spread'),
-                subtitle: const Text('Add a name, e.g. /spread celtic'),
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-spread'),
+                icon: Icons.dashboard_outlined,
+                command: '/spread',
+                description:
+                    'Draw a tarot spread — add a name, e.g. /spread celtic',
                 onTap: () {
                   _composer.clear();
                   _drawSpreadCmd('');
@@ -1165,10 +1290,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 !showRecap &&
                 !showCard &&
                 !showTarot &&
-                !showSpread)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Text('No matching command'),
+                !showSpread &&
+                !showRoll &&
+                !showInspire &&
+                !showThread)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text('No matching command',
+                    style: tk.uiLabel.copyWith(color: tk.inkMuted)),
               ),
           ],
         ),
@@ -1388,6 +1517,43 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   // -- Composer ---------------------------------------------------------------
 
+  /// Subtle "/" affordance that hints the slash-command palette exists. Tapping
+  /// it inserts `/` and opens the palette (same state the keyboard `/` drives).
+  Widget _slashHint() {
+    final tk = context.juice;
+    return Tooltip(
+      message: 'Slash commands',
+      child: InkWell(
+        key: const Key('slash-hint'),
+        onTap: _openSlashPalette,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: BoxDecoration(
+            color: tk.card,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: tk.hairline),
+          ),
+          child: Text('/',
+              style: tk.uiLabel.copyWith(
+                  color: tk.terracotta,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  height: 1.0)),
+        ),
+      ),
+    );
+  }
+
+  /// Seeds the composer with `/` and places the caret after it, opening the
+  /// slash palette via the composer listener.
+  void _openSlashPalette() {
+    _composer.value = const TextEditingValue(
+      text: '/',
+      selection: TextSelection.collapsed(offset: 1),
+    );
+  }
+
   Widget _composerBar() {
     return SafeArea(
       top: false,
@@ -1396,6 +1562,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
+            _slashHint(),
+            const SizedBox(width: 4),
             Expanded(
               child: TextField(
                 key: const Key('journal-composer'),
@@ -1429,8 +1597,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             if (ref.watch(aiReadyProvider))
               PopupMenuButton<NarrateMode>(
                 key: const Key('composer-narrate'),
-                icon: const Icon(Icons.auto_stories_outlined),
-                tooltip: 'GM narration',
+                icon: const AiBadge(),
+                tooltip: 'GM narration (AI)',
                 onSelected: _narrate,
                 itemBuilder: (context) => const [
                   PopupMenuItem(
@@ -1529,6 +1697,21 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinAsk == tok) {
         final question = parsed.rest.trim();
         if (question.isNotEmpty) await _ask(question);
+        return;
+      }
+      if (_builtinRoll == tok) {
+        _composer.clear();
+        await _rollCmd(parsed.rest);
+        return;
+      }
+      if (_builtinInspire == tok) {
+        _composer.clear();
+        _inspireCmd(parsed.rest);
+        return;
+      }
+      if (_builtinThread == tok) {
+        _composer.clear();
+        await _threadCmd(parsed.rest);
         return;
       }
       final systems =
@@ -2102,20 +2285,29 @@ class _SlashRowState extends State<_SlashRow> {
   @override
   Widget build(BuildContext context) {
     final c = widget.command;
+    final tk = context.juice;
     final hasOdds = c.arg == CommandArg.odds;
+    final description = c.arg == CommandArg.notation
+        ? (widget.notation.isEmpty
+            ? 'Type dice notation, e.g. /dice 3d6+2'
+            : 'Roll ${widget.notation}')
+        : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ListTile(
           key: Key('slash-cmd-${c.id}'),
           dense: true,
-          title: Text(c.label),
-          subtitle: c.arg == CommandArg.notation
-              ? Text(widget.notation.isEmpty
-                  ? 'Type dice notation, e.g. /dice 3d6+2'
-                  : 'Roll ${widget.notation}')
-              : null,
-          trailing: hasOdds ? const Icon(Icons.tune, size: 18) : null,
+          // Highlight the row while its odds chips are expanded.
+          tileColor: _expanded ? tk.sand : null,
+          leading: _SlashIconTile(icon: _commandIcon(c.id)),
+          title: Text(c.label, style: tk.uiLabel),
+          subtitle: description == null
+              ? null
+              : Text(description,
+                  style: tk.uiLabel.copyWith(fontSize: 12, color: tk.inkMuted)),
+          trailing:
+              hasOdds ? Icon(Icons.tune, size: 18, color: tk.inkMuted) : null,
           onTap: () {
             if (hasOdds) {
               setState(() => _expanded = !_expanded);
@@ -2149,6 +2341,75 @@ class _SlashRowState extends State<_SlashRow> {
   }
 }
 
+/// Icon for a registry command row, keyed by command id.
+IconData _commandIcon(String id) => switch (id) {
+      'fate-juice' ||
+      'fate-mythic' ||
+      'fate-roll-high' =>
+        Icons.help_center_outlined,
+      'dice' => Icons.casino_outlined,
+      'meaning' => Icons.lightbulb_outline,
+      'name' => Icons.badge_outlined,
+      'detail' => Icons.auto_awesome,
+      _ => Icons.bolt_outlined,
+    };
+
+/// Small tinted square that holds a palette-row icon, for a uniform leading
+/// affordance across registry and built-in slash rows.
+class _SlashIconTile extends StatelessWidget {
+  const _SlashIconTile({required this.icon});
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: tk.card,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: tk.hairline),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 18, color: tk.terracotta),
+    );
+  }
+}
+
+/// A tokened palette row for a built-in slash command: an icon tile, the
+/// command text in [JuiceTokens.uiLabel], and a muted description. Highlights
+/// in [JuiceTokens.sand] while pressed (parity with the registry row).
+class _BuiltinSlashRow extends StatelessWidget {
+  const _BuiltinSlashRow({
+    required this.rowKey,
+    required this.icon,
+    required this.command,
+    required this.description,
+    required this.onTap,
+  });
+
+  final Key rowKey;
+  final IconData icon;
+  final String command;
+  final String description;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return ListTile(
+      key: rowKey,
+      dense: true,
+      leading: _SlashIconTile(icon: icon),
+      title: Text(command, style: tk.uiLabel),
+      subtitle: Text(description,
+          style: tk.uiLabel.copyWith(fontSize: 12, color: tk.inkMuted)),
+      onTap: onTap,
+    );
+  }
+}
+
 /// Humanizes a [JournalEntry.sourceTool] id into an uppercase source label
 /// for the hero card's source row, e.g. 'fate-juice' -> 'FATE CHECK',
 /// 'dice' -> 'DICE', 'cards' -> 'CARDS'. Falls back to the de-hyphenated id.
@@ -2166,6 +2427,23 @@ String _sourceLabel(String? sourceTool) {
       return 'DICE';
     default:
       return sourceTool.replaceAll('-', ' ').toUpperCase();
+  }
+}
+
+/// The single legend explaining the ✦ marker, shown under the AI-enable nudge.
+class _AiFootnote extends StatelessWidget {
+  const _AiFootnote();
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+      child: Text(
+        '✦ marks an AI-assisted action · all on-device',
+        style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+      ),
+    );
   }
 }
 
@@ -2456,15 +2734,14 @@ class _PayloadCard extends StatelessWidget {
                 Row(
                   children: [
                     if (onInterpret != null)
-                      TextButton.icon(
+                      TextButton(
                         onPressed: onInterpret,
-                        icon: const Icon(Icons.auto_awesome, size: 16),
-                        label: const Text('Interpret'),
+                        child: const AiBadge(label: 'Interpret'),
                       ),
                     if (onVoice != null)
                       TextButton(
                         onPressed: onVoice,
-                        child: const Text('Voice line'),
+                        child: const AiBadge(label: 'Voice line'),
                       ),
                     const Spacer(),
                     if (onTogglePin != null)

@@ -6,6 +6,7 @@ import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'design_tokens.dart';
 import 'destination.dart';
 import 'shell_route.dart';
 
@@ -45,6 +46,7 @@ class CampaignHeader extends ConsumerWidget {
             kAllSystems;
     final usesMythic = systems.contains('mythic');
     final theme = Theme.of(context);
+    final tk = context.juice;
     final light = ref.watch(lightProvider).valueOrNull ?? 0;
     final collapsed = settings.headerCollapsed;
     return Container(
@@ -69,6 +71,23 @@ class CampaignHeader extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
+            // Narrative-state Chaos value — always visible (tier 1), even when
+            // the roll-controls (steppers in tier 2) are collapsed. Gated to
+            // Mythic campaigns like the steppers below.
+            if (usesMythic && crawl != null) ...[
+              Chip(
+                key: const Key('hdr-chaos'),
+                visualDensity: VisualDensity.compact,
+                backgroundColor: tk.chaosChipBg,
+                side: BorderSide.none,
+                label: Text(
+                  'Chaos ${crawl.chaosFactor}',
+                  style: theme.textTheme.labelMedium
+                      ?.copyWith(color: tk.chaosChipText),
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
             // One-tap roll of the default oracle from any verb — the loop's
             // most frequent action, always reachable (even when collapsed).
             IconButton(
@@ -114,12 +133,15 @@ class CampaignHeader extends ConsumerWidget {
                   // Global light timer — ungated (every campaign, every verb);
                   // a neutral player-controlled countdown, no duration asserted.
                   InputChip(
+                    backgroundColor: tk.card,
+                    side: BorderSide.none,
                     avatar: Icon(Icons.local_fire_department,
                         size: 16,
                         color: light > 0
                             ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant),
-                    label: Text(light > 0 ? 'Light $light' : 'Light: out'),
+                            : tk.inkMuted),
+                    label: Text(light > 0 ? 'Light $light' : 'Light: out',
+                        style: TextStyle(color: tk.inkMuted)),
                     onPressed: null,
                   ),
                   IconButton(
@@ -138,10 +160,11 @@ class CampaignHeader extends ConsumerWidget {
                         ref.read(lightProvider.notifier).set(light + 1),
                   ),
                   if (usesMythic && crawl != null) ...[
-                    InputChip(
-                      label: Text('Chaos ${crawl.chaosFactor}'),
-                      onPressed: null,
-                    ),
+                    // Roll-control: the Chaos steppers (value itself lives in
+                    // the always-visible tier-1 chip above — not duplicated).
+                    Text('Chaos',
+                        style: theme.textTheme.labelMedium
+                            ?.copyWith(color: tk.inkMuted)),
                     IconButton(
                       key: const Key('hdr-chaos-dec'),
                       visualDensity: VisualDensity.compact,
@@ -165,8 +188,12 @@ class CampaignHeader extends ConsumerWidget {
                   ],
                   ActionChip(
                     key: const Key('hdr-oracle'),
-                    avatar: const Icon(Icons.casino_outlined, size: 16),
-                    label: Text(_oracleLabel(settings.defaultOracle)),
+                    backgroundColor: tk.card,
+                    side: BorderSide.none,
+                    avatar: Icon(Icons.casino_outlined,
+                        size: 16, color: tk.inkMuted),
+                    label: Text(_oracleLabel(settings.defaultOracle),
+                        style: TextStyle(color: tk.inkMuted)),
                     onPressed: () => _pickOracle(context, ref, settings),
                   ),
                   for (final t in threads)
@@ -190,9 +217,12 @@ class CampaignHeader extends ConsumerWidget {
                   if (crawl != null && crawl.envRow != null)
                     ActionChip(
                       key: const Key('hdr-crawl'),
-                      avatar: const Icon(Icons.explore, size: 14),
-                      label:
-                          Text(crawl.lost ? 'Wilderness (lost)' : 'Wilderness'),
+                      backgroundColor: tk.card,
+                      side: BorderSide.none,
+                      avatar: Icon(Icons.explore, size: 14, color: tk.inkMuted),
+                      label: Text(
+                          crawl.lost ? 'Wilderness (lost)' : 'Wilderness',
+                          style: TextStyle(color: tk.inkMuted)),
                       onPressed: () => showGenerateSheet(context),
                     ),
                 ],

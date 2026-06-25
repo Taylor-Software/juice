@@ -1244,6 +1244,26 @@ class AiEnabledNotifier extends AsyncNotifier<bool> {
 final aiEnabledProvider =
     AsyncNotifierProvider<AiEnabledNotifier, bool>(AiEnabledNotifier.new);
 
+/// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
+/// App-global (NOT session-scoped, NOT exported) — same posture as
+/// [aiEnabledProvider]: the nudge is a per-device first-run affordance.
+class AiNudgeSeenNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.ai_nudge_seen.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> markSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, true);
+    state = const AsyncData(true);
+  }
+}
+
+final aiNudgeSeenProvider =
+    AsyncNotifierProvider<AiNudgeSeenNotifier, bool>(AiNudgeSeenNotifier.new);
+
 /// The interpreter's status as a reactive provider (the service exposes it as
 /// a ValueListenable). Lets AI affordances rebuild as the phase flips.
 final interpreterStatusProvider = StreamProvider<InterpreterStatus>((ref) {

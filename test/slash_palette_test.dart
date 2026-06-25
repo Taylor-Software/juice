@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/features/generate_sheet.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
@@ -332,6 +334,108 @@ void main() {
 
     final container =
         ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries, isEmpty);
+  });
+
+  testWidgets('the slash hint is present and opens the palette on tap',
+      (tester) async {
+    await pumpPalette(tester, data);
+
+    expect(find.byKey(const Key('slash-hint')), findsOneWidget);
+    // No palette until invoked.
+    expect(find.byKey(const Key('slash-palette')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('slash-hint')));
+    await tester.pump();
+
+    // The hint seeded '/' into the composer and opened the palette.
+    final composer =
+        tester.widget<TextField>(find.byKey(const Key('journal-composer')));
+    expect(composer.controller?.text, '/');
+    expect(find.byKey(const Key('slash-palette')), findsOneWidget);
+  });
+
+  testWidgets('/roll suggestion appears and /roll 2d6 logs a dice entry',
+      (tester) async {
+    await pumpPalette(tester, data);
+
+    // Discoverable in the palette under the /roll prefix (it sits below the
+    // registry roll/dice rows, so scroll the palette list to it).
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/roll');
+    await tester.pump();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('slash-cmd-roll')),
+      80,
+      scrollable: find.descendant(
+        of: find.byKey(const Key('slash-palette')),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    expect(find.byKey(const Key('slash-cmd-roll')), findsOneWidget);
+
+    // Typing notation + Enter logs a dice result inline.
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/roll 2d6');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('journal-send')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries, hasLength(1));
+    expect(entries.first.sourceTool, 'dice');
+    expect(entries.first.kind, JournalKind.result);
+    final summary = entries.first.payload?['summary'] as String?;
+    expect(summary, matches(RegExp(r'2d6 = \d+')));
+    // Composer cleared, palette gone.
+    final composer =
+        tester.widget<TextField>(find.byKey(const Key('journal-composer')));
+    expect(composer.controller?.text, '');
+    expect(find.byKey(const Key('slash-palette')), findsNothing);
+  });
+
+  testWidgets('/inspire opens the generate sheet', (tester) async {
+    await pumpPalette(tester, data);
+
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/inspire');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-inspire')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('slash-cmd-inspire')));
+    await tester.pumpAndSettle();
+
+    // The generators sheet opened (a Location generator chip is present); no
+    // journal entry is logged by merely opening it.
+    expect(find.byType(GenerateSheet), findsOneWidget);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final entries = await container.read(journalProvider.future);
+    expect(entries, isEmpty);
+  });
+
+  testWidgets('/thread <title> creates a thread via the existing pipeline',
+      (tester) async {
+    await pumpPalette(tester, data);
+
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/thread');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-thread')), findsOneWidget);
+
+    await tester.enterText(
+        find.byKey(const Key('journal-composer')), '/thread The heist');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('journal-send')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    final threads = await container.read(threadsProvider.future);
+    expect(threads.where((t) => t.title == 'The heist'), hasLength(1));
+    // No journal entry — a thread is not a journal line.
     final entries = await container.read(journalProvider.future);
     expect(entries, isEmpty);
   });

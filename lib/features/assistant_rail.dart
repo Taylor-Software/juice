@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
+import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
@@ -195,6 +196,8 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                   ),
                 if (aiReady) ...[
                   const SizedBox(height: 8),
+                  const AiBadge(label: 'Ask the GM'),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(

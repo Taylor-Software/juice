@@ -22,6 +22,9 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      // Suppress the contextual AI-enable nudge — it would occupy the top of
+      // the entry area and push the oldest entry offscreen in this short list.
+      'juice.ai_nudge_seen.v1': true,
       if (!emptyJournal) 'juice.journal.v2.default': journalJson,
     });
     final fake = FakeInterpreterService();

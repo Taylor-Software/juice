@@ -134,7 +134,49 @@ void main() {
       data,
       _prefs(journalJson: '[$_sceneJson]', crawlJson: _crawlJson),
     );
+    expect(find.byKey(const Key('hdr-chaos')), findsOneWidget);
     expect(find.textContaining('Chaos 6'), findsWidgets);
+  });
+
+  testWidgets('Chaos value stays visible (tier 1) when the header is collapsed',
+      (tester) async {
+    // The narrative-state Chaos readout is always-visible — mirrors the
+    // quick-roll "reachable even when collapsed" guarantee. Seed a collapsed
+    // header on a Mythic campaign with a crawl.
+    await _pump(
+      tester,
+      data,
+      _prefs(
+        journalJson: '[$_sceneJson]',
+        crawlJson: _crawlJson,
+        settingsJson: '{"headerCollapsed":true}',
+      ),
+    );
+    // Tier 1 chip is present even though the detail row is collapsed.
+    expect(find.byKey(const Key('hdr-chaos')), findsOneWidget);
+    expect(find.textContaining('Chaos 6'), findsWidgets);
+    // The +/- roll-controls live in the collapsed tier-2 row → hidden.
+    expect(find.byKey(const Key('hdr-chaos-dec')), findsNothing);
+    expect(find.byKey(const Key('hdr-chaos-inc')), findsNothing);
+  });
+
+  testWidgets('Chaos steppers appear only when the header is expanded',
+      (tester) async {
+    await _pump(
+      tester,
+      data,
+      _prefs(journalJson: '[$_sceneJson]', crawlJson: _crawlJson),
+    );
+    // Expanded by default → steppers visible.
+    expect(find.byKey(const Key('hdr-chaos-dec')), findsOneWidget);
+    expect(find.byKey(const Key('hdr-chaos-inc')), findsOneWidget);
+
+    // Collapse → steppers gone, tier-1 readout remains.
+    await tester.tap(find.byKey(const Key('hdr-collapse')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('hdr-chaos-dec')), findsNothing);
+    expect(find.byKey(const Key('hdr-chaos-inc')), findsNothing);
+    expect(find.byKey(const Key('hdr-chaos')), findsOneWidget);
   });
 
   testWidgets('no chaos chip when the profile excludes Mythic', (tester) async {
