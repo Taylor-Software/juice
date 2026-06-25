@@ -25,7 +25,7 @@ class _SettingsSheet extends ConsumerWidget {
     final status = ref.watch(interpreterStatusProvider).valueOrNull;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -81,6 +81,13 @@ class _SettingsSheet extends ConsumerWidget {
               'Knave 2e text is used under Creative Commons Attribution 4.0 '
               '(CC BY 4.0), © Ben Milton (Questing Beast). '
               'Not affiliated with Questing Beast.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'OSE / B/X sheet uses only non-copyrightable B/X game-mechanic facts '
+              '(stat/class/save names). Compatible with Old-School Essentials '
+              '(Necrotic Gnome / Gavin Norman). Not affiliated with Necrotic Gnome.',
               style: TextStyle(fontSize: 12),
             ),
           ],

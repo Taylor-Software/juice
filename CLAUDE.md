@@ -122,6 +122,18 @@ Working rules for this repo:
   (no mechanical effect in 2e). **Licensing:** CC BY 4.0 (Ben Milton / Questing
   Beast); attribution in `kSystemBlurbs['knave']` + settings sheet. See
   `docs/superpowers/specs/2026-06-24-knave-sheet-design.md`.
+- A facts-only **OSE / B/X** sheet (`lib/features/ose_sheet.dart`, rendered when
+  `Character.ose` is set; opt-in `ose` system, NOT in `kAllSystems`). Authored
+  constants: `kOseStats` / `kOseStatLabels` (6: STR/INT/WIS/DEX/CON/CHA, 3-18) /
+  `kOseClasses` (7: Cleric/Fighter/Magic-User/Thief/Dwarf/Elf/Halfling) /
+  `kOseSaveKeys` + `kOseSaveLabels` (5 saves: Death-Poison/Wands/Paralysis-Petrify/
+  Breath/Spells-Rods-Staves) / `kOseAlignments` (Lawful/Neutral/Chaotic).
+  Per-save **roll** buttons (d20 >= target -> Pass; snackbar "Death/Poison: 14 -- Pass";
+  ephemeral). Save target steppers (player-managed, 2-20). Stats 3-18. Descending
+  **AC** stepper (-10 to 20). **THAC0** text field. **Licensing:** facts-only B/X
+  mechanics (non-copyrightable). Compatible with Old-School Essentials (Necrotic
+  Gnome / Gavin Norman); not affiliated. Courtesy note in `kSystemBlurbs['ose']` +
+  settings sheet. See `docs/superpowers/specs/2026-06-24-ose-sheet-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
