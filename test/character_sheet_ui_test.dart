@@ -1071,12 +1071,12 @@ void main() {
   });
 
   testWidgets(
-      'sheet picker omits the hint when D&D, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, and OSE are on',
+      'sheet picker omits the hint when D&D, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, and Kal-Arath are on',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
-              '"systems":["dnd","shadowdark","nimble","draw-steel","argosa","cairn","knave","ose"]}]}',
+              '"systems":["dnd","shadowdark","nimble","draw-steel","argosa","cairn","knave","ose","kal-arath"]}]}',
       'juice.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
@@ -1098,6 +1098,7 @@ void main() {
     expect(find.byKey(const Key('new-cairn')), findsOneWidget);
     expect(find.byKey(const Key('new-knave')), findsOneWidget);
     expect(find.byKey(const Key('new-ose')), findsOneWidget);
+    expect(find.byKey(const Key('new-kal-arath')), findsOneWidget);
   });
 
   testWidgets(

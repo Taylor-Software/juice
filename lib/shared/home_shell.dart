@@ -705,6 +705,8 @@ const kSystemBlurbs = <String, String>{
           'Based on Knave 2e by Ben Milton (Questing Beast), CC BY 4.0.',
   'ose': 'OSE/B/X: classic fantasy with 7 classes, 5 saving throws, descending AC, THAC0. '
       'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
+  'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
+      'demonic pacts, Fate Points. Facts-only mechanics.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -718,6 +720,7 @@ const kPresetIcons = <String, IconData>{
   'solo-cairn': Icons.terrain,
   'solo-knave': Icons.content_cut,
   'solo-ose': Icons.auto_stories,
+  'solo-kal-arath': Icons.whatshot,
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };
@@ -733,6 +736,7 @@ const kSystemShortName = <String, String>{
   'cairn': 'Cairn',
   'knave': 'Knave 2e',
   'ose': 'OSE/B/X',
+  'kal-arath': 'Kal-Arath',
   'juice': 'Juice',
   'mythic': 'Mythic',
   'cards': 'Cards',

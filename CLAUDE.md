@@ -134,6 +134,20 @@ Working rules for this repo:
   mechanics (non-copyrightable). Compatible with Old-School Essentials (Necrotic
   Gnome / Gavin Norman); not affiliated. Courtesy note in `kSystemBlurbs['ose']` +
   settings sheet. See `docs/superpowers/specs/2026-06-24-ose-sheet-design.md`.
+- A facts-only **Kal-Arath** sheet (`lib/features/kal_arath_sheet.dart`, rendered
+  when `Character.kalArath` is set; opt-in `kal-arath` system, NOT in `kAllSystems`).
+  Authored constants: `kKalArathStats` / `kKalArathStatLabels` (5: STR/TOU/AGI/INT/PRE,
+  range -1..+5) / `kKalArathArchetypes` (Warrior/Rogue/Mystic/Explorer) / `kKalArathPacts`
+  (6: Blood/Destruction/Corruption/Illumination/Shadow/Domination). Per-stat **roll**
+  buttons (2d6 + stat >= 8 -> Success; double 6s Critical Success, double 1s Critical
+  Failure; snackbar "STR: 10 — Success"; ephemeral). **Fate Points** stepper (1/session).
+  Demonic-pact dropdown + freeform Doom. Skill archetype dropdown; skills/notes freeform.
+  Damage-reduction + level (1-9) steppers. **Licensing:** Kal-Arath © 2023 Castle Grief
+  is personal-use-only (not an app license); strictest facts-only posture like Shadowdark
+  — NO rulebook prose, NO attribution, NO compatible-with claim. A richer P2 (pact/skill
+  text + attribution) is deferred pending explicit permission from Castle Grief. Registered
+  as a ruleset in `kKnownSystems`/`kSystemCategory`, with a `solo-kal-arath` preset +
+  `surfacesFor` row. See `docs/superpowers/plans/2026-06-25-kal-arath-sheet.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting

@@ -367,6 +367,15 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
+  Future<String> addKalArath() async {
+    final id = _newId();
+    await _persist([
+      Character(id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<void> replace(Character character) async {
     await _persist([
       for (final c in await _ready)
