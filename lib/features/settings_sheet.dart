@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../shared/help_nav.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 
@@ -57,38 +58,19 @@ class _SettingsSheet extends ConsumerWidget {
             Text('Third-party content', style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
             const Text(
-              'Draw Steel content is an independent product published under '
-              'the Draw Steel Creator License and is not affiliated with '
-              'MCDM Productions, LLC.',
+              'All oracle, map and character-sheet content credits and licenses '
+              'are listed in one place under Help.',
               style: TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Tales of Argosa text is used under Creative Commons '
-              'Attribution-ShareAlike 4.0 (CC BY-SA 4.0), '
-              '© Pickpocket Press / S J Grodzicki. '
-              'Not affiliated with Pickpocket Press.',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Cairn text is used under Creative Commons Attribution-ShareAlike 4.0 '
-              '(CC BY-SA 4.0), © Yochai Gal. Not affiliated with Yochai Gal.',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Knave 2e text is used under Creative Commons Attribution 4.0 '
-              '(CC BY 4.0), © Ben Milton (Questing Beast). '
-              'Not affiliated with Questing Beast.',
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'OSE / B/X sheet uses only non-copyrightable B/X game-mechanic facts '
-              '(stat/class/save names). Compatible with Old-School Essentials '
-              '(Necrotic Gnome / Gavin Norman). Not affiliated with Necrotic Gnome.',
-              style: TextStyle(fontSize: 12),
+            OutlinedButton.icon(
+              key: const Key('open-credits'),
+              icon: const Icon(Icons.description_outlined),
+              label: const Text('View credits & licenses'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                openHelp(context, ref, topic: 'credits');
+              },
             ),
           ],
         ),
