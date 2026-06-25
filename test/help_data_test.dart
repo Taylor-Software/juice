@@ -30,6 +30,30 @@ void main() {
     expect(() => data.page('nope'), throwsArgumentError);
   });
 
+  test('credits page attributes every required-attribution source', () {
+    final credits = data.page('credits');
+    final text = credits.blocks.map((b) => b.text).join('\n');
+    // Sources whose licenses (CC BY / BY-SA / BY-NC / Creator License) require
+    // visible attribution must each appear in the single canonical list.
+    for (final name in [
+      'jrruethe', // Juice
+      'Word Mill Games', // Mythic
+      'Shawn Tomkin', // Ironsworn/Datasworn
+      'Capacle', // Triple-O
+      'Tam H', // PET & Sidekick
+      'Vince Pinton', // Verdant
+      'thunder9861', // Abstract icons
+      'Roberto Bisceglie', // Lonelog
+      'Pickpocket Press', // Tales of Argosa
+      'Yochai Gal', // Cairn
+      'Ben Milton', // Knave
+      'Draw Steel Creator License', // Draw Steel
+      'Old-School Essentials', // OSE
+    ]) {
+      expect(text, contains(name), reason: 'credits must attribute $name');
+    }
+  });
+
   test('the Reading tarot guide page exists with blocks', () {
     final page = data.page('reading-tarot');
     expect(page.title, 'Reading tarot');
