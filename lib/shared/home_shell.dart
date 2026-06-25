@@ -10,6 +10,7 @@ import '../engine/campaign_presets.dart';
 import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../features/enter_campaign.dart';
 import '../features/journal_screen.dart';
 import '../features/maps_tab.dart';
 import '../features/settings_sheet.dart';
@@ -60,6 +61,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _showSessions(BuildContext context) async {
+    // Captured so the resume hop below can push over the shell after the
+    // dialog (and its Consumer context) is gone.
+    final shellContext = context;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => Consumer(
@@ -105,11 +109,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                   ),
                   onTap: () async {
                     await ref.read(sessionsProvider.notifier).switchTo(s.id);
-                    final enc = await ref.read(encounterProvider.future);
-                    ref.read(shellRouteProvider.notifier).landFor(s.mode,
-                        hasEncounter: enc.combatants.isNotEmpty);
                     if (dialogContext.mounted) {
                       Navigator.of(dialogContext).pop();
+                    }
+                    // Show the Session Resume ritual when the switched-to
+                    // campaign has prior state, else land directly.
+                    if (shellContext.mounted) {
+                      await enterCampaign(shellContext, ref, s.mode);
                     }
                   },
                 ),

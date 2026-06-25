@@ -9,6 +9,7 @@ import '../engine/models.dart';
 import '../shared/home_shell.dart' show NewCampaignDialog;
 import '../shared/shell_route.dart';
 import '../state/providers.dart';
+import 'enter_campaign.dart';
 
 /// Startup campaign menu: Continue / switch / New / Import. Shown while
 /// [launcherGateProvider] is true; every entry action dismisses the gate.
@@ -25,9 +26,23 @@ class LauncherScreen extends ConsumerWidget {
     ref.read(launcherGateProvider.notifier).dismiss();
   }
 
-  Future<void> _switch(WidgetRef ref, SessionMeta m) async {
+  /// "Continue" path: dismiss the gate to reveal the shell, then defer to
+  /// [enterCampaign] — which shows the Session Resume ritual when the campaign
+  /// has prior state, else lands directly.
+  Future<void> _resume(
+      BuildContext context, WidgetRef ref, CampaignMode mode) async {
+    ref.read(launcherGateProvider.notifier).dismiss();
+    // Let the shell mount under the root navigator before pushing resume.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!context.mounted) return;
+    await enterCampaign(context, ref, mode);
+  }
+
+  Future<void> _switch(
+      BuildContext context, WidgetRef ref, SessionMeta m) async {
     await ref.read(sessionsProvider.notifier).switchTo(m.id);
-    _enter(ref, m.mode);
+    if (!context.mounted) return;
+    _resume(context, ref, m.mode);
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
@@ -164,7 +179,7 @@ class LauncherScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('launcher-continue'),
-                  onPressed: () => _enter(ref, active.mode),
+                  onPressed: () => _resume(context, ref, active.mode),
                   icon: const Icon(Icons.play_arrow),
                   label: Text('Continue · ${active.name}'),
                 ),
@@ -183,7 +198,7 @@ class LauncherScreen extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
                     ),
-                    onTap: () => _switch(ref, s),
+                    onTap: () => _switch(context, ref, s),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
