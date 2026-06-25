@@ -3189,6 +3189,53 @@ class CrawlState {
 /// tracker, and help are always available (core).
 const kAllSystems = {'juice', 'mythic', 'ironsworn', 'party', 'verdant'};
 
+/// Canonical set of every campaign system id. The single source of truth that
+/// kSystemCategory, kSystemBlurbs, and the creation/edit dialogs are checked
+/// against. kAllSystems (the 5 legacy-default ids) is a SUBSET of this.
+const kKnownSystems = <String>{
+  'juice',
+  'mythic',
+  'ironsworn',
+  'party',
+  'verdant',
+  'lonelog',
+  'hexcrawl',
+  'dnd',
+  'shadowdark',
+  'nimble',
+  'draw-steel',
+  'argosa',
+  'cairn',
+  'knave',
+  'ose',
+  'cards',
+};
+
+/// The four buckets a system belongs to for grouped campaign setup.
+enum SystemCategory { ruleset, oracle, exploration, tools }
+
+/// Every system's category. Ruleset is single-select at creation (a campaign
+/// runs one game); the model still permits multiple. A completeness test keeps
+/// this in lockstep with kKnownSystems.
+const kSystemCategory = <String, SystemCategory>{
+  'ironsworn': SystemCategory.ruleset,
+  'dnd': SystemCategory.ruleset,
+  'shadowdark': SystemCategory.ruleset,
+  'nimble': SystemCategory.ruleset,
+  'draw-steel': SystemCategory.ruleset,
+  'argosa': SystemCategory.ruleset,
+  'cairn': SystemCategory.ruleset,
+  'knave': SystemCategory.ruleset,
+  'ose': SystemCategory.ruleset,
+  'juice': SystemCategory.oracle,
+  'mythic': SystemCategory.oracle,
+  'cards': SystemCategory.oracle,
+  'verdant': SystemCategory.exploration,
+  'hexcrawl': SystemCategory.exploration,
+  'party': SystemCategory.tools,
+  'lonelog': SystemCategory.tools,
+};
+
 /// Human display labels for system keys (incl. opt-in systems not in
 /// [kAllSystems]). Used to badge a campaign's profile.
 const kSystemLabels = <String, String>{
