@@ -2157,6 +2157,141 @@ class OseSheet {
   }
 }
 
+// ── Kal-Arath ────────────────────────────────────────────────────────────────
+
+const kKalArathStats = <String>['str', 'tou', 'agi', 'int', 'pre'];
+
+const kKalArathStatLabels = <String, String>{
+  'str': 'STR',
+  'tou': 'TOU',
+  'agi': 'AGI',
+  'int': 'INT',
+  'pre': 'PRE',
+};
+
+const kKalArathArchetypes = <String>['Warrior', 'Rogue', 'Mystic', 'Explorer'];
+
+const kKalArathPacts = <String>[
+  'Blood',
+  'Destruction',
+  'Corruption',
+  'Illumination',
+  'Shadow',
+  'Domination',
+];
+
+/// Facts-only Kal-Arath character sheet. Field names are non-copyrightable
+/// game-mechanic facts. No rulebook prose or attribution (Kal-Arath © Castle
+/// Grief is personal-use only; richer content deferred pending permission).
+class KalArathSheet {
+  const KalArathSheet({
+    this.archetype = 'Warrior',
+    this.level = 1,
+    this.xp = '',
+    this.stats = const {
+      'str': 0,
+      'tou': 0,
+      'agi': 0,
+      'int': 0,
+      'pre': 0,
+    },
+    this.maxHp = 4,
+    this.currentHp = 4,
+    this.fatePoints = 1,
+    this.damageReduction = 0,
+    this.pact = '',
+    this.doom = '',
+    this.skills = '',
+    this.notes = '',
+  });
+
+  final String archetype;
+  final int level;
+  final String xp;
+  final Map<String, int> stats;
+  final int maxHp;
+  final int currentHp;
+  final int fatePoints;
+  final int damageReduction;
+  final String pact;
+  final String doom;
+  final String skills;
+  final String notes;
+
+  KalArathSheet copyWith({
+    String? archetype,
+    int? level,
+    String? xp,
+    Map<String, int>? stats,
+    int? maxHp,
+    int? currentHp,
+    int? fatePoints,
+    int? damageReduction,
+    String? pact,
+    String? doom,
+    String? skills,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    return KalArathSheet(
+      archetype: archetype ?? this.archetype,
+      level: (level ?? this.level).clamp(1, 9),
+      xp: xp ?? this.xp,
+      stats: {
+        for (final k in kKalArathStats)
+          k: ((st[k] ?? 0) as num).round().clamp(-1, 5)
+      },
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      fatePoints: (fatePoints ?? this.fatePoints).clamp(0, 99),
+      damageReduction: (damageReduction ?? this.damageReduction).clamp(0, 99),
+      pact: pact ?? this.pact,
+      doom: doom ?? this.doom,
+      skills: skills ?? this.skills,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'archetype': archetype,
+        'level': level,
+        'xp': xp,
+        'stats': stats,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'fatePoints': fatePoints,
+        'damageReduction': damageReduction,
+        'pact': pact,
+        'doom': doom,
+        'skills': skills,
+        'notes': notes,
+      };
+
+  static KalArathSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? {};
+    return KalArathSheet(
+      archetype: j['archetype'] as String? ?? 'Warrior',
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 9),
+      xp: j['xp'] as String? ?? '',
+      stats: {
+        for (final k in kKalArathStats)
+          k: ((st[k] ?? 0) as num).round().clamp(-1, 5),
+      },
+      maxHp: (j['maxHp'] as num?)?.round() ?? 4,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 4,
+      fatePoints: ((j['fatePoints'] as num?)?.round() ?? 1).clamp(0, 99),
+      damageReduction:
+          ((j['damageReduction'] as num?)?.round() ?? 0).clamp(0, 99),
+      pact: j['pact'] as String? ?? '',
+      doom: j['doom'] as String? ?? '',
+      skills: j['skills'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // --- Shadowdark (facts-only: names/rules/dice — no rulebook prose) ----------
 
 const kShadowdarkClasses = <String>['Fighter', 'Priest', 'Thief', 'Wizard'];
@@ -2905,6 +3040,7 @@ class Character {
     this.cairn,
     this.knave,
     this.ose,
+    this.kalArath,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -2949,6 +3085,9 @@ class Character {
   /// Bespoke Old-School Essentials sheet; null unless this is an OSE PC.
   final OseSheet? ose;
 
+  /// Bespoke Kal-Arath sheet; null unless this is a Kal-Arath wanderer.
+  final KalArathSheet? kalArath;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -2987,6 +3126,8 @@ class Character {
     bool clearKnave = false,
     OseSheet? ose,
     bool clearOse = false,
+    KalArathSheet? kalArath,
+    bool clearKalArath = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -3009,6 +3150,7 @@ class Character {
         cairn: clearCairn ? null : (cairn ?? this.cairn),
         knave: clearKnave ? null : (knave ?? this.knave),
         ose: clearOse ? null : (ose ?? this.ose),
+        kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -3063,6 +3205,12 @@ class Character {
           ose: ose!.copyWith(
               currentHp: (ose!.currentHp + delta).clamp(0, ose!.maxHp)));
     }
+    if (kalArath != null) {
+      return copyWith(
+          kalArath: kalArath!.copyWith(
+              currentHp:
+                  (kalArath!.currentHp + delta).clamp(0, kalArath!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -3092,6 +3240,7 @@ class Character {
         if (cairn != null) 'cairn': cairn!.toJson(),
         if (knave != null) 'knave': knave!.toJson(),
         if (ose != null) 'ose': ose!.toJson(),
+        if (kalArath != null) 'kalArath': kalArath!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -3121,6 +3270,7 @@ class Character {
         cairn: CairnSheet.maybeFromJson(j['cairn']),
         knave: KnaveSheet.maybeFromJson(j['knave']),
         ose: OseSheet.maybeFromJson(j['ose']),
+        kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
