@@ -1,6 +1,6 @@
 {
-    "name": "Solo Adventurer's Journal",
-    "short_name": "Solo Journal",
+    "name": "Loreseer",
+    "short_name": "Loreseer",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FDF6F0",

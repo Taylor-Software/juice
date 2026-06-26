@@ -108,7 +108,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               label: const Text('Software licenses'),
               onPressed: () => showLicensePage(
                   context: context,
-                  applicationName: "Solo Adventurer's Journal"),
+                  applicationName: "Loreseer"),
             ),
           ],
         ],
