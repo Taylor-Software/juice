@@ -174,7 +174,12 @@ class Oracle {
       intensityRoll: intensityRoll,
       intensity: data.intensity[intensityRoll - 1],
       likelihood: likelihood,
-      result: _fateMap[key]![likelihood.key]!,
+      result: (_fateMap[key] ??
+                  (throw StateError(
+                      'oracle: missing fate key "$key" — rebuild oracle_data.json')))[
+              likelihood.key] ??
+          (throw StateError(
+              'oracle: missing likelihood "${likelihood.key}" for "$key" — rebuild oracle_data.json')),
     );
   }
 
@@ -508,7 +513,9 @@ class Oracle {
 
   /// Pick the monster-grid row key for [envRow] per the pocketfold formula.
   String _monsterRowKey(int envRow) {
-    final formula = data.monsterEnvFormula['$envRow']!; // [modifier, skew]
+    final formula = data.monsterEnvFormula['$envRow'] ??
+        (throw StateError(
+            'oracle: missing monster formula for envRow $envRow — rebuild oracle_data.json')); // [modifier, skew]
     final mod = formula[0], skew = formula[1];
     final a = dice.dN(6), b = dice.dN(6);
     final pick = skew > 0

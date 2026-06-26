@@ -38,27 +38,30 @@ const Map<String, String> kSystemPrimers = {
       'Kal-Arath: sword & sorcery OSR. Resolution: roll 2d6 + stat, 8+ to succeed; double 6s crit, double 1s fumble. Five stats; demonic pacts; Fate Points.',
 };
 
+String _primerFor(String key) =>
+    kSystemPrimers[key] ??
+    (throw StateError('system_primer: no primer for system "$key"'));
+
 /// Resolves a campaign's enabled [systems] + [rulesets] to one primer, or ''
 /// when no covered TTRPG system is enabled. Priority: dnd > shadowdark >
 /// Ironsworn-family. The Ironsworn family shares the `ironsworn` campaign flag,
 /// so it is refined by the enabled ruleset (sundered_isles > starforged >
 /// classic).
 String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
-  if (systems.contains('dnd')) return kSystemPrimers['dnd']!;
-  if (systems.contains('shadowdark')) return kSystemPrimers['shadowdark']!;
-  if (systems.contains('nimble')) return kSystemPrimers['nimble']!;
-  if (systems.contains('draw-steel')) return kSystemPrimers['draw-steel']!;
-  if (systems.contains('argosa')) return kSystemPrimers['argosa']!;
-  if (systems.contains('cairn')) return kSystemPrimers['cairn']!;
-  if (systems.contains('knave')) return kSystemPrimers['knave']!;
-  if (systems.contains('ose')) return kSystemPrimers['ose']!;
-  if (systems.contains('kal-arath')) return kSystemPrimers['kal-arath']!;
+  if (systems.contains('dnd')) return _primerFor('dnd');
+  if (systems.contains('shadowdark')) return _primerFor('shadowdark');
+  if (systems.contains('nimble')) return _primerFor('nimble');
+  if (systems.contains('draw-steel')) return _primerFor('draw-steel');
+  if (systems.contains('argosa')) return _primerFor('argosa');
+  if (systems.contains('cairn')) return _primerFor('cairn');
+  if (systems.contains('knave')) return _primerFor('knave');
+  if (systems.contains('ose')) return _primerFor('ose');
+  if (systems.contains('kal-arath')) return _primerFor('kal-arath');
   if (systems.contains('ironsworn')) {
-    if (rulesets.contains('sundered_isles')) {
-      return kSystemPrimers['sundered_isles']!;
-    }
-    if (rulesets.contains('starforged')) return kSystemPrimers['starforged']!;
-    return kSystemPrimers['ironsworn']!;
+    if (rulesets.contains('sundered_isles'))
+      return _primerFor('sundered_isles');
+    if (rulesets.contains('starforged')) return _primerFor('starforged');
+    return _primerFor('ironsworn');
   }
   return '';
 }
