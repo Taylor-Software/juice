@@ -58,4 +58,72 @@ void main() {
       expect(back.hp, 4);
     });
   });
+
+  group('DccSheet', () {
+    test('premade is a one-peasant funnel', () {
+      final s = DccSheet.premade();
+      expect(s.mode, 'funnel');
+      expect(s.peasants.length, 1);
+      expect(s.peasants.first.alive, true);
+    });
+
+    test('graduate copies stats, sets hp/lckMax, preserves peasants', () {
+      final s = DccSheet.premade().copyWith(peasants: [
+        const DccPeasant(
+            name: 'Survivor',
+            occupation: 'Blacksmith',
+            hp: 5,
+            stats: {
+              'str': 16,
+              'agi': 12,
+              'sta': 14,
+              'per': 9,
+              'int': 8,
+              'lck': 11,
+            }),
+      ]);
+      final g = s.graduate(0, 'Warrior', 'Lawful');
+      expect(g.mode, 'leveled');
+      expect(g.className, 'Warrior');
+      expect(g.alignment, 'Lawful');
+      expect(g.occupation, 'Blacksmith');
+      expect(g.stats['str'], 16);
+      expect(g.stats['lck'], 11);
+      expect(g.lckMax, 11);
+      expect(g.currentHp, 5);
+      expect(g.maxHp, 5);
+      expect(g.peasants.length, 1); // preserved
+    });
+
+    test('round-trips both modes through json', () {
+      final funnel = DccSheet.premade();
+      expect(DccSheet.maybeFromJson(funnel.toJson())!.mode, 'funnel');
+
+      final leveled = funnel
+          .copyWith(peasants: [
+            const DccPeasant(hp: 6, stats: {
+              'str': 13,
+              'agi': 10,
+              'sta': 12,
+              'per': 10,
+              'int': 14,
+              'lck': 9,
+            })
+          ])
+          .graduate(0, 'Wizard', 'Chaotic')
+          .copyWith(level: 2, ac: 11, burns: {'str': 2});
+      final back = DccSheet.maybeFromJson(leveled.toJson())!;
+      expect(back.mode, 'leveled');
+      expect(back.className, 'Wizard');
+      expect(back.level, 2);
+      expect(back.ac, 11);
+      expect(back.burns['str'], 2);
+      expect(back.stats['int'], 14);
+    });
+
+    test('maybeFromJson returns null for non-map', () {
+      expect(DccSheet.maybeFromJson(null), isNull);
+      expect(DccSheet.maybeFromJson('x'), isNull);
+    });
+  });
 }

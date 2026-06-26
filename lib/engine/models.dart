@@ -2200,6 +2200,216 @@ class DccPeasant {
   }
 }
 
+/// Bespoke Dungeon Crawl Classics sheet. Models the full funnel->hero arc in
+/// one record via [mode]. Authors only game-mechanic facts (stats, classes,
+/// hit dice, dice-chain values); occupation/spells/notes are freeform.
+class DccSheet {
+  const DccSheet({
+    this.mode = 'funnel',
+    this.peasants = const [DccPeasant()],
+    this.className = 'Warrior',
+    this.level = 1,
+    this.alignment = 'Neutral',
+    this.occupation = '',
+    this.luckySign = '',
+    this.stats = const {
+      'str': 10,
+      'agi': 10,
+      'sta': 10,
+      'per': 10,
+      'int': 10,
+      'lck': 10,
+    },
+    this.lckMax = 10,
+    this.currentHp = 4,
+    this.maxHp = 4,
+    this.ac = 10,
+    this.attackBonus = 0,
+    this.actionDie = 'd20',
+    this.initNote = '',
+    this.saves = const {'fort': 0, 'ref': 0, 'wil': 0},
+    this.deedDie = 'd3',
+    this.burns = const {'str': 0, 'agi': 0, 'sta': 0, 'per': 0},
+    this.disapprovalRange = 1,
+    this.notes = '',
+  });
+
+  final String mode; // 'funnel' | 'leveled'
+  final List<DccPeasant> peasants;
+  final String className, alignment, occupation, luckySign;
+  final int level;
+  final Map<String, int> stats; // kDccStats, each 3..18
+  final int lckMax;
+  final int currentHp, maxHp, ac, attackBonus;
+  final String actionDie, initNote;
+  final Map<String, int> saves; // kDccSaveKeys bonuses
+  final String deedDie;
+  final Map<String, int> burns; // spellburn per stat
+  final int disapprovalRange;
+  final String notes;
+
+  int mod(String k) => dccAbilityMod(stats[k] ?? 10);
+  int burned(String k) => burns[k] ?? 0;
+  int effectiveScore(String k) => (stats[k] ?? 10) - burned(k);
+  bool get isFunnel => mode == 'funnel';
+  bool get hasDeedDie => kDccDeedDieClasses.contains(className);
+  bool get isCaster => kDccCasterClasses.contains(className);
+  bool get isCleric => className == 'Cleric';
+  List<String> get burnableStats => kDccSpellburnStats[className] ?? const [];
+  int get totalSpellburn => burnableStats.fold(0, (sum, k) => sum + burned(k));
+  String? get castingStat => isCleric ? 'per' : (isCaster ? 'int' : null);
+
+  factory DccSheet.premade() => const DccSheet();
+
+  /// Promotes peasant [i] to 1st level with [className]/[alignment], copying
+  /// stats/hp and preserving the peasant roster as history.
+  DccSheet graduate(int i, String className, String alignment) {
+    final p = peasants[i];
+    return copyWith(
+      mode: 'leveled',
+      className: className,
+      alignment: alignment,
+      occupation: p.occupation,
+      stats: {...p.stats},
+      lckMax: p.stats['lck'] ?? 10,
+      currentHp: p.hp,
+      maxHp: p.hp,
+    );
+  }
+
+  DccSheet copyWith({
+    String? mode,
+    List<DccPeasant>? peasants,
+    String? className,
+    int? level,
+    String? alignment,
+    String? occupation,
+    String? luckySign,
+    Map<String, int>? stats,
+    int? lckMax,
+    int? currentHp,
+    int? maxHp,
+    int? ac,
+    int? attackBonus,
+    String? actionDie,
+    String? initNote,
+    Map<String, int>? saves,
+    String? deedDie,
+    Map<String, int>? burns,
+    int? disapprovalRange,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    final sv = saves ?? this.saves;
+    final bn = burns ?? this.burns;
+    final cls = className ?? this.className;
+    return DccSheet(
+      mode: mode ?? this.mode,
+      peasants: peasants ?? this.peasants,
+      className: kDccClassHitDie.containsKey(cls) ? cls : 'Warrior',
+      level: (level ?? this.level).clamp(1, 10),
+      alignment: kDccAlignments.contains(alignment ?? this.alignment)
+          ? (alignment ?? this.alignment)
+          : 'Neutral',
+      occupation: occupation ?? this.occupation,
+      luckySign: luckySign ?? this.luckySign,
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      lckMax: (lckMax ?? this.lckMax).clamp(3, 18),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      maxHp: mh,
+      ac: (ac ?? this.ac).clamp(0, 30),
+      attackBonus: (attackBonus ?? this.attackBonus).clamp(-5, 20),
+      actionDie: kDccActionDice.contains(actionDie ?? this.actionDie)
+          ? (actionDie ?? this.actionDie)
+          : 'd20',
+      initNote: initNote ?? this.initNote,
+      saves: {
+        for (final k in kDccSaveKeys)
+          k: ((sv[k] ?? 0) as num).round().clamp(-5, 20),
+      },
+      deedDie: kDccDeedDice.contains(deedDie ?? this.deedDie)
+          ? (deedDie ?? this.deedDie)
+          : 'd3',
+      burns: {
+        for (final k in const ['str', 'agi', 'sta', 'per'])
+          k: ((bn[k] ?? 0) as num).round().clamp(0, 18),
+      },
+      disapprovalRange:
+          (disapprovalRange ?? this.disapprovalRange).clamp(1, 20),
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'mode': mode,
+        'peasants': peasants.map((p) => p.toJson()).toList(),
+        'className': className,
+        'level': level,
+        'alignment': alignment,
+        'occupation': occupation,
+        'luckySign': luckySign,
+        'stats': stats,
+        'lckMax': lckMax,
+        'currentHp': currentHp,
+        'maxHp': maxHp,
+        'ac': ac,
+        'attackBonus': attackBonus,
+        'actionDie': actionDie,
+        'initNote': initNote,
+        'saves': saves,
+        'deedDie': deedDie,
+        'burns': burns,
+        'disapprovalRange': disapprovalRange,
+        'notes': notes,
+      };
+
+  static DccSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? const {};
+    final sv = (j['saves'] as Map?) ?? const {};
+    final bn = (j['burns'] as Map?) ?? const {};
+    return DccSheet(
+      mode: j['mode'] as String? ?? 'funnel',
+      peasants: ((j['peasants'] as List?) ?? const [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((m) => DccPeasant.fromJson(m.cast<String, dynamic>()))
+          .toList(),
+      className: j['className'] as String? ?? 'Warrior',
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 10),
+      alignment: j['alignment'] as String? ?? 'Neutral',
+      occupation: j['occupation'] as String? ?? '',
+      luckySign: j['luckySign'] as String? ?? '',
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      lckMax: ((j['lckMax'] as num?)?.round() ?? 10).clamp(3, 18),
+      currentHp: ((j['currentHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
+      maxHp: ((j['maxHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
+      ac: ((j['ac'] as num?)?.round() ?? 10).clamp(0, 30),
+      attackBonus: ((j['attackBonus'] as num?)?.round() ?? 0).clamp(-5, 20),
+      actionDie: j['actionDie'] as String? ?? 'd20',
+      initNote: j['initNote'] as String? ?? '',
+      saves: {
+        for (final k in kDccSaveKeys)
+          k: ((sv[k] ?? 0) as num).round().clamp(-5, 20),
+      },
+      deedDie: j['deedDie'] as String? ?? 'd3',
+      burns: {
+        for (final k in const ['str', 'agi', 'sta', 'per'])
+          k: ((bn[k] ?? 0) as num).round().clamp(0, 18),
+      },
+      disapprovalRange:
+          ((j['disapprovalRange'] as num?)?.round() ?? 1).clamp(1, 20),
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 class OseSheet {
   const OseSheet({
     this.className = 'Fighter',
