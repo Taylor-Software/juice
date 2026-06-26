@@ -44,7 +44,7 @@ void main() {
     final c = await _pump(tester, prefs: {
       'juice.journal.v2.default': '[$_sceneJson]',
       'juice.threads.v1.default':
-          '[{"id":"t1","title":"Find the Relic","open":true},'
+          '[{"id":"t1","title":"Find the Relic","open":true,"progress":3},'
               '{"id":"t2","title":"Closed quest","open":false}]',
       'juice.characters.v1.default': '[{"id":"c1","name":"Ash","stats":[],'
           '"tracks":[{"label":"HP","current":4,"max":5}],"tags":[]}]',
@@ -60,6 +60,16 @@ void main() {
     expect(find.byKey(const Key('track-home-threads')), findsOneWidget);
     expect(find.textContaining('1 open'), findsOneWidget);
     expect(find.text('Find the Relic'), findsOneWidget);
+    // Progress bars + n/max readout replace the per-row Open/Closed pill.
+    expect(
+        find.descendant(
+          of: find.byKey(const Key('track-home-threads')),
+          matching: find.byType(LinearProgressIndicator),
+        ),
+        findsWidgets);
+    expect(find.text('3/10'), findsOneWidget);
+    expect(find.text('Open'), findsNothing);
+    expect(find.text('Closed'), findsNothing);
 
     // PARTY card shows the PC + its HP chip.
     expect(find.byKey(const Key('track-home-party')), findsOneWidget);

@@ -46,8 +46,10 @@ class ThreadsPane extends ConsumerWidget {
             itemCount: threads.length,
             itemBuilder: (context, i) {
               final t = threads[i];
+              final tk = context.juice;
               return Card(
                 child: ListTile(
+                  isThreeLine: true,
                   leading: Checkbox(
                     value: !t.open,
                     onChanged: (_) =>
@@ -61,7 +63,62 @@ class ThreadsPane extends ConsumerWidget {
                             decoration: TextDecoration.lineThrough,
                             color: theme.colorScheme.onSurfaceVariant),
                   ),
-                  subtitle: t.note.isEmpty ? null : Text(t.note),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (t.note.isNotEmpty) Text(t.note),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          IconButton(
+                            key: Key('thread-prog-dec-${t.id}'),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                            icon: const Icon(Icons.remove, size: 18),
+                            tooltip: 'Less progress',
+                            onPressed: () => ref
+                                .read(threadsProvider.notifier)
+                                .setProgress(t.id, t.progress - 1),
+                          ),
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(3),
+                              child: LinearProgressIndicator(
+                                value: t.progressMax <= 0
+                                    ? 0.0
+                                    : (t.progress / t.progressMax)
+                                        .clamp(0.0, 1.0),
+                                minHeight: 5,
+                                backgroundColor: tk.hairline,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    tk.terracotta),
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            key: Key('thread-prog-inc-${t.id}'),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(
+                                minWidth: 32, minHeight: 32),
+                            icon: const Icon(Icons.add, size: 18),
+                            tooltip: 'More progress',
+                            onPressed: () => ref
+                                .read(threadsProvider.notifier)
+                                .setProgress(t.id, t.progress + 1),
+                          ),
+                          const SizedBox(width: 4),
+                          Text('${t.progress}/${t.progressMax}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: tk.inkMuted)),
+                        ],
+                      ),
+                    ],
+                  ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

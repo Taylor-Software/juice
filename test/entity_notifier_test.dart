@@ -21,6 +21,35 @@ void main() {
     });
   });
 
+  group('ThreadNotifier.setProgress', () {
+    test('clamps value into 0..progressMax and persists', () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      final notifier = container.read(threadsProvider.notifier);
+      final id = await notifier.addReturningId('The Vow'); // default max 10
+
+      // over max -> clamps to 10
+      await notifier.setProgress(id, 99);
+      var threads = await container.read(threadsProvider.future);
+      expect(threads.firstWhere((t) => t.id == id).progress, 10);
+
+      // below zero -> clamps to 0
+      await notifier.setProgress(id, -5);
+      threads = await container.read(threadsProvider.future);
+      expect(threads.firstWhere((t) => t.id == id).progress, 0);
+
+      // in-range value persists exactly
+      await notifier.setProgress(id, 4);
+      threads = await container.read(threadsProvider.future);
+      expect(threads.firstWhere((t) => t.id == id).progress, 4);
+
+      // unknown id is a no-op (no throw)
+      await notifier.setProgress('nope', 3);
+    });
+  });
+
   group('CharacterNotifier.addReturningId', () {
     test('returns the new id and the character is present with that id',
         () async {

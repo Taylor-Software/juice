@@ -69,8 +69,8 @@ void main() {
     test('folds scene + open threads + last entries (newest-first input)', () {
       final scene = entry('s1', 'The Vault', '', kind: JournalKind.scene);
       final threads = [
-        const Thread(id: 't1', title: 'Find the Relic'),
-        const Thread(id: 't2', title: 'Escape the keep', open: false),
+        Thread(id: 't1', title: 'Find the Relic'),
+        Thread(id: 't2', title: 'Escape the keep', open: false),
       ];
       // Storage is newest-first; recap should read most-recent few.
       final entries = [
@@ -112,7 +112,7 @@ void main() {
     const lastEntryJson =
         '{"id":"e2","timestamp":"2026-01-01T11:00:00.000Z","title":"","body":"I draw my sword and step through the broken gate.","kind":"text","tags":[]}';
     const threadJson =
-        '[{"id":"t1","title":"Find the Tower\'s Secret","open":true,"pinned":true}]';
+        '[{"id":"t1","title":"Find the Tower\'s Secret","open":true,"pinned":true,"progress":3}]';
     const crawlJson =
         '{"chaosFactor":6,"dialogRow":2,"dialogCol":2,"lost":false}';
 
@@ -164,9 +164,18 @@ void main() {
       expect(find.text('6'), findsOneWidget);
       expect(find.text('out'), findsOneWidget);
 
-      // Open-thread row.
+      // Open-thread row: progress bar + n/max readout (replaces Open/Pinned pill).
       expect(find.byKey(const Key('resume-thread-t1')), findsOneWidget);
       expect(find.text("Find the Tower's Secret"), findsOneWidget);
+      expect(
+          find.descendant(
+            of: find.byKey(const Key('resume-thread-t1')),
+            matching: find.byType(LinearProgressIndicator),
+          ),
+          findsOneWidget);
+      expect(find.text('3/10'), findsOneWidget);
+      expect(find.text('Pinned'), findsNothing);
+      expect(find.text('Open'), findsNothing);
 
       // Last entry line (italic, quoted).
       expect(find.text('"I draw my sword and step through the broken gate."'),

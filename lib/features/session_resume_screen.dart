@@ -225,31 +225,49 @@ class SessionResumeScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: tk.hairline),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: t.pinned ? tk.terracotta : tk.gold,
-                      shape: BoxShape.circle,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: t.pinned ? tk.terracotta : tk.gold,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          t.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tk.uiLabel
+                              .copyWith(fontSize: 14, color: tk.inkBody),
+                        ),
+                      ),
+                      Text(
+                        '${t.progress}/${t.progressMax}',
+                        style: tk.uiLabel.copyWith(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: tk.inkMuted,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      t.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style:
-                          tk.uiLabel.copyWith(fontSize: 14, color: tk.inkBody),
-                    ),
-                  ),
-                  Text(
-                    t.pinned ? 'Pinned' : 'Open',
-                    style: tk.uiLabel.copyWith(
-                      fontSize: 12,
-                      color: tk.inkMuted,
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: t.progressMax <= 0
+                          ? 0.0
+                          : (t.progress / t.progressMax).clamp(0.0, 1.0),
+                      minHeight: 5,
+                      backgroundColor: tk.hairline,
+                      valueColor: AlwaysStoppedAnimation<Color>(tk.terracotta),
                     ),
                   ),
                 ],

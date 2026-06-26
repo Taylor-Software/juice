@@ -84,8 +84,8 @@ void main() {
     final exported = campaignToLonelog(
       campaignName: 'Round Trip',
       threads: [
-        const Thread(id: 'a', title: 'Open quest', open: true),
-        const Thread(id: 'b', title: 'Done quest', open: false),
+        Thread(id: 'a', title: 'Open quest', open: true),
+        Thread(id: 'b', title: 'Done quest', open: false),
       ],
       characters: [
         const Character(id: 'c', name: 'Bob', tags: ['friendly'])

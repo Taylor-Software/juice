@@ -52,7 +52,7 @@ void main() {
     final out = _export(
       name: 'Camp: Alpha',
       threads: [
-        const Thread(id: 't1', title: 'Rescue | [the] prisoner', open: true),
+        Thread(id: 't1', title: 'Rescue | [the] prisoner', open: true),
       ],
       characters: [const Character(id: 'c1', name: 'Vance|ally')],
     );
@@ -67,8 +67,8 @@ void main() {
   test('STATE block lists threads, characters, tracks as tags', () {
     final out = _export(
       threads: [
-        const Thread(id: 't1', title: 'Slay the wyrm', open: true),
-        const Thread(id: 't2', title: 'Find the heir', open: false),
+        Thread(id: 't1', title: 'Slay the wyrm', open: true),
+        Thread(id: 't2', title: 'Find the heir', open: false),
       ],
       characters: [
         const Character(id: 'c1', name: 'Vance', tags: ['gruff', 'ally']),
@@ -114,7 +114,7 @@ void main() {
 
   test('text beat renders prose; threadId and tags render as trailers', () {
     final out = _export(
-      threads: [const Thread(id: 't1', title: 'Rescue Jonah', open: true)],
+      threads: [Thread(id: 't1', title: 'Rescue Jonah', open: true)],
       entries: [
         _entry(JournalKind.text, 'note', 'The door creaks open.',
             threadId: 't1', tags: ['quiet', 'night']),
