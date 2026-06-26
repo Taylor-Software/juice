@@ -111,8 +111,11 @@ void main() {
       'juice.journal.v2.default':
           '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"","kind":"scene"}]',
     });
-    // Navigate Journal → Track verb (Scenes is the default subtab).
+    // Navigate Journal → Track verb, then open the Scenes subtab. (Track now
+    // opens on the "Home" dashboard tab, so Scenes must be selected explicitly.)
     await tester.tap(find.text('Track'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Scenes'));
     await tester.pumpAndSettle();
     // Flesh out the seeded scene; accept the review → appends to the body.
     await tester.tap(find.byKey(const Key('flesh-out-scene-s1')));
