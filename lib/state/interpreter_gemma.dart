@@ -193,11 +193,6 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   @override
-  Future<String> askGm(AskGmSeed seed) async {
-    return parseAskGmResponse(await _generate(buildAskGmPrompt(seed)));
-  }
-
-  @override
   Future<String> gmChat(GmChatSeed seed) async {
     return parseGmChatResponse(await _generate(buildGmChatPrompt(seed)));
   }
