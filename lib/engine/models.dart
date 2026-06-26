@@ -2109,6 +2109,10 @@ const kDccSpellburnStats = <String, List<String>>{
 const kDccActionDice = <String>['d20', 'd24', 'd30'];
 const kDccDeedDice = <String>['d3', 'd4', 'd5', 'd6', 'd7'];
 
+/// Max 0-level peasants a funnel sheet tracks at once (a typical DCC funnel
+/// runs 3-4 characters per player).
+const int kDccMaxPeasants = 4;
+
 /// DCC ability-modifier table (3-18, capped at +/-3). Distinct from the D&D 5e
 /// `((score-10)/2).floor()` curve. Non-copyrightable game-mechanic fact.
 int dccAbilityMod(int score) {

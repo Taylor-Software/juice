@@ -11,15 +11,18 @@ class DccSheetView extends ConsumerWidget {
   final Character character;
   final VoidCallback onBack;
 
-  void _save(WidgetRef ref, Character c, DccSheet next) =>
-      ref.read(charactersProvider.notifier).replace(c.copyWith(dcc: next));
+  DccSheet get _s => character.dcc!;
+
+  void _save(WidgetRef ref, DccSheet next) => ref
+      .read(charactersProvider.notifier)
+      .replace(character.copyWith(dcc: next));
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final s = character.dcc!;
+    final s = _s;
     return s.isFunnel
-        ? _buildFunnel(context, ref, character, s)
-        : _buildLeveled(context, ref, character, s);
+        ? _buildFunnel(context, ref, s)
+        : _buildLeveled(context, ref, s);
   }
 
   // ---- shared stepper (mirrors OseSheetView._stepper) ----
@@ -45,29 +48,29 @@ class DccSheetView extends ConsumerWidget {
   String _sign(int n) => n >= 0 ? '+$n' : '$n';
 
   // ===================== FUNNEL =====================
-  Widget _buildFunnel(
-      BuildContext context, WidgetRef ref, Character c, DccSheet s) {
+  Widget _buildFunnel(BuildContext context, WidgetRef ref, DccSheet s) {
     final theme = Theme.of(context);
     final alive = s.peasants.where((p) => p.alive).length;
     return ListView(
       key: const Key('dcc-sheet'),
       padding: const EdgeInsets.all(12),
       children: [
-        sheetNameHeader(context, ref, c, onBack: onBack, nameKey: 'dcc-name'),
+        sheetNameHeader(context, ref, character,
+            onBack: onBack, nameKey: 'dcc-name'),
         Text('0-Level Funnel', style: theme.textTheme.labelSmall),
         Text('$alive / ${s.peasants.length} alive',
             style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
         for (var i = 0; i < s.peasants.length; i++)
-          _peasantCard(context, ref, c, s, i),
+          _peasantCard(context, ref, s, i),
         const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerLeft,
           child: FilledButton.icon(
             key: const Key('dcc-add-peasant'),
-            onPressed: s.peasants.length >= 4
+            onPressed: s.peasants.length >= kDccMaxPeasants
                 ? null
-                : () => _save(ref, c,
+                : () => _save(ref,
                     s.copyWith(peasants: [...s.peasants, const DccPeasant()])),
             icon: const Icon(Icons.person_add),
             label: const Text('Add peasant'),
@@ -77,13 +80,12 @@ class DccSheetView extends ConsumerWidget {
     );
   }
 
-  Widget _peasantCard(
-      BuildContext context, WidgetRef ref, Character c, DccSheet s, int i) {
+  Widget _peasantCard(BuildContext context, WidgetRef ref, DccSheet s, int i) {
     final p = s.peasants[i];
     void setP(DccPeasant np) {
       final list = [...s.peasants];
       list[i] = np;
-      _save(ref, c, s.copyWith(peasants: list));
+      _save(ref, s.copyWith(peasants: list));
     }
 
     final titleStyle = p.alive
@@ -150,7 +152,7 @@ class DccSheetView extends ConsumerWidget {
               if (p.alive)
                 FilledButton(
                   key: Key('dcc-peasant-$i-graduate'),
-                  onPressed: () => _graduateDialog(context, ref, c, s, i),
+                  onPressed: () => _graduateDialog(context, ref, s, i),
                   child: const Text('Graduate →'),
                 ),
             ],
@@ -160,8 +162,8 @@ class DccSheetView extends ConsumerWidget {
     );
   }
 
-  Future<void> _graduateDialog(BuildContext context, WidgetRef ref, Character c,
-      DccSheet s, int i) async {
+  Future<void> _graduateDialog(
+      BuildContext context, WidgetRef ref, DccSheet s, int i) async {
     var cls = 'Warrior';
     var align = 'Neutral';
     final ok = await showDialog<bool>(
@@ -201,11 +203,10 @@ class DccSheetView extends ConsumerWidget {
         ),
       ),
     );
-    if (ok == true) _save(ref, c, s.graduate(i, cls, align));
+    if (ok == true) _save(ref, s.graduate(i, cls, align));
   }
 
   // ===================== LEVELED (stub; Task 7) =====================
-  Widget _buildLeveled(
-          BuildContext context, WidgetRef ref, Character c, DccSheet s) =>
+  Widget _buildLeveled(BuildContext context, WidgetRef ref, DccSheet s) =>
       const SizedBox.shrink();
 }
