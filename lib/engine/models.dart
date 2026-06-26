@@ -3571,7 +3571,9 @@ class SessionMeta {
       {required this.id,
       required this.name,
       this.systems,
-      this.mode = CampaignMode.party});
+      this.mode = CampaignMode.party,
+      this.identityColor,
+      this.identityIcon});
   final String id;
   final String name;
 
@@ -3581,6 +3583,12 @@ class SessionMeta {
   /// Player focus mode (default party; legacy campaigns → party).
   final CampaignMode mode;
 
+  /// Per-campaign identity accent (ARGB int); null falls back to terracotta.
+  final int? identityColor;
+
+  /// Per-campaign identity icon key (see kIdentityIcons); null → default.
+  final String? identityIcon;
+
   /// Resolved set: the declared systems, or every system when unset.
   Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
 
@@ -3589,16 +3597,25 @@ class SessionMeta {
         'name': name,
         if (systems != null) 'systems': systems,
         if (mode != CampaignMode.party) 'mode': mode.name,
+        if (identityColor != null) 'identityColor': identityColor,
+        if (identityIcon != null) 'identityIcon': identityIcon,
       };
 
   // id is immutable — not overridable via copyWith.
-  SessionMeta copyWith(
-          {String? name, List<String>? systems, CampaignMode? mode}) =>
+  SessionMeta copyWith({
+    String? name,
+    List<String>? systems,
+    CampaignMode? mode,
+    int? identityColor,
+    String? identityIcon,
+  }) =>
       SessionMeta(
         id: id,
         name: name ?? this.name,
         systems: systems ?? this.systems,
         mode: mode ?? this.mode,
+        identityColor: identityColor ?? this.identityColor,
+        identityIcon: identityIcon ?? this.identityIcon,
       );
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
@@ -3606,7 +3623,54 @@ class SessionMeta {
         name: j['name'] as String,
         systems: (j['systems'] as List?)?.whereType<String>().toList(),
         mode: _modeFromName(j['mode'] as String?),
+        identityColor: (j['identityColor'] as num?)?.toInt(),
+        identityIcon: j['identityIcon'] as String?,
       );
+}
+
+/// The handoff identity-hue palette (ARGB ints) for per-campaign accents.
+/// Assigned at create time, varied across campaigns. See UX-refresh #11.
+const kIdentityHues = <int>[
+  0xFF9A4A22, // Terracotta
+  0xFF5B7A52, // Sage
+  0xFF4A5A8A, // Indigo
+  0xFF8A4A6A, // Plum
+  0xFFB5762A, // Gold
+];
+
+/// Picks an identity hue varied by [existingCount] (round-robin) folded with a
+/// hash of [sessionId] so re-creates don't collide on the same index. Pure.
+int identityHueFor(String sessionId, int existingCount) {
+  final h = sessionId.codeUnits.fold<int>(0, (a, c) => (a + c) & 0x7fffffff);
+  return kIdentityHues[(existingCount + h) % kIdentityHues.length];
+}
+
+/// Identity-icon keys (UI resolves them to IconData via kIdentityIcons). The
+/// per-ruleset keys mirror the campaign-preset icons; everything else falls
+/// back to a sensible default. Kept as plain strings so models stays
+/// Flutter-free.
+const _kRulesetIconKey = <String, String>{
+  'ironsworn': 'bolt',
+  'dnd': 'castle',
+  'shadowdark': 'dark_mode',
+  'nimble': 'flash_on',
+  'draw-steel': 'shield',
+  'argosa': 'fort',
+  'cairn': 'terrain',
+  'knave': 'content_cut',
+  'ose': 'auto_stories',
+  'kal-arath': 'whatshot',
+};
+
+/// Derives a default identity-icon key from a campaign's [systems]: the
+/// ruleset's icon if one is enabled, else an oracle/book fallback by mode. Pure.
+String identityIconKeyFor(Set<String> systems, CampaignMode mode) {
+  for (final s in systems) {
+    final k = _kRulesetIconKey[s];
+    if (k != null) return k;
+  }
+  if (mode == CampaignMode.gm) return 'book';
+  return 'casino';
 }
 
 /// Registry of sessions plus the active one.

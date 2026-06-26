@@ -116,7 +116,7 @@ void main() {
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
     // The tabbed shell now has a NavigationBar (narrow) in the tree.
     expect(find.byType(NavigationBar), findsOneWidget);
-    await tester.tap(find.byTooltip('Search tools'));
+    await tester.tap(find.byTooltip('Find tools & rolls'));
     await tester.pumpAndSettle();
     // The search sheet is up with the grouped tool list.
     expect(find.byKey(const Key('tool-search')), findsOneWidget);
@@ -138,7 +138,7 @@ void main() {
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
     // Without the classic ruleset, the moves tool is absent from the sheet.
-    await tester.tap(find.byTooltip('Search tools'));
+    await tester.tap(find.byTooltip('Find tools & rolls'));
     await tester.pumpAndSettle();
     expect(find.text('Ironsworn Moves & Oracles'), findsNothing);
     // Close the sheet (the tool list is captured when the sheet opens).
@@ -147,7 +147,7 @@ void main() {
     await container.read(rulesetsProvider.notifier).setRuleset('classic', true);
     await tester.pumpAndSettle();
     // Reopen: the moves tool now appears (below the fold — drag to reveal).
-    await tester.tap(find.byTooltip('Search tools'));
+    await tester.tap(find.byTooltip('Find tools & rolls'));
     await tester.pumpAndSettle();
     await tester.dragUntilVisible(
       find.text('Ironsworn Moves & Oracles'),
@@ -164,7 +164,7 @@ void main() {
         .setRuleset('classic', false);
     await tester.pumpAndSettle();
     // Reopen: absent again.
-    await tester.tap(find.byTooltip('Search tools'));
+    await tester.tap(find.byTooltip('Find tools & rolls'));
     await tester.pumpAndSettle();
     expect(find.text('Ironsworn Moves & Oracles'), findsNothing);
     expect(tester.takeException(), isNull);
@@ -211,13 +211,17 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
 
-    // Preset chips are shown; open Custom picker.
+    // Preset rows are shown; open Custom picker (it's the dashed row below the
+    // taller preset rows — scroll it into view first).
     expect(find.byKey(const Key('preset-solo-ironsworn')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const Key('preset-custom')));
     await tester.tap(find.byKey(const Key('preset-custom')));
     await tester.pumpAndSettle();
 
-    // Custom picker is now visible: ruleset + addon chips.
+    // Custom picker is now visible: ruleset + addon chips. (The scroll offset
+    // carried over from scrolling to the dashed row, so ensure visibility.)
     // Pick ironsworn as ruleset.
+    await tester.ensureVisible(find.byKey(const Key('ruleset-ironsworn')));
     await tester.tap(find.byKey(const Key('ruleset-ironsworn')));
     await tester.pumpAndSettle();
     // Add oracle defaults (juice is pre-selected in _addons).
@@ -349,6 +353,24 @@ void main() {
     expect(s.activeMeta.enabledSystems, contains('shadowdark'));
   });
 
+  testWidgets('campaign list rows render the identity spine + icon',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":['
+          '{"id":"default","name":"Indigo Run",'
+          '"identityColor":${0xFF4A5A8A},"identityIcon":"castle"}]}',
+    });
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Campaigns'));
+    await tester.pumpAndSettle();
+    // The identity spine + the resolved castle icon render in the row.
+    expect(find.byKey(const Key('campaign-spine')), findsWidgets);
+    expect(find.widgetWithIcon(SizedBox, Icons.castle), findsWidgets);
+  });
+
   testWidgets('mode toggle flips and persists the campaign mode',
       (tester) async {
     SharedPreferences.setMockInitialValues({
@@ -361,10 +383,17 @@ void main() {
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    // The toggle is now a labeled segmented control with both modes shown.
+    final toggle = find.byKey(const Key('mode-toggle'));
+    expect(toggle, findsOneWidget);
+    expect(find.descendant(of: toggle, matching: find.text('Party')),
+        findsOneWidget);
+    expect(
+        find.descendant(of: toggle, matching: find.text('GM')), findsOneWidget);
     // Default mode is party.
     expect(container.read(modeProvider), CampaignMode.party);
-    // Tap the mode toggle.
-    await tester.tap(find.byKey(const Key('mode-toggle')));
+    // Selecting the GM segment flips and persists the mode.
+    await tester.tap(find.descendant(of: toggle, matching: find.text('GM')));
     await tester.pumpAndSettle();
     expect(container.read(modeProvider), CampaignMode.gm);
   });

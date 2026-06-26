@@ -21,6 +21,7 @@ import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 import 'campaign_preview_pane.dart';
+import 'design_tokens.dart';
 import 'destination.dart';
 import 'help_nav.dart';
 import 'play_context_hud.dart';
@@ -82,12 +83,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             children: [
               for (final s in sessions.sessions)
                 ListTile(
-                  leading: Icon(s.id == sessions.active
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off),
+                  leading: CampaignIdentityLeading(
+                    meta: s,
+                    active: s.id == sessions.active,
+                  ),
                   title: Text(s.name),
                   subtitle: Text(
-                    formatSystems(s.enabledSystems),
+                    campaignSubtitle(s),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall,
@@ -533,7 +535,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            tooltip: 'Search tools',
+            tooltip: 'Find tools & rolls',
             onPressed: () => showToolSearchSheet(context,
                 buildToolRegistry(family: family, systems: systems, mode: mode),
                 oracle: widget.oracle),
@@ -623,24 +625,40 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               tooltip: split ? 'Single pane' : 'Split with journal',
               onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
             ),
-          IconButton(
-            key: const Key('mode-toggle'),
-            icon: Icon(mode == CampaignMode.gm
-                ? Icons.castle_outlined
-                : Icons.groups_outlined),
-            tooltip: mode == CampaignMode.gm
-                ? 'GM mode (tap for Party)'
-                : 'Party mode (tap for GM)',
-            onPressed: () {
-              final sessions = ref.read(sessionsProvider).valueOrNull;
-              if (sessions == null) return;
-              final next = mode == CampaignMode.gm
-                  ? CampaignMode.party
-                  : CampaignMode.gm;
-              ref
-                  .read(sessionsProvider.notifier)
-                  .setMode(sessions.active, next);
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SegmentedButton<CampaignMode>(
+              key: const Key('mode-toggle'),
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: WidgetStatePropertyAll(
+                    Theme.of(context).textTheme.labelMedium),
+              ),
+              segments: const [
+                ButtonSegment(
+                  value: CampaignMode.party,
+                  icon: Icon(Icons.groups_outlined, size: 18),
+                  label: Text('Party'),
+                ),
+                ButtonSegment(
+                  value: CampaignMode.gm,
+                  icon: Icon(Icons.castle_outlined, size: 18),
+                  label: Text('GM'),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (selected) {
+                final sessions = ref.read(sessionsProvider).valueOrNull;
+                if (sessions == null) return;
+                final next = selected.first;
+                if (next == mode) return;
+                ref
+                    .read(sessionsProvider.notifier)
+                    .setMode(sessions.active, next);
+              },
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
@@ -730,6 +748,27 @@ const kPresetIcons = <String, IconData>{
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };
+
+/// Resolves a [SessionMeta.identityIcon] key (see identityIconKeyFor) to an
+/// IconData. Keys mirror the per-ruleset preset icons; unknown → a default.
+const kIdentityIcons = <String, IconData>{
+  'bolt': Icons.bolt,
+  'castle': Icons.castle,
+  'dark_mode': Icons.dark_mode,
+  'flash_on': Icons.flash_on,
+  'shield': Icons.shield,
+  'fort': Icons.fort,
+  'terrain': Icons.terrain,
+  'content_cut': Icons.content_cut,
+  'auto_stories': Icons.auto_stories,
+  'whatshot': Icons.whatshot,
+  'casino': Icons.casino,
+  'book': Icons.book,
+};
+
+/// The icon for a campaign's identity key, with a stable fallback.
+IconData identityIconData(String? key) =>
+    kIdentityIcons[key] ?? Icons.auto_stories;
 
 /// Short display names for use in the Custom grouped picker chips.
 const kSystemShortName = <String, String>{
@@ -828,31 +867,19 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 8),
-            // Show preset grid OR custom picker — not both
+            // Show preset rows OR custom picker — not both
             if (!_custom) ...[
               const Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Choose a starting point')),
+                  child: Text('What kind of story are you telling?')),
               const SizedBox(height: 6),
-              Wrap(spacing: 6, runSpacing: 4, children: [
-                for (final p in kCampaignPresets)
-                  ChoiceChip(
-                    key: Key('preset-${p.id}'),
-                    avatar: Icon(kPresetIcons[p.id], size: 16),
-                    label: Text(p.label, style: const TextStyle(fontSize: 12)),
-                    visualDensity: VisualDensity.compact,
-                    selected: _presetId == p.id,
-                    onSelected: (_) => setState(() => _presetId = p.id),
-                  ),
-                ChoiceChip(
-                  key: const Key('preset-custom'),
-                  avatar: const Icon(Icons.tune, size: 16),
-                  label: const Text('Custom', style: TextStyle(fontSize: 12)),
-                  visualDensity: VisualDensity.compact,
-                  selected: false,
-                  onSelected: (_) => setState(() => _custom = true),
+              for (final p in kCampaignPresets)
+                _PresetRow(
+                  preset: p,
+                  selected: _presetId == p.id,
+                  onTap: () => setState(() => _presetId = p.id),
                 ),
-              ]),
+              _BrowseAllRow(onTap: () => setState(() => _custom = true)),
             ] else ...[
               _customPicker(rulesetIds, addonIds),
             ],
@@ -975,6 +1002,237 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         return 'Ruleset';
     }
   }
+}
+
+/// The subtitle shown under a campaign row. We show the system profile (not a
+/// genre/mood line): genre lives in per-campaign CampaignSettings
+/// (`juice.settings.v1.<id>`) with no sync provider for arbitrary sessions, so
+/// a genre subtitle would force a heavy async read per row. Systems are already
+/// on SessionMeta — cheap and sync.
+String campaignSubtitle(SessionMeta meta) => formatSystems(meta.enabledSystems);
+
+/// A campaign's identity leading: a ~6px color spine on the leading edge + an
+/// icon tile (resolved from [SessionMeta.identityIcon]). [active] adds a small
+/// check badge. Shared by the launcher + shell campaign lists.
+class CampaignIdentityLeading extends StatelessWidget {
+  const CampaignIdentityLeading({
+    super.key,
+    required this.meta,
+    this.active = false,
+  });
+
+  final SessionMeta meta;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    final spine =
+        meta.identityColor != null ? Color(meta.identityColor!) : tk.terracotta;
+    return SizedBox(
+      width: 46,
+      height: 40,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          key: const Key('campaign-spine'),
+          width: 6,
+          height: 36,
+          decoration: BoxDecoration(
+            color: spine,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: spine.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(9),
+                border: active ? Border.all(color: spine, width: 1.5) : null,
+              ),
+              child: Icon(identityIconData(meta.identityIcon),
+                  size: 18, color: spine),
+            ),
+            if (active)
+              Positioned(
+                right: -3,
+                bottom: -3,
+                child: Container(
+                  padding: const EdgeInsets.all(1),
+                  decoration:
+                      BoxDecoration(color: tk.raised, shape: BoxShape.circle),
+                  child: Icon(Icons.check_circle, size: 12, color: spine),
+                ),
+              ),
+          ],
+        ),
+      ]),
+    );
+  }
+}
+
+/// A rich, tappable campaign-preset row: a 36px icon tile + the kind-of-play
+/// headline + a `blurb · <ruleset>` sublabel. Styled with Phase-0 JuiceTokens.
+class _PresetRow extends StatelessWidget {
+  const _PresetRow({
+    required this.preset,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CampaignPreset preset;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Material(
+        color: selected ? tk.sand : tk.raised,
+        borderRadius: BorderRadius.circular(15),
+        child: InkWell(
+          key: Key('preset-${preset.id}'),
+          borderRadius: BorderRadius.circular(15),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: selected ? tk.terracotta : tk.borderInput,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: tk.selected,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(kPresetIcons[preset.id],
+                    size: 20, color: tk.terracotta),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(preset.kind,
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: tk.ink)),
+                    Text('${preset.blurb} · ${preset.label}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12, color: tk.inkMuted)),
+                  ],
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The dashed "Browse all systems" entry rendered below the preset rows.
+class _BrowseAllRow extends StatelessWidget {
+  const _BrowseAllRow({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tk = context.juice;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(15),
+      child: InkWell(
+        key: const Key('preset-custom'),
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: DottedBorderBox(
+          color: tk.borderInput,
+          radius: 15,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+            child: Row(children: [
+              Icon(Icons.tune, size: 20, color: tk.inkMuted),
+              const SizedBox(width: 10),
+              Text('Browse all systems',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: tk.inkBody)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A lightweight dashed-border container (no extra deps) for the "Browse all"
+/// affordance — distinguishes it from the solid preset rows.
+class DottedBorderBox extends StatelessWidget {
+  const DottedBorderBox({
+    super.key,
+    required this.child,
+    required this.color,
+    this.radius = 12,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(color: color, radius: radius),
+      child: child,
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  _DashedBorderPainter({required this.color, required this.radius});
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    final rrect =
+        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+    const dash = 5.0, gap = 4.0;
+    for (final metric in path.computeMetrics()) {
+      var d = 0.0;
+      while (d < metric.length) {
+        canvas.drawPath(
+            metric.extractPath(d, (d + dash).clamp(0, metric.length)), paint);
+        d += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter old) =>
+      old.color != color || old.radius != radius;
 }
 
 /// Dialog to toggle the optional systems of an existing campaign.

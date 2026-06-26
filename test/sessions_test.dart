@@ -18,6 +18,56 @@ void main() {
       expect(back.name, 'West Marches');
     });
 
+    test('SessionMeta identity color/icon survive json + copyWith', () {
+      const m = SessionMeta(
+        id: 'abc',
+        name: 'West Marches',
+        identityColor: 0xFF5B7A52,
+        identityIcon: 'castle',
+      );
+      final json = m.toJson();
+      expect(json['identityColor'], 0xFF5B7A52);
+      expect(json['identityIcon'], 'castle');
+      final back = SessionMeta.fromJson(json);
+      expect(back.identityColor, 0xFF5B7A52);
+      expect(back.identityIcon, 'castle');
+      // copyWith preserves both, and can override.
+      expect(back.copyWith().identityColor, 0xFF5B7A52);
+      final swapped = back.copyWith(identityColor: 0xFF4A5A8A);
+      expect(swapped.identityColor, 0xFF4A5A8A);
+      expect(swapped.identityIcon, 'castle');
+    });
+
+    test('SessionMeta omits identity keys when null', () {
+      const m = SessionMeta(id: 'abc', name: 'Plain');
+      final json = m.toJson();
+      expect(json.containsKey('identityColor'), isFalse);
+      expect(json.containsKey('identityIcon'), isFalse);
+      expect(SessionMeta.fromJson(json).identityColor, isNull);
+      expect(SessionMeta.fromJson(json).identityIcon, isNull);
+    });
+
+    test('identityHueFor returns a palette hue and varies across campaigns',
+        () {
+      for (var i = 0; i < 5; i++) {
+        expect(kIdentityHues, contains(identityHueFor('s$i', i)));
+      }
+      // Varied across at least two distinct hues for sequential campaigns.
+      final hues = {for (var i = 0; i < 5; i++) identityHueFor('id', i)};
+      expect(hues.length, greaterThan(1));
+    });
+
+    test('identityIconKeyFor picks the ruleset icon, else a mode default', () {
+      expect(identityIconKeyFor({'dnd', 'juice', 'party'}, CampaignMode.party),
+          'castle');
+      expect(identityIconKeyFor({'shadowdark', 'juice'}, CampaignMode.party),
+          'dark_mode');
+      // No ruleset → casino (party) / book (gm).
+      expect(identityIconKeyFor({'juice', 'mythic'}, CampaignMode.party),
+          'casino');
+      expect(identityIconKeyFor({'juice', 'mythic'}, CampaignMode.gm), 'book');
+    });
+
     test('SessionsState json round-trip and activeMeta lookup', () {
       const s = SessionsState(active: 'b', sessions: [
         SessionMeta(id: 'a', name: 'One'),

@@ -6,7 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
-import '../shared/home_shell.dart' show NewCampaignDialog;
+import '../shared/home_shell.dart'
+    show CampaignIdentityLeading, NewCampaignDialog, campaignSubtitle;
 import '../shared/shell_route.dart';
 import '../state/providers.dart';
 import 'enter_campaign.dart';
@@ -188,12 +189,13 @@ class LauncherScreen extends ConsumerWidget {
                 for (final s in sessions.sessions)
                   ListTile(
                     key: Key('launcher-campaign-${s.id}'),
-                    leading: Icon(s.id == sessions.active
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_off),
+                    leading: CampaignIdentityLeading(
+                      meta: s,
+                      active: s.id == sessions.active,
+                    ),
                     title: Text(s.name),
                     subtitle: Text(
-                      formatSystems(s.enabledSystems),
+                      campaignSubtitle(s),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
