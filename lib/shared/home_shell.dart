@@ -1004,12 +1004,15 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   }
 }
 
-/// The subtitle shown under a campaign row. We show the system profile (not a
-/// genre/mood line): genre lives in per-campaign CampaignSettings
-/// (`juice.settings.v1.<id>`) with no sync provider for arbitrary sessions, so
-/// a genre subtitle would force a heavy async read per row. Systems are already
-/// on SessionMeta — cheap and sync.
-String campaignSubtitle(SessionMeta meta) => formatSystems(meta.enabledSystems);
+/// The subtitle shown under a campaign row: the campaign's genre/mood (when set)
+/// prefixed to its system profile. Genre is denormalized onto SessionMeta at
+/// create/import time (a cheap, sync display mirror of CampaignSettings.genre),
+/// so the list render stays sync — no per-row async settings read.
+String campaignSubtitle(SessionMeta meta) {
+  final systems = formatSystems(meta.enabledSystems);
+  final genre = meta.genre;
+  return (genre != null && genre.isNotEmpty) ? '$genre · $systems' : systems;
+}
 
 /// A campaign's identity leading: a ~6px color spine on the leading edge + an
 /// icon tile (resolved from [SessionMeta.identityIcon]). [active] adds a small

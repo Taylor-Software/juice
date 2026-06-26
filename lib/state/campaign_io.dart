@@ -16,6 +16,7 @@ class CampaignImport {
     required this.rawByKey,
     this.systems,
     this.mode = CampaignMode.party,
+    this.genre,
   });
   final String name;
   final Map<String, String> rawByKey;
@@ -23,6 +24,10 @@ class CampaignImport {
   /// Enabled optional systems; null means "all" (the default profile).
   final List<String>? systems;
   final CampaignMode mode;
+
+  /// Display genre/mood mirrored from the campaign's settings store; null/empty
+  /// when absent. The interpreter's source of truth stays CampaignSettings.
+  final String? genre;
 }
 
 /// Encode a campaign to the .juice.json file content.
@@ -75,6 +80,7 @@ CampaignImport parseCampaign(String raw) {
     throw const FormatException('Campaign file has no data section');
   }
   final rawByKey = <String, String>{};
+  String? genre;
   for (final key in sessionScopedKeys) {
     if (!data.containsKey(key)) continue;
     final value = data[key];
@@ -114,7 +120,9 @@ CampaignImport parseCampaign(String raw) {
             .map((e) => Unit.fromJson(e as Map<String, dynamic>))
             .toList();
       } else if (key == 'juice.settings.v1') {
-        CampaignSettings.fromJson(value as Map<String, dynamic>);
+        final settings =
+            CampaignSettings.fromJson(value as Map<String, dynamic>);
+        if (settings.genre.isNotEmpty) genre = settings.genre;
       }
     } catch (_) {
       throw const FormatException('Campaign file data is malformed');
@@ -131,5 +139,6 @@ CampaignImport parseCampaign(String raw) {
     systems:
         rawSystems is List ? rawSystems.whereType<String>().toList() : null,
     mode: decoded['mode'] == 'gm' ? CampaignMode.gm : CampaignMode.party,
+    genre: genre,
   );
 }
