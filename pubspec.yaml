@@ -56,10 +56,13 @@ flutter:
     - assets/tarot/
     - assets/playing/
 
-# App icon generation: `dart run flutter_launcher_icons`. Source art is the
-# user-provided 1024px image at assets/icon/app_icon.png (full-bleed circular
-# design; each OS applies its own mask, so Android uses the legacy full-bleed
-# icon rather than an adaptive fg/bg split).
+# App icon: the "eye-in-open-book" mark (gold eye + open book on indigo). The
+# source of truth is build_app_icon.py, which renders the editable vector
+# assets/icon/app_icon.svg + the 1024 raster assets/icon/app_icon.png and all
+# platform assets (deps: cairosvg + Pillow, not part of the Dart stack). The
+# full-bleed PNG also feeds `dart run flutter_launcher_icons` (config below);
+# each OS applies its own mask, so Android uses the legacy full-bleed icon
+# rather than an adaptive fg/bg split.
 flutter_launcher_icons:
   image_path: "assets/icon/app_icon.png"
   android: true
