@@ -16,6 +16,7 @@ import '../engine/lonelog_import.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
+import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
@@ -188,6 +189,14 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
 final journalProvider =
     AsyncNotifierProvider<JournalNotifier, List<JournalEntry>>(
         JournalNotifier.new);
+
+/// Cached map of entry-id → character ids mentioned in that entry's body.
+/// Recomputed only when the journal changes; avoids O(n) per-entry rescanning
+/// on every rebuild in the journal and tracker screens.
+final mentionedCharIdsProvider = Provider<Map<String, Set<String>>>((ref) {
+  final entries = ref.watch(journalProvider).valueOrNull ?? const [];
+  return {for (final e in entries) e.id: mentionedCharIds(e.body)};
+});
 
 // -- Threads --------------------------------------------------------------
 class ThreadNotifier extends _PersistedList<Thread> {

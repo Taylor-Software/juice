@@ -474,19 +474,20 @@ class _DungeonPainter extends CustomPainter {
     required this.currentRoomId,
     required this.scheme,
     this.encounterRoomId,
-  });
+  })  : _minX = rooms.isEmpty ? 0 : rooms.map((r) => r.x).reduce(math.min),
+        _minY = rooms.isEmpty ? 0 : rooms.map((r) => r.y).reduce(math.min);
 
   final List<DungeonRoom> rooms;
   final List<List<String>> corridors;
   final String? currentRoomId;
   final ColorScheme scheme;
   final String? encounterRoomId;
+  final int _minX;
+  final int _minY;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (rooms.isEmpty) return;
-    final minX = rooms.map((r) => r.x).reduce(math.min);
-    final minY = rooms.map((r) => r.y).reduce(math.min);
     final byId = {for (final r in rooms) r.id: r};
 
     // Corridors first, under the rooms.
@@ -497,12 +498,12 @@ class _DungeonPainter extends CustomPainter {
       final a = byId[c[0]];
       final b = byId[c[1]];
       if (a == null || b == null) continue;
-      canvas.drawLine(roomRectFor(a, minX, minY, _cell).center,
-          roomRectFor(b, minX, minY, _cell).center, line);
+      canvas.drawLine(roomRectFor(a, _minX, _minY, _cell).center,
+          roomRectFor(b, _minX, _minY, _cell).center, line);
     }
 
     for (final r in rooms) {
-      final rect = roomRectFor(r, minX, minY, _cell);
+      final rect = roomRectFor(r, _minX, _minY, _cell);
       final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
       final isCurrent = r.id == currentRoomId;
       canvas.drawRRect(

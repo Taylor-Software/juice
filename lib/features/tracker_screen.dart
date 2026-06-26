@@ -790,8 +790,9 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   List<JournalEntry> _mentionsFor(Character c) {
     final journal =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final charMentions = ref.watch(mentionedCharIdsProvider);
     return journal
-        .where((e) => mentionedCharIds(e.body).contains(c.id))
+        .where((e) => charMentions[e.id]?.contains(c.id) ?? false)
         .toList();
   }
 

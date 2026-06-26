@@ -657,8 +657,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         // entry, chat-style.
         final tags = allTags(entries);
         // Characters referenced by mentions anywhere in the journal.
+        // Cached by mentionedCharIdsProvider — one parse per entry per journal tick.
+        final charMentions = ref.watch(mentionedCharIdsProvider);
         final mentionedChars = <String>{
-          for (final e in entries) ...mentionedCharIds(e.body),
+          for (final s in charMentions.values) ...s,
         };
         final chars =
             (ref.watch(charactersProvider).valueOrNull ?? const <Character>[])
@@ -672,7 +674,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         }
         if (_filterCharId != null) {
           visible = visible
-              .where((e) => mentionedCharIds(e.body).contains(_filterCharId))
+              .where(
+                  (e) => charMentions[e.id]?.contains(_filterCharId) ?? false)
               .toList();
         }
         if (_searching) {
