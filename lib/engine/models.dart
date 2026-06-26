@@ -2122,6 +2122,84 @@ int dccAbilityMod(int score) {
   return 3;
 }
 
+/// A single 0-level funnel character. All descriptive fields are freeform
+/// (no Appendix L occupation table shipped).
+class DccPeasant {
+  const DccPeasant({
+    this.name = '',
+    this.occupation = '',
+    this.weapon = '',
+    this.tradeGoods = '',
+    this.hp = 1,
+    this.stats = const {
+      'str': 10,
+      'agi': 10,
+      'sta': 10,
+      'per': 10,
+      'int': 10,
+      'lck': 10,
+    },
+    this.alive = true,
+  });
+
+  final String name, occupation, weapon, tradeGoods;
+  final int hp; // 1..8
+  final Map<String, int> stats; // kDccStats keys, each 3..18
+  final bool alive;
+
+  int mod(String k) => dccAbilityMod(stats[k] ?? 10);
+
+  DccPeasant copyWith({
+    String? name,
+    String? occupation,
+    String? weapon,
+    String? tradeGoods,
+    int? hp,
+    Map<String, int>? stats,
+    bool? alive,
+  }) {
+    final st = stats ?? this.stats;
+    return DccPeasant(
+      name: name ?? this.name,
+      occupation: occupation ?? this.occupation,
+      weapon: weapon ?? this.weapon,
+      tradeGoods: tradeGoods ?? this.tradeGoods,
+      hp: (hp ?? this.hp).clamp(1, 8),
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      alive: alive ?? this.alive,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'occupation': occupation,
+        'weapon': weapon,
+        'tradeGoods': tradeGoods,
+        'hp': hp,
+        'stats': stats,
+        'alive': alive,
+      };
+
+  factory DccPeasant.fromJson(Map<String, dynamic> j) {
+    final st = (j['stats'] as Map?) ?? const {};
+    return DccPeasant(
+      name: j['name'] as String? ?? '',
+      occupation: j['occupation'] as String? ?? '',
+      weapon: j['weapon'] as String? ?? '',
+      tradeGoods: j['tradeGoods'] as String? ?? '',
+      hp: ((j['hp'] as num?)?.round() ?? 1).clamp(1, 8),
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      alive: j['alive'] as bool? ?? true,
+    );
+  }
+}
+
 class OseSheet {
   const OseSheet({
     this.className = 'Fighter',

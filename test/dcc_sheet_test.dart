@@ -32,4 +32,30 @@ void main() {
     expect(kDccCasterClasses, containsAll(['Wizard', 'Elf', 'Cleric']));
     expect(kDccSpellburnStats['Cleric'], ['per']);
   });
+
+  group('DccPeasant', () {
+    test('premade has clamped stats and is alive', () {
+      const p = DccPeasant();
+      expect(p.alive, true);
+      expect(p.hp, 1);
+      for (final k in kDccStats) {
+        expect(p.stats[k], 10);
+      }
+    });
+    test('copyWith clamps hp and stats', () {
+      const p = DccPeasant();
+      final p2 = p.copyWith(hp: 99, stats: {...p.stats, 'str': 25});
+      expect(p2.hp, 8);
+      expect(p2.stats['str'], 18);
+    });
+    test('round-trips through json', () {
+      const p = DccPeasant(
+          name: 'Bob', occupation: 'Farmer', weapon: 'Pitchfork', hp: 4);
+      final back = DccPeasant.fromJson(p.toJson());
+      expect(back.name, 'Bob');
+      expect(back.occupation, 'Farmer');
+      expect(back.weapon, 'Pitchfork');
+      expect(back.hp, 4);
+    });
+  });
 }
