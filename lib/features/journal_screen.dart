@@ -14,6 +14,7 @@ import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../engine/suggestions.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
@@ -24,6 +25,7 @@ import '../shared/card_image.dart';
 import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
 import '../shared/dice_sheet.dart';
+import '../shared/empty_state.dart';
 import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
 import '../shared/shell_route.dart';
@@ -32,6 +34,7 @@ import '../state/interpreter.dart';
 import '../state/pdf_rasterizer.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import '../state/suggestions_provider.dart';
 import 'assistant_rail.dart';
 import 'generate_sheet.dart';
 import 'inline_roll_dock.dart';
@@ -69,6 +72,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   String? _filterCharId;
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
+  final FocusNode _composerFocus = FocusNode();
   final TextEditingController _search = TextEditingController();
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
   final ScrollController _entryScroll = ScrollController();
@@ -519,6 +523,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   void dispose() {
     _composer.removeListener(_onComposerChanged);
     _composer.dispose();
+    _composerFocus.dispose();
     _search.dispose();
     _entryScroll.dispose();
     super.dispose();
@@ -537,6 +542,28 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  /// Fallback for the (loading) empty-suggestions frame — suggestionsFor always
+  /// emits `roll-oracle`, so this only covers the first render. Mirrors the
+  /// inline dock's belt-and-braces.
+  static const Suggestion _fallbackRollOracle =
+      Suggestion('roll-oracle', 'Roll the oracle', SuggestionAction.inline);
+
+  /// Rolls the oracle through the shared [rollInlineSuggestion] pipeline (the
+  /// same path the inline dock + assistant rail use). Drives the empty-state
+  /// primary. Resolves the `roll-oracle` Suggestion from [suggestionsProvider]
+  /// (falling back to a const) and reveals the new newest entry on completion.
+  Future<void> _rollOracle() async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return; // oracle data still loading: skip safely
+    final s = ref
+            .read(suggestionsProvider)
+            .where((s) => s.id == 'roll-oracle')
+            .firstOrNull ??
+        _fallbackRollOracle;
+    await rollInlineSuggestion(ref, oracle, s);
+    _revealNewest();
   }
 
   /// Opens a tool by id: dice gets its sheet, everything else navigates to its
@@ -597,8 +624,29 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             error: (e, _) => Center(child: Text('Error: $e')),
             data: (entries) {
               if (entries.isEmpty) {
-                return const _Empty(
-                    'Your journal is empty. Write below, or roll something and add it.');
+                // Directive orientation, not a takeover: the dock + composer
+                // below the Expanded stay visible and usable. EmptyState is a
+                // Center (bounded by the enclosing Expanded). Wrap it in a
+                // scroll view sized to the region so it centers when there's
+                // room but scrolls instead of overflowing when squeezed (the
+                // shell's journal region can be short on small viewports).
+                return LayoutBuilder(
+                  builder: (context, constraints) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints:
+                          BoxConstraints(minHeight: constraints.maxHeight),
+                      child: EmptyState(
+                        icon: Icons.menu_book_outlined,
+                        title: 'A blank page.',
+                        body: 'Roll the oracle or write your first line.',
+                        primaryLabel: 'Roll oracle',
+                        onPrimary: _rollOracle,
+                        secondaryLabel: 'Write a line',
+                        onSecondary: () => _composerFocus.requestFocus(),
+                      ),
+                    ),
+                  ),
+                );
               }
               // Storage is newest-first; a reversed ListView reads forward
               // (oldest at top) while anchoring the viewport at the newest
@@ -1568,6 +1616,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               child: TextField(
                 key: const Key('journal-composer'),
                 controller: _composer,
+                focusNode: _composerFocus,
                 minLines: 1,
                 maxLines: 4,
                 textCapitalization: TextCapitalization.sentences,
@@ -2238,27 +2287,6 @@ class _EditDialogState extends State<_EditDialog> {
           child: const Text('Save'),
         ),
       ],
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-      ),
     );
   }
 }
