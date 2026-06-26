@@ -16,6 +16,7 @@ import '../engine/lonelog_import.dart';
 import '../engine/verdant_data.dart';
 import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
+import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -196,6 +197,13 @@ final journalProvider =
 final mentionedCharIdsProvider = Provider<Map<String, Set<String>>>((ref) {
   final entries = ref.watch(journalProvider).valueOrNull ?? const [];
   return {for (final e in entries) e.id: mentionedCharIds(e.body)};
+});
+
+/// Distinct tags across all journal entries, in first-seen order. Recomputed
+/// only when the journal changes; avoids O(n·m) rescanning on every rebuild.
+final allTagsProvider = Provider<List<String>>((ref) {
+  final entries = ref.watch(journalProvider).valueOrNull ?? const [];
+  return allTags(entries);
 });
 
 // -- Threads --------------------------------------------------------------

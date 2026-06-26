@@ -655,7 +655,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         // Storage is newest-first; a reversed ListView reads forward
         // (oldest at top) while anchoring the viewport at the newest
         // entry, chat-style.
-        final tags = allTags(entries);
+        final tags = ref.watch(allTagsProvider);
         // Characters referenced by mentions anywhere in the journal.
         // Cached by mentionedCharIdsProvider — one parse per entry per journal tick.
         final charMentions = ref.watch(mentionedCharIdsProvider);
