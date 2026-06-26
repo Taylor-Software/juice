@@ -3573,7 +3573,8 @@ class SessionMeta {
       this.systems,
       this.mode = CampaignMode.party,
       this.identityColor,
-      this.identityIcon});
+      this.identityIcon,
+      this.genre});
   final String id;
   final String name;
 
@@ -3589,6 +3590,11 @@ class SessionMeta {
   /// Per-campaign identity icon key (see kIdentityIcons); null → default.
   final String? identityIcon;
 
+  /// Display genre/mood mirrored from CampaignSettings at create/import time;
+  /// null when unset. A cheap, sync display field for campaign-list subtitles —
+  /// CampaignSettings.genre remains the interpreter's source of truth.
+  final String? genre;
+
   /// Resolved set: the declared systems, or every system when unset.
   Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
 
@@ -3599,6 +3605,7 @@ class SessionMeta {
         if (mode != CampaignMode.party) 'mode': mode.name,
         if (identityColor != null) 'identityColor': identityColor,
         if (identityIcon != null) 'identityIcon': identityIcon,
+        if (genre != null) 'genre': genre,
       };
 
   // id is immutable — not overridable via copyWith.
@@ -3608,6 +3615,7 @@ class SessionMeta {
     CampaignMode? mode,
     int? identityColor,
     String? identityIcon,
+    String? genre,
   }) =>
       SessionMeta(
         id: id,
@@ -3616,6 +3624,7 @@ class SessionMeta {
         mode: mode ?? this.mode,
         identityColor: identityColor ?? this.identityColor,
         identityIcon: identityIcon ?? this.identityIcon,
+        genre: genre ?? this.genre,
       );
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
@@ -3625,6 +3634,7 @@ class SessionMeta {
         mode: _modeFromName(j['mode'] as String?),
         identityColor: (j['identityColor'] as num?)?.toInt(),
         identityIcon: j['identityIcon'] as String?,
+        genre: j['genre'] as String?,
       );
 }
 

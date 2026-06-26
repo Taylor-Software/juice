@@ -1371,6 +1371,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       mode: mode,
       identityColor: identityHueFor(id, s.sessions.length),
       identityIcon: identityIconKeyFor(resolvedSystems, mode),
+      genre: genre.isEmpty ? null : genre,
     );
     if (genre.isNotEmpty || tone.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
@@ -1496,10 +1497,12 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     // Restore the campaign profile (enabled systems + GM/Party mode) from the
     // file; older files without these default to all-systems + party.
     final meta = SessionMeta(
-        id: _newId(),
-        name: parsed.name,
-        systems: parsed.systems,
-        mode: parsed.mode);
+      id: _newId(),
+      name: parsed.name,
+      systems: parsed.systems,
+      mode: parsed.mode,
+      genre: (parsed.genre?.isEmpty ?? true) ? null : parsed.genre,
+    );
     final prefs = await SharedPreferences.getInstance();
     for (final e in parsed.rawByKey.entries) {
       await prefs.setString('${e.key}.${meta.id}', e.value);
@@ -1566,7 +1569,11 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final doc = parseLonelog(content, importedAt: DateTime.now());
     final s = state.valueOrNull ?? await future;
     // Campaign files don't carry session mode; imported campaigns default to party.
-    final meta = SessionMeta(id: _newId(), name: doc.campaignName);
+    final meta = SessionMeta(
+      id: _newId(),
+      name: doc.campaignName,
+      genre: doc.genre.isEmpty ? null : doc.genre,
+    );
     final prefs = await SharedPreferences.getInstance();
     final rawByKey = <String, String>{
       'juice.journal.v2':

@@ -78,6 +78,34 @@ void main() {
       expect(parsed.rawByKey['juice.crawl.v1'], contains('"envRow":7'));
     });
 
+    test('parseCampaign extracts genre from the settings store, else null', () {
+      final encoded = encodeCampaign(
+        name: 'West Marches',
+        savedAt: DateTime.utc(2026, 6, 11),
+        rawByKey: {
+          'juice.settings.v1': jsonEncode(
+              const CampaignSettings(genre: 'Dark fantasy').toJson()),
+        },
+      );
+      expect(parseCampaign(encoded).genre, 'Dark fantasy');
+
+      // Empty genre (or no settings store) → null.
+      final blank = encodeCampaign(
+        name: 'Plain',
+        savedAt: DateTime.utc(2026, 6, 11),
+        rawByKey: {
+          'juice.settings.v1': jsonEncode(const CampaignSettings().toJson()),
+        },
+      );
+      expect(parseCampaign(blank).genre, isNull);
+      final none = encodeCampaign(
+        name: 'Plain',
+        savedAt: DateTime.utc(2026, 6, 11),
+        rawByKey: const {},
+      );
+      expect(parseCampaign(none).genre, isNull);
+    });
+
     test('rejects non-JSON, wrong app marker, and newer schema versions', () {
       expect(() => parseCampaign('not json'), throwsFormatException);
       expect(

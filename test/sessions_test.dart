@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart' show campaignSubtitle;
 import 'package:juice_oracle/state/providers.dart';
 
 void main() {
@@ -45,6 +46,38 @@ void main() {
       expect(json.containsKey('identityIcon'), isFalse);
       expect(SessionMeta.fromJson(json).identityColor, isNull);
       expect(SessionMeta.fromJson(json).identityIcon, isNull);
+    });
+
+    test('SessionMeta genre survives json + copyWith, omitted when null', () {
+      const m =
+          SessionMeta(id: 'abc', name: 'West Marches', genre: 'Dark fantasy');
+      final json = m.toJson();
+      expect(json['genre'], 'Dark fantasy');
+      final back = SessionMeta.fromJson(json);
+      expect(back.genre, 'Dark fantasy');
+      // copyWith preserves, and can override.
+      expect(back.copyWith().genre, 'Dark fantasy');
+      expect(back.copyWith(genre: 'Cozy mystery').genre, 'Cozy mystery');
+
+      const plain = SessionMeta(id: 'p', name: 'Plain');
+      expect(plain.toJson().containsKey('genre'), isFalse);
+      expect(SessionMeta.fromJson(plain.toJson()).genre, isNull);
+    });
+
+    test('campaignSubtitle prefixes genre when set, systems-only when null',
+        () {
+      const withGenre = SessionMeta(
+        id: 'a',
+        name: 'A',
+        systems: ['dnd'],
+        genre: 'Dark fantasy',
+      );
+      expect(campaignSubtitle(withGenre),
+          'Dark fantasy · ${formatSystems(withGenre.enabledSystems)}');
+
+      const noGenre = SessionMeta(id: 'b', name: 'B', systems: ['dnd']);
+      expect(campaignSubtitle(noGenre), formatSystems(noGenre.enabledSystems));
+      expect(campaignSubtitle(noGenre), isNot(contains('·')));
     });
 
     test('identityHueFor returns a palette hue and varies across campaigns',
