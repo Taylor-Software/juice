@@ -3127,6 +3127,47 @@ class Character {
   /// Active status conditions (system-agnostic). Omitted from JSON when empty.
   final List<String> conditions;
 
+  /// Creates a pre-made character seeded for [systemKey]. Used by
+  /// [CharacterNotifier.addPreMadeSheet] to collapse per-system boilerplate.
+  factory Character.forSheet(String systemKey, String id) {
+    return switch (systemKey) {
+      'ironsworn' => Character(
+          id: id,
+          name: 'New Ironsworn character',
+          ironsworn: IronswornSheet.premade()),
+      'starforged' => Character(
+          id: id,
+          name: 'New Starforged character',
+          starforged: StarforgedSheet.premade()),
+      'sundered_isles' => Character(
+          id: id,
+          name: 'New Sundered Isles character',
+          starforged: StarforgedSheet.premade(assetRuleset: 'sundered_isles')),
+      'dnd' =>
+        Character(id: id, name: 'New D&D character', dnd: DndSheet.premade()),
+      'shadowdark' => Character(
+          id: id,
+          name: 'New Shadowdark character',
+          shadowdark: ShadowdarkSheet.premade()),
+      'nimble' => Character(
+          id: id, name: 'New Nimble character', nimble: const NimbleSheet()),
+      'draw-steel' => Character(
+          id: id,
+          name: 'New Draw Steel hero',
+          drawSteel: const DrawSteelSheet()),
+      'argosa' => Character(
+          id: id, name: 'New Argosa character', argosa: const ArgosaSheet()),
+      'cairn' => Character(
+          id: id, name: 'New Cairn character', cairn: const CairnSheet()),
+      'knave' =>
+        Character(id: id, name: 'New Knave', knave: const KnaveSheet()),
+      'ose' => Character(id: id, name: 'New Adventurer', ose: const OseSheet()),
+      'kal-arath' => Character(
+          id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
+      _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
+    };
+  }
+
   /// Lists are replaced wholesale when provided; null keeps the current list.
   Character copyWith({
     String? name,
