@@ -10,6 +10,7 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/features/scenes_pane.dart';
+import 'package:juice_oracle/shared/ai_badge.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -107,6 +108,12 @@ void main() {
       (tester) async {
     final c = await pumpScenes(tester, aiReady: true);
     final id = c.read(journalProvider).value!.first.id;
+    // The ✦ AI badge marks the trigger.
+    expect(
+        find.descendant(
+            of: find.byKey(Key('flesh-out-scene-$id')),
+            matching: find.byType(AiBadge)),
+        findsOneWidget);
     await tester.tap(find.byKey(Key('flesh-out-scene-$id')));
     await tester.pumpAndSettle(); // fleshOut() + review dialog
     await tester.tap(find.byKey(const Key('flesh-out-append')));

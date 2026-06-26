@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
+import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
@@ -82,7 +83,7 @@ class ScenesPane extends ConsumerWidget {
                             if (ref.watch(aiReadyProvider))
                               IconButton(
                                 key: Key('flesh-out-scene-${s.id}'),
-                                icon: const Icon(Icons.auto_fix_high_outlined),
+                                icon: const AiBadge(),
                                 tooltip: 'Flesh out (AI)',
                                 visualDensity: VisualDensity.compact,
                                 onPressed: () =>
