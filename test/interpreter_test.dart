@@ -79,16 +79,4 @@ void main() {
     fake.summaryError = Exception('model error');
     expect(() => fake.summarize(['x']), throwsException);
   });
-
-  // -- FakeInterpreterService.askGm scripting ---------------------------------
-
-  test('fake askGm captures the seed and returns queued text', () async {
-    final fake = FakeInterpreterService()
-      ..queuedAskGm.add('It is barred from within.');
-    final out = await fake
-        .askGm(const AskGmSeed(question: 'Locked?', sceneTitle: 'Vault'));
-    expect(out, 'It is barred from within.');
-    expect(fake.lastAskGmSeed?.question, 'Locked?');
-    expect(fake.askGmCalls, 1);
-  });
 }

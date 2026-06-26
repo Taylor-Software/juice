@@ -83,7 +83,7 @@ class KalArathSheetView extends ConsumerWidget {
           Expanded(
             child: DropdownButtonFormField<String>(
               key: const Key('kal-arath-archetype'),
-              value: kKalArathArchetypes.contains(s.archetype)
+              initialValue: kKalArathArchetypes.contains(s.archetype)
                   ? s.archetype
                   : kKalArathArchetypes.first,
               decoration: const InputDecoration(labelText: 'Archetype'),
@@ -99,7 +99,7 @@ class KalArathSheetView extends ConsumerWidget {
           Expanded(
             child: DropdownButtonFormField<String>(
               key: const Key('kal-arath-pact'),
-              value: kKalArathPacts.contains(s.pact) ? s.pact : '',
+              initialValue: kKalArathPacts.contains(s.pact) ? s.pact : '',
               decoration: const InputDecoration(labelText: 'Demonic pact'),
               items: [
                 const DropdownMenuItem(value: '', child: Text('None')),

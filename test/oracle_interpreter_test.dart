@@ -463,7 +463,7 @@ result: Fate Check (Likely) — Yes, and…
     });
 
     test('caps an over-long sceneTitle with an ellipsis', () {
-      final long = 'a' * 400; // > kAskGmMaxFieldChars (300)
+      final long = 'a' * 400; // > kPromptMaxFieldChars (300)
       final p = buildNarratePrompt(NarrateSeed(
         mode: NarrateMode.continueScene,
         sceneTitle: long,

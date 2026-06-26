@@ -10,12 +10,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: CampaignPreviewPane(
             mode: CampaignMode.party,
-            systems: const {'cairn', 'juice', 'party'},
+            systems: {'cairn', 'juice', 'party'},
           ),
         ),
       ),
@@ -32,12 +32,12 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(MaterialApp(
+    await tester.pumpWidget(const MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(
           child: CampaignPreviewPane(
             mode: CampaignMode.party,
-            systems: const {},
+            systems: {},
           ),
         ),
       ),

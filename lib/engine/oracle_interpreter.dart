@@ -399,70 +399,16 @@ String parseVoiceResponse(String raw) {
   return out;
 }
 
-// -- Ask the GM ---------------------------------------------------------------
+// -- Shared prompt utilities --------------------------------------------------
 
-const String _askGmInstruction =
-    'You are the game master for a solo tabletop RPG. Answer the player\'s '
-    'question in 1-3 sentences of plain prose. Be concrete and decisive.';
+/// Hard cap on prompt field strings (scene title, question, entity name) fed to
+/// the model, so a long pasted value can't crowd out the grounding lines.
+/// Mirrors the budget discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
+const int kPromptMaxFieldChars = 300;
 
-/// Hard cap on the user question (and scene title) fed to the model, so a long
-/// pasted question can't crowd out the grounding lines. Mirrors the budget
-/// discipline of [kRecallMaxChars] / [kSystemPrimerMaxChars].
-const int kAskGmMaxFieldChars = 300;
-
-String _capped(String s) => s.length > kAskGmMaxFieldChars
-    ? '${s.substring(0, kAskGmMaxFieldChars)}…'
+String _capped(String s) => s.length > kPromptMaxFieldChars
+    ? '${s.substring(0, kPromptMaxFieldChars)}…'
     : s;
-
-class AskGmSeed {
-  const AskGmSeed({
-    required this.question,
-    this.sceneTitle,
-    this.systemPrimer = '',
-    this.activeCharacter = '',
-    this.journalContext = const [],
-  });
-  final String question;
-  final String? sceneTitle;
-  final String systemPrimer;
-  final String activeCharacter;
-  final List<String> journalContext;
-}
-
-/// Grounded prompt: instruction + optional system/pc/scene/recall lines, then
-/// the question. The same line-keyed shape interpret/voice use. The question and
-/// scene title are length-capped (see [kAskGmMaxFieldChars]); recall takes
-/// [kRecallMaxEntries] lines capped at [kRecallMaxChars].
-String buildAskGmPrompt(AskGmSeed seed) {
-  final scene = seed.sceneTitle;
-  final sceneLine = (scene == null || scene.trim().isEmpty)
-      ? ''
-      : 'scene: ${_capped(_flat(scene))}\n';
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
-  return '$_askGmInstruction\n\n'
-      'INPUT:\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
-      '$sceneLine'
-      '$recall'
-      'question: ${_capped(_flat(seed.question))}\n'
-      'OUTPUT:';
-}
-
-String parseAskGmResponse(String raw) {
-  final out = _stripThink(raw).trim();
-  if (out.isEmpty) throw const FormatException('Empty ask-the-GM response');
-  return out;
-}
 
 // -- Multi-turn GM chat -------------------------------------------------------
 
@@ -532,8 +478,7 @@ String buildGmChatPrompt(GmChatSeed seed) {
       'GM:';
 }
 
-/// Plain-text parse (like parseAskGmResponse): strip think spans, trim, throw
-/// on empty.
+/// Strip think spans, trim, throw on empty.
 String parseGmChatResponse(String raw) {
   final out = _stripThink(raw).trim();
   if (out.isEmpty) throw const FormatException('Empty GM chat response');
@@ -577,8 +522,8 @@ String _narrateInstruction(NarrateMode mode) => switch (mode) {
     };
 
 /// Mode-specific instruction + the #1 grounding (system/pc/scene/recall) + a
-/// trailing `Narration:` cue. Caps mirror [buildAskGmPrompt]: the scene/system
-/// lines go through `_capped`; recall is [kRecallMaxEntries] × [kRecallMaxChars].
+/// trailing `Narration:` cue. Scene/system lines go through `_capped`
+/// ([kPromptMaxFieldChars]); recall is [kRecallMaxEntries] × [kRecallMaxChars].
 String buildNarratePrompt(NarrateSeed seed) {
   final scene = seed.sceneTitle;
   final sceneLine = (scene == null || scene.trim().isEmpty)
@@ -603,8 +548,7 @@ String buildNarratePrompt(NarrateSeed seed) {
       'Narration:';
 }
 
-/// Plain-text parse (like parseAskGmResponse): strip think spans, trim, throw
-/// on empty.
+/// Strip think spans, trim, throw on empty.
 String parseNarrateResponse(String raw) {
   final out = _stripThink(raw).trim();
   if (out.isEmpty) throw const FormatException('Empty narration response');
@@ -648,8 +592,8 @@ class FleshOutSeed {
 }
 
 /// A fixed instruction + the #1 grounding (system/scene/recall via the shared
-/// helpers) + name/existing lines + a trailing `Detail:` cue. Caps mirror
-/// [buildAskGmPrompt].
+/// helpers) + name/existing lines + a trailing `Detail:` cue. Field strings
+/// go through `_capped` ([kPromptMaxFieldChars]).
 String buildFleshOutPrompt(FleshOutSeed seed) {
   final primer = _flat(seed.systemPrimer);
   final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';

@@ -23,11 +23,6 @@ class FakeInterpreterService implements InterpreterService {
   List<String>? lastSummaryEntries;
   int summaryCalls = 0;
 
-  final List<String> queuedAskGm = [];
-  AskGmSeed? lastAskGmSeed;
-  int askGmCalls = 0;
-  Object? askGmError;
-
   final List<String> queuedGmChat = [];
   GmChatSeed? lastGmChatSeed;
   int gmChatCalls = 0;
@@ -100,15 +95,6 @@ class FakeInterpreterService implements InterpreterService {
     if (summaryError != null) throw summaryError!;
     if (queuedSummary.isEmpty) return 'A canned recap.';
     return queuedSummary.removeAt(0);
-  }
-
-  @override
-  Future<String> askGm(AskGmSeed seed) async {
-    lastAskGmSeed = seed;
-    askGmCalls++;
-    if (askGmError != null) throw askGmError!;
-    if (queuedAskGm.isEmpty) return 'A canned GM answer.';
-    return queuedAskGm.removeAt(0);
   }
 
   @override
