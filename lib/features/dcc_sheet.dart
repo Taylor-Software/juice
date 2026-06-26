@@ -210,26 +210,29 @@ class DccSheetView extends ConsumerWidget {
 
   // ===================== LEVELED =====================
 
-  Future<int?> _askDc(BuildContext context) async {
-    final ctrl = TextEditingController(text: '10');
+  Future<int?> _askDc(BuildContext context) {
+    // A self-managing TextFormField (initialValue + onChanged into a closure)
+    // avoids owning a TextEditingController — no leak, and nothing to dispose
+    // mid-route-pop. Mirrors the closure-state pattern in _graduateDialog.
+    var dc = 10;
     return showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Target DC'),
-        content: TextField(
+        content: TextFormField(
           key: const Key('dcc-dc-field'),
-          controller: ctrl,
+          initialValue: '10',
           autofocus: true,
           keyboardType: TextInputType.number,
           decoration: const InputDecoration(labelText: 'DC'),
+          onChanged: (v) => dc = int.tryParse(v) ?? dc,
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
               key: const Key('dcc-dc-confirm'),
-              onPressed: () =>
-                  Navigator.pop(ctx, int.tryParse(ctrl.text) ?? 10),
+              onPressed: () => Navigator.pop(ctx, dc),
               child: const Text('Roll')),
         ],
       ),
@@ -377,7 +380,7 @@ class DccSheetView extends ConsumerWidget {
               onReset: () =>
                   save(s.copyWith(stats: {...s.stats, 'lck': s.lckMax})),
             ),
-          if (isLck && (s.className == 'Thief' || s.className == 'Halfling'))
+          if (isLck && s.luckyRecoveryClass)
             const Text('Recovers 1 / level on rest',
                 style: TextStyle(fontSize: 11)),
         ]);

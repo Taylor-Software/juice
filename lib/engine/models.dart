@@ -2263,6 +2263,10 @@ class DccSheet {
   int get totalSpellburn => burnableStats.fold(0, (sum, k) => sum + burned(k));
   String? get castingStat => isCleric ? 'per' : (isCaster ? 'int' : null);
 
+  /// Thieves and Halflings regain spent Luck on rest (shown as a sheet note).
+  bool get luckyRecoveryClass =>
+      className == 'Thief' || className == 'Halfling';
+
   factory DccSheet.premade() => const DccSheet();
 
   /// Promotes peasant [i] to 1st level with [className]/[alignment], copying
