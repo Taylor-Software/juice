@@ -289,127 +289,38 @@ class CharacterNotifier extends _PersistedList<Character> {
     return id;
   }
 
-  /// Creates a pre-made Classic Ironsworn PC at the top and returns its id.
-  Future<String> addIronsworn() async {
+  /// Creates a pre-made character seeded for [systemKey] at the top of the
+  /// roster and returns its id. See [Character.forSheet] for the key mapping.
+  Future<String> addPreMadeSheet(String systemKey) async {
     final id = _newId();
-    await _persist([
-      Character(
-          id: id,
-          name: 'New Ironsworn character',
-          ironsworn: IronswornSheet.premade()),
-      ...await _ready,
-    ]);
+    await _persist([Character.forSheet(systemKey, id), ...await _ready]);
     return id;
   }
+
+  /// Creates a pre-made Classic Ironsworn PC at the top and returns its id.
+  Future<String> addIronsworn() => addPreMadeSheet('ironsworn');
 
   /// Creates a pre-made Starforged (or Sundered Isles) PC and returns its id.
-  Future<String> addStarforged({String assetRuleset = 'starforged'}) async {
-    final id = _newId();
-    final name = assetRuleset == 'sundered_isles'
-        ? 'New Sundered Isles character'
-        : 'New Starforged character';
-    await _persist([
-      Character(
-          id: id,
-          name: name,
-          starforged: StarforgedSheet.premade(assetRuleset: assetRuleset)),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addStarforged({String assetRuleset = 'starforged'}) =>
+      addPreMadeSheet(assetRuleset);
 
   /// Creates a pre-made D&D 5e PC at the top and returns its id.
-  Future<String> addDnd() async {
-    final id = _newId();
-    await _persist([
-      Character(id: id, name: 'New D&D character', dnd: DndSheet.premade()),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addDnd() => addPreMadeSheet('dnd');
 
   /// Creates a pre-made Shadowdark PC at the top and returns its id.
-  Future<String> addShadowdark() async {
-    final id = _newId();
-    await _persist([
-      Character(
-          id: id,
-          name: 'New Shadowdark character',
-          shadowdark: ShadowdarkSheet.premade()),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addShadowdark() => addPreMadeSheet('shadowdark');
 
   /// Creates a pre-made Nimble PC at the top and returns its id.
-  Future<String> addNimble() async {
-    final id = _newId();
-    await _persist([
-      Character(
-          id: id, name: 'New Nimble character', nimble: const NimbleSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addNimble() => addPreMadeSheet('nimble');
 
   /// Creates a pre-made Draw Steel hero at the top and returns its id.
-  Future<String> addDrawSteel() async {
-    final id = _newId();
-    await _persist([
-      Character(
-          id: id,
-          name: 'New Draw Steel hero',
-          drawSteel: const DrawSteelSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addDrawSteel() => addPreMadeSheet('draw-steel');
 
-  Future<String> addArgosa() async {
-    final id = _newId();
-    await _persist([
-      Character(
-          id: id, name: 'New Argosa character', argosa: const ArgosaSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
-
-  Future<String> addCairn() async {
-    final id = _newId();
-    await _persist([
-      Character(id: id, name: 'New Cairn character', cairn: const CairnSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
-
-  Future<String> addKnave() async {
-    final id = _newId();
-    await _persist([
-      Character(id: id, name: 'New Knave', knave: const KnaveSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
-
-  Future<String> addOse() async {
-    final id = _newId();
-    await _persist([
-      Character(id: id, name: 'New Adventurer', ose: const OseSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
-
-  Future<String> addKalArath() async {
-    final id = _newId();
-    await _persist([
-      Character(id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
-      ...await _ready,
-    ]);
-    return id;
-  }
+  Future<String> addArgosa() => addPreMadeSheet('argosa');
+  Future<String> addCairn() => addPreMadeSheet('cairn');
+  Future<String> addKnave() => addPreMadeSheet('knave');
+  Future<String> addOse() => addPreMadeSheet('ose');
+  Future<String> addKalArath() => addPreMadeSheet('kal-arath');
 
   Future<void> replace(Character character) async {
     await _persist([
