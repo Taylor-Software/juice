@@ -615,123 +615,158 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         .firstWhere((t) => t.id == id,
             orElse: () => Thread(id: id, title: '(closed thread)'))
         .title;
-    return Column(
-      children: [
-        const AssistantRail(),
-        Expanded(
-          child: async.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Error: $e')),
-            data: (entries) {
-              if (entries.isEmpty) {
-                // Directive orientation, not a takeover: the dock + composer
-                // below the Expanded stay visible and usable. EmptyState is a
-                // Center (bounded by the enclosing Expanded). Wrap it in a
-                // scroll view sized to the region so it centers when there's
-                // room but scrolls instead of overflowing when squeezed (the
-                // shell's journal region can be short on small viewports).
-                return LayoutBuilder(
-                  builder: (context, constraints) => SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(minHeight: constraints.maxHeight),
-                      child: EmptyState(
-                        icon: Icons.menu_book_outlined,
-                        title: 'A blank page.',
-                        body: 'Roll the oracle or write your first line.',
-                        primaryLabel: 'Roll oracle',
-                        onPrimary: _rollOracle,
-                        secondaryLabel: 'Write a line',
-                        onSecondary: () => _composerFocus.requestFocus(),
-                      ),
-                    ),
-                  ),
-                );
-              }
-              // Storage is newest-first; a reversed ListView reads forward
-              // (oldest at top) while anchoring the viewport at the newest
-              // entry, chat-style.
-              final tags = allTags(entries);
-              // Characters referenced by mentions anywhere in the journal.
-              final mentionedChars = <String>{
-                for (final e in entries) ...mentionedCharIds(e.body),
-              };
-              final chars = (ref.watch(charactersProvider).valueOrNull ??
-                      const <Character>[])
-                  .where((c) => mentionedChars.contains(c.id))
-                  .toList();
-              var visible = _filterThreadId == null
-                  ? entries
-                  : entries
-                      .where((e) => e.threadId == _filterThreadId)
-                      .toList();
-              if (_filterTag != null) {
-                visible =
-                    visible.where((e) => e.tags.contains(_filterTag)).toList();
-              }
-              if (_filterCharId != null) {
-                visible = visible
-                    .where(
-                        (e) => mentionedCharIds(e.body).contains(_filterCharId))
-                    .toList();
-              }
-              if (_searching) {
-                visible = searchEntries(visible, _search.text);
-              }
-              // The fixed top group (nudge / recap / filters / actions /
-              // search) sits above the entry list. At comfortable heights it
-              // takes its natural size and the entry ListView fills the rest.
-              // When the region is short the group is capped at the available
-              // height and scrolls internally (rather than squeezing the entry
-              // Expanded below zero and overflowing). The ListView keeps its
-              // own Expanded + reverse-anchoring + _entryScroll either way.
-              return LayoutBuilder(
-                builder: (context, constraints) => Column(
-                  children: [
-                    ConstrainedBox(
-                      constraints:
-                          BoxConstraints(maxHeight: constraints.maxHeight),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            _aiNudge(),
-                            _recapBanner(entries),
-                            if (threads.isNotEmpty ||
-                                tags.isNotEmpty ||
-                                chars.isNotEmpty)
-                              _filterChips(threads, tags, chars),
-                            _journalActions(),
-                            if (_searching) _searchField(),
-                          ],
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _entryScroll,
-                        reverse: true,
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                        itemCount: visible.length,
-                        itemBuilder: (context, i) =>
-                            _entry(visible[i], threads, threadTitle, lonelog),
-                      ),
-                    ),
-                  ],
+    // The fixed chrome above/below the entry list — the assistant rail, the
+    // (conditional) slash/mention/ask panel, the suggestion row, the inline
+    // roll dock, and the composer. At comfortable heights these take their
+    // natural size and the entry list fills the gap via an Expanded. At very
+    // short heights their sum alone can exceed the viewport; an Expanded would
+    // then collapse to 0 and the fixed siblings overflow (the OUTER body case).
+    // Below a threshold we instead scroll the WHOLE body and give the entry
+    // list a bounded height, so nothing overflows and the composer stays
+    // reachable at the bottom of the scroll.
+    final entryRegion = async.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+      data: (entries) {
+        if (entries.isEmpty) {
+          // Directive orientation, not a takeover: the dock + composer
+          // below the Expanded stay visible and usable. EmptyState is a
+          // Center (bounded by the enclosing Expanded). Wrap it in a
+          // scroll view sized to the region so it centers when there's
+          // room but scrolls instead of overflowing when squeezed (the
+          // shell's journal region can be short on small viewports).
+          return LayoutBuilder(
+            builder: (context, constraints) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: EmptyState(
+                  icon: Icons.menu_book_outlined,
+                  title: 'A blank page.',
+                  body: 'Roll the oracle or write your first line.',
+                  primaryLabel: 'Roll oracle',
+                  onPrimary: _rollOracle,
+                  secondaryLabel: 'Write a line',
+                  onSecondary: () => _composerFocus.requestFocus(),
                 ),
-              );
-            },
+              ),
+            ),
+          );
+        }
+        // Storage is newest-first; a reversed ListView reads forward
+        // (oldest at top) while anchoring the viewport at the newest
+        // entry, chat-style.
+        final tags = allTags(entries);
+        // Characters referenced by mentions anywhere in the journal.
+        final mentionedChars = <String>{
+          for (final e in entries) ...mentionedCharIds(e.body),
+        };
+        final chars =
+            (ref.watch(charactersProvider).valueOrNull ?? const <Character>[])
+                .where((c) => mentionedChars.contains(c.id))
+                .toList();
+        var visible = _filterThreadId == null
+            ? entries
+            : entries.where((e) => e.threadId == _filterThreadId).toList();
+        if (_filterTag != null) {
+          visible = visible.where((e) => e.tags.contains(_filterTag)).toList();
+        }
+        if (_filterCharId != null) {
+          visible = visible
+              .where((e) => mentionedCharIds(e.body).contains(_filterCharId))
+              .toList();
+        }
+        if (_searching) {
+          visible = searchEntries(visible, _search.text);
+        }
+        // The fixed top group (nudge / recap / filters / actions /
+        // search) sits above the entry list. At comfortable heights it
+        // takes its natural size and the entry ListView fills the rest.
+        // When the region is short the group is capped at the available
+        // height and scrolls internally (rather than squeezing the entry
+        // Expanded below zero and overflowing). The ListView keeps its
+        // own Expanded + reverse-anchoring + _entryScroll either way.
+        return LayoutBuilder(
+          builder: (context, constraints) => Column(
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _aiNudge(),
+                      _recapBanner(entries),
+                      if (threads.isNotEmpty ||
+                          tags.isNotEmpty ||
+                          chars.isNotEmpty)
+                        _filterChips(threads, tags, chars),
+                      _journalActions(),
+                      if (_searching) _searchField(),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  controller: _entryScroll,
+                  reverse: true,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  itemCount: visible.length,
+                  itemBuilder: (context, i) =>
+                      _entry(visible[i], threads, threadTitle, lonelog),
+                ),
+              ),
+            ],
           ),
-        ),
-        if (_slashActive)
-          _slashPalette()
-        else if (_mentionQuery != null)
-          _mentionPanel()
-        else if (_askActive)
-          _askChip(),
-        _suggestionRow(),
-        InlineRollDock(onRolled: _revealNewest),
-        _composerBar(),
-      ],
+        );
+      },
+    );
+
+    // The chrome that sits below the entry region — order preserved exactly.
+    final belowEntry = <Widget>[
+      if (_slashActive)
+        _slashPalette()
+      else if (_mentionQuery != null)
+        _mentionPanel()
+      else if (_askActive)
+        _askChip(),
+      _suggestionRow(),
+      InlineRollDock(onRolled: _revealNewest),
+      _composerBar(),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Below this height the fixed chrome (rail + panel + suggestion row +
+        // dock + composer) can sum taller than the viewport, so an Expanded
+        // entry region would collapse to 0 and the chrome would overflow. The
+        // observed max fixed chrome (collapsed rail, full suggestion row, dock,
+        // multi-line composer affordances) is ~290px; below `kJournalScrollFallback`
+        // we scroll the whole body and give the entry list a bounded minimum so
+        // nothing overflows and the composer stays reachable. Above it, the
+        // current Expanded-fills layout (with reverse-anchoring + _entryScroll)
+        // is used unchanged.
+        const kJournalScrollFallback = 360.0;
+        const kJournalEntryRegionMin = 120.0;
+        if (constraints.maxHeight.isFinite &&
+            constraints.maxHeight < kJournalScrollFallback) {
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                const AssistantRail(),
+                SizedBox(height: kJournalEntryRegionMin, child: entryRegion),
+                ...belowEntry,
+              ],
+            ),
+          );
+        }
+        return Column(
+          children: [
+            const AssistantRail(),
+            Expanded(child: entryRegion),
+            ...belowEntry,
+          ],
+        );
+      },
     );
   }
 
