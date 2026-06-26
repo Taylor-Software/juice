@@ -14,6 +14,7 @@ import 'resources_pane.dart';
 import 'rumors_pane.dart';
 import 'scenes_pane.dart';
 import 'sidekick_screen.dart';
+import 'track_home_pane.dart';
 import 'tracker_screen.dart';
 import 'tracks_pane.dart';
 
@@ -34,6 +35,7 @@ class TrackingTab extends ConsumerWidget {
       destination: Destination.track,
       scrollable: true,
       tabs: [
+        const SubtabDef('home', 'Home'),
         const SubtabDef('scenes', 'Scenes'),
         const SubtabDef('threads', 'Threads'),
         if (rumors) const SubtabDef('rumors', 'Rumors'),
@@ -46,6 +48,7 @@ class TrackingTab extends ConsumerWidget {
         if (lonelog) const SubtabDef('battle', 'Battle'),
       ],
       children: [
+        const TrackHomePane(),
         const ScenesPane(),
         const ThreadsPane(),
         if (rumors) const RumorsPane(),
