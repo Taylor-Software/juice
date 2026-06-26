@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../shared/design_tokens.dart';
+import '../shared/destination.dart';
 import '../shared/empty_state.dart';
+import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -175,33 +178,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Id of the character whose sheet is open, or null for the list view.
   String? _editingId;
 
-  /// Guards the one-time initial focus from the persisted context.
-  bool _initialFocusApplied = false;
-
   @override
   Widget build(BuildContext context) {
-    ref.listen(
-      playContextProvider.select((v) => v.valueOrNull?.activeCharacterId),
-      (prev, next) {
-        if (next != null && next != _editingId && mounted) {
-          setState(() => _editingId = next);
-        }
-      },
-    );
+    // The active PC surfaces as a rich lead card in the roster *list* (vitals +
+    // quick actions read without opening the sheet); tapping any card opens the
+    // full sheet. So setting the active character no longer auto-opens the
+    // editor — `_editingId` is driven solely by an explicit card tap.
     final async = ref.watch(charactersProvider);
     return Scaffold(
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (chars) {
-          if (!_initialFocusApplied) {
-            _initialFocusApplied = true;
-            final active =
-                ref.read(playContextProvider).valueOrNull?.activeCharacterId;
-            if (active != null && chars.any((c) => c.id == active)) {
-              _editingId = active;
-            }
-          }
           if (_editingId != null) {
             // Resolve fresh each build; if the id vanished (e.g. session
             // switch), fall back to the list view.
@@ -735,65 +723,356 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     if (mounted) setState(() => _editingId = id);
   }
 
-  Widget _rosterCard(BuildContext context, Character c, {bool isLead = false}) {
-    final t = c.tracks.isEmpty ? null : c.tracks.first;
+  Widget _rosterCard(BuildContext context, Character c,
+          {bool isLead = false}) =>
+      isLead ? _leadCard(context, c) : _compactCard(context, c);
+
+  /// Journal entries that @-mention [c] — shared by both card variants for the
+  /// mentions backlink chip.
+  List<JournalEntry> _mentionsFor(Character c) {
     final journal =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
-    final mentions =
-        journal.where((e) => mentionedCharIds(e.body).contains(c.id)).toList();
+    return journal
+        .where((e) => mentionedCharIds(e.body).contains(c.id))
+        .toList();
+  }
+
+  /// The condition chips + add-condition + mentions-backlink row, shared by
+  /// both card variants. Keys `conditions-`/`mentions-` must stay findable.
+  Widget _conditionsWrap(
+      BuildContext context, Character c, List<JournalEntry> mentions,
+      {Color? chipColor}) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: [
+        for (final cond in c.conditions)
+          Chip(
+            label: Text(cond),
+            backgroundColor: chipColor,
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        ActionChip(
+          key: Key('conditions-${c.id}'),
+          avatar: const Icon(Icons.add, size: 16),
+          label: const Text('condition'),
+          visualDensity: VisualDensity.compact,
+          onPressed: () => _editConditions(context, c),
+        ),
+        // Backlink: where this character is @-mentioned in the journal.
+        if (mentions.isNotEmpty)
+          ActionChip(
+            key: Key('mentions-${c.id}'),
+            avatar: const Icon(Icons.link, size: 16),
+            label: Text('Mentions ${mentions.length}'),
+            visualDensity: VisualDensity.compact,
+            onPressed: () => _showMentions(context, c, mentions),
+          ),
+      ],
+    );
+  }
+
+  /// The role re-tag menu, shared by both variants. Key `role-` must stay
+  /// findable.
+  Widget _roleMenu(Character c) => PopupMenuButton<CharacterRole>(
+        key: Key('role-${c.id}'),
+        initialValue: c.role,
+        tooltip: 'Role',
+        onSelected: (r) =>
+            ref.read(charactersProvider.notifier).setRole(c.id, r),
+        itemBuilder: (_) => const [
+          PopupMenuItem(value: CharacterRole.pc, child: Text('PC')),
+          PopupMenuItem(
+              value: CharacterRole.companion, child: Text('Companion')),
+          PopupMenuItem(value: CharacterRole.npc, child: Text('NPC')),
+        ],
+      );
+
+  Widget _starButton(Character c) => IconButton(
+        key: Key('star-char-${c.id}'),
+        visualDensity: VisualDensity.compact,
+        icon: Icon(c.starred ? Icons.star : Icons.star_border),
+        tooltip: c.starred ? 'Unstar' : 'Star',
+        onPressed: () =>
+            ref.read(charactersProvider.notifier).toggleStarred(c.id),
+      );
+
+  /// Resolve the lead card's vitals: system-aware HP/meter bars (label, cur,
+  /// max) plus an optional secondary value (AC / torch / momentum). Falls back
+  /// to the first generic track for any sheet without a bespoke HP pool.
+  ({List<(String, int, int)> bars, String? extra}) _leadVitals(Character c) {
+    if (c.dnd != null) {
+      final d = c.dnd!;
+      return (bars: [('HP', d.currentHp, d.maxHp)], extra: 'AC ${d.ac}');
+    }
+    if (c.shadowdark != null) {
+      final s = c.shadowdark!;
+      return (bars: [('HP', s.currentHp, s.maxHp)], extra: 'Torch ${s.torch}');
+    }
+    if (c.ironsworn != null) {
+      final i = c.ironsworn!;
+      final m = i.momentum >= 0 ? '+${i.momentum}' : '${i.momentum}';
+      return (
+        bars: [
+          ('Health', i.health, 5),
+          ('Spirit', i.spirit, 5),
+          ('Supply', i.supply, 5),
+        ],
+        extra: 'Momentum $m',
+      );
+    }
+    if (c.starforged != null) {
+      final s = c.starforged!;
+      final m = s.momentum >= 0 ? '+${s.momentum}' : '${s.momentum}';
+      return (
+        bars: [
+          ('Health', s.health, 5),
+          ('Spirit', s.spirit, 5),
+          ('Supply', s.supply, 5),
+        ],
+        extra: 'Momentum $m',
+      );
+    }
+    // Generic / any other sheet: the first track is the primary meter (the same
+    // pool withHpDelta touches when there's no bespoke HP).
+    if (c.tracks.isNotEmpty) {
+      final t = c.tracks.first;
+      return (bars: [(t.label, t.current, t.max)], extra: null);
+    }
+    return (bars: const <(String, int, int)>[], extra: null);
+  }
+
+  /// A single labeled vitals bar: label · cur/max value (terracotta) over a
+  /// thin LinearProgressIndicator.
+  Widget _vitalsBar(BuildContext context, String label, int cur, int max) {
+    final tk = context.juice;
+    final frac = max <= 0 ? 0.0 : (cur / max).clamp(0.0, 1.0);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(label,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: tk.inkBody)),
+              ),
+              Text('$cur/$max',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: tk.terracotta)),
+            ],
+          ),
+          const SizedBox(height: 3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: frac,
+              minHeight: 5,
+              backgroundColor: tk.hairline,
+              valueColor: AlwaysStoppedAnimation<Color>(tk.terracotta),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Rich lead-PC card: vitals bars + quick actions. Renders only for the
+  /// active PC (isLead).
+  Widget _leadCard(BuildContext context, Character c) {
+    final tk = context.juice;
+    final mentions = _mentionsFor(c);
+    final vitals = _leadVitals(c);
+    final roleLabel =
+        c.role == CharacterRole.pc ? 'PC' : c.role.name.toUpperCase();
     return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFF0CDB8)),
+      ),
+      child: Container(
+        // Fill the roster row width (a Card in a ListView otherwise shrink-wraps
+        // to its content).
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [tk.raised, tk.card],
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: (star · name · role badge → tap opens sheet) · role menu.
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        ref
+                            .read(playContextProvider.notifier)
+                            .setActiveCharacter(c.id);
+                        setState(() => _editingId = c.id);
+                      },
+                      child: Row(
+                        children: [
+                          Icon(Icons.star, color: tk.gold, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(c.name,
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: tk.ink)),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: tk.selected,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(roleLabel,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: tk.terracotta)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Role re-tag (keeps `role-<id>` findable on the lead card).
+                  _roleMenu(c),
+                ],
+              ),
+            ),
+            // Vitals.
+            for (final (label, cur, max) in vitals.bars)
+              _vitalsBar(context, label, cur, max),
+            if (vitals.extra != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(vitals.extra!,
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: tk.inkMuted)),
+              ),
+            const SizedBox(height: 4),
+            _conditionsWrap(context, c, mentions, chipColor: tk.selected),
+            const SizedBox(height: 10),
+            Divider(height: 1, color: tk.hairline),
+            const SizedBox(height: 10),
+            // Quick-action row: roll a move · - hp · + hp · more.
+            Row(
+              children: [
+                FilledButton.icon(
+                  key: const Key('lead-roll-move'),
+                  // Override the app-wide full-width minimum (Size.fromHeight in
+                  // the FilledButton theme) so the button sizes to its content
+                  // inside this Row (a full-width minimum + Spacer collide).
+                  style: FilledButton.styleFrom(
+                    backgroundColor: tk.terracotta,
+                    visualDensity: VisualDensity.compact,
+                    minimumSize: const Size(0, 40),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  icon: const Icon(Icons.casino_outlined, size: 18),
+                  label: const Text('Roll a move'),
+                  onPressed: () => ref
+                      .read(shellRouteProvider.notifier)
+                      .goTo(Destination.sheet, subtab: 'moves'),
+                ),
+                const Spacer(),
+                IconButton(
+                  key: const Key('lead-hp-dec'),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Damage',
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () => ref
+                      .read(charactersProvider.notifier)
+                      .replace(c.withHpDelta(-1)),
+                ),
+                IconButton(
+                  key: const Key('lead-hp-inc'),
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Heal',
+                  icon: const Icon(Icons.add_circle_outline),
+                  onPressed: () => ref
+                      .read(charactersProvider.notifier)
+                      .replace(c.withHpDelta(1)),
+                ),
+                // Secondary actions: star/unstar + delete. Role re-tag lives in
+                // the header (the `role-<id>` PopupMenuButton) so its key stays
+                // findable without nesting a menu inside this one.
+                PopupMenuButton<String>(
+                  key: const Key('lead-more'),
+                  tooltip: 'More',
+                  icon: const Icon(Icons.more_horiz),
+                  onSelected: (v) {
+                    switch (v) {
+                      case 'star':
+                        ref
+                            .read(charactersProvider.notifier)
+                            .toggleStarred(c.id);
+                      case 'delete':
+                        ref.read(charactersProvider.notifier).remove(c.id);
+                    }
+                  },
+                  itemBuilder: (_) => [
+                    PopupMenuItem<String>(
+                      value: 'star',
+                      child: Text(c.starred ? 'Unstar' : 'Star'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Compact roster row for companions / NPCs (and any non-active PC). Keeps
+  /// the original look; lightly token-styled.
+  Widget _compactCard(BuildContext context, Character c) {
+    final tk = context.juice;
+    final t = c.tracks.isEmpty ? null : c.tracks.first;
+    final mentions = _mentionsFor(c);
+    return Card(
+      color: tk.raised,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            title: Row(
-              children: [
-                Expanded(child: Text(c.name)),
-                if (isLead)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 6),
-                    child: Chip(
-                      label: const Text('lead'),
-                      visualDensity: VisualDensity.compact,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.primaryContainer,
-                      labelStyle: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontSize: 11),
-                    ),
-                  ),
-              ],
-            ),
+            title: Text(c.name),
             subtitle: t != null
                 ? Text('${t.label} ${t.current}/${t.max}')
                 : (c.note.isEmpty ? null : Text(c.note)),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                PopupMenuButton<CharacterRole>(
-                  key: Key('role-${c.id}'),
-                  initialValue: c.role,
-                  tooltip: 'Role',
-                  onSelected: (r) =>
-                      ref.read(charactersProvider.notifier).setRole(c.id, r),
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: CharacterRole.pc, child: Text('PC')),
-                    PopupMenuItem(
-                        value: CharacterRole.companion,
-                        child: Text('Companion')),
-                    PopupMenuItem(value: CharacterRole.npc, child: Text('NPC')),
-                  ],
-                ),
-                IconButton(
-                  key: Key('star-char-${c.id}'),
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(c.starred ? Icons.star : Icons.star_border),
-                  tooltip: c.starred ? 'Unstar' : 'Star',
-                  onPressed: () =>
-                      ref.read(charactersProvider.notifier).toggleStarred(c.id),
-                ),
+                _roleMenu(c),
+                _starButton(c),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   onPressed: () =>
@@ -808,34 +1087,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 12, 8),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                for (final cond in c.conditions)
-                  Chip(
-                    label: Text(cond),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ActionChip(
-                  key: Key('conditions-${c.id}'),
-                  avatar: const Icon(Icons.add, size: 16),
-                  label: const Text('condition'),
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () => _editConditions(context, c),
-                ),
-                // Backlink: where this character is @-mentioned in the journal.
-                if (mentions.isNotEmpty)
-                  ActionChip(
-                    key: Key('mentions-${c.id}'),
-                    avatar: const Icon(Icons.link, size: 16),
-                    label: Text('Mentions ${mentions.length}'),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _showMentions(context, c, mentions),
-                  ),
-              ],
-            ),
+            child: _conditionsWrap(context, c, mentions),
           ),
         ],
       ),
