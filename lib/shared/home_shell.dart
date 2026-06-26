@@ -522,10 +522,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     return Scaffold(
       appBar: AppBar(
         title: sessionName == null
-            ? const Text("Solo Adventurer's Journal")
+            ? const Text("Loreseer")
             : Column(
                 children: [
-                  const Text("Solo Adventurer's Journal"),
+                  const Text("Loreseer"),
                   Text(sessionName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

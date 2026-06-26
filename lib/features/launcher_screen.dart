@@ -206,8 +206,8 @@ class LauncherScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
-                Text('Juice', style: theme.textTheme.headlineMedium),
-                Text('Solo TTRPG toolkit',
+                Text('Loreseer', style: theme.textTheme.headlineMedium),
+                Text('The oracle behind your adventure',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 const SizedBox(height: 24),

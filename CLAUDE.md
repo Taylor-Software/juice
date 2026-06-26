@@ -9,8 +9,11 @@ Working rules for this repo:
 
 ## Project notes
 
-- **Product display name is "Solo Adventurer's Journal"** (in-app titles, platform
-  manifests, web title/manifest, README H1). This is DISTINCT from two things that
+- **Product display name is "Loreseer"** (tagline "The oracle behind your
+  adventure"; in-app titles, platform manifests, web title/manifest, README H1).
+  Renamed from the former "Solo Adventurer's Journal"; see
+  `docs/superpowers/notes/2026-06-26-product-name-brainstorm.md`. This is DISTINCT
+  from two things that
   intentionally keep the old "juice" identifier: (1) the **Juice oracle** — the
   jrruethe/juice oracle *system* the app implements (the `'juice'`/`'Juice'` oracle
   id, `fate-juice`, the "Juice oracle" opt-in system + badge) — never rename these;

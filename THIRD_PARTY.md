@@ -1,6 +1,6 @@
 # Third-party content & licenses
 
-Solo Adventurer's Journal incorporates third-party tabletop content, oracle
+Loreseer incorporates third-party tabletop content, oracle
 tables, and artwork under the licenses below. This file is the canonical
 inventory; in-app attributions live in **Settings → Third-party content**
 (`lib/features/settings_sheet.dart`), and each vendored data set carries its

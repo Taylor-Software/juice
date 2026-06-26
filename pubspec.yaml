@@ -1,5 +1,5 @@
 name: juice_oracle
-description: "Solo Adventurer's Journal — a solo-RPG oracle & campaign journal implementing the Juice oracle (jrruethe/juice)."
+description: "Loreseer — the oracle behind your adventure. A solo-RPG oracle & campaign journal implementing the Juice oracle (jrruethe/juice)."
 publish_to: "none"
 version: 0.1.0+1
 

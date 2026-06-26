@@ -68,7 +68,7 @@ CampaignImport parseCampaign(String raw) {
   }
   if (decoded['app'] != _appMarker) {
     throw const FormatException(
-        "Not a Solo Adventurer's Journal campaign file");
+        "Not a Loreseer campaign file");
   }
   final version = decoded['schemaVersion'];
   if (version is! int || version > campaignSchemaVersion) {

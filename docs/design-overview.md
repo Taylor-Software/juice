@@ -1,6 +1,6 @@
-# Solo Adventurer's Journal — Design Overview
+# Loreseer — Design Overview
 
-This document describes every major screen, feature, and configuration option in **Solo Adventurer's Journal** (internal id: `juice`). It is intended for designers who need a comprehensive map of the product's UI surfaces and options.
+This document describes every major screen, feature, and configuration option in **Loreseer** (internal id: `juice`). It is intended for designers who need a comprehensive map of the product's UI surfaces and options.
 
 All screenshots are in `docs/screenshots/design/`.
 

@@ -13,7 +13,7 @@ class JuiceApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final oracle = ref.watch(oracleProvider);
     return MaterialApp(
-      title: "Solo Adventurer's Journal",
+      title: "Loreseer",
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

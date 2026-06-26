@@ -1,9 +1,11 @@
-# Product name brainstorm — front-runner: **Loreseer**
+# Product name brainstorm — adopted: **Loreseer**
 
 **Date:** 2026-06-26
-**Status:** Brainstorm / not yet adopted. Current shipping display name remains
-*Solo Adventurer's Journal* (see `CLAUDE.md`). This note records the exploration
-so a future rename has a paper trail; nothing in code/manifests changes here.
+**Status:** ADOPTED. The display name was renamed from *Solo Adventurer's Journal*
+to **Loreseer** (tagline "The oracle behind your adventure") in this same change —
+display strings only (in-app titles, platform manifests, web title/manifest,
+README H1, pubspec/THIRD_PARTY/design-overview prose). Internal `juice` identifiers
+are untouched per `CLAUDE.md`. This note records the exploration behind the choice.
 
 ## Brief
 
