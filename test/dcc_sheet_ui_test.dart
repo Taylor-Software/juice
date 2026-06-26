@@ -93,4 +93,36 @@ void main() {
       expect(btn.onPressed, isNull);
     });
   });
+
+  group('DccSheetView funnel', () {
+    testWidgets('shows survivor count and add-peasant button', (tester) async {
+      await _pumpDcc(tester, DccSheet.premade());
+      expect(find.text('1 / 1 alive'), findsOneWidget);
+      expect(find.byKey(const Key('dcc-add-peasant')), findsOneWidget);
+    });
+
+    testWidgets('add peasant raises count and disables at 4', (tester) async {
+      await _pumpDcc(tester, DccSheet.premade());
+      for (var n = 0; n < 3; n++) {
+        await tester.tap(find.byKey(const Key('dcc-add-peasant')));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('4 / 4 alive'), findsOneWidget);
+      final btn =
+          tester.widget<FilledButton>(find.byKey(const Key('dcc-add-peasant')));
+      expect(btn.onPressed, isNull);
+    });
+
+    testWidgets('graduate switches to leveled mode', (tester) async {
+      await _pumpDcc(tester, DccSheet.premade());
+      await tester.tap(find.byKey(const Key('dcc-peasant-0')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dcc-peasant-0-graduate')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('dcc-graduate-confirm')));
+      await tester.pumpAndSettle();
+      // leveled stub renders nothing visible yet, but the funnel header is gone
+      expect(find.text('0-Level Funnel'), findsNothing);
+    });
+  });
 }
