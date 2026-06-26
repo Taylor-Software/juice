@@ -94,6 +94,51 @@ void main() {
     });
   });
 
+  group('DccSheetView leveled', () {
+    DccSheet leveledWarrior() => DccSheet.premade().copyWith(peasants: [
+          const DccPeasant(hp: 8, stats: {
+            'str': 16,
+            'agi': 12,
+            'sta': 13,
+            'per': 9,
+            'int': 8,
+            'lck': 11,
+          })
+        ]).graduate(0, 'Warrior', 'Lawful');
+
+    testWidgets('renders stats grid and lucky-sign field', (tester) async {
+      await _pumpDcc(tester, leveledWarrior());
+      expect(find.byKey(const Key('dcc-sheet')), findsOneWidget);
+      expect(find.byKey(const Key('dcc-lucky-sign')), findsOneWidget);
+      expect(find.byKey(const Key('dcc-stat-str')), findsOneWidget);
+      // STR 16 -> +2
+      expect(find.textContaining('STR (+2)'), findsOneWidget);
+    });
+
+    testWidgets('save roll opens DC dialog and shows snackbar', (tester) async {
+      await _pumpDcc(tester, leveledWarrior());
+      await tester.tap(find.byKey(const Key('dcc-fort-roll')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('dcc-dc-field')), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('dcc-dc-field')), '11');
+      await tester.tap(find.byKey(const Key('dcc-dc-confirm')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Fortitude:'), findsOneWidget);
+      expect(find.textContaining('DC 11'), findsOneWidget);
+    });
+
+    testWidgets('luck spend persists via shared widget', (tester) async {
+      final c = await _pumpDcc(tester, leveledWarrior());
+      expect(find.text('11 / 11'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('dcc-luck-spend')));
+      await tester.pumpAndSettle();
+      expect(find.text('10 / 11'), findsOneWidget);
+      expect((await c.read(charactersProvider.future)).single.dcc!.stats['lck'],
+          10);
+    });
+  });
+
   group('DccSheetView funnel', () {
     testWidgets('shows survivor count and add-peasant button', (tester) async {
       await _pumpDcc(tester, DccSheet.premade());

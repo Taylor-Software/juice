@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -206,7 +208,186 @@ class DccSheetView extends ConsumerWidget {
     if (ok == true) _save(ref, s.graduate(i, cls, align));
   }
 
-  // ===================== LEVELED (stub; Task 7) =====================
-  Widget _buildLeveled(BuildContext context, WidgetRef ref, DccSheet s) =>
+  // ===================== LEVELED =====================
+
+  Future<int?> _askDc(BuildContext context) async {
+    final ctrl = TextEditingController(text: '10');
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Target DC'),
+        content: TextField(
+          key: const Key('dcc-dc-field'),
+          controller: ctrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'DC'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('dcc-dc-confirm'),
+              onPressed: () =>
+                  Navigator.pop(ctx, int.tryParse(ctrl.text) ?? 10),
+              child: const Text('Roll')),
+        ],
+      ),
+    );
+  }
+
+  void _snack(BuildContext context, String msg) =>
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), duration: const Duration(seconds: 3)));
+
+  Future<void> _rollSave(BuildContext context, DccSheet s, String key) async {
+    final dc = await _askDc(context);
+    if (dc == null || !context.mounted) return;
+    final roll = Random().nextInt(20) + 1 + (s.saves[key] ?? 0);
+    final pass = roll >= dc;
+    _snack(context,
+        '${kDccSaveLabels[key]}: $roll vs DC $dc — ${pass ? "Pass" : "Fail"}');
+  }
+
+  Widget _buildLeveled(BuildContext context, WidgetRef ref, DccSheet s) {
+    void save(DccSheet next) => _save(ref, next);
+    return ListView(
+      key: const Key('dcc-sheet'),
+      padding: const EdgeInsets.all(12),
+      children: [
+        sheetNameHeader(context, ref, character,
+            onBack: onBack, nameKey: 'dcc-name'),
+        Row(children: [
+          Chip(label: Text(s.className)),
+          const SizedBox(width: 8),
+          _stepper('dcc-level', 'Level', s.level,
+              min: 1, max: 10, onSet: (v) => save(s.copyWith(level: v))),
+          const SizedBox(width: 8),
+          DropdownButton<String>(
+            key: const Key('dcc-alignment'),
+            value: kDccAlignments.contains(s.alignment) ? s.alignment : null,
+            items: kDccAlignments
+                .map((a) => DropdownMenuItem(value: a, child: Text(a)))
+                .toList(),
+            onChanged: (v) {
+              if (v != null) save(s.copyWith(alignment: v));
+            },
+          ),
+        ]),
+        const SizedBox(height: 12),
+        sheetSection(context, 'Ability Scores'),
+        Wrap(spacing: 12, runSpacing: 8, children: [
+          for (final k in kDccStats) _statCell(context, ref, s, k),
+        ]),
+        const SizedBox(height: 12),
+        TextFormField(
+          key: const Key('dcc-lucky-sign'),
+          initialValue: s.luckySign,
+          decoration:
+              const InputDecoration(labelText: 'Lucky Sign / Birth Augur'),
+          onChanged: (v) => save(s.copyWith(luckySign: v)),
+        ),
+        const SizedBox(height: 12),
+        sheetSection(context, 'Combat'),
+        Wrap(spacing: 16, runSpacing: 8, children: [
+          _stepper('dcc-hp', 'HP', s.currentHp,
+              max: s.maxHp, onSet: (v) => save(s.copyWith(currentHp: v))),
+          _stepper('dcc-maxhp', 'Max', s.maxHp,
+              onSet: (v) => save(s.copyWith(maxHp: v))),
+          _stepper('dcc-ac', 'AC', s.ac,
+              min: 0, max: 30, onSet: (v) => save(s.copyWith(ac: v))),
+          _stepper('dcc-atk', 'Atk', s.attackBonus,
+              min: -5, max: 20, onSet: (v) => save(s.copyWith(attackBonus: v))),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            const Text('Action die '),
+            DropdownButton<String>(
+              key: const Key('dcc-action-die'),
+              value: s.actionDie,
+              items: kDccActionDice
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) save(s.copyWith(actionDie: v));
+              },
+            ),
+          ]),
+        ]),
+        const SizedBox(height: 12),
+        sheetSection(context, 'Saving Throws'),
+        for (final k in kDccSaveKeys)
+          Row(children: [
+            Expanded(child: Text(kDccSaveLabels[k]!)),
+            _stepper('dcc-save-$k', '', s.saves[k] ?? 0,
+                min: -5,
+                max: 20,
+                onSet: (v) => save(s.copyWith(saves: {...s.saves, k: v}))),
+            IconButton(
+              key: Key('dcc-$k-roll'),
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.casino_outlined, size: 18),
+              tooltip: 'Roll vs DC',
+              onPressed: () => _rollSave(context, s, k),
+            ),
+          ]),
+        const SizedBox(height: 12),
+        if (s.hasDeedDie) _deedSection(context, ref, s),
+        if (s.isCaster) _spellburnSection(context, ref, s),
+        if (s.isCleric) _disapprovalSection(context, ref, s),
+        sheetSection(context, 'Occupation'),
+        TextFormField(
+          key: const Key('dcc-occupation'),
+          initialValue: s.occupation,
+          decoration: const InputDecoration(labelText: 'Occupation'),
+          onChanged: (v) => save(s.copyWith(occupation: v)),
+        ),
+        const SizedBox(height: 12),
+        conditionsSection(context, ref, character, 'dcc'),
+        const SizedBox(height: 12),
+        TextFormField(
+          key: const Key('dcc-notes'),
+          initialValue: s.notes,
+          maxLines: 4,
+          decoration: const InputDecoration(labelText: 'Notes / Equipment'),
+          onChanged: (v) => save(s.copyWith(notes: v)),
+        ),
+      ],
+    );
+  }
+
+  Widget _statCell(BuildContext context, WidgetRef ref, DccSheet s, String k) {
+    void save(DccSheet next) => _save(ref, next);
+    final isLck = k == 'lck';
+    return Column(
+        key: Key('dcc-stat-$k'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${kDccStatLabels[k]} (${_sign(s.mod(k))})',
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          _stepper('dcc-stat-$k', '', s.stats[k] ?? 10,
+              min: 3,
+              max: 18,
+              onSet: (v) => save(s.copyWith(stats: {...s.stats, k: v}))),
+          if (isLck)
+            luckTokensSection(
+              keyPrefix: 'dcc-luck',
+              label: 'Luck',
+              current: s.stats['lck'] ?? 10,
+              max: s.lckMax,
+              onSet: (v) => save(s.copyWith(stats: {...s.stats, 'lck': v})),
+              onReset: () =>
+                  save(s.copyWith(stats: {...s.stats, 'lck': s.lckMax})),
+            ),
+          if (isLck && (s.className == 'Thief' || s.className == 'Halfling'))
+            const Text('Recovers 1 / level on rest',
+                style: TextStyle(fontSize: 11)),
+        ]);
+  }
+
+  // class-section stubs filled in Task 8:
+  Widget _deedSection(BuildContext context, WidgetRef ref, DccSheet s) =>
+      const SizedBox.shrink();
+  Widget _spellburnSection(BuildContext context, WidgetRef ref, DccSheet s) =>
+      const SizedBox.shrink();
+  Widget _disapprovalSection(BuildContext context, WidgetRef ref, DccSheet s) =>
       const SizedBox.shrink();
 }
