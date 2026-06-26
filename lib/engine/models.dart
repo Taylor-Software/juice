@@ -179,26 +179,44 @@ class JournalEntry {
 
 /// Persisted thread (Mythic-style "thread"/vow the player tracks).
 class Thread {
-  const Thread({
+  Thread({
     required this.id,
     required this.title,
     this.note = '',
     this.open = true,
     this.pinned = false,
-  });
+    int progress = 0,
+    int progressMax = 10,
+  })  : progressMax = progressMax < 1 ? 1 : progressMax,
+        progress = progress.clamp(0, progressMax < 1 ? 1 : progressMax);
   final String id;
   final String title;
   final String note;
   final bool open;
   final bool pinned;
 
-  Thread copyWith({String? title, String? note, bool? open, bool? pinned}) =>
+  /// Numeric progress clock (n/[progressMax]); always clamped into 0..max.
+  final int progress;
+
+  /// Clock denominator (default 10); always >= 1.
+  final int progressMax;
+
+  Thread copyWith({
+    String? title,
+    String? note,
+    bool? open,
+    bool? pinned,
+    int? progress,
+    int? progressMax,
+  }) =>
       Thread(
         id: id,
         title: title ?? this.title,
         note: note ?? this.note,
         open: open ?? this.open,
         pinned: pinned ?? this.pinned,
+        progress: progress ?? this.progress,
+        progressMax: progressMax ?? this.progressMax,
       );
 
   Map<String, dynamic> toJson() => {
@@ -207,6 +225,8 @@ class Thread {
         'note': note,
         'open': open,
         if (pinned) 'pinned': true,
+        if (progress > 0) 'progress': progress,
+        if (progressMax != 10) 'progressMax': progressMax,
       };
 
   factory Thread.fromJson(Map<String, dynamic> j) => Thread(
@@ -215,6 +235,8 @@ class Thread {
         note: (j['note'] as String?) ?? '',
         open: (j['open'] as bool?) ?? true,
         pinned: (j['pinned'] as bool?) ?? false,
+        progress: (j['progress'] as int?) ?? 0,
+        progressMax: (j['progressMax'] as int?) ?? 10,
       );
 }
 

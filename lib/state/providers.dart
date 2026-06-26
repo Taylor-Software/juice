@@ -232,6 +232,16 @@ class ThreadNotifier extends _PersistedList<Thread> {
     ]);
   }
 
+  /// Sets the numeric progress clock for thread [id], clamped to
+  /// `0..thread.progressMax`, persisting the single updated thread.
+  Future<void> setProgress(String id, int value) async {
+    final threads = await _ready;
+    final thread = threads.where((t) => t.id == id).firstOrNull;
+    if (thread == null) return;
+    final clamped = value.clamp(0, thread.progressMax);
+    await replace(thread.copyWith(progress: clamped));
+  }
+
   Future<void> remove(String id) async {
     await _persist((await _ready).where((t) => t.id != id).toList());
   }

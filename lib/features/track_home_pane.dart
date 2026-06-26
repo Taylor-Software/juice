@@ -122,33 +122,52 @@ class TrackHomePane extends ConsumerWidget {
               children: [
                 for (final t in shown.take(3))
                   Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          t.pinned ? Icons.push_pin : Icons.circle,
-                          size: t.pinned ? 13 : 7,
-                          color: t.open ? tk.terracotta : tk.inkMuted,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            t.title,
-                            style: TextStyle(
-                              color: t.open ? tk.inkBody : tk.inkMuted,
-                              decoration:
-                                  t.open ? null : TextDecoration.lineThrough,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Icon(
+                              t.pinned ? Icons.push_pin : Icons.circle,
+                              size: t.pinned ? 13 : 7,
+                              color: t.open ? tk.terracotta : tk.inkMuted,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                t.title,
+                                style: TextStyle(
+                                  color: t.open ? tk.inkBody : tk.inkMuted,
+                                  decoration: t.open
+                                      ? null
+                                      : TextDecoration.lineThrough,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Text(
+                              '${t.progress}/${t.progressMax}',
+                              style: tk.uiLabel.copyWith(
+                                fontSize: 11,
+                                color: tk.inkMuted,
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          t.pinned ? 'Pinned' : (t.open ? 'Open' : 'Closed'),
-                          style: tk.uiLabel.copyWith(
-                            fontSize: 11,
-                            color: tk.inkMuted,
+                        const SizedBox(height: 3),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: t.progressMax <= 0
+                                ? 0.0
+                                : (t.progress / t.progressMax).clamp(0.0, 1.0),
+                            minHeight: 5,
+                            backgroundColor: tk.hairline,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(tk.terracotta),
                           ),
                         ),
                       ],
