@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../shared/ai_badge.dart';
 import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
 import '../shared/empty_state.dart';
@@ -68,7 +69,7 @@ class ThreadsPane extends ConsumerWidget {
                         IconButton(
                           key: Key('flesh-out-thread-${t.id}'),
                           visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.auto_fix_high_outlined),
+                          icon: const AiBadge(),
                           tooltip: 'Flesh out (AI)',
                           onPressed: () => _fleshOutThread(context, ref, t),
                         ),
@@ -1298,7 +1299,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             if (ref.watch(aiReadyProvider))
               IconButton(
                 key: const Key('flesh-out-character'),
-                icon: const Icon(Icons.auto_fix_high_outlined),
+                icon: const AiBadge(),
                 tooltip: 'Flesh out (AI)',
                 onPressed: () => _fleshOutCharacter(context, c),
               ),

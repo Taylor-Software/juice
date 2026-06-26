@@ -12,6 +12,7 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/map_screen.dart';
 import 'package:juice_oracle/features/tracker_screen.dart';
+import 'package:juice_oracle/shared/ai_badge.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -63,6 +64,12 @@ void main() {
     final c = await _pumpCharacters(tester, _fake());
     await tester.tap(find.text('Ash')); // open the sheet
     await tester.pumpAndSettle();
+    // The ✦ AI badge marks the trigger.
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('flesh-out-character')),
+            matching: find.byType(AiBadge)),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('flesh-out-character')));
     await tester.pumpAndSettle(); // fleshOut() + the _EditDialog
     await tester.tap(find.text('Save'));
@@ -97,6 +104,11 @@ void main() {
     await tester.pumpAndSettle();
     final c =
         ProviderScope.containerOf(tester.element(find.byType(ThreadsPane)));
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('flesh-out-thread-t1')),
+            matching: find.byType(AiBadge)),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('flesh-out-thread-t1')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
@@ -132,6 +144,11 @@ void main() {
           MaterialApp(home: Scaffold(body: DungeonMapPane(oracle: _oracle()))),
     ));
     await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('flesh-out-room')),
+            matching: find.byType(AiBadge)),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('flesh-out-room')));
     await tester.pumpAndSettle(); // fleshOut() + review dialog
     await tester.tap(find.byKey(const Key('flesh-out-append')));
@@ -175,6 +192,11 @@ void main() {
     final tl = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
     await tester.tapAt(tl + local);
     await tester.pumpAndSettle();
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('flesh-out-site')),
+            matching: find.byType(AiBadge)),
+        findsOneWidget);
     await tester.tap(find.byKey(const Key('flesh-out-site')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('flesh-out-append')));

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/result_card.dart';
 import '../shared/shell_route.dart';
@@ -357,10 +358,11 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                   child: const Text('Linger'),
                 ),
                 if (ref.watch(aiReadyProvider))
-                  OutlinedButton(
+                  OutlinedButton.icon(
                     key: const Key('flesh-out-room'),
                     onPressed: () => _fleshOutRoom(room),
-                    child: const Text('Flesh out'),
+                    icon: const AiBadge(),
+                    label: const Text('Flesh out'),
                   ),
                 Builder(builder: (context) {
                   final enc = ref.watch(encounterProvider);
@@ -1035,10 +1037,11 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   child: const Text('Crawl site'),
                 ),
                 if (ref.watch(aiReadyProvider))
-                  FilledButton.tonal(
+                  FilledButton.tonalIcon(
                     key: const Key('flesh-out-site'),
                     onPressed: () => _fleshOutSite(h),
-                    child: const Text('Flesh out'),
+                    icon: const AiBadge(),
+                    label: const Text('Flesh out'),
                   ),
                 FilledButton.tonal(
                   key: const Key('site-full'),
