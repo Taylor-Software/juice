@@ -678,25 +678,46 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               if (_searching) {
                 visible = searchEntries(visible, _search.text);
               }
-              return Column(
-                children: [
-                  _aiNudge(),
-                  _recapBanner(entries),
-                  if (threads.isNotEmpty || tags.isNotEmpty || chars.isNotEmpty)
-                    _filterChips(threads, tags, chars),
-                  _journalActions(),
-                  if (_searching) _searchField(),
-                  Expanded(
-                    child: ListView.builder(
-                      controller: _entryScroll,
-                      reverse: true,
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      itemCount: visible.length,
-                      itemBuilder: (context, i) =>
-                          _entry(visible[i], threads, threadTitle, lonelog),
+              // The fixed top group (nudge / recap / filters / actions /
+              // search) sits above the entry list. At comfortable heights it
+              // takes its natural size and the entry ListView fills the rest.
+              // When the region is short the group is capped at the available
+              // height and scrolls internally (rather than squeezing the entry
+              // Expanded below zero and overflowing). The ListView keeps its
+              // own Expanded + reverse-anchoring + _entryScroll either way.
+              return LayoutBuilder(
+                builder: (context, constraints) => Column(
+                  children: [
+                    ConstrainedBox(
+                      constraints:
+                          BoxConstraints(maxHeight: constraints.maxHeight),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _aiNudge(),
+                            _recapBanner(entries),
+                            if (threads.isNotEmpty ||
+                                tags.isNotEmpty ||
+                                chars.isNotEmpty)
+                              _filterChips(threads, tags, chars),
+                            _journalActions(),
+                            if (_searching) _searchField(),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                    Expanded(
+                      child: ListView.builder(
+                        controller: _entryScroll,
+                        reverse: true,
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        itemCount: visible.length,
+                        itemBuilder: (context, i) =>
+                            _entry(visible[i], threads, threadTitle, lonelog),
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
