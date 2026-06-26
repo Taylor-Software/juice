@@ -58,8 +58,9 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('ose')) return _primerFor('ose');
   if (systems.contains('kal-arath')) return _primerFor('kal-arath');
   if (systems.contains('ironsworn')) {
-    if (rulesets.contains('sundered_isles'))
+    if (rulesets.contains('sundered_isles')) {
       return _primerFor('sundered_isles');
+    }
     if (rulesets.contains('starforged')) return _primerFor('starforged');
     return _primerFor('ironsworn');
   }
