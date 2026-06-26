@@ -92,13 +92,18 @@ void main() {
     expect(c.read(playContextProvider).valueOrNull?.activeCharacterId, 'c1');
   });
 
-  testWidgets('Sheet auto-opens the active character', (tester) async {
+  testWidgets('the active PC renders as a lead card in the roster list',
+      (tester) async {
+    // The active character no longer auto-opens its sheet: it surfaces as a
+    // rich lead card *in the list* (vitals + quick actions read without a sheet
+    // round-trip), while the others stay compact rows.
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]},'
-              '{"id":"c2","name":"Birch","stats":[],"tracks":[],"tags":[]}]',
+              '{"id":"c2","name":"Birch","stats":[],'
+              '"tracks":[{"label":"HP","current":3,"max":6}],"tags":[]}]',
       'juice.context.v1.default': '{"activeCharacterId":"c2"}',
     });
     await tester.pumpWidget(ProviderScope(
@@ -106,14 +111,16 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    // c2 sheet should be open — the character list rows are not shown.
-    expect(find.text('Ash'), findsNothing);
-    // The sheet-back button is present (we're in sheet view).
-    expect(find.byKey(const Key('sheet-back')), findsOneWidget);
+    // The roster list is shown (not a sheet) — both rows present.
+    expect(find.byKey(const Key('sheet-back')), findsNothing);
+    expect(find.text('Ash'), findsOneWidget);
+    expect(find.text('Birch'), findsOneWidget);
+    // The active PC (c2) is the lead card → quick actions present.
+    expect(find.byKey(const Key('lead-roll-move')), findsOneWidget);
+    expect(find.byKey(const Key('lead-hp-dec')), findsOneWidget);
   });
 
-  testWidgets(
-      'backing out of an auto-opened sheet returns to the list and stays',
+  testWidgets('tapping the lead card opens the full sheet; back returns',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -128,12 +135,15 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: CharactersPane()))));
     await tester.pumpAndSettle();
-    // Verify we opened the sheet auto.
+    // Starts on the list (lead card), not the sheet.
+    expect(find.byKey(const Key('sheet-back')), findsNothing);
+    // Tapping the lead card's name opens the full sheet.
+    await tester.tap(find.text('Birch'));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('sheet-back')), findsOneWidget);
-    // Tap back.
+    // Back returns to the list and does NOT immediately re-open.
     await tester.tap(find.byKey(const Key('sheet-back')));
     await tester.pumpAndSettle();
-    // List is shown and does NOT immediately re-open.
     expect(find.text('Ash'), findsOneWidget);
     expect(find.byKey(const Key('sheet-back')), findsNothing);
   });

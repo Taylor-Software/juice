@@ -160,6 +160,115 @@ void main() {
         isFalse);
   });
 
+  // -- Rich lead-PC card --------------------------------------------------
+  // Pump the roster with [activeId] set as the active (lead) character so the
+  // rich lead card renders; the others stay compact rows.
+  Future<ProviderContainer> pumpLead(
+    WidgetTester tester, {
+    required String activeId,
+    required String chars,
+  }) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default': chars,
+      'juice.context.v1.default': '{"activeCharacterId":"$activeId"}',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    return ProviderScope.containerOf(
+        tester.element(find.byType(CharactersPane)));
+  }
+
+  testWidgets('lead PC renders the rich card with vitals + quick actions',
+      (tester) async {
+    await pumpLead(
+      tester,
+      activeId: 'iw',
+      chars: '[{"id":"iw","name":"Ulla","note":"","stats":[],"tracks":[],'
+          '"tags":[],"ironsworn":{"edge":3,"heart":2,"iron":2,"shadow":1,'
+          '"wits":1,"health":4,"spirit":5,"supply":5,"momentum":2,'
+          '"xpEarned":0,"xpSpent":0,"bonds":0}}]',
+    );
+    // Vitals bars (Ironsworn family) + a value.
+    expect(find.text('Health'), findsOneWidget);
+    expect(find.text('4/5'), findsOneWidget); // Health value
+    expect(find.text('Spirit'), findsOneWidget);
+    expect(find.text('Supply'), findsOneWidget);
+    expect(find.textContaining('Momentum'), findsOneWidget);
+    // Quick-action keys.
+    expect(find.byKey(const Key('lead-roll-move')), findsOneWidget);
+    expect(find.byKey(const Key('lead-hp-dec')), findsOneWidget);
+    expect(find.byKey(const Key('lead-hp-inc')), findsOneWidget);
+    expect(find.byKey(const Key('lead-more')), findsOneWidget);
+    // The lead card still carries the shared role/conditions keys.
+    expect(find.byKey(const Key('role-iw')), findsOneWidget);
+    expect(find.byKey(const Key('conditions-iw')), findsOneWidget);
+  });
+
+  testWidgets('lead hp- lowers the active PC HP and persists', (tester) async {
+    final container = await pumpLead(
+      tester,
+      activeId: 'd1',
+      chars: '[{"id":"d1","name":"Tarin","note":"","stats":[],"tracks":[],'
+          '"tags":[],"dnd":{"currentHp":12,"maxHp":12,"ac":15}}]',
+    );
+    expect(find.text('12/12'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('lead-hp-dec')));
+    await tester.pumpAndSettle();
+    expect(find.text('11/12'), findsOneWidget);
+    expect(
+        (await container.read(charactersProvider.future)).single.dnd!.currentHp,
+        11);
+  });
+
+  testWidgets('lead hp- lowers the first track when the sheet has no HP pool',
+      (tester) async {
+    final container = await pumpLead(
+      tester,
+      activeId: 'c1',
+      chars: '[{"id":"c1","name":"Ash","note":"","stats":[],'
+          '"tracks":[{"label":"HP","current":7,"max":10}],"tags":[]}]',
+    );
+    expect(find.text('7/10'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('lead-hp-dec')));
+    await tester.pumpAndSettle();
+    expect(find.text('6/10'), findsOneWidget);
+    expect(
+        (await container.read(charactersProvider.future))
+            .single
+            .tracks
+            .single
+            .current,
+        6);
+  });
+
+  testWidgets('non-lead companion renders the compact row (no lead actions)',
+      (tester) async {
+    // c1 is the active lead PC; c2 is a companion → compact row.
+    await pumpLead(
+      tester,
+      activeId: 'c1',
+      chars: '[{"id":"c1","name":"Ash","note":"","stats":[],'
+          '"tracks":[{"label":"HP","current":7,"max":10}],"tags":[]},'
+          '{"id":"c2","name":"Bran","note":"","stats":[],'
+          '"tracks":[{"label":"HP","current":5,"max":8}],"tags":[],'
+          '"role":"companion"}]',
+    );
+    // Companion compact row keeps its original subtitle + shared keys…
+    expect(find.text('HP 5/8'), findsOneWidget);
+    expect(find.byKey(const Key('role-c2')), findsOneWidget);
+    expect(find.byKey(const Key('conditions-c2')), findsOneWidget);
+    expect(find.byKey(const Key('star-char-c2')), findsOneWidget);
+    // …and has no lead quick-actions (those belong to the lead card only).
+    expect(find.byKey(const Key('lead-roll-move')), findsOneWidget); // lead has
+    // The compact row itself doesn't expose lead keys — only the single lead
+    // card does, so exactly one lead-roll-move exists across the roster.
+  });
+
   testWidgets('thread list row has pin IconButton that toggles pinned',
       (tester) async {
     final container = await pumpThreads(tester);
