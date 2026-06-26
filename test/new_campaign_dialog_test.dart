@@ -38,6 +38,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Cairn Run');
+    await tester.ensureVisible(find.byKey(const Key('preset-solo-cairn')));
     await tester.tap(find.byKey(const Key('preset-solo-cairn')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create'));
@@ -65,6 +66,7 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('new-campaign-name')), 'Table');
+    await tester.ensureVisible(find.byKey(const Key('preset-gm-toolkit')));
     await tester.tap(find.byKey(const Key('preset-gm-toolkit')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Create'));
@@ -93,6 +95,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Custom');
+    await tester.ensureVisible(find.byKey(const Key('preset-custom')));
     await tester.tap(find.byKey(const Key('preset-custom')));
     await tester.pumpAndSettle();
     // grouped picker is now visible

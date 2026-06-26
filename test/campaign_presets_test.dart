@@ -102,6 +102,13 @@ void main() {
       expect(ids.toSet().length, ids.length);
     });
 
+    test('every preset has a non-empty kind and blurb', () {
+      for (final p in kCampaignPresets) {
+        expect(p.kind.trim(), isNotEmpty, reason: '${p.id}.kind');
+        expect(p.blurb.trim(), isNotEmpty, reason: '${p.id}.blurb');
+      }
+    });
+
     test('presetConfig returns the preset mode + systems', () {
       final p = kCampaignPresets.firstWhere((p) => p.id == 'solo-cairn');
       final (mode, systems) = presetConfig(p);

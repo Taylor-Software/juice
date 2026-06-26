@@ -52,6 +52,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
+    await t.ensureVisible(find.byKey(const Key('preset-custom')));
     await t.tap(find.byKey(const Key('preset-custom')));
     await t.pumpAndSettle();
 
@@ -113,6 +114,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
+    await t.ensureVisible(find.byKey(const Key('preset-custom')));
     await t.tap(find.byKey(const Key('preset-custom')));
     await t.pumpAndSettle();
 

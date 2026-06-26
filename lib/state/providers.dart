@@ -1361,8 +1361,17 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       String tone = ''}) async {
     final s = state.valueOrNull;
     if (s == null) return;
+    final id = _newId();
+    // Derive a per-campaign identity: a varied hue + the ruleset/mode icon.
+    final resolvedSystems = systems ?? kAllSystems;
     final meta = SessionMeta(
-        id: _newId(), name: name, systems: systems?.toList(), mode: mode);
+      id: id,
+      name: name,
+      systems: systems?.toList(),
+      mode: mode,
+      identityColor: identityHueFor(id, s.sessions.length),
+      identityIcon: identityIconKeyFor(resolvedSystems, mode),
+    );
     if (genre.isNotEmpty || tone.isNotEmpty) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('juice.settings.v1.${meta.id}',
