@@ -27,23 +27,56 @@ class LauncherScreen extends ConsumerWidget {
     ref.read(launcherGateProvider.notifier).dismiss();
   }
 
-  /// "Continue" path: dismiss the gate to reveal the shell, then defer to
-  /// [enterCampaign] — which shows the Session Resume ritual when the campaign
-  /// has prior state, else lands directly.
+  /// "Continue" path: capture everything that must outlive the launcher (the
+  /// root navigator + the long-lived shell-route notifier + the resume-decision
+  /// data) WHILE STILL MOUNTED, then dismiss the gate and navigate via those
+  /// captured handles. Dismissing the gate disposes this widget's context/ref,
+  /// so we must not touch them afterward — only the pre-captured `nav`/notifier.
   Future<void> _resume(
       BuildContext context, WidgetRef ref, CampaignMode mode) async {
+    final nav = Navigator.of(context, rootNavigator: true);
+    final shellRoute = ref.read(shellRouteProvider.notifier);
+    final entries = await ref.read(journalProvider.future);
+    final enc = await ref.read(encounterProvider.future);
+
     ref.read(launcherGateProvider.notifier).dismiss();
     // Let the shell mount under the root navigator before pushing resume.
     await WidgetsBinding.instance.endOfFrame;
-    if (!context.mounted) return;
-    await enterCampaign(context, ref, mode);
+
+    await enterCampaignWith(
+      nav: nav,
+      shellRoute: shellRoute,
+      mode: mode,
+      entries: entries,
+      hasEncounter: enc.combatants.isNotEmpty,
+    );
   }
 
+  /// In-launcher campaign switch: switch FIRST (so the session-scoped journal/
+  /// encounter providers reflect the new campaign), then capture + decide the
+  /// resume hop while still mounted, then dismiss + navigate via the captured
+  /// handles. Mirrors [_resume]'s capture-before-dismiss discipline.
   Future<void> _switch(
       BuildContext context, WidgetRef ref, SessionMeta m) async {
     await ref.read(sessionsProvider.notifier).switchTo(m.id);
     if (!context.mounted) return;
-    _resume(context, ref, m.mode);
+
+    final nav = Navigator.of(context, rootNavigator: true);
+    final shellRoute = ref.read(shellRouteProvider.notifier);
+    final entries = await ref.read(journalProvider.future);
+    final enc = await ref.read(encounterProvider.future);
+    if (!context.mounted) return;
+
+    ref.read(launcherGateProvider.notifier).dismiss();
+    await WidgetsBinding.instance.endOfFrame;
+
+    await enterCampaignWith(
+      nav: nav,
+      shellRoute: shellRoute,
+      mode: m.mode,
+      entries: entries,
+      hasEncounter: enc.combatants.isNotEmpty,
+    );
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {

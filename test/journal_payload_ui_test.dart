@@ -10,6 +10,7 @@ import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
+import 'package:juice_oracle/shared/ai_nudge_card.dart';
 import 'package:juice_oracle/shared/card_image.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
@@ -341,6 +342,58 @@ void main() {
     expect(find.byKey(const Key('entry-open-tool-e4')), findsNothing);
     // No snackbar (nothing tappable to trigger it).
     expect(find.text('Tool not available'), findsNothing);
+  });
+
+  // Pump the journal with the AI-enable nudge showing (AI supported but not
+  // enabled, nudge not yet seen) at a caller-chosen height. The fake
+  // interpreter defaults to needsDownload → aiSupported true / aiReady false,
+  // and aiNudgeSeen defaults to false, so the tall nudge card renders.
+  Future<void> pumpJournalWithNudge(WidgetTester tester, double height) async {
+    SharedPreferences.setMockInitialValues(_journalPrefs(_entryJson));
+    final fake = FakeInterpreterService();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        interpreterServiceProvider.overrideWithValue(fake),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Center(
+            child: SizedBox(
+              // Wide enough to avoid unrelated horizontal squeeze; height is the
+              // axis under test (the journal body's vertical overflow).
+              width: 700,
+              height: height,
+              child: const JournalScreen(),
+            ),
+          ),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('AI nudge does not overflow the journal body at a short height',
+      (tester) async {
+    await pumpJournalWithNudge(tester, 400);
+
+    // No RenderFlex overflow despite the tall nudge above a non-empty list.
+    expect(tester.takeException(), isNull);
+    // The nudge and the composer both render.
+    expect(find.byType(AiNudgeCard), findsOneWidget);
+    expect(find.byKey(const Key('ai-nudge-card')), findsOneWidget);
+    expect(find.byKey(const Key('journal-composer')), findsOneWidget);
+  });
+
+  testWidgets('AI nudge + entries render normally at a comfortable height',
+      (tester) async {
+    await pumpJournalWithNudge(tester, 900);
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AiNudgeCard), findsOneWidget);
+    // The seeded entry's summary is visible.
+    expect(find.text('Yes'), findsOneWidget);
+    expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 
   testWidgets(
