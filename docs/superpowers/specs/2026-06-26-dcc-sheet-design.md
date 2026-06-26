@@ -44,77 +44,73 @@ speed.
 
 ## Data model
 
-`Character.dcc` triggers `DccSheet`. All DCC data lives in `Character.payload`,
-keyed by a `mode` discriminator. `fromJson`/payload reads are tolerant of both
-shapes and of missing class-specific keys (default to 0 / empty).
+DCC follows the codebase's **typed-sheet pattern** (like `OseSheet`/`ShadowdarkSheet`),
+NOT a generic payload map. A `Character.dcc` field (`DccSheet?`) is added to
+`Character` alongside the existing sheet fields, wired into `forSheet`, `copyWith`
+(+`clearDcc`), `toJson`, `fromJson`, and `withHpDelta`. `DccSheet` is an immutable
+class with `copyWith` / `toJson` / `maybeFromJson` / `premade()`, and a `mode`
+discriminator field. All numeric fields are clamped in `copyWith`/`maybeFromJson`,
+and `maybeFromJson` tolerates missing keys (defaults) so both funnel and leveled
+shapes round-trip.
 
-### Funnel mode (`payload['mode'] == 'funnel'`)
+### `DccPeasant` (a 0-level funnel character)
 
-```jsonc
-{
-  "mode": "funnel",
-  "peasants": [
-    {
-      "name": "",
-      "occupation": "",     // freeform (NO Appendix L table)
-      "weapon": "",         // freeform
-      "tradeGoods": "",     // freeform
-      "hp": 4,              // 1..8
-      "str": 10, "agi": 10, "sta": 10,
-      "per": 10, "int": 10, "lck": 10,   // each 3..18
-      "alive": true
-    }
-    // up to 4 peasants
-  ]
+A small immutable value class (own `copyWith`/`toJson`/`maybeFromJson`):
+
+```dart
+class DccPeasant {
+  final String name, occupation, weapon, tradeGoods;  // all freeform (NO Appendix L)
+  final int hp;                                        // 1..8
+  final Map<String, int> stats;                        // kDccStats keys, each 3..18
+  final bool alive;
 }
 ```
 
-A freshly created funnel sheet pre-populates **one** empty peasant slot.
+### `DccSheet`
 
-### Leveled mode (`payload['mode'] == 'leveled'`, after graduation)
+```dart
+class DccSheet {
+  final String mode;            // 'funnel' | 'leveled'
+  final List<DccPeasant> peasants;   // funnel roster; preserved after graduation
 
-```jsonc
-{
-  "mode": "leveled",
-  "class": "Warrior",       // one of kDccClasses
-  "level": 1,               // 1..10
-  "alignment": "Neutral",   // one of kDccAlignments
-  "occupation": "",         // carried from the graduated peasant; editable
-  "luckySign": "",          // birth augur, freeform
-
-  "str": 10, "agi": 10, "sta": 10,
-  "per": 10, "int": 10,
-  "lck": 10,                // current LCK (spendable; permanent in DCC)
-  "lckMax": 10,             // starting LCK score (token-stepper ceiling)
-
-  "currentHp": 6, "maxHp": 6,
-  "ac": 10,
-  "attackBonus": 0,
-  "actionDie": "d20",       // d20 | d24 | d30 (dice chain)
-  "initNote": "",           // optional freeform speed/init
-
-  "fort": 0, "ref": 0, "wil": 0,   // save bonuses
-
-  // Warrior / Dwarf only:
-  "deedDie": "d3",          // d3 | d4 | d5 | d6 | d7
-
-  // Wizard / Elf / Cleric (casters):
-  "strBurn": 0, "agiBurn": 0, "staBurn": 0, "perBurn": 0,
-
-  // Cleric only:
-  "disapprovalRange": 1,    // 1..10
-
-  "notes": "",
-
-  "peasants": [ /* preserved from funnel, hidden in leveled UI — history/export */ ]
+  // leveled fields (defaults until graduation):
+  final String className;       // one of kDccClasses
+  final int level;              // 1..10
+  final String alignment;       // one of kDccAlignments
+  final String occupation;      // carried from the graduated peasant; editable
+  final String luckySign;       // birth augur, freeform
+  final Map<String, int> stats; // kDccStats keys (str/agi/sta/per/int/lck), 3..18
+  final int lckMax;             // starting LCK score (luck-token ceiling)
+  final int currentHp, maxHp;
+  final int ac, attackBonus;
+  final String actionDie;       // 'd20' | 'd24' | 'd30' (dice chain)
+  final String initNote;        // optional freeform speed/init
+  final Map<String, int> saves; // {'fort','ref','wil'} bonuses
+  final String deedDie;         // 'd3'|'d4'|'d5'|'d6'|'d7' (Warrior/Dwarf)
+  final Map<String, int> burns; // spellburn {'str','agi','sta','per'} (casters)
+  final int disapprovalRange;   // 1..10 (Cleric)
+  final String notes;
 }
 ```
+
+A freshly created (`premade()`) sheet is `mode: 'funnel'` with **one** empty
+`DccPeasant`. `stats['lck']` is the current/spendable LCK; `lckMax` is its
+starting ceiling.
 
 **LCK is dual-purpose in DCC** — it is both an ability score (its modifier
 affects rolls) and the spendable luck-token pool (spending LCK permanently
-reduces the score). So `lck` is the current/spendable value and `lckMax` is the
-starting score that bounds the token stepper. There is no separate "current Luck"
-field — they are the same number.
+reduces the score). So `stats['lck']` is the current/spendable value and `lckMax`
+is the starting score that bounds the token stepper. There is no separate
+"current Luck" field — they are the same number.
+
+### Graduation
+
+`DccSheet.graduate(int peasantIndex, String className, String alignment)` returns
+a new `DccSheet` with `mode: 'leveled'`, the chosen class/alignment, the peasant's
+6 stats copied into `stats`, `lckMax = stats['lck']`, `currentHp = maxHp =
+peasant.hp`, `occupation` carried from the peasant, and the `peasants` list
+preserved (hidden in leveled UI, survives export). The graduated character's
+name is set on the owning `Character` (not the sheet) at the call site.
 
 ### Ability modifier table (DCC-specific — NOT the 5e table)
 
@@ -202,7 +198,7 @@ log). Keys: `dcc-fort-roll`, `dcc-ref-roll`, `dcc-wil-roll`.
 
 **Notes** — freeform multiline.
 
-## UI — Class-specific mechanics (conditional on `payload['class']`)
+## UI — Class-specific mechanics (conditional on `_s.className`)
 
 ### Mighty Deeds (Warrior / Dwarf — `kDccDeedDieClasses`)
 
@@ -219,13 +215,13 @@ Cleric → PER.
 
 - Each burnable stat has a "Burned" stepper inline; that stat cell displays
   `score − burned`
-- Total shown: `"Spellburn: +N"`
-- Spell-check roll button → DC prompt → rolls `actionDie + level +
-  castingMod + totalSpellburn`, where `castingMod = dccAbilityMod('int')` for
-  Wizard/Elf and `dccAbilityMod('per')` for Cleric
+- Total shown: `"Spellburn: +N"` (sum of `burns` over the class's burnable stats)
+- Spell-check roll button → DC prompt → rolls `dN(actionDie) + level +
+  castingMod + totalSpellburn`, where `castingMod = dccAbilityMod(stats['int'])`
+  for Wizard/Elf and `dccAbilityMod(stats['per'])` for Cleric
 - Snackbar: `"Spell check: 18 (base 12 + 6 spellburn) vs DC 14 — Success"`
-- Reset button clears all burns
-- Keys: `dcc-spellburn-reset`, `dcc-spell-check-roll`
+- Reset button clears all burns (sets `burns` entries to 0)
+- Keys: `dcc-spellburn-reset`, `dcc-spell-check-roll`, `dcc-burn-<stat>` (steppers)
 
 ### Disapproval (Cleric only)
 
@@ -237,28 +233,31 @@ Cleric → PER.
 
 ## Shared widget — generic luck tokens
 
-Luck-as-spendable-token recurs across the app: Shadowdark (luck), Kal-Arath
-(Fate Points), Argosa (LCK stat). Add a generic widget to
-`lib/features/sheet_widgets.dart`:
+DCC's LCK is a spend-down-from-a-ceiling token pool with a "restore" action. Add
+a generic widget to `lib/features/sheet_widgets.dart`:
 
 ```dart
 Widget luckTokensSection({
-  required String label,
+  required String keyPrefix,           // e.g. 'dcc-luck'
+  required String label,               // e.g. 'Luck (LCK)'
   required int current,
   required int max,
-  required VoidCallback onDecrement,   // spend one
+  required ValueChanged<int> onSet,    // spend/gain one (clamped 0..max by caller)
   required VoidCallback onReset,       // restore to max
 });
 ```
 
-- DCC wires it to `payload['lck']` / `payload['lckMax']`, rendered inline in the
-  LCK stat cell.
-- **Migrate Kal-Arath and Shadowdark** to use this shared widget instead of their
-  bespoke luck/fate implementations (scoped cleanup, not new feature). Their
-  existing tests must still pass after migration.
+- DCC wires it to `stats['lck']` / `lckMax`, rendered inline in the LCK stat cell.
 
-This widget is the seed of the eventual custom-character-creator "luck token"
-configurable option (see Deferred).
+**Migration is intentionally NOT forced.** A code check found the other "luck"
+fields are different mechanics that do not fit a current/max/spend/restore shape:
+- **Shadowdark** `luckToken` is a **bool** (a single binary reroll token).
+- **Kal-Arath** `fatePoints` is an **unbounded counter** (no max, no restore).
+
+Coercing those into this widget would distort their semantics, so they stay as-is.
+This widget serves DCC now and is the seed of the eventual custom-character-creator
+"luck token" configurable option (see Deferred), where the generic shape earns its
+keep across user-defined sheets.
 
 ## System registration
 
@@ -283,9 +282,10 @@ configurable option (see Deferred).
 `(mode: party, systems: {dcc, juice, party})`.
 
 **`lib/state/providers.dart`** — `CharacterNotifier.addDcc()` →
-`addPreMadeSheet('dcc')`, seeding `payload['mode'] = 'funnel'` with one empty
-peasant. Roster action id `new-dcc`, gated on the `dcc` system. Add the
-`surfacesFor` row.
+`addPreMadeSheet('dcc')`; `Character.forSheet('dcc', id)` returns
+`DccSheet.premade()` (`mode: 'funnel'`, one empty peasant). Roster action id
+`new-dcc` (in `tracker_screen.dart`'s add menu), gated on the `dcc` system; sheet
+dispatch `if (c.dcc != null) return DccSheetView(...)`. Add the `surfacesFor` row.
 
 **`lib/engine/system_primer.dart`** — DCC primer line:
 > "Pulpy sword-and-sorcery; roll d20+mod vs DC; warriors roll a deed die;
@@ -311,9 +311,10 @@ rule — no `JournalScreen`/`HomeShell`, no asset `.load()`):
   Thief/Halfling
 - **Spellburn:** burned stepper reduces displayed stat; spell-check total folds
   level + casting mod + burn; reset clears
-- **Shared luck widget:** decrement reduces `lck`; reset restores to `lckMax`
-- **Migration regression:** existing Kal-Arath + Shadowdark luck/fate tests pass
-  after switching to `luckTokensSection`
+- **Shared luck widget:** `onSet` reduces `stats['lck']`; reset restores to `lckMax`
+- **Round-trip:** `DccSheet` (both funnel + leveled shapes) survives
+  `toJson`→`maybeFromJson`; `Character` with a `dcc` sheet survives
+  `toJson`→`fromJson`
 
 ## Out of scope (deferred)
 
