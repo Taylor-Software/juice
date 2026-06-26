@@ -2064,6 +2064,64 @@ const kOseSaveLabels = <String, String>{
 
 const kOseAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
 
+// --- Dungeon Crawl Classics (facts-only) ---------------------------------
+const kDccClasses = <String>[
+  'Warrior',
+  'Wizard',
+  'Cleric',
+  'Thief',
+  'Elf',
+  'Dwarf',
+  'Halfling',
+];
+const kDccClassHitDie = <String, int>{
+  'Warrior': 12,
+  'Wizard': 4,
+  'Cleric': 8,
+  'Thief': 6,
+  'Elf': 6,
+  'Dwarf': 10,
+  'Halfling': 6,
+};
+const kDccAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
+const kDccStats = <String>['str', 'agi', 'sta', 'per', 'int', 'lck'];
+const kDccStatLabels = <String, String>{
+  'str': 'STR',
+  'agi': 'AGI',
+  'sta': 'STA',
+  'per': 'PER',
+  'int': 'INT',
+  'lck': 'LCK',
+};
+const kDccSaveKeys = <String>['fort', 'ref', 'wil'];
+const kDccSaveLabels = <String, String>{
+  'fort': 'Fortitude',
+  'ref': 'Reflex',
+  'wil': 'Will',
+};
+const kDccDeedDieClasses = <String>{'Warrior', 'Dwarf'};
+const kDccCasterClasses = <String>{'Wizard', 'Elf', 'Cleric'};
+const kDccSpellburnStats = <String, List<String>>{
+  'Wizard': ['str', 'agi', 'sta'],
+  'Elf': ['str', 'agi', 'sta'],
+  'Cleric': ['per'],
+};
+const kDccActionDice = <String>['d20', 'd24', 'd30'];
+const kDccDeedDice = <String>['d3', 'd4', 'd5', 'd6', 'd7'];
+
+/// DCC ability-modifier table (3-18, capped at +/-3). Distinct from the D&D 5e
+/// `((score-10)/2).floor()` curve. Non-copyrightable game-mechanic fact.
+int dccAbilityMod(int score) {
+  final s = score.clamp(3, 18);
+  if (s <= 3) return -3;
+  if (s <= 5) return -2;
+  if (s <= 8) return -1;
+  if (s <= 12) return 0;
+  if (s <= 15) return 1;
+  if (s <= 17) return 2;
+  return 3;
+}
+
 class OseSheet {
   const OseSheet({
     this.className = 'Fighter',
