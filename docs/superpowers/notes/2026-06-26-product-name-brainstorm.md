@@ -33,11 +33,12 @@ carries fantasy resonance to players but has no commercial owner.
 - **Soft phonetic neighbors only:** *Lore Seeker* (a deck-building game, two words)
   and *Loreseeker Games* (a studio making a mermaid game, *SIREN*). Different
   spelling, different niche — not our lane.
-- **Domain:** `loreseer.com` returned **HTTP 403**, which is inconclusive (something
-  responds at the host — possibly parked/registered, not necessarily free).
-  **TODO before adoption:** confirm authoritative status at a registrar
-  (Namecheap/Cloudflare). `loreseer.app` is a strong fallback and arguably better
-  for an app brand.
+- **Domain — RESOLVED.** Canonical/primary is **`loreseer.app`** (secured) — exact
+  word, app-native TLD, no hyphen or prefix. The exact-match `loreseer.com` is taken
+  (matched the inconclusive HTTP 403 during clearance), a minor traffic leak but not
+  a blocker. Available defensive options at the time of checking: `loreseer.online`,
+  `theloreseer.com`, `lore-seer.com` (none required now that `.app` is the front door;
+  hyphenated `.com` is weak as a primary regardless).
 
 ### Why it won the bake-off
 
