@@ -535,7 +535,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
-            tooltip: 'Search tools',
+            tooltip: 'Find tools & rolls',
             onPressed: () => showToolSearchSheet(context,
                 buildToolRegistry(family: family, systems: systems, mode: mode),
                 oracle: widget.oracle),
@@ -625,24 +625,40 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               tooltip: split ? 'Single pane' : 'Split with journal',
               onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
             ),
-          IconButton(
-            key: const Key('mode-toggle'),
-            icon: Icon(mode == CampaignMode.gm
-                ? Icons.castle_outlined
-                : Icons.groups_outlined),
-            tooltip: mode == CampaignMode.gm
-                ? 'GM mode (tap for Party)'
-                : 'Party mode (tap for GM)',
-            onPressed: () {
-              final sessions = ref.read(sessionsProvider).valueOrNull;
-              if (sessions == null) return;
-              final next = mode == CampaignMode.gm
-                  ? CampaignMode.party
-                  : CampaignMode.gm;
-              ref
-                  .read(sessionsProvider.notifier)
-                  .setMode(sessions.active, next);
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: SegmentedButton<CampaignMode>(
+              key: const Key('mode-toggle'),
+              showSelectedIcon: false,
+              style: ButtonStyle(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: WidgetStatePropertyAll(
+                    Theme.of(context).textTheme.labelMedium),
+              ),
+              segments: const [
+                ButtonSegment(
+                  value: CampaignMode.party,
+                  icon: Icon(Icons.groups_outlined, size: 18),
+                  label: Text('Party'),
+                ),
+                ButtonSegment(
+                  value: CampaignMode.gm,
+                  icon: Icon(Icons.castle_outlined, size: 18),
+                  label: Text('GM'),
+                ),
+              ],
+              selected: {mode},
+              onSelectionChanged: (selected) {
+                final sessions = ref.read(sessionsProvider).valueOrNull;
+                if (sessions == null) return;
+                final next = selected.first;
+                if (next == mode) return;
+                ref
+                    .read(sessionsProvider.notifier)
+                    .setMode(sessions.active, next);
+              },
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
