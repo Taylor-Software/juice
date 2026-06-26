@@ -3417,6 +3417,7 @@ class Character {
     this.knave,
     this.ose,
     this.kalArath,
+    this.dcc,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -3464,6 +3465,9 @@ class Character {
   /// Bespoke Kal-Arath sheet; null unless this is a Kal-Arath wanderer.
   final KalArathSheet? kalArath;
 
+  /// Bespoke DCC sheet; null unless this is a DCC character.
+  final DccSheet? dcc;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -3510,6 +3514,8 @@ class Character {
       'ose' => Character(id: id, name: 'New Adventurer', ose: const OseSheet()),
       'kal-arath' => Character(
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
+      'dcc' =>
+        Character(id: id, name: 'New DCC peasant', dcc: DccSheet.premade()),
       _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
     };
   }
@@ -3545,6 +3551,8 @@ class Character {
     bool clearOse = false,
     KalArathSheet? kalArath,
     bool clearKalArath = false,
+    DccSheet? dcc,
+    bool clearDcc = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -3568,6 +3576,7 @@ class Character {
         knave: clearKnave ? null : (knave ?? this.knave),
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
+        dcc: clearDcc ? null : (dcc ?? this.dcc),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -3628,6 +3637,11 @@ class Character {
               currentHp:
                   (kalArath!.currentHp + delta).clamp(0, kalArath!.maxHp)));
     }
+    if (dcc != null && dcc!.mode == 'leveled') {
+      return copyWith(
+          dcc: dcc!.copyWith(
+              currentHp: (dcc!.currentHp + delta).clamp(0, dcc!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -3658,6 +3672,7 @@ class Character {
         if (knave != null) 'knave': knave!.toJson(),
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
+        if (dcc != null) 'dcc': dcc!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -3688,6 +3703,7 @@ class Character {
         knave: KnaveSheet.maybeFromJson(j['knave']),
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
+        dcc: DccSheet.maybeFromJson(j['dcc']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])

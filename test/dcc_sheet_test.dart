@@ -126,4 +126,37 @@ void main() {
       expect(DccSheet.maybeFromJson('x'), isNull);
     });
   });
+
+  group('Character DCC wiring', () {
+    test('forSheet builds a DCC funnel character', () {
+      final c = Character.forSheet('dcc', 'id1');
+      expect(c.dcc, isNotNull);
+      expect(c.dcc!.mode, 'funnel');
+    });
+
+    test('round-trips a dcc character through json', () {
+      final c = Character.forSheet('dcc', 'id1')
+          .copyWith(dcc: DccSheet.premade().copyWith(notes: 'hi'));
+      final back = Character.fromJson(c.toJson());
+      expect(back.dcc, isNotNull);
+      expect(back.dcc!.notes, 'hi');
+    });
+
+    test('withHpDelta adjusts leveled DCC hp clamped to maxHp', () {
+      final leveled = DccSheet.premade()
+          .copyWith(peasants: [const DccPeasant(hp: 6)]).graduate(
+              0, 'Warrior', 'Neutral');
+      final c = Character.forSheet('dcc', 'id1').copyWith(dcc: leveled);
+      expect(c.dcc!.currentHp, 6);
+      final hurt = c.withHpDelta(-4);
+      expect(hurt.dcc!.currentHp, 2);
+      final overheal = hurt.withHpDelta(99);
+      expect(overheal.dcc!.currentHp, 6); // clamped to maxHp
+    });
+
+    test('clearDcc drops the sheet', () {
+      final c = Character.forSheet('dcc', 'id1');
+      expect(c.copyWith(clearDcc: true).dcc, isNull);
+    });
+  });
 }
