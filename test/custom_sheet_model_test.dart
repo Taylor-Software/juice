@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
+import 'package:juice_oracle/engine/custom_templates.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 
@@ -212,6 +213,31 @@ void main() {
       expect(back.diceSides, 6);
       expect(back.bands.single.label, 'Hit');
       expect(back.crit, RollCrit.matchingDice);
+    });
+  });
+
+  group('kCustomTemplates', () {
+    test('has the four authored starters incl. Blank', () {
+      final ids = kCustomTemplates.map((t) => t.id).toList();
+      expect(ids, containsAll(['blank', 'generic-d20', 'osr', 'pbta']));
+    });
+    test('blank has no blocks; others have blocks with unique ids', () {
+      for (final t in kCustomTemplates) {
+        if (t.id == 'blank') {
+          expect(t.blocks, isEmpty);
+          continue;
+        }
+        expect(t.blocks, isNotEmpty, reason: t.id);
+        final ids = t.blocks.map((b) => b.id).toList();
+        expect(ids.toSet().length, ids.length, reason: '${t.id} dup ids');
+      }
+    });
+    test('every block type/formula referenced is valid (round-trips)', () {
+      for (final t in kCustomTemplates) {
+        final back = CustomSheet.maybeFromJson(
+            CustomSheet(blocks: t.blocks).toJson())!;
+        expect(back.blocks.length, t.blocks.length, reason: t.id);
+      }
     });
   });
 }
