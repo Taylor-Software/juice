@@ -443,4 +443,95 @@ void main() {
     final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
     expect((blk.config['options'] as List).length, 2);
   });
+
+  // ---- Task 11: timer + toggle-chips + progress blocks -----------------------
+
+  testWidgets('timer block ticks down and shows lit/out', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.timer, label: 'Torch'),
+    ], values: {
+      'b1': 1
+    });
+    final c = await _pump(tester, sheet: sheet);
+    expect(find.text('lit'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('custom-b1-timer-dec')));
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.custom!.values['b1'],
+        0);
+    expect(find.text('out'), findsOneWidget);
+  });
+
+  testWidgets('toggle-chips select and persist', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.togglechips, label: 'Flags', config: {
+        'options': ['Wounded', 'Shaken']
+      }),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.text('Wounded'));
+    await tester.pumpAndSettle();
+    expect(
+        ((await c.read(charactersProvider.future)).single.custom!.values['b1']
+            as List),
+        contains('Wounded'));
+  });
+
+  testWidgets('progress block adds a track', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.progress, label: 'Tracks'),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-progress-add')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('custom-b1-track-name')), 'Vow');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    expect(
+        ((await c.read(charactersProvider.future)).single.custom!.values['b1']
+            as List),
+        isNotEmpty);
+  });
+
+  // ---- Task 11 Part B: config dialogs for timer + togglechips ----------------
+
+  testWidgets('timer config sets start and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.timer, label: 'Torch', config: {'start': 0}),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 6; i++) {
+      await tester.tap(find.byKey(const Key('custom-cfg-timer-start-plus')));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['start'] as num).toInt(), 6);
+  });
+
+  testWidgets('togglechips config adds an option and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.togglechips, label: 'Flags', config: {'options': ['Wounded']}),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-cfg-opt-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['options'] as List).length, 2);
+  });
 }

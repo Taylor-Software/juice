@@ -189,7 +189,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.luck => _playLuck(b),
         CustomBlockType.hp => _playHp(b),
         CustomBlockType.dropdown => _playDropdown(b),
-        _ => const SizedBox.shrink(),
+        CustomBlockType.timer => _playTimer(b),
+        CustomBlockType.togglechips => _playToggleChips(b),
+        CustomBlockType.progress => _playProgress(b),
       };
 
   Future<void> _configBlock(CustomBlock b) async {
@@ -206,6 +208,10 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         await _configHp(b);
       case CustomBlockType.dropdown:
         await _configDropdown(b);
+      case CustomBlockType.timer:
+        await _configTimer(b);
+      case CustomBlockType.togglechips:
+        await _configToggleChips(b);
       default:
         await _renameBlock(b);
     }
@@ -589,6 +595,133 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
 
   Widget _playConditions(CustomBlock b) =>
       conditionsSection(context, ref, widget.character, 'custom-${b.id}');
+
+  // --- timer -----------------------------------------------------------------
+
+  Widget _playTimer(CustomBlock b) {
+    final v = _valInt(b.id, _intCfg(b, 'start', 0));
+    return Row(children: [
+      Expanded(child: Text(b.label)),
+      IconButton(
+          key: Key('custom-${b.id}-timer-dec'),
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: v > 0 ? () => _setVal(b.id, v - 1) : null),
+      Text('$v'),
+      IconButton(
+          key: Key('custom-${b.id}-timer-inc'),
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => _setVal(b.id, v + 1)),
+      const SizedBox(width: 8),
+      Text(v > 0 ? 'lit' : 'out',
+          style: TextStyle(
+              color: v > 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error)),
+    ]);
+  }
+
+  Future<void> _configTimer(CustomBlock b) async {
+    final result = await showDialog<_TimerCfg>(
+      context: context,
+      builder: (_) => _TimerConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'start': result.start,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- toggle-chips ----------------------------------------------------------
+
+  Widget _playToggleChips(CustomBlock b) {
+    final options =
+        ((b.config['options'] as List?) ?? const []).whereType<String>().toList();
+    final selected =
+        (_valList(b.id).whereType<String>().toSet());
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      sheetSection(context, b.label),
+      Wrap(spacing: 6, runSpacing: 4, children: [
+        for (final o in options)
+          FilterChip(
+            key: Key('custom-${b.id}-chip-$o'),
+            label: Text(o),
+            selected: selected.contains(o),
+            onSelected: (on) {
+              final next = {...selected};
+              on ? next.add(o) : next.remove(o);
+              _setVal(b.id, next.toList());
+            },
+          ),
+      ]),
+    ]);
+  }
+
+  Future<void> _configToggleChips(CustomBlock b) async {
+    final result = await showDialog<_DropdownCfg>(
+      context: context,
+      builder: (_) => _ToggleChipsConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'options': result.options,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- progress --------------------------------------------------------------
+
+  Widget _playProgress(CustomBlock b) {
+    final tracks = (_valList(b.id))
+        .map(ProgressTrack.maybeFromJson)
+        .whereType<ProgressTrack>()
+        .toList();
+    void persist(List<ProgressTrack> next) =>
+        _setVal(b.id, next.map((t) => t.toJson()).toList());
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: sheetSection(context, b.label)),
+        IconButton(
+          key: Key('custom-${b.id}-progress-add'),
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () async {
+            final t = await addProgressTrackDialog(context,
+                nameKey: 'custom-${b.id}-track-name', label: 'Track');
+            if (t != null) persist([...tracks, t]);
+          },
+        ),
+      ]),
+      for (var i = 0; i < tracks.length; i++)
+        progressTrackRow(
+          context: context,
+          prefix: 'custom-${b.id}-trk',
+          index: i,
+          track: tracks[i],
+          onChanged: (t) {
+            final next = [...tracks]..[i] = t;
+            persist(next);
+          },
+          onDelete: () {
+            final next = [...tracks]..removeAt(i);
+            persist(next);
+          },
+        ),
+    ]);
+  }
 
   Future<void> _renameBlock(CustomBlock b) async {
     final name = await renameDialog(context,
@@ -1369,6 +1502,76 @@ class _HpConfigDialogState extends State<_HpConfigDialog> {
 
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+
+class _TimerCfg {
+  const _TimerCfg({required this.label, required this.start});
+  final String label;
+  final int start;
+}
+
+class _TimerConfigDialog extends StatefulWidget {
+  const _TimerConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_TimerConfigDialog> createState() => _TimerConfigDialogState();
+}
+
+class _TimerConfigDialogState extends State<_TimerConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+  late int _start = (widget.block.config['start'] as num?)?.toInt() ?? 0;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              const Expanded(child: Text('Start')),
+              IconButton(
+                key: const Key('custom-cfg-timer-start-minus'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: _start > 0 ? () => setState(() => _start--) : null,
+              ),
+              Text('$_start'),
+              IconButton(
+                key: const Key('custom-cfg-timer-start-plus'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => setState(() => _start++),
+              ),
+            ]),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _TimerCfg(label: _label.text.trim(), start: _start),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
 class _DropdownCfg {
   const _DropdownCfg({required this.label, required this.options});
   final String label;
@@ -1435,6 +1638,119 @@ class _DropdownConfigDialogState extends State<_DropdownConfigDialog> {
             const Align(
               alignment: Alignment.centerLeft,
               child: Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            for (var i = 0; i < _optCtls.length; i++)
+              Row(key: ObjectKey(_optCtls[i]), children: [
+                Expanded(
+                  child: TextField(
+                    controller: _optCtls[i],
+                    decoration: const InputDecoration(labelText: 'Option'),
+                  ),
+                ),
+                IconButton(
+                  key: Key('custom-cfg-opt-$i-remove'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => _removeOption(i),
+                ),
+              ]),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('custom-cfg-opt-add'),
+                icon: const Icon(Icons.add),
+                label: const Text('Add option'),
+                onPressed: _addOption,
+              ),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _DropdownCfg(
+                      label: _label.text.trim(),
+                      options: _optCtls.map((c) => c.text).toList(),
+                    ),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+// Toggle-chips config dialog — same options-list pattern as _DropdownConfigDialog
+// but persisted via _configToggleChips → config['options'].
+// ---------------------------------------------------------------------------
+
+class _ToggleChipsConfigDialog extends StatefulWidget {
+  const _ToggleChipsConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_ToggleChipsConfigDialog> createState() =>
+      _ToggleChipsConfigDialogState();
+}
+
+class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+
+  // One controller per option — growable; disposed when removed or in dispose().
+  final List<TextEditingController> _optCtls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final rawOptions =
+        ((widget.block.config['options'] as List?) ?? const [])
+            .whereType<String>();
+    for (final o in rawOptions) {
+      _optCtls.add(TextEditingController(text: o));
+    }
+  }
+
+  @override
+  void dispose() {
+    _label.dispose();
+    for (final c in _optCtls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addOption() {
+    setState(() {
+      _optCtls.add(
+          TextEditingController(text: 'Option ${_optCtls.length + 1}'));
+    });
+  }
+
+  void _removeOption(int i) {
+    setState(() {
+      _optCtls.removeAt(i).dispose();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 8),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child:
+                  Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             for (var i = 0; i < _optCtls.length; i++)
               Row(key: ObjectKey(_optCtls[i]), children: [
