@@ -93,8 +93,10 @@ class CustomBlock {
     if (j is! Map) return null;
     final type = _blockTypeFromName(j['type'] as String?);
     if (type == null) return null; // forward-compat: drop unknown types
+    final id = j['id'] as String?;
+    if (id == null || id.isEmpty) return null; // an empty id collides in values
     return CustomBlock(
-      id: (j['id'] as String?) ?? '',
+      id: id,
       type: type,
       label: (j['label'] as String?) ?? '',
       config: (j['config'] as Map?)?.cast<String, dynamic>() ?? const {},

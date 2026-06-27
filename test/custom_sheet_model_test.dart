@@ -24,6 +24,11 @@ void main() {
       expect(customStatMod(StatModFormula.halfFloor, 7), 3);
       expect(customStatMod(StatModFormula.halfFloor, 4), 2);
     });
+    test('statModFormulaFromName: known + unknown fallback to raw', () {
+      expect(statModFormulaFromName('fived'), StatModFormula.fived);
+      expect(statModFormulaFromName('bogus'), StatModFormula.raw);
+      expect(statModFormulaFromName(null), StatModFormula.raw);
+    });
   });
 
   group('CustomSheet JSON', () {
@@ -56,6 +61,14 @@ void main() {
         ],
       })!;
       expect(back.blocks.map((b) => b.id), ['x']);
+    });
+    test('drops an id-less block', () {
+      final back = CustomSheet.maybeFromJson({
+        'blocks': [
+          {'type': 'counter', 'label': 'A'},
+        ],
+      })!;
+      expect(back.blocks, isEmpty);
     });
     test('maybeFromJson tolerates non-map / null', () {
       expect(CustomSheet.maybeFromJson(null), isNull);
