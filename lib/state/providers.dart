@@ -321,6 +321,7 @@ class CharacterNotifier extends _PersistedList<Character> {
   Future<String> addKnave() => addPreMadeSheet('knave');
   Future<String> addOse() => addPreMadeSheet('ose');
   Future<String> addKalArath() => addPreMadeSheet('kal-arath');
+  Future<String> addDcc() => addPreMadeSheet('dcc');
 
   Future<void> replace(Character character) async {
     await _persist([

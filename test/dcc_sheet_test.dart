@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/campaign_presets.dart';
 import 'package:juice_oracle/engine/models.dart';
 
 void main() {
@@ -168,6 +169,19 @@ void main() {
     test('clearDcc drops the sheet', () {
       final c = Character.forSheet('dcc', 'id1');
       expect(c.copyWith(clearDcc: true).dcc, isNull);
+    });
+  });
+
+  group('DCC system registration', () {
+    test('dcc is a known ruleset', () {
+      expect(kKnownSystems, contains('dcc'));
+      expect(kSystemCategory['dcc'], SystemCategory.ruleset);
+    });
+    test('solo-dcc preset resolves to dcc ruleset', () {
+      final preset = kCampaignPresets.firstWhere((p) => p.id == 'solo-dcc');
+      final (mode, systems) = presetConfig(preset);
+      expect(systems, contains('dcc'));
+      expect(mode, CampaignMode.party);
     });
   });
 }

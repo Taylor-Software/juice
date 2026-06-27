@@ -3808,6 +3808,7 @@ const kKnownSystems = <String>{
   'knave',
   'ose',
   'kal-arath',
+  'dcc',
   'cards',
 };
 
@@ -3828,6 +3829,7 @@ const kSystemCategory = <String, SystemCategory>{
   'knave': SystemCategory.ruleset,
   'ose': SystemCategory.ruleset,
   'kal-arath': SystemCategory.ruleset,
+  'dcc': SystemCategory.ruleset,
   'juice': SystemCategory.oracle,
   'mythic': SystemCategory.oracle,
   'cards': SystemCategory.oracle,

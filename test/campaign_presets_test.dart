@@ -4,7 +4,7 @@ import 'package:juice_oracle/engine/models.dart';
 
 void main() {
   group('kKnownSystems + kSystemCategory', () {
-    test('kKnownSystems has the 17 ids', () {
+    test('kKnownSystems has the 18 ids', () {
       expect(kKnownSystems, {
         'juice',
         'mythic',
@@ -22,6 +22,7 @@ void main() {
         'knave',
         'ose',
         'kal-arath',
+        'dcc',
         'cards',
       });
     });
@@ -35,7 +36,7 @@ void main() {
       expect(kSystemCategory.keys.toSet(), kKnownSystems);
     });
 
-    test('10 ruleset systems', () {
+    test('11 ruleset systems', () {
       final rulesets = kSystemCategory.entries
           .where((e) => e.value == SystemCategory.ruleset)
           .map((e) => e.key)
@@ -51,6 +52,7 @@ void main() {
         'knave',
         'ose',
         'kal-arath',
+        'dcc',
       });
     });
 
@@ -77,7 +79,7 @@ void main() {
     test('ruleset presets are party mode with juice + party + one ruleset', () {
       final rulesetPresets =
           kCampaignPresets.where((p) => p.id.startsWith('solo-'));
-      expect(rulesetPresets.length, 10);
+      expect(rulesetPresets.length, 11);
       for (final p in rulesetPresets) {
         expect(p.mode, CampaignMode.party, reason: p.id);
         expect(p.systems.contains('juice'), isTrue, reason: p.id);

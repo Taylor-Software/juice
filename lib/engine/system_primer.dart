@@ -36,6 +36,8 @@ const Map<String, String> kSystemPrimers = {
       'Old-School Essentials (B/X): classic fantasy. Saves: roll d20 equal or over target (Death/Wands/Paralysis/Breath/Spells). Descending AC (9=unarmored). THAC0 for attacks.',
   'kal-arath':
       'Kal-Arath: sword & sorcery OSR. Resolution: roll 2d6 + stat, 8+ to succeed; double 6s crit, double 1s fumble. Five stats; demonic pacts; Fate Points.',
+  'dcc':
+      'Dungeon Crawl Classics: pulpy sword & sorcery. Resolution: d20 + mod vs DC; warriors roll a deed die; casters make spell checks and can spellburn; spend Luck to boost rolls; Fort/Ref/Will saves.',
 };
 
 String _primerFor(String key) =>
@@ -57,6 +59,7 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('knave')) return _primerFor('knave');
   if (systems.contains('ose')) return _primerFor('ose');
   if (systems.contains('kal-arath')) return _primerFor('kal-arath');
+  if (systems.contains('dcc')) return _primerFor('dcc');
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) {
       return _primerFor('sundered_isles');
@@ -80,6 +83,7 @@ String resolveSystem(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('knave')) return 'knave';
   if (systems.contains('ose')) return 'ose';
   if (systems.contains('kal-arath')) return 'kal-arath';
+  if (systems.contains('dcc')) return 'dcc';
   if (systems.contains('ironsworn')) {
     if (rulesets.contains('sundered_isles')) return 'sundered_isles';
     if (rulesets.contains('starforged')) return 'starforged';
