@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/custom_templates.dart';
 import 'package:juice_oracle/features/custom_sheet.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -533,5 +533,14 @@ void main() {
     await tester.pumpAndSettle();
     final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
     expect((blk.config['options'] as List).length, 2);
+  });
+
+  testWidgets('every starter template renders without throwing', (tester) async {
+    _bigView(tester);
+    for (final t in kCustomTemplates) {
+      await _pump(tester, sheet: CustomSheet(blocks: t.blocks));
+      expect(find.byKey(const Key('custom-sheet')), findsOneWidget, reason: t.id);
+      expect(tester.takeException(), isNull, reason: t.id);
+    }
   });
 }
