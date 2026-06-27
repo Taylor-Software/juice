@@ -94,4 +94,34 @@ void main() {
     final chars = await c.read(charactersProvider.future);
     expect(chars.single.custom!.blocks, isEmpty);
   });
+
+  testWidgets('reorder moves a block and persists the new order',
+      (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.freeform, label: 'First'),
+      CustomBlock(id: 'b2', type: CustomBlockType.freeform, label: 'Second'),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle'))); // -> edit
+    await tester.pumpAndSettle();
+    // The default test platform is android, where ReorderableListView makes the
+    // whole item a long-press drag target (no Icons.drag_handle). Drag the
+    // first block's card down past the second to swap their order.
+    final card = find.byKey(const ValueKey('b1'));
+    final drag = await tester.startGesture(tester.getCenter(card));
+    // Hold past the long-press threshold (500ms) so the drag is recognized.
+    await tester.pump(const Duration(milliseconds: 600));
+    // Move down past the second card in small increments, pumping each frame so
+    // the reorder list recomputes the drop target as we cross it.
+    for (var i = 0; i < 10; i++) {
+      await drag.moveBy(const Offset(0, 16));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await drag.up();
+    await tester.pumpAndSettle();
+    final blocks =
+        (await c.read(charactersProvider.future)).single.custom!.blocks;
+    expect(blocks.map((b) => b.id), ['b2', 'b1']);
+  });
 }

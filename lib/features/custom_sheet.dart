@@ -34,6 +34,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   void _setVal(String id, dynamic value) =>
       _save(_s.copyWith(values: {..._s.values, id: value}));
 
+  // base-36 of the microsecond clock -> compact, collision-safe block keys.
   String _newBlockId() =>
       'blk-${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
 
@@ -86,8 +87,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   Widget _editList(CustomSheet s) => ReorderableListView(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        // onReorderItem gives the already-adjusted insertion index (item is
-        // conceptually removed first), so removeAt + insert is direct.
+        // onReorderItem already adjusts newIndex for the removed item (Flutter
+        // does `if (newIndex > oldIndex) newIndex -= 1` internally), so a
+        // direct removeAt + insert is correct — do NOT subtract 1 again here.
         onReorderItem: (oldI, newI) {
           final list = [...s.blocks];
           final moved = list.removeAt(oldI);
@@ -167,6 +169,8 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
 
   Future<void> _configBlock(CustomBlock b) async {
     switch (b.type) {
+      // Extended in Tasks 5/8/9/10/11 — add a case per block type as config
+      // dialogs land.
       default:
         await _renameBlock(b);
     }
