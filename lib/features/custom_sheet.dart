@@ -160,21 +160,159 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.progress => 'Tracks',
       };
 
-  // --- play + config dispatch (filled in by later tasks) ---------------------
+  // --- play + config dispatch -------------------------------------------------
 
   Widget _playBlock(CustomBlock b) => switch (b.type) {
         CustomBlockType.freeform => _playFreeform(b),
+        CustomBlockType.counter => _playCounter(b),
+        CustomBlockType.stat => _playStat(b),
+        CustomBlockType.conditions => _playConditions(b),
         _ => const SizedBox.shrink(),
       };
 
   Future<void> _configBlock(CustomBlock b) async {
     switch (b.type) {
-      // Extended in Tasks 5/8/9/10/11 — add a case per block type as config
-      // dialogs land.
+      case CustomBlockType.counter:
+        await _configCounter(b);
+      case CustomBlockType.stat:
+        await _configStat(b);
       default:
         await _renameBlock(b);
     }
   }
+
+  // --- counter ---------------------------------------------------------------
+
+  int _intCfg(CustomBlock b, String key, int fallback) =>
+      (b.config[key] as num?)?.toInt() ?? fallback;
+
+  Widget _playCounter(CustomBlock b) {
+    final min = _intCfg(b, 'min', 0);
+    final max = _intCfg(b, 'max', 999);
+    final step = _intCfg(b, 'step', 1);
+    final v = (_val(b.id, min) as num).toInt();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Expanded(child: Text(b.label)),
+        IconButton(
+          key: Key('custom-${b.id}-counter-minus'),
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: v > min ? () => _setVal(b.id, v - step) : null,
+        ),
+        Text('$v'),
+        IconButton(
+          key: Key('custom-${b.id}-counter-plus'),
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: v < max ? () => _setVal(b.id, v + step) : null,
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _configCounter(CustomBlock b) async {
+    final result = await showDialog<_CounterCfg>(
+      context: context,
+      builder: (_) => _CounterConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'min': result.min,
+                      'max': result.max,
+                      'step': result.step,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- stat ------------------------------------------------------------------
+
+  Widget _playStat(CustomBlock b) {
+    final min = _intCfg(b, 'min', 3);
+    final max = _intCfg(b, 'max', 18);
+    final formula = statModFormulaFromName(b.config['modFormula'] as String?);
+    final stats = ((b.config['stats'] as List?) ?? const [])
+        .whereType<Map<dynamic, dynamic>>()
+        .toList();
+    final cur = (_val(b.id, const {}) as Map).cast<String, dynamic>();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      sheetSection(context, b.label),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final st in stats)
+          () {
+            final key = st['key'] as String;
+            final label = (st['label'] as String?) ?? key.toUpperCase();
+            final score = (cur[key] as num?)?.toInt() ?? ((min + max) ~/ 2);
+            final modText = formula == StatModFormula.raw
+                ? ''
+                : fmtSigned(customStatMod(formula, score));
+            return ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 80),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(label, style: const TextStyle(fontSize: 11)),
+                if (modText.isNotEmpty)
+                  Text(modText,
+                      style: const TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold)),
+                Row(mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center, children: [
+                  IconButton(
+                    key: Key('custom-${b.id}-stat-$key-minus'),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.remove, size: 16),
+                    onPressed: score > min
+                        ? () => _setVal(b.id, {...cur, key: score - 1})
+                        : null,
+                  ),
+                  Text('$score'),
+                  IconButton(
+                    key: Key('custom-${b.id}-stat-$key-plus'),
+                    visualDensity: VisualDensity.compact,
+                    icon: const Icon(Icons.add, size: 16),
+                    onPressed: score < max
+                        ? () => _setVal(b.id, {...cur, key: score + 1})
+                        : null,
+                  ),
+                ]),
+              ]),
+            );
+          }(),
+      ]),
+    ]);
+  }
+
+  Future<void> _configStat(CustomBlock b) async {
+    final result = await showDialog<_StatCfg>(
+      context: context,
+      builder: (_) => _StatConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'stats': result.stats,
+                      'min': result.min,
+                      'max': result.max,
+                      'modFormula': result.formula.name,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- conditions ------------------------------------------------------------
+
+  Widget _playConditions(CustomBlock b) =>
+      conditionsSection(context, ref, widget.character, 'custom-${b.id}');
 
   Future<void> _renameBlock(CustomBlock b) async {
     final name = await renameDialog(context,
@@ -218,3 +356,254 @@ Map<String, dynamic> defaultConfigFor(CustomBlockType type) => switch (type) {
       CustomBlockType.togglechips => {'options': <String>[]},
       _ => const {},
     };
+
+// ---------------------------------------------------------------------------
+// Config dialog result types + StatefulWidget dialogs.
+// Using StatefulWidget (not StatefulBuilder + external controllers) so that
+// TextEditingControllers are disposed by the widget's own dispose(), which
+// runs after the route fully unmounts — not immediately after showDialog
+// returns (which triggers "used after dispose" during the dismiss animation).
+// ---------------------------------------------------------------------------
+
+class _CounterCfg {
+  const _CounterCfg(
+      {required this.label,
+      required this.min,
+      required this.max,
+      required this.step});
+  final String label;
+  final int min, max, step;
+}
+
+class _CounterConfigDialog extends StatefulWidget {
+  const _CounterConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_CounterConfigDialog> createState() => _CounterConfigDialogState();
+}
+
+class _CounterConfigDialogState extends State<_CounterConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+  late final TextEditingController _min = TextEditingController(
+      text: '${(widget.block.config['min'] as num?)?.toInt() ?? 0}');
+  late final TextEditingController _max = TextEditingController(
+      text: '${(widget.block.config['max'] as num?)?.toInt() ?? 999}');
+  late final TextEditingController _step = TextEditingController(
+      text: '${(widget.block.config['step'] as num?)?.toInt() ?? 1}');
+
+  @override
+  void dispose() {
+    _label.dispose();
+    _min.dispose();
+    _max.dispose();
+    _step.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            TextField(
+              key: const Key('custom-cfg-min'),
+              controller: _min,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Min'),
+            ),
+            TextField(
+              key: const Key('custom-cfg-max'),
+              controller: _max,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Max'),
+            ),
+            TextField(
+              key: const Key('custom-cfg-step'),
+              controller: _step,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Step'),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _CounterCfg(
+                      label: _label.text.trim(),
+                      min: int.tryParse(_min.text) ??
+                          (widget.block.config['min'] as num?)?.toInt() ??
+                          0,
+                      max: int.tryParse(_max.text) ??
+                          (widget.block.config['max'] as num?)?.toInt() ??
+                          999,
+                      step: int.tryParse(_step.text) ??
+                          (widget.block.config['step'] as num?)?.toInt() ??
+                          1,
+                    ),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _StatCfg {
+  const _StatCfg(
+      {required this.label,
+      required this.min,
+      required this.max,
+      required this.formula,
+      required this.stats});
+  final String label;
+  final int min, max;
+  final StatModFormula formula;
+  final List<Map<String, String>> stats;
+}
+
+class _StatConfigDialog extends StatefulWidget {
+  const _StatConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_StatConfigDialog> createState() => _StatConfigDialogState();
+}
+
+class _StatConfigDialogState extends State<_StatConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+  late final TextEditingController _min = TextEditingController(
+      text: '${(widget.block.config['min'] as num?)?.toInt() ?? 3}');
+  late final TextEditingController _max = TextEditingController(
+      text: '${(widget.block.config['max'] as num?)?.toInt() ?? 18}');
+
+  late StatModFormula _formula = statModFormulaFromName(
+      widget.block.config['modFormula'] as String?);
+
+  // One pair of controllers per stat row (fixed count; add/remove deferred).
+  late final List<TextEditingController> _keyCtls;
+  late final List<TextEditingController> _lblCtls;
+
+  @override
+  void initState() {
+    super.initState();
+    final rawStats = ((widget.block.config['stats'] as List?) ?? const [])
+        .whereType<Map<dynamic, dynamic>>()
+        .toList();
+    _keyCtls = rawStats
+        .map((s) => TextEditingController(text: s['key'] as String? ?? ''))
+        .toList();
+    _lblCtls = rawStats
+        .map((s) => TextEditingController(text: s['label'] as String? ?? ''))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    _label.dispose();
+    _min.dispose();
+    _max.dispose();
+    for (final c in _keyCtls) {
+      c.dispose();
+    }
+    for (final c in _lblCtls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            TextField(
+              key: const Key('custom-cfg-min'),
+              controller: _min,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Min'),
+            ),
+            TextField(
+              key: const Key('custom-cfg-max'),
+              controller: _max,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Max'),
+            ),
+            const SizedBox(height: 8),
+            DropdownButton<StatModFormula>(
+              key: const Key('custom-cfg-formula'),
+              value: _formula,
+              isExpanded: true,
+              items: StatModFormula.values
+                  .map((f) =>
+                      DropdownMenuItem(value: f, child: Text(f.name)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _formula = v);
+              },
+            ),
+            const SizedBox(height: 8),
+            // Editable stat rows (fixed count; add/remove is a P2 concern).
+            for (var i = 0; i < _keyCtls.length; i++)
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: _keyCtls[i],
+                    decoration: const InputDecoration(labelText: 'Key'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _lblCtls[i],
+                    decoration: const InputDecoration(labelText: 'Label'),
+                  ),
+                ),
+              ]),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _StatCfg(
+                      label: _label.text.trim(),
+                      min: int.tryParse(_min.text) ??
+                          (widget.block.config['min'] as num?)?.toInt() ??
+                          3,
+                      max: int.tryParse(_max.text) ??
+                          (widget.block.config['max'] as num?)?.toInt() ??
+                          18,
+                      formula: _formula,
+                      stats: [
+                        for (var i = 0; i < _keyCtls.length; i++)
+                          {
+                            'key': _keyCtls[i].text,
+                            'label': _lblCtls[i].text
+                          },
+                      ],
+                    ),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}

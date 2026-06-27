@@ -124,4 +124,102 @@ void main() {
         (await c.read(charactersProvider.future)).single.custom!.blocks;
     expect(blocks.map((b) => b.id), ['b2', 'b1']);
   });
+
+  // ---- Task 5: counter + stat + conditions renderers -------------------------
+
+  testWidgets('counter block steps and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(
+          id: 'b1',
+          type: CustomBlockType.counter,
+          label: 'AC',
+          config: {'min': 0, 'max': 30, 'step': 1}),
+    ], values: {
+      'b1': 12
+    });
+    final c = await _pump(tester, sheet: sheet);
+    // play mode (non-empty sheet starts in play)
+    await tester.tap(find.byKey(const Key('custom-b1-counter-plus')));
+    await tester.pumpAndSettle();
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.single.custom!.values['b1'], 13);
+  });
+
+  testWidgets('stat block shows derived modifier and steps', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.stat, label: 'Abilities', config: {
+        'stats': [
+          {'key': 'str', 'label': 'STR'}
+        ],
+        'min': 3,
+        'max': 18,
+        'modFormula': 'fived',
+      }),
+    ], values: {
+      'b1': {'str': 14}
+    });
+    final c = await _pump(tester, sheet: sheet);
+    expect(find.text('+2'), findsOneWidget); // fived(14) = +2
+    await tester.tap(find.byKey(const Key('custom-b1-stat-str-plus')));
+    await tester.pumpAndSettle();
+    final chars = await c.read(charactersProvider.future);
+    expect((chars.single.custom!.values['b1'] as Map)['str'], 15);
+  });
+
+  // ---- Task 5 Part B: config-dialog exemplars --------------------------------
+
+  testWidgets('counter config edits max and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.counter, label: 'AC',
+          config: {'min': 0, 'max': 30, 'step': 1}),
+    ], values: {'b1': 12});
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle'))); // -> edit
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('custom-cfg-max')), '25');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk =
+        (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['max'] as num).toInt(), 25);
+  });
+
+  testWidgets('stat config changes the modifier formula and persists',
+      (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(
+          id: 'b1',
+          type: CustomBlockType.stat,
+          label: 'Abilities',
+          config: {
+            'stats': [
+              {'key': 'str', 'label': 'STR'}
+            ],
+            'min': 3,
+            'max': 18,
+            'modFormula': 'raw',
+          }),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle'))); // -> edit
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    // Tap the formula dropdown and select 'fived'
+    await tester.tap(find.byKey(const Key('custom-cfg-formula')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('fived').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk =
+        (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect(blk.config['modFormula'], 'fived');
+  });
 }
