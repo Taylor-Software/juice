@@ -36,11 +36,11 @@ class FunnelProfile {
   /// Builds a hero Character of [system] from [p], applying graduation [picks]
   /// (keyed by [graduateChoices] key). Maps stats by key into the target sheet
   /// (the sheet's own copyWith clamps/defaults); HP into the sheet's pool.
-  final Character Function(String id, FunnelPeasant p, Map<String, String> picks)
-      graduate;
+  final Character Function(String id, FunnelPeasant p, Map<String, String> picks,
+      String seedVariant) graduate;
 
   /// A fresh empty peasant seeded from this profile (mid-range stats, hpMin).
-  FunnelPeasant seedPeasant() => FunnelPeasant(
+  FunnelPeasant seedPeasant(String seedVariant) => FunnelPeasant(
         hp: hpMin,
         stats: {for (final s in statKeys) s.key: statDefault},
         flavor: {for (final f in flavorFields) f.key: ''},
@@ -82,7 +82,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('className', 'Class', kDccClasses),
       const FunnelChoice('alignment', 'Alignment', kDccAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('dcc', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -109,7 +109,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'background', label: 'Background')],
     hpMin: 1, hpMax: 10,
     graduateChoices: [const FunnelChoice('className', 'Class', kDndClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('dnd', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -136,7 +136,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('ancestry', 'Ancestry', kShadowdarkAncestries),
       const FunnelChoice('alignment', 'Alignment', kShadowdarkAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('shadowdark', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -162,7 +162,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'occupation', label: 'Occupation')],
     hpMin: 1, hpMax: 10,
     graduateChoices: [const FunnelChoice('className', 'Class', kArgosaClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('argosa', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -188,7 +188,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('className', 'Class', kOseClasses),
       const FunnelChoice('alignment', 'Alignment', kOseAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('ose', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -211,7 +211,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
     hpMin: 1, hpMax: 20,
     graduateChoices: const [FunnelChoice('className', 'Class', kNimbleClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('nimble', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -234,7 +234,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
     hpMin: 1, hpMax: 24,
     graduateChoices: const [FunnelChoice('className', 'Class', kDrawSteelClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('draw-steel', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -257,7 +257,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'career', label: 'Career')],
     hpMin: 1, hpMax: 8,
     graduateChoices: const [],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('knave', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -282,7 +282,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       FunnelChoice('archetype', 'Archetype', kKalArathArchetypes),
       FunnelChoice('pact', 'Demonic Pact', kKalArathPacts),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('kal-arath', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -305,7 +305,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [],
     hpMin: 1, hpMax: 8,
     graduateChoices: const [FunnelChoice('background', 'Background', kCairnBackgrounds)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('cairn', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -328,7 +328,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [],
     hpMin: 0, hpMax: 5,
     graduateChoices: const [],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('ironsworn', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -351,7 +351,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [],
     hpMin: 0, hpMax: 5,
     graduateChoices: const [],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('starforged', id);
       return base.copyWith(
         name: _heroName(p, base),

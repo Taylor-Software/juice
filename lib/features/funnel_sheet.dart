@@ -74,7 +74,7 @@ class FunnelSheetView extends ConsumerWidget {
               onPressed: s.peasants.length >= kFunnelMaxPeasants
                   ? null
                   : () => _save(ref,
-                      s.copyWith(peasants: [...s.peasants, profile.seedPeasant()])),
+                      s.copyWith(peasants: [...s.peasants, profile.seedPeasant(s.seedVariant)])),
               icon: const Icon(Icons.person_add),
               label: const Text('Add peasant'),
             ),
@@ -231,7 +231,7 @@ class FunnelSheetView extends ConsumerWidget {
     final peasant = s.peasants[i];
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(charactersProvider.notifier).graduateFunnelPeasant(
-        character, i, (id) => profile.graduate(id, peasant, picks));
+        character, i, (id) => profile.graduate(id, peasant, picks, s.seedVariant));
     final cls = picks['className'] ?? picks.values.firstOrNull ?? '';
     messenger.showSnackBar(SnackBar(
       content: Text(

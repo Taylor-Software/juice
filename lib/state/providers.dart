@@ -331,7 +331,7 @@ class CharacterNotifier extends _PersistedList<Character> {
     final id = _newId();
     final profile = funnelProfileFor(seedSystem);
     final seed =
-        profile == null ? const <FunnelPeasant>[] : [profile.seedPeasant()];
+        profile == null ? const <FunnelPeasant>[] : [profile.seedPeasant('')];
     final ch = Character(
       id: id,
       name: '0-Level Funnel',

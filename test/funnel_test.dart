@@ -108,7 +108,7 @@ void main() {
     });
     test('dcc seedPeasant has mid-range stats + hpMin hp', () {
       final p = funnelProfileFor('dcc')!;
-      final peasant = p.seedPeasant();
+      final peasant = p.seedPeasant('');
       expect(peasant.stats['str'], p.statDefault);
       expect(peasant.hp, p.hpMin);
       expect(peasant.alive, true);
@@ -121,7 +121,7 @@ void main() {
         stats: {'str': 16, 'agi': 12, 'sta': 14, 'per': 9, 'int': 8, 'lck': 11},
         flavor: {'occupation': 'Blacksmith'},
       );
-      final hero = p.graduate('h1', peasant, {'className': 'Warrior', 'alignment': 'Lawful'});
+      final hero = p.graduate('h1', peasant, {'className': 'Warrior', 'alignment': 'Lawful'}, '');
       expect(hero.id, 'h1');
       expect(hero.name, 'Survivor');
       expect(hero.dcc, isNotNull);
@@ -195,7 +195,7 @@ void main() {
     );
     test('dnd', () {
       final h = funnelProfileFor('dnd')!
-          .graduate('h', peasant, {'className': 'Wizard'});
+          .graduate('h', peasant, {'className': 'Wizard'}, '');
       expect(h.dnd, isNotNull);
       expect(h.dnd!.abilities['str'], 15);
       expect(h.dnd!.currentHp, 7);
@@ -205,7 +205,7 @@ void main() {
     });
     test('shadowdark', () {
       final h = funnelProfileFor('shadowdark')!.graduate('h', peasant,
-          {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'});
+          {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'}, '');
       expect(h.shadowdark!.abilities['str'], 15);
       expect(h.shadowdark!.currentHp, 7);
       expect(h.shadowdark!.maxHp, 7);
@@ -215,7 +215,7 @@ void main() {
     });
     test('argosa', () {
       final cls = funnelProfileFor('argosa')!.graduateChoices.first.options.first;
-      final h = funnelProfileFor('argosa')!.graduate('h', peasant, {'className': cls});
+      final h = funnelProfileFor('argosa')!.graduate('h', peasant, {'className': cls}, '');
       expect(h.argosa!.stats['str'], 15);
       expect(h.argosa!.currentHp, 7);
       expect(h.argosa!.maxHp, 7);
@@ -223,7 +223,7 @@ void main() {
     });
     test('ose', () {
       final h = funnelProfileFor('ose')!.graduate('h', peasant,
-          {'className': 'Fighter', 'alignment': 'Lawful'});
+          {'className': 'Fighter', 'alignment': 'Lawful'}, '');
       expect(h.ose!.stats['str'], 15);
       expect(h.ose!.currentHp, 7);
       expect(h.ose!.maxHp, 7);
@@ -236,7 +236,7 @@ void main() {
     test('nimble', () {
       const peasant = FunnelPeasant(hp: 12, stats: {'str': 2, 'dex': 1, 'int': 0, 'wis': -1});
       final h = funnelProfileFor('nimble')!
-          .graduate('h', peasant, {'className': kNimbleClasses.first});
+          .graduate('h', peasant, {'className': kNimbleClasses.first}, '');
       expect(h.nimble!.stats['str'], 2);
       expect(h.nimble!.currentHp, 12);
       expect(h.nimble!.maxHp, 12);
@@ -247,7 +247,7 @@ void main() {
       const peasant = FunnelPeasant(hp: 20,
           stats: {'might': 2, 'agility': 1, 'reason': 0, 'intuition': 0, 'presence': -1});
       final h = funnelProfileFor('draw-steel')!
-          .graduate('h', peasant, {'className': kDrawSteelClasses.first});
+          .graduate('h', peasant, {'className': kDrawSteelClasses.first}, '');
       expect(h.drawSteel!.characteristics['might'], 2);
       expect(h.drawSteel!.currentStamina, 20);
       expect(h.drawSteel!.maxStamina, 20);
@@ -256,7 +256,7 @@ void main() {
     test('knave has no class choice', () {
       expect(funnelProfileFor('knave')!.graduateChoices, isEmpty);
       const peasant = FunnelPeasant(hp: 6, stats: {'str': 3, 'dex': 2});
-      final h = funnelProfileFor('knave')!.graduate('h', peasant, const {});
+      final h = funnelProfileFor('knave')!.graduate('h', peasant, const {}, '');
       expect(h.knave!.stats['str'], 3);
       expect(h.knave!.currentHp, 6);
       expect(h.knave!.maxHp, 6);
@@ -264,7 +264,7 @@ void main() {
     test('kal-arath', () {
       const peasant = FunnelPeasant(hp: 8, stats: {'str': 3, 'tou': 2, 'agi': 1, 'int': 0, 'pre': -1});
       final h = funnelProfileFor('kal-arath')!.graduate('h', peasant,
-          {'archetype': kKalArathArchetypes.first, 'pact': kKalArathPacts.first});
+          {'archetype': kKalArathArchetypes.first, 'pact': kKalArathPacts.first}, '');
       expect(h.kalArath!.stats['str'], 3);
       expect(h.kalArath!.currentHp, 8);
       expect(h.kalArath!.maxHp, 8);
@@ -277,7 +277,7 @@ void main() {
     test('cairn maps individual stats + hp + background', () {
       const peasant = FunnelPeasant(hp: 5, stats: {'str': 12, 'dex': 9, 'wil': 14});
       final h = funnelProfileFor('cairn')!.graduate('h', peasant,
-          {'background': kCairnBackgrounds.first});
+          {'background': kCairnBackgrounds.first}, '');
       expect(h.cairn!.str, 12);
       expect(h.cairn!.dex, 9);
       expect(h.cairn!.wil, 14);
@@ -288,7 +288,7 @@ void main() {
     test('ironsworn maps individual stats, ignores hp (no pool)', () {
       const peasant = FunnelPeasant(hp: 4,
           stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
-      final h = funnelProfileFor('ironsworn')!.graduate('h', peasant, const {});
+      final h = funnelProfileFor('ironsworn')!.graduate('h', peasant, const {}, '');
       expect(h.ironsworn!.edge, 2);
       expect(h.ironsworn!.iron, 3);
       expect(funnelProfileFor('ironsworn')!.graduateChoices, isEmpty);
@@ -296,7 +296,7 @@ void main() {
     test('starforged maps individual stats', () {
       const peasant = FunnelPeasant(hp: 4,
           stats: {'edge': 1, 'heart': 2, 'iron': 1, 'shadow': 3, 'wits': 2});
-      final h = funnelProfileFor('starforged')!.graduate('h', peasant, const {});
+      final h = funnelProfileFor('starforged')!.graduate('h', peasant, const {}, '');
       expect(h.starforged!.shadow, 3);
     });
   });
@@ -340,7 +340,7 @@ void main() {
           seeded,
           0,
           (id) => profile.graduate(id, seeded.funnel!.peasants[0],
-              {'className': 'Warrior', 'alignment': 'Lawful'}));
+              {'className': 'Warrior', 'alignment': 'Lawful'}, ''));
       final list = await c.read(charactersProvider.future);
       final hero = list.firstWhere((x) => x.id == heroId);
       expect(hero.dcc, isNotNull);
@@ -379,8 +379,8 @@ void main() {
         for (final c in p.graduateChoices) {
           expect(c.options, isNotEmpty, reason: '$sys choice ${c.key}');
         }
-        final peasant = p.seedPeasant().copyWith(name: 'X');
-        final hero = p.graduate('hid', peasant, p.defaultPicks());
+        final peasant = p.seedPeasant('').copyWith(name: 'X');
+        final hero = p.graduate('hid', peasant, p.defaultPicks(), '');
         expect(hero.id, 'hid');
         expect(hero.name, 'X');
       });
