@@ -19,21 +19,24 @@ class FunnelSheetView extends ConsumerWidget {
       .replace(character.copyWith(funnel: next));
 
   Widget _stepper(String key, String label, int value,
-          {required ValueChanged<int> onSet, int min = 0, int max = 9999}) =>
+          {required ValueChanged<int> onSet,
+          int min = 0,
+          int max = 9999,
+          bool enabled = true}) =>
       Row(mainAxisSize: MainAxisSize.min, children: [
         if (label.isNotEmpty) Text('$label '),
         IconButton(
           key: Key('$key-minus'),
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
+          onPressed: enabled && value > min ? () => onSet(value - 1) : null,
         ),
         Text('$value'),
         IconButton(
           key: Key('$key-plus'),
           visualDensity: VisualDensity.compact,
           icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
+          onPressed: enabled && value < max ? () => onSet(value + 1) : null,
         ),
       ]);
 
@@ -128,7 +131,8 @@ class FunnelSheetView extends ConsumerWidget {
           _stepper('funnel-peasant-$i-hp', 'HP', p.hp,
               min: profile.hpMin,
               max: profile.hpMax,
-              onSet: p.graduated ? (_) {} : (v) => setP(p.copyWith(hp: v))),
+              enabled: !p.graduated,
+              onSet: (v) => setP(p.copyWith(hp: v))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 4, children: [
             for (final st in profile.statKeys)
@@ -139,15 +143,14 @@ class FunnelSheetView extends ConsumerWidget {
                     '', p.stats[st.key] ?? profile.statDefault,
                     min: profile.statMin,
                     max: profile.statMax,
-                    onSet: p.graduated
-                        ? (_) {}
-                        : (v) => setP(
-                            p.copyWith(stats: {...p.stats, st.key: v}))),
+                    enabled: !p.graduated,
+                    onSet: (v) =>
+                        setP(p.copyWith(stats: {...p.stats, st.key: v}))),
               ]),
           ]),
           const SizedBox(height: 8),
           if (!p.graduated)
-            Wrap(alignment: WrapAlignment.spaceBetween, children: [
+            Wrap(alignment: WrapAlignment.spaceBetween, runSpacing: 4, children: [
               TextButton(
                 key: Key('funnel-peasant-$i-${p.alive ? "kill" : "revive"}'),
                 onPressed: () => setP(p.copyWith(alive: !p.alive)),
@@ -170,13 +173,11 @@ class FunnelSheetView extends ConsumerWidget {
     final enabled =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             const <String>{};
+    // The seed system always has a profile here (the Graduate button only
+    // renders when the seed profile is non-null), so it is already a target.
     final targets = kFunnelProfiles.keys
         .where((sys) => sys == s.seedSystem || enabled.contains(sys))
         .toList();
-    if (!targets.contains(s.seedSystem) &&
-        funnelProfileFor(s.seedSystem) != null) {
-      targets.insert(0, s.seedSystem);
-    }
     var target = s.seedSystem;
     var picks = {...funnelProfileFor(target)!.defaultPicks()};
 

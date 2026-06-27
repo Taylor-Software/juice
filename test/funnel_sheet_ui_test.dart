@@ -59,6 +59,7 @@ void main() {
     await _pump(tester, _dccFunnel());
     expect(find.byKey(const Key('funnel-sheet')), findsOneWidget);
     expect(find.textContaining('1 / 1 alive'), findsOneWidget);
+    expect(find.byKey(const Key('funnel-peasant-0')), findsOneWidget);
     expect(find.byKey(const Key('funnel-add-peasant')), findsOneWidget);
   });
 
@@ -86,7 +87,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     final list = await c.read(charactersProvider.future);
     expect(list.length, 2);
-    expect(list.any((x) => x.dcc != null), true);
+    final hero = list.firstWhere((x) => x.dcc != null);
+    expect(hero.dcc!.className, 'Warrior'); // default first pick
     expect(list.firstWhere((x) => x.funnel != null)
         .funnel!.peasants[0].graduated, true);
   });
