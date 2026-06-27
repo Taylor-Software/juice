@@ -2109,10 +2109,6 @@ const kDccSpellburnStats = <String, List<String>>{
 const kDccActionDice = <String>['d20', 'd24', 'd30'];
 const kDccDeedDice = <String>['d3', 'd4', 'd5', 'd6', 'd7'];
 
-/// Max 0-level peasants a funnel sheet tracks at once (a typical DCC funnel
-/// runs 3-4 characters per player).
-const int kDccMaxPeasants = 4;
-
 /// A Mighty Deed succeeds on a deed die of 3 or higher.
 const int kDccDeedSuccessMin = 3;
 
@@ -2129,91 +2125,11 @@ int dccAbilityMod(int score) {
   return 3;
 }
 
-/// A single 0-level funnel character. All descriptive fields are freeform
-/// (no Appendix L occupation table shipped).
-class DccPeasant {
-  const DccPeasant({
-    this.name = '',
-    this.occupation = '',
-    this.weapon = '',
-    this.tradeGoods = '',
-    this.hp = 1,
-    this.stats = const {
-      'str': 10,
-      'agi': 10,
-      'sta': 10,
-      'per': 10,
-      'int': 10,
-      'lck': 10,
-    },
-    this.alive = true,
-  });
-
-  final String name, occupation, weapon, tradeGoods;
-  final int hp; // 1..8
-  final Map<String, int> stats; // kDccStats keys, each 3..18
-  final bool alive;
-
-  int mod(String k) => dccAbilityMod(stats[k] ?? 10);
-
-  DccPeasant copyWith({
-    String? name,
-    String? occupation,
-    String? weapon,
-    String? tradeGoods,
-    int? hp,
-    Map<String, int>? stats,
-    bool? alive,
-  }) {
-    final st = stats ?? this.stats;
-    return DccPeasant(
-      name: name ?? this.name,
-      occupation: occupation ?? this.occupation,
-      weapon: weapon ?? this.weapon,
-      tradeGoods: tradeGoods ?? this.tradeGoods,
-      hp: (hp ?? this.hp).clamp(1, 8),
-      stats: {
-        for (final k in kDccStats)
-          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
-      },
-      alive: alive ?? this.alive,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'occupation': occupation,
-        'weapon': weapon,
-        'tradeGoods': tradeGoods,
-        'hp': hp,
-        'stats': stats,
-        'alive': alive,
-      };
-
-  factory DccPeasant.fromJson(Map<String, dynamic> j) {
-    final st = (j['stats'] as Map?) ?? const {};
-    return DccPeasant(
-      name: j['name'] as String? ?? '',
-      occupation: j['occupation'] as String? ?? '',
-      weapon: j['weapon'] as String? ?? '',
-      tradeGoods: j['tradeGoods'] as String? ?? '',
-      hp: ((j['hp'] as num?)?.round() ?? 1).clamp(1, 8),
-      stats: {
-        for (final k in kDccStats)
-          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
-      },
-      alive: j['alive'] as bool? ?? true,
-    );
-  }
-}
-
-/// Bespoke Dungeon Crawl Classics sheet. Models the full funnel->hero arc in
-/// one record via [mode]. Authors only game-mechanic facts (stats, classes,
-/// hit dice, dice-chain values); occupation/spells/notes are freeform.
+/// Bespoke Dungeon Crawl Classics sheet. Authors only game-mechanic facts
+/// (stats, classes, hit dice, dice-chain values); occupation/spells/notes
+/// are freeform.
 class DccSheet {
   const DccSheet({
-    this.mode = 'funnel',
-    this.peasants = const [DccPeasant()],
     this.className = 'Warrior',
     this.level = 1,
     this.alignment = 'Neutral',
@@ -2241,8 +2157,6 @@ class DccSheet {
     this.notes = '',
   });
 
-  final String mode; // 'funnel' | 'leveled'
-  final List<DccPeasant> peasants;
   final String className, alignment, occupation, luckySign;
   final int level;
   final Map<String, int> stats; // kDccStats, each 3..18
@@ -2258,7 +2172,6 @@ class DccSheet {
   int mod(String k) => dccAbilityMod(stats[k] ?? 10);
   int burned(String k) => burns[k] ?? 0;
   int effectiveScore(String k) => (stats[k] ?? 10) - burned(k);
-  bool get isFunnel => mode == 'funnel';
   bool get hasDeedDie => kDccDeedDieClasses.contains(className);
   bool get isCaster => kDccCasterClasses.contains(className);
   bool get isCleric => className == 'Cleric';
@@ -2272,25 +2185,7 @@ class DccSheet {
 
   factory DccSheet.premade() => const DccSheet();
 
-  /// Promotes peasant [i] to 1st level with [className]/[alignment], copying
-  /// stats/hp and preserving the peasant roster as history.
-  DccSheet graduate(int i, String className, String alignment) {
-    final p = peasants[i];
-    return copyWith(
-      mode: 'leveled',
-      className: className,
-      alignment: alignment,
-      occupation: p.occupation,
-      stats: {...p.stats},
-      lckMax: p.stats['lck'] ?? 10,
-      currentHp: p.hp,
-      maxHp: p.hp,
-    );
-  }
-
   DccSheet copyWith({
-    String? mode,
-    List<DccPeasant>? peasants,
     String? className,
     int? level,
     String? alignment,
@@ -2316,8 +2211,6 @@ class DccSheet {
     final bn = burns ?? this.burns;
     final cls = className ?? this.className;
     return DccSheet(
-      mode: mode ?? this.mode,
-      peasants: peasants ?? this.peasants,
       className: kDccClassHitDie.containsKey(cls) ? cls : 'Warrior',
       level: (level ?? this.level).clamp(1, 10),
       alignment: kDccAlignments.contains(alignment ?? this.alignment)
@@ -2356,8 +2249,6 @@ class DccSheet {
   }
 
   Map<String, dynamic> toJson() => {
-        'mode': mode,
-        'peasants': peasants.map((p) => p.toJson()).toList(),
         'className': className,
         'level': level,
         'alignment': alignment,
@@ -2384,11 +2275,6 @@ class DccSheet {
     final sv = (j['saves'] as Map?) ?? const {};
     final bn = (j['burns'] as Map?) ?? const {};
     return DccSheet(
-      mode: j['mode'] as String? ?? 'funnel',
-      peasants: ((j['peasants'] as List?) ?? const [])
-          .whereType<Map<dynamic, dynamic>>()
-          .map((m) => DccPeasant.fromJson(m.cast<String, dynamic>()))
-          .toList(),
       className: j['className'] as String? ?? 'Warrior',
       level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 10),
       alignment: j['alignment'] as String? ?? 'Neutral',
@@ -3411,6 +3297,111 @@ const kConditions = <String>[
   'blessed',
 ];
 
+/// One 0-level funnel character. Stats/flavor are keyed by the seed
+/// FunnelProfile (see lib/engine/funnel.dart); both are free-shaped maps so the
+/// funnel is system-agnostic. All descriptive content is user-entered.
+class FunnelPeasant {
+  const FunnelPeasant({
+    this.name = '',
+    this.hp = 0,
+    this.alive = true,
+    this.graduated = false,
+    this.stats = const {},
+    this.flavor = const {},
+  });
+
+  final String name;
+  final int hp;
+  final bool alive;
+  final bool graduated; // already promoted → not graduable again
+  final Map<String, int> stats;
+  final Map<String, String> flavor;
+
+  FunnelPeasant copyWith({
+    String? name,
+    int? hp,
+    bool? alive,
+    bool? graduated,
+    Map<String, int>? stats,
+    Map<String, String>? flavor,
+  }) =>
+      FunnelPeasant(
+        name: name ?? this.name,
+        hp: (hp ?? this.hp).clamp(0, 1 << 20),
+        alive: alive ?? this.alive,
+        graduated: graduated ?? this.graduated,
+        stats: stats ?? this.stats,
+        flavor: flavor ?? this.flavor,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'hp': hp,
+        'alive': alive,
+        'graduated': graduated,
+        'stats': stats,
+        'flavor': flavor,
+      };
+
+  factory FunnelPeasant.fromJson(Map<String, dynamic> j) => FunnelPeasant(
+        name: j['name'] as String? ?? '',
+        hp: ((j['hp'] as num?)?.round() ?? 0).clamp(0, 1 << 20),
+        alive: j['alive'] as bool? ?? true,
+        graduated: j['graduated'] as bool? ?? false,
+        stats: ((j['stats'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, (v as num).round())),
+        flavor: ((j['flavor'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, v as String)),
+      );
+}
+
+/// A standalone 0-level funnel roster entity. `seedSystem` is the sheet system
+/// whose FunnelProfile shaped the peasants' stat/flavor keys (see
+/// lib/engine/funnel.dart). Graduating a survivor spawns a *separate* hero
+/// Character; the funnel persists (the promoted peasant is marked graduated).
+class FunnelSheet {
+  const FunnelSheet({this.seedSystem = '', this.peasants = const []});
+
+  final String seedSystem;
+  final List<FunnelPeasant> peasants;
+
+  factory FunnelSheet.premade(String seedSystem, List<FunnelPeasant> seed) =>
+      FunnelSheet(seedSystem: seedSystem, peasants: seed);
+
+  FunnelSheet copyWith({String? seedSystem, List<FunnelPeasant>? peasants}) =>
+      FunnelSheet(
+        seedSystem: seedSystem ?? this.seedSystem,
+        peasants: peasants ?? this.peasants,
+      );
+
+  /// Returns a copy with peasant [i] flagged graduated.
+  FunnelSheet markGraduated(int i) {
+    final list = [...peasants];
+    list[i] = list[i].copyWith(graduated: true);
+    return copyWith(peasants: list);
+  }
+
+  int get aliveCount => peasants.where((p) => p.alive && !p.graduated).length;
+  int get graduatedCount => peasants.where((p) => p.graduated).length;
+
+  Map<String, dynamic> toJson() => {
+        'seedSystem': seedSystem,
+        'peasants': peasants.map((p) => p.toJson()).toList(),
+      };
+
+  static FunnelSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final m = j.cast<String, dynamic>();
+    return FunnelSheet(
+      seedSystem: m['seedSystem'] as String? ?? '',
+      peasants: ((m['peasants'] as List?) ?? const [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => FunnelPeasant.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+    );
+  }
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
@@ -3434,6 +3425,7 @@ class Character {
     this.ose,
     this.kalArath,
     this.dcc,
+    this.funnel,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -3484,6 +3476,9 @@ class Character {
   /// Bespoke DCC sheet; null unless this is a DCC character.
   final DccSheet? dcc;
 
+  /// Standalone 0-level funnel; null unless this roster entry is a funnel.
+  final FunnelSheet? funnel;
+
   /// Whether this character is starred in the campaign header.
   final bool starred;
 
@@ -3531,7 +3526,7 @@ class Character {
       'kal-arath' => Character(
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
       'dcc' =>
-        Character(id: id, name: 'New DCC peasant', dcc: DccSheet.premade()),
+        Character(id: id, name: 'New DCC character', dcc: DccSheet.premade()),
       _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
     };
   }
@@ -3569,6 +3564,8 @@ class Character {
     bool clearKalArath = false,
     DccSheet? dcc,
     bool clearDcc = false,
+    FunnelSheet? funnel,
+    bool clearFunnel = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -3593,6 +3590,7 @@ class Character {
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
         dcc: clearDcc ? null : (dcc ?? this.dcc),
+        funnel: clearFunnel ? null : (funnel ?? this.funnel),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -3653,7 +3651,7 @@ class Character {
               currentHp:
                   (kalArath!.currentHp + delta).clamp(0, kalArath!.maxHp)));
     }
-    if (dcc != null && dcc!.mode == 'leveled') {
+    if (dcc != null) {
       return copyWith(
           dcc: dcc!.copyWith(
               currentHp: (dcc!.currentHp + delta).clamp(0, dcc!.maxHp)));
@@ -3689,6 +3687,7 @@ class Character {
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
         if (dcc != null) 'dcc': dcc!.toJson(),
+        if (funnel != null) 'funnel': funnel!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -3720,6 +3719,7 @@ class Character {
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
         dcc: DccSheet.maybeFromJson(j['dcc']),
+        funnel: FunnelSheet.maybeFromJson(j['funnel']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
@@ -3809,6 +3809,7 @@ const kKnownSystems = <String>{
   'ose',
   'kal-arath',
   'dcc',
+  'funnel',
   'cards',
 };
 
@@ -3837,6 +3838,7 @@ const kSystemCategory = <String, SystemCategory>{
   'hexcrawl': SystemCategory.exploration,
   'party': SystemCategory.tools,
   'lonelog': SystemCategory.tools,
+  'funnel': SystemCategory.tools,
 };
 
 /// Human display labels for system keys (incl. opt-in systems not in

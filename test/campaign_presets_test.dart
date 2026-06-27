@@ -4,7 +4,7 @@ import 'package:juice_oracle/engine/models.dart';
 
 void main() {
   group('kKnownSystems + kSystemCategory', () {
-    test('kKnownSystems has the 18 ids', () {
+    test('kKnownSystems has the 19 ids', () {
       expect(kKnownSystems, {
         'juice',
         'mythic',
@@ -23,6 +23,7 @@ void main() {
         'ose',
         'kal-arath',
         'dcc',
+        'funnel',
         'cards',
       });
     });
@@ -63,7 +64,7 @@ void main() {
           .toSet();
       expect(of(SystemCategory.oracle), {'juice', 'mythic', 'cards'});
       expect(of(SystemCategory.exploration), {'verdant', 'hexcrawl'});
-      expect(of(SystemCategory.tools), {'party', 'lonelog'});
+      expect(of(SystemCategory.tools), {'party', 'lonelog', 'funnel'});
     });
   });
 
@@ -76,14 +77,21 @@ void main() {
       }
     });
 
-    test('ruleset presets are party mode with juice + party + one ruleset', () {
-      final rulesetPresets =
+    test('solo-* presets are party mode with juice + party', () {
+      final soloPresets =
           kCampaignPresets.where((p) => p.id.startsWith('solo-'));
-      expect(rulesetPresets.length, 11);
-      for (final p in rulesetPresets) {
+      expect(soloPresets.length, 12);
+      for (final p in soloPresets) {
         expect(p.mode, CampaignMode.party, reason: p.id);
         expect(p.systems.contains('juice'), isTrue, reason: p.id);
         expect(p.systems.contains('party'), isTrue, reason: p.id);
+      }
+    });
+
+    test('solo-* presets have exactly one ruleset', () {
+      final soloPresets =
+          kCampaignPresets.where((p) => p.id.startsWith('solo-'));
+      for (final p in soloPresets) {
         final rulesets = p.systems
             .where((s) => kSystemCategory[s] == SystemCategory.ruleset);
         expect(rulesets.length, 1, reason: p.id);

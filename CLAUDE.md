@@ -150,12 +150,11 @@ Working rules for this repo:
   `surfacesFor` row. See `docs/superpowers/plans/2026-06-25-kal-arath-sheet.md`.
 - A facts-only **Dungeon Crawl Classics** sheet (`lib/features/dcc_sheet.dart`,
   rendered when `Character.dcc` is set; opt-in `dcc` system, NOT in `kAllSystems`).
-  Models the full **0-level funnel → graduate-in-place** arc via a `DccSheet.mode`
-  discriminator (`funnel`|`leveled`) over a `DccPeasant` list: the funnel tracks up
-  to `kDccMaxPeasants` (4) peasants (occupation/weapon/trade-goods + 6 stats +
-  kill/revive), and a per-peasant **Graduate** dialog promotes one survivor in place
-  (copies stats/hp, sets `lckMax`, carries occupation, preserves the peasant list as
-  history). Authored constants only (`kDccClasses`/`kDccClassHitDie`/`kDccStats`/
+  `DccSheet` is **leveled-only** (a 1st-level+ hero); the 0-level funnel arc was
+  generalized out of it into the system-agnostic funnel feature (see the funnel
+  bullet below) — a DCC funnel is a `FunnelSheet` seeded `dcc` that graduates into
+  a leveled `DccSheet` via the DCC `FunnelProfile`. "Add DCC" makes a leveled hero
+  directly. Authored constants only (`kDccClasses`/`kDccClassHitDie`/`kDccStats`/
   `kDccSaveKeys`/`kDccDeedDieClasses`/`kDccCasterClasses`/`kDccSpellburnStats`) + the
   DCC-specific `dccAbilityMod` (3–18 capped ±3 — distinct from the 5e `(s-10)/2`
   curve). Leveled interactivity: Fort/Ref/Will **save rolls** (DC-prompt dialog →
@@ -175,7 +174,28 @@ Working rules for this repo:
   registered in `kKnownSystems`/`kSystemCategory` with a `solo-dcc` preset, a
   system-primer line, and a `surfacesFor` row. See
   `docs/superpowers/specs/2026-06-26-dcc-sheet-design.md` and the plan
-  `docs/superpowers/plans/2026-06-26-dcc-sheet.md`.
+  `docs/superpowers/plans/2026-06-26-dcc-sheet.md`. NOTE: that DCC spec/plan
+  describe the original in-sheet funnel (`DccSheet.mode`/`DccPeasant`), which has
+  since been removed — the generalized-funnel spec/plan
+  (`docs/superpowers/specs/2026-06-27-generalized-funnel-design.md`) supersede it.
+- The **0-Level Funnel** is generalized & system-agnostic
+  (`lib/engine/funnel.dart` + `FunnelSheet`/`FunnelPeasant` in `models.dart`,
+  rendered by `lib/features/funnel_sheet.dart` when `Character.funnel` is set;
+  opt-in `funnel` system, `SystemCategory.tools`, NOT in `kAllSystems`). A funnel
+  is a standalone roster entity holding up to `kFunnelMaxPeasants` (6) peasants;
+  graduating a survivor **spawns a new hero Character** (the funnel persists; the
+  peasant is flagged `graduated`) via `CharacterNotifier.graduateFunnelPeasant`.
+  Each sheet system registers a `FunnelProfile` in `kFunnelProfiles` (peasant stat
+  keys + flavor fields + HP rule + a `graduate` closure that builds that system's
+  hero, reusing the sheet's own `copyWith` for clamping; the seed profile shapes
+  peasant creation, the target profile — chosen at graduation, default seed —
+  builds the hero). Stat mapping is by key (same-system 1:1; cross-system
+  best-effort, lossy across score↔modifier); meter systems (ironsworn/starforged)
+  map no HP. This **replaced DCC's bespoke funnel** (DccSheet is now leveled-only).
+  The roster Add → "0-Level Funnel" picks a seed system; the `solo-dcc` preset
+  enables `funnel`, plus a `solo-funnel` preset (seeds DCC) + the `cat-funnel`
+  creation chip. See `docs/superpowers/specs/2026-06-27-generalized-funnel-design.md`
+  and the plan `docs/superpowers/plans/2026-06-27-generalized-funnel.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
