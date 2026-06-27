@@ -4,7 +4,7 @@ import 'package:juice_oracle/engine/models.dart';
 
 void main() {
   group('kKnownSystems + kSystemCategory', () {
-    test('kKnownSystems has the 17 ids', () {
+    test('kKnownSystems has the 18 ids', () {
       expect(kKnownSystems, {
         'juice',
         'mythic',
@@ -23,6 +23,7 @@ void main() {
         'ose',
         'kal-arath',
         'cards',
+        'custom',
       });
     });
 
@@ -35,7 +36,7 @@ void main() {
       expect(kSystemCategory.keys.toSet(), kKnownSystems);
     });
 
-    test('10 ruleset systems', () {
+    test('11 ruleset systems', () {
       final rulesets = kSystemCategory.entries
           .where((e) => e.value == SystemCategory.ruleset)
           .map((e) => e.key)
@@ -51,6 +52,7 @@ void main() {
         'knave',
         'ose',
         'kal-arath',
+        'custom',
       });
     });
 

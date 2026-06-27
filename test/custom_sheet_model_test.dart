@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
+import 'package:juice_oracle/engine/models.dart';
 
 void main() {
   group('customStatMod', () {
@@ -76,6 +77,35 @@ void main() {
       final empty = CustomSheet.maybeFromJson({})!;
       expect(empty.blocks, isEmpty);
       expect(empty.values, isEmpty);
+    });
+  });
+
+  group('Character.custom integration', () {
+    test('round-trips through Character JSON', () {
+      const sheet = CustomSheet(blocks: [
+        CustomBlock(id: 'b1', type: CustomBlockType.freeform, label: 'Notes'),
+      ], values: {
+        'b1': 'hi'
+      });
+      final c = Character(id: 'c1', name: 'Homebrew', custom: sheet);
+      final back = Character.fromJson(c.toJson());
+      expect(back.custom, isNotNull);
+      expect(back.custom!.blocks.single.label, 'Notes');
+      expect(back.custom!.values['b1'], 'hi');
+    });
+    test('forSheet seeds a blank custom sheet', () {
+      final c = Character.forSheet('custom', 'c9');
+      expect(c.custom, isNotNull);
+      expect(c.custom!.blocks, isEmpty);
+    });
+    test('copyWith clearCustom drops the sheet', () {
+      final c = Character(
+          id: 'c1', name: 'X', custom: const CustomSheet(blocks: []));
+      expect(c.copyWith(clearCustom: true).custom, isNull);
+    });
+    test('custom is a known, categorized ruleset system', () {
+      expect(kKnownSystems.contains('custom'), isTrue);
+      expect(kSystemCategory['custom'], SystemCategory.ruleset);
     });
   });
 }
