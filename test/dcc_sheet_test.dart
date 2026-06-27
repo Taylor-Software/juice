@@ -125,6 +125,17 @@ void main() {
       expect(DccSheet.maybeFromJson(null), isNull);
       expect(DccSheet.maybeFromJson('x'), isNull);
     });
+
+    test('maybeFromJson sanitizes corrupted dice tokens', () {
+      // The leveled UI parses dice sides via substring(1) + int.parse, so a
+      // malformed token must default rather than survive (would crash on roll).
+      final j = DccSheet.premade().toJson()
+        ..['actionDie'] = 'foo'
+        ..['deedDie'] = '';
+      final s = DccSheet.maybeFromJson(j)!;
+      expect(s.actionDie, 'd20');
+      expect(s.deedDie, 'd3');
+    });
   });
 
   group('Character DCC wiring', () {

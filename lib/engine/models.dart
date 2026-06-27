@@ -2113,6 +2113,9 @@ const kDccDeedDice = <String>['d3', 'd4', 'd5', 'd6', 'd7'];
 /// runs 3-4 characters per player).
 const int kDccMaxPeasants = 4;
 
+/// A Mighty Deed succeeds on a deed die of 3 or higher.
+const int kDccDeedSuccessMin = 3;
+
 /// DCC ability-modifier table (3-18, capped at +/-3). Distinct from the D&D 5e
 /// `((score-10)/2).floor()` curve. Non-copyrightable game-mechanic fact.
 int dccAbilityMod(int score) {
@@ -2400,13 +2403,18 @@ class DccSheet {
       maxHp: ((j['maxHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
       ac: ((j['ac'] as num?)?.round() ?? 10).clamp(0, 30),
       attackBonus: ((j['attackBonus'] as num?)?.round() ?? 0).clamp(-5, 20),
-      actionDie: j['actionDie'] as String? ?? 'd20',
+      // Validate the dice tokens: the widget parses sides via substring(1),
+      // so a corrupted/hand-edited value must not survive to int.parse.
+      actionDie: kDccActionDice.contains(j['actionDie'])
+          ? j['actionDie'] as String
+          : 'd20',
       initNote: j['initNote'] as String? ?? '',
       saves: {
         for (final k in kDccSaveKeys)
           k: ((sv[k] ?? 0) as num).round().clamp(-5, 20),
       },
-      deedDie: j['deedDie'] as String? ?? 'd3',
+      deedDie:
+          kDccDeedDice.contains(j['deedDie']) ? j['deedDie'] as String : 'd3',
       burns: {
         for (final k in const ['str', 'agi', 'sta', 'per'])
           k: ((bn[k] ?? 0) as num).round().clamp(0, 18),

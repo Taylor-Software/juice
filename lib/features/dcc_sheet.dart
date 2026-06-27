@@ -411,7 +411,7 @@ class DccSheetView extends ConsumerWidget {
             final atk = Random().nextInt(20) + 1 + s.attackBonus;
             final deedSides = int.parse(s.deedDie.substring(1));
             final deed = Random().nextInt(deedSides) + 1;
-            final ok = deed >= 3;
+            final ok = deed >= kDccDeedSuccessMin;
             _snack(context,
                 'Attack: $atk, Deed: $deed — ${ok ? "Deed succeeds!" : "no deed"}');
           },
@@ -422,7 +422,7 @@ class DccSheetView extends ConsumerWidget {
   }
 
   Widget _spellburnSection(BuildContext context, WidgetRef ref, DccSheet s) {
-    final castStat = s.castingStat!;
+    final castStat = s.castingStat ?? 'int';
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       sheetSection(context, 'Spellburn'),
       Wrap(spacing: 8, runSpacing: 4, children: [
