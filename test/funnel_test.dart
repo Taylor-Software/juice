@@ -285,19 +285,48 @@ void main() {
       expect(h.cairn!.maxHp, 5);
       expect(h.cairn!.background, kCairnBackgrounds.first);
     });
-    test('ironsworn maps individual stats, ignores hp (no pool)', () {
+    test('ironsworn maps individual stats via variant choice, ignores hp (no pool)', () {
       const peasant = FunnelPeasant(hp: 4,
           stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
-      final h = funnelProfileFor('ironsworn')!.graduate('h', peasant, const {}, '');
+      final h = funnelProfileFor('ironsworn')!
+          .graduate('h', peasant, {'variant': 'ironsworn'}, '');
       expect(h.ironsworn!.edge, 2);
       expect(h.ironsworn!.iron, 3);
-      expect(funnelProfileFor('ironsworn')!.graduateChoices, isEmpty);
     });
-    test('starforged maps individual stats', () {
-      const peasant = FunnelPeasant(hp: 4,
-          stats: {'edge': 1, 'heart': 2, 'iron': 1, 'shadow': 3, 'wits': 2});
-      final h = funnelProfileFor('starforged')!.graduate('h', peasant, const {}, '');
-      expect(h.starforged!.shadow, 3);
+  });
+
+  group('ironsworn family graduation', () {
+    const peasant = FunnelPeasant(hp: 3,
+        stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
+    test('ironsworn profile offers a variant choice', () {
+      final p = funnelProfileFor('ironsworn')!;
+      final variant = p.graduateChoices.firstWhere((c) => c.key == 'variant');
+      expect(variant.options, ['ironsworn', 'starforged', 'sundered_isles']);
+    });
+    test('graduate builds classic Ironsworn for variant ironsworn', () {
+      final h = funnelProfileFor('ironsworn')!
+          .graduate('h', peasant, {'variant': 'ironsworn'}, '');
+      expect(h.ironsworn, isNotNull);
+      expect(h.starforged, isNull);
+      expect(h.ironsworn!.iron, 3);
+    });
+    test('graduate builds Starforged for variant starforged', () {
+      final h = funnelProfileFor('ironsworn')!
+          .graduate('h', peasant, {'variant': 'starforged'}, '');
+      expect(h.starforged, isNotNull);
+      expect(h.ironsworn, isNull);
+      expect(h.starforged!.isSundered, false);
+      expect(h.starforged!.shadow, 1);
+    });
+    test('graduate builds Sundered Isles for variant sundered_isles', () {
+      final h = funnelProfileFor('ironsworn')!
+          .graduate('h', peasant, {'variant': 'sundered_isles'}, '');
+      expect(h.starforged, isNotNull);
+      expect(h.starforged!.isSundered, true);
+    });
+    test('no standalone starforged/sundered_isles profile', () {
+      expect(kFunnelProfiles.containsKey('starforged'), false);
+      expect(kFunnelProfiles.containsKey('sundered_isles'), false);
     });
   });
 

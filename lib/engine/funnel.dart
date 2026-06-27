@@ -396,32 +396,24 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     statMin: 1, statMax: 3, statDefault: 1,
     flavorFields: const [],
     hpMin: 0, hpMax: 5,
-    graduateChoices: const [],
-    graduate: (id, p, picks, seedVariant) {
-      final base = Character.forSheet('ironsworn', id);
-      return base.copyWith(
-        name: _heroName(p, base),
-        ironsworn: base.ironsworn!.copyWith(
-          edge: p.stats['edge'], heart: p.stats['heart'],
-          iron: p.stats['iron'], shadow: p.stats['shadow'],
-          wits: p.stats['wits'],
-        ),
-      );
-    },
-  ),
-  'starforged': FunnelProfile(
-    system: 'starforged',
-    statKeys: const [
-      (key: 'edge', label: 'Edge'), (key: 'heart', label: 'Heart'),
-      (key: 'iron', label: 'Iron'), (key: 'shadow', label: 'Shadow'),
-      (key: 'wits', label: 'Wits'),
+    graduateChoices: const [
+      FunnelChoice('variant', 'Ruleset',
+          ['ironsworn', 'starforged', 'sundered_isles']),
     ],
-    statMin: 1, statMax: 3, statDefault: 1,
-    flavorFields: const [],
-    hpMin: 0, hpMax: 5,
-    graduateChoices: const [],
     graduate: (id, p, picks, seedVariant) {
-      final base = Character.forSheet('starforged', id);
+      final variant = picks['variant'] ?? 'ironsworn';
+      final base = Character.forSheet(variant, id);
+      if (variant == 'ironsworn') {
+        return base.copyWith(
+          name: _heroName(p, base),
+          ironsworn: base.ironsworn!.copyWith(
+            edge: p.stats['edge'], heart: p.stats['heart'],
+            iron: p.stats['iron'], shadow: p.stats['shadow'],
+            wits: p.stats['wits'],
+          ),
+        );
+      }
+      // starforged or sundered_isles → StarforgedSheet (forSheet sets assetRuleset)
       return base.copyWith(
         name: _heroName(p, base),
         starforged: base.starforged!.copyWith(
