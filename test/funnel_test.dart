@@ -56,7 +56,7 @@ void main() {
       expect(s.peasants.first.hp, 1);
     });
     test('markGraduated flips one peasant', () {
-      final s = FunnelSheet(seedSystem: 'dcc', peasants: const [
+      const s = FunnelSheet(seedSystem: 'dcc', peasants: [
         FunnelPeasant(name: 'A'),
         FunnelPeasant(name: 'B'),
       ]);
@@ -65,7 +65,7 @@ void main() {
       expect(s2.peasants[1].graduated, true);
     });
     test('round-trips through json', () {
-      final s = FunnelSheet(seedSystem: 'ose', peasants: const [
+      const s = FunnelSheet(seedSystem: 'ose', peasants: [
         FunnelPeasant(name: 'A', hp: 4, stats: {'str': 12}),
       ]);
       final back = FunnelSheet.maybeFromJson(s.toJson())!;
@@ -130,10 +130,10 @@ void main() {
 
   group('Character funnel wiring', () {
     test('round-trips a funnel character through json', () {
-      final c = Character(
+      const c = Character(
         id: 'f1',
         name: 'Funnel',
-        funnel: FunnelSheet(seedSystem: 'dcc', peasants: const [
+        funnel: FunnelSheet(seedSystem: 'dcc', peasants: [
           FunnelPeasant(name: 'A', hp: 3, stats: {'str': 12}),
         ]),
       );
@@ -143,13 +143,13 @@ void main() {
       expect(back.funnel!.peasants.single.name, 'A');
     });
     test('clearFunnel drops the sheet', () {
-      final c = Character(
-          id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
+      const c = Character(
+          id: 'f1', name: 'F', funnel: FunnelSheet(seedSystem: 'dcc'));
       expect(c.copyWith(clearFunnel: true).funnel, isNull);
     });
     test('withHpDelta leaves a funnel character unchanged', () {
-      final c = Character(
-          id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
+      const c = Character(
+          id: 'f1', name: 'F', funnel: FunnelSheet(seedSystem: 'dcc'));
       expect(identical(c.withHpDelta(-5), c), true);
     });
   });

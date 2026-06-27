@@ -43,7 +43,7 @@ void main() {
     });
 
     test('round-trips through json', () {
-      final sheet = const DccSheet(
+      const sheet = DccSheet(
         className: 'Wizard',
         level: 2,
         alignment: 'Chaotic',
@@ -102,7 +102,7 @@ void main() {
     });
 
     test('withHpDelta adjusts DCC hp clamped to maxHp', () {
-      final sheet = const DccSheet(
+      const sheet = DccSheet(
         className: 'Warrior',
         stats: {'str': 16, 'agi': 12, 'sta': 13, 'per': 9, 'int': 8, 'lck': 11},
         lckMax: 11,

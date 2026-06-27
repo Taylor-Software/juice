@@ -47,7 +47,7 @@ Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet) async {
   return container;
 }
 
-FunnelSheet _dccFunnel() => FunnelSheet(seedSystem: 'dcc', peasants: const [
+FunnelSheet _dccFunnel() => const FunnelSheet(seedSystem: 'dcc', peasants: [
       FunnelPeasant(
           name: '', hp: 1,
           stats: {'str': 10, 'agi': 10, 'sta': 10, 'per': 10, 'int': 10, 'lck': 10},
