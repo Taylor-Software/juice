@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/campaign_presets.dart';
-import 'package:juice_oracle/engine/custom_templates.dart';
 import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
