@@ -261,7 +261,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final raw = _valList(b.id);
     final bonuses = [
       for (var i = 0; i < rows.length; i++)
-        (i < raw.length ? (raw[i] as num).toInt() : 0)
+        (i < raw.length ? (raw[i] as num?)?.toInt() ?? 0 : 0)
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       sheetSection(context, b.label),
@@ -284,7 +284,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
       CustomBlock b, RollConfig cfg, String label, int bonus) async {
     int? promptTarget;
     if (cfg.targetKind == RollTargetKind.prompt) {
-      promptTarget = await _promptInt(context, 'Target / DC');
+      promptTarget = await _promptInt('Target / DC');
       if (promptTarget == null) return;
     }
     final rng = Random();
@@ -299,7 +299,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     ));
   }
 
-  Future<int?> _promptInt(BuildContext context, String label) async {
+  Future<int?> _promptInt(String label) async {
     final ctrl = TextEditingController();
     try {
       return await showDialog<int>(
