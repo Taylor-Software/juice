@@ -137,3 +137,150 @@ class CustomSheet {
     );
   }
 }
+
+// ---------------------------------------------------------------------------
+// Roll model. A roll block holds rows (label + own bonus value) and one
+// shared RollConfig. resolveRoll is pure: the widget rolls dice and passes
+// them in, so outcomes are deterministic in tests.
+// ---------------------------------------------------------------------------
+
+enum RollDirection { high, low }
+
+enum RollTargetKind { fixed, prompt, rowValue }
+
+enum RollCrit { none, matchingDice, natural }
+
+/// One degree-of-success band. For [RollDirection.high] [threshold] is a
+/// minimum total (integer-valued). For [RollDirection.low] it is a fraction of
+/// the target (e.g. 0.5 = "great on half", 1.0 = "success at target").
+class RollBand {
+  const RollBand({required this.threshold, required this.label});
+  final double threshold;
+  final String label;
+  Map<String, dynamic> toJson() => {'t': threshold, 'l': label};
+  static RollBand? fromJson(dynamic j) {
+    if (j is! Map) return null;
+    return RollBand(
+        threshold: (j['t'] as num?)?.toDouble() ?? 0,
+        label: (j['l'] as String?) ?? '');
+  }
+}
+
+class RollConfig {
+  const RollConfig({
+    this.diceCount = 1,
+    this.diceSides = 20,
+    this.addBonus = true,
+    this.direction = RollDirection.high,
+    this.targetKind = RollTargetKind.prompt,
+    this.fixedTarget = 10,
+    this.bands = const [],
+    this.crit = RollCrit.none,
+  });
+
+  final int diceCount, diceSides, fixedTarget;
+  final bool addBonus;
+  final RollDirection direction;
+  final RollTargetKind targetKind;
+  final List<RollBand> bands;
+  final RollCrit crit;
+
+  Map<String, dynamic> toJson() => {
+        'dc': diceCount,
+        'ds': diceSides,
+        'ab': addBonus,
+        'dir': direction.name,
+        'tk': targetKind.name,
+        'ft': fixedTarget,
+        if (bands.isNotEmpty) 'bands': bands.map((b) => b.toJson()).toList(),
+        'crit': crit.name,
+      };
+
+  factory RollConfig.fromJson(dynamic j) {
+    if (j is! Map) return const RollConfig();
+    return RollConfig(
+      diceCount: (j['dc'] as num?)?.toInt() ?? 1,
+      diceSides: (j['ds'] as num?)?.toInt() ?? 20,
+      addBonus: j['ab'] != false,
+      direction: RollDirection.values
+          .firstWhere((d) => d.name == j['dir'], orElse: () => RollDirection.high),
+      targetKind: RollTargetKind.values.firstWhere((t) => t.name == j['tk'],
+          orElse: () => RollTargetKind.prompt),
+      fixedTarget: (j['ft'] as num?)?.toInt() ?? 10,
+      bands: ((j['bands'] as List?) ?? const [])
+          .map(RollBand.fromJson)
+          .whereType<RollBand>()
+          .toList(),
+      crit: RollCrit.values
+          .firstWhere((c) => c.name == j['crit'], orElse: () => RollCrit.none),
+    );
+  }
+}
+
+class RollOutcome {
+  const RollOutcome(this.total, this.label);
+  final int total;
+  final String label;
+}
+
+/// Resolves a roll. [rowValue] is the row's own bonus/target number, [dice]
+/// the already-rolled face values, [promptTarget] the entered DC when
+/// [RollTargetKind.prompt].
+RollOutcome resolveRoll(RollConfig cfg, int rowValue, List<int> dice,
+    {int? promptTarget}) {
+  final sum = dice.fold<int>(0, (a, b) => a + b);
+
+  // Natural / matching-dice crits override everything.
+  if (cfg.crit == RollCrit.matchingDice &&
+      dice.length > 1 &&
+      dice.toSet().length == 1) {
+    if (dice.first == cfg.diceSides) {
+      return RollOutcome(sum + (cfg.addBonus ? rowValue : 0), 'Critical Success');
+    }
+    if (dice.first == 1) {
+      return RollOutcome(sum + (cfg.addBonus ? rowValue : 0), 'Critical Failure');
+    }
+  }
+  if (cfg.crit == RollCrit.natural && dice.length == 1) {
+    if (dice.first == cfg.diceSides) {
+      return RollOutcome(sum + (cfg.addBonus ? rowValue : 0), 'Critical Success');
+    }
+    if (dice.first == 1) {
+      return RollOutcome(sum + (cfg.addBonus ? rowValue : 0), 'Critical Failure');
+    }
+  }
+
+  int target() => switch (cfg.targetKind) {
+        RollTargetKind.fixed => cfg.fixedTarget,
+        RollTargetKind.prompt => promptTarget ?? cfg.fixedTarget,
+        RollTargetKind.rowValue => rowValue,
+      };
+
+  if (cfg.direction == RollDirection.low) {
+    final raw = sum; // roll-under compares the raw dice
+    final tgt = target();
+    if (cfg.bands.isNotEmpty) {
+      final sorted = [...cfg.bands]
+        ..sort((a, b) => a.threshold.compareTo(b.threshold)); // low -> high
+      for (final band in sorted) {
+        if (raw <= (band.threshold * tgt).floor()) {
+          return RollOutcome(raw, band.label);
+        }
+      }
+      return RollOutcome(raw, 'Fail');
+    }
+    return RollOutcome(raw, raw <= tgt ? 'Pass' : 'Fail');
+  }
+
+  final total = sum + (cfg.addBonus ? rowValue : 0);
+  if (cfg.bands.isNotEmpty) {
+    final sorted = [...cfg.bands]
+      ..sort((a, b) => b.threshold.compareTo(a.threshold)); // high -> low
+    for (final band in sorted) {
+      if (total >= band.threshold) return RollOutcome(total, band.label);
+    }
+    return RollOutcome(total, sorted.last.label);
+  }
+  final tgt = target();
+  return RollOutcome(total, total >= tgt ? 'Pass' : 'Fail');
+}

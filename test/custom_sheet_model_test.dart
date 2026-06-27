@@ -114,4 +114,104 @@ void main() {
     expect(kSystemBlurbs['custom'], isNotNull);
     expect(kSystemBlurbs['custom']!.toLowerCase(), contains('custom'));
   });
+
+  group('resolveRoll', () {
+    // dice are passed explicitly so the tests are deterministic.
+    test('Cairn-style roll-under own value: pass/fail', () {
+      const cfg = RollConfig(
+          direction: RollDirection.low,
+          addBonus: false,
+          targetKind: RollTargetKind.rowValue);
+      expect(resolveRoll(cfg, 14, [10]).label, 'Pass');
+      expect(resolveRoll(cfg, 14, [18]).label, 'Fail');
+    });
+    test('Argosa-style low with great-on-half ladder', () {
+      const cfg = RollConfig(
+        direction: RollDirection.low,
+        addBonus: false,
+        targetKind: RollTargetKind.rowValue,
+        bands: [
+          RollBand(threshold: 0.5, label: 'Great Success'),
+          RollBand(threshold: 1.0, label: 'Success'),
+        ],
+      );
+      expect(resolveRoll(cfg, 16, [4]).label, 'Great Success'); // 4 <= 8
+      expect(resolveRoll(cfg, 16, [12]).label, 'Success'); // 12 <= 16
+      expect(resolveRoll(cfg, 16, [18]).label, 'Fail');
+    });
+    test('D&D/DCC high + bonus vs prompted DC', () {
+      const cfg = RollConfig(
+          direction: RollDirection.high,
+          addBonus: true,
+          targetKind: RollTargetKind.prompt);
+      expect(resolveRoll(cfg, 3, [11], promptTarget: 11).total, 14);
+      expect(resolveRoll(cfg, 3, [11], promptTarget: 11).label, 'Pass');
+      expect(resolveRoll(cfg, 3, [5], promptTarget: 11).label, 'Fail');
+    });
+    test('Knave high + bonus vs fixed target', () {
+      const cfg = RollConfig(
+          direction: RollDirection.high,
+          addBonus: true,
+          targetKind: RollTargetKind.fixed,
+          fixedTarget: 11);
+      expect(resolveRoll(cfg, 4, [7]).label, 'Pass'); // 7+4=11 >= 11
+      expect(resolveRoll(cfg, 4, [6]).label, 'Fail');
+    });
+    test('PbtA 2d6 ladder', () {
+      const cfg = RollConfig(
+        diceCount: 2,
+        diceSides: 6,
+        direction: RollDirection.high,
+        addBonus: true,
+        bands: [
+          RollBand(threshold: 10, label: 'Strong hit'),
+          RollBand(threshold: 7, label: 'Weak hit'),
+          RollBand(threshold: 0, label: 'Miss'),
+        ],
+      );
+      expect(resolveRoll(cfg, 2, [5, 4]).label, 'Strong hit'); // 11
+      expect(resolveRoll(cfg, 1, [4, 3]).label, 'Weak hit'); // 8
+      expect(resolveRoll(cfg, 0, [1, 2]).label, 'Miss'); // 3
+    });
+    test('Kal-Arath crit on matching dice', () {
+      const cfg = RollConfig(
+          diceCount: 2,
+          diceSides: 6,
+          direction: RollDirection.high,
+          addBonus: true,
+          targetKind: RollTargetKind.fixed,
+          fixedTarget: 8,
+          crit: RollCrit.matchingDice);
+      expect(resolveRoll(cfg, 0, [6, 6]).label, 'Critical Success');
+      expect(resolveRoll(cfg, 0, [1, 1]).label, 'Critical Failure');
+      expect(resolveRoll(cfg, 2, [4, 2]).label, 'Pass'); // 6+2=8 >= 8
+    });
+    test('Draw Steel 2d10 tiers', () {
+      const cfg = RollConfig(
+        diceCount: 2,
+        diceSides: 10,
+        direction: RollDirection.high,
+        addBonus: true,
+        bands: [
+          RollBand(threshold: 17, label: 'Tier 3'),
+          RollBand(threshold: 12, label: 'Tier 2'),
+          RollBand(threshold: 0, label: 'Tier 1'),
+        ],
+      );
+      expect(resolveRoll(cfg, 2, [9, 8]).label, 'Tier 3'); // 19
+      expect(resolveRoll(cfg, 1, [7, 5]).label, 'Tier 2'); // 13
+      expect(resolveRoll(cfg, 0, [2, 3]).label, 'Tier 1'); // 5
+    });
+    test('RollConfig JSON round-trips', () {
+      const cfg = RollConfig(
+          diceCount: 2,
+          diceSides: 6,
+          bands: [RollBand(threshold: 10, label: 'Hit')],
+          crit: RollCrit.matchingDice);
+      final back = RollConfig.fromJson(cfg.toJson());
+      expect(back.diceSides, 6);
+      expect(back.bands.single.label, 'Hit');
+      expect(back.crit, RollCrit.matchingDice);
+    });
+  });
 }
