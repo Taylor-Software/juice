@@ -107,6 +107,56 @@ void main() {
           id: 'c1', name: 'X', custom: CustomSheet(blocks: []));
       expect(c.copyWith(clearCustom: true).custom, isNull);
     });
+    // TEST C — multi-block round-trip through Character JSON
+    test('Character round-trips a multi-block custom sheet', () {
+      const sheet = CustomSheet(blocks: [
+        CustomBlock(
+            id: 'b1',
+            type: CustomBlockType.stat,
+            label: 'Stats',
+            config: {
+              'stats': [
+                {'key': 'str', 'label': 'STR'}
+              ],
+              'min': 3,
+              'max': 18,
+              'modFormula': 'fived',
+            }),
+        CustomBlock(
+            id: 'b2',
+            type: CustomBlockType.hp,
+            label: 'HP',
+            config: {'allowTemp': true}),
+        CustomBlock(
+            id: 'b3',
+            type: CustomBlockType.roll,
+            label: 'Saves',
+            config: {
+              'rows': ['Fort'],
+              'roll': {
+                'dc': 1,
+                'ds': 20,
+                'ab': true,
+                'dir': 'high',
+                'tk': 'prompt',
+                'crit': 'none'
+              },
+            }),
+        CustomBlock(id: 'b4', type: CustomBlockType.freeform, label: 'Notes'),
+      ], values: {
+        'b1': {'str': 14},
+        'b2': {'cur': 7, 'max': 10, 'temp': 2},
+        'b3': [3],
+        'b4': 'hi',
+      });
+      final back = Character.fromJson(
+          const Character(id: 'c1', name: 'X', custom: sheet).toJson());
+      expect(back.custom!.blocks.map((b) => b.type),
+          sheet.blocks.map((b) => b.type));
+      expect((back.custom!.values['b2'] as Map)['temp'], 2);
+      expect(back.custom!.values['b4'], 'hi');
+      expect((back.custom!.values['b1'] as Map)['str'], 14);
+    });
     test('custom is a known, categorized ruleset system', () {
       expect(kKnownSystems.contains('custom'), isTrue);
       expect(kSystemCategory['custom'], SystemCategory.ruleset);
@@ -215,6 +265,35 @@ void main() {
       expect(back.diceSides, 6);
       expect(back.bands.single.label, 'Hit');
       expect(back.crit, RollCrit.matchingDice);
+    });
+    // TEST A — FIX 2 coverage
+    test('high bands below all thresholds returns Fail (no catch-all)', () {
+      const cfg = RollConfig(
+        diceCount: 2,
+        diceSides: 10,
+        direction: RollDirection.high,
+        addBonus: true,
+        bands: [
+          RollBand(threshold: 17, label: 'Tier 3'),
+          RollBand(threshold: 12, label: 'Tier 2'),
+        ],
+      );
+      expect(resolveRoll(cfg, 0, [2, 3]).label, 'Fail'); // 5, below both
+    });
+    // TEST B — RollCrit.natural coverage
+    test('natural crit on single die max/min', () {
+      const cfg = RollConfig(
+        diceCount: 1,
+        diceSides: 20,
+        direction: RollDirection.high,
+        addBonus: true,
+        targetKind: RollTargetKind.fixed,
+        fixedTarget: 10,
+        crit: RollCrit.natural,
+      );
+      expect(resolveRoll(cfg, 3, [20]).label, 'Critical Success');
+      expect(resolveRoll(cfg, 3, [1]).label, 'Critical Failure');
+      expect(resolveRoll(cfg, 3, [8]).label, 'Pass'); // 8+3=11 >= 10, no crit
     });
   });
 

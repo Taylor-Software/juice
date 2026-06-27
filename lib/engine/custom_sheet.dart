@@ -279,7 +279,7 @@ RollOutcome resolveRoll(RollConfig cfg, int rowValue, List<int> dice,
     for (final band in sorted) {
       if (total >= band.threshold) return RollOutcome(total, band.label);
     }
-    return RollOutcome(total, sorted.last.label);
+    return RollOutcome(total, 'Fail');
   }
   final tgt = target();
   return RollOutcome(total, total >= tgt ? 'Pass' : 'Fail');

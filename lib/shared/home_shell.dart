@@ -748,6 +748,7 @@ const kPresetIcons = <String, IconData>{
   'solo-knave': Icons.content_cut,
   'solo-ose': Icons.auto_stories,
   'solo-kal-arath': Icons.whatshot,
+  'solo-custom': Icons.dashboard_customize,
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };

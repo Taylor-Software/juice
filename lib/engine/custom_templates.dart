@@ -54,21 +54,21 @@ const kCustomTemplates = <CustomTemplate>[
     CustomBlock(id: 'o-cond', type: CustomBlockType.conditions, label: 'Conditions'),
     CustomBlock(id: 'o-notes', type: CustomBlockType.freeform, label: 'Notes', config: {'multiline': true}),
   ]),
-  CustomTemplate(id: 'pbta', label: '2d6 PbtA', blocks: [
+  CustomTemplate(id: 'pbta', label: '2d6 Moves', blocks: [
     CustomBlock(id: 'p-stat', type: CustomBlockType.stat, label: 'Stats', config: {
       'stats': [
-        {'key': 'cool', 'label': 'COOL'},
-        {'key': 'hard', 'label': 'HARD'},
-        {'key': 'hot', 'label': 'HOT'},
-        {'key': 'sharp', 'label': 'SHARP'},
-        {'key': 'weird', 'label': 'WEIRD'},
+        {'key': 'stat1', 'label': 'Stat 1'},
+        {'key': 'stat2', 'label': 'Stat 2'},
+        {'key': 'stat3', 'label': 'Stat 3'},
+        {'key': 'stat4', 'label': 'Stat 4'},
+        {'key': 'stat5', 'label': 'Stat 5'},
       ],
       'min': -1,
       'max': 3,
       'modFormula': 'scoreIsMod',
     }),
     CustomBlock(id: 'p-moves', type: CustomBlockType.roll, label: 'Moves', config: {
-      'rows': ['Act under fire', 'Go aggro'],
+      'rows': ['Move 1', 'Move 2'],
       'roll': {
         'dc': 2,
         'ds': 6,
@@ -77,9 +77,9 @@ const kCustomTemplates = <CustomTemplate>[
         'tk': 'fixed',
         'ft': 0,
         'bands': [
-          {'t': 10, 'l': 'Strong hit'},
-          {'t': 7, 'l': 'Weak hit'},
-          {'t': 0, 'l': 'Miss'},
+          {'t': 10, 'l': 'Success'},
+          {'t': 7, 'l': 'Partial'},
+          {'t': 0, 'l': 'Failure'},
         ],
         'crit': 'none',
       },

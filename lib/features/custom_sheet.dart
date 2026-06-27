@@ -314,34 +314,11 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     ));
   }
 
-  Future<int?> _promptInt(String label) async {
-    final ctrl = TextEditingController();
-    try {
-      return await showDialog<int>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(label),
-          content: TextField(
-            key: const Key('custom-roll-target'),
-            controller: ctrl,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: label),
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel')),
-            FilledButton(
-                onPressed: () =>
-                    Navigator.pop(context, int.tryParse(ctrl.text) ?? 0),
-                child: const Text('Roll')),
-          ],
-        ),
-      );
-    } finally {
-      ctrl.dispose();
-    }
+  Future<int?> _promptInt(String label) {
+    return showDialog<int>(
+      context: context,
+      builder: (dialogContext) => _IntPromptDialog(label: label),
+    );
   }
 
   Future<void> _configRoll(CustomBlock b) async {
@@ -378,8 +355,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
       sheetSection(context, b.label),
       Wrap(spacing: 8, runSpacing: 8, children: [
         for (final st in stats)
-          () {
-            final key = st['key'] as String;
+          if (st['key'] is String)
+            () {
+              final key = st['key'] as String;
             final label = (st['label'] as String?) ?? key.toUpperCase();
             final score = (cur[key] as num?)?.toInt() ?? ((min + max) ~/ 2);
             final modText = formula == StatModFormula.raw
@@ -1791,6 +1769,48 @@ class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
                     ),
                   ),
               child: const Text('Save')),
+        ],
+      );
+}
+
+/// Simple dialog that prompts for an integer. Uses a [StatefulWidget] so
+/// [TextEditingController] is disposed by the widget lifecycle, not by the
+/// caller — avoids a "used after disposed" assertion when the dialog
+/// close-animation is still running.
+class _IntPromptDialog extends StatefulWidget {
+  const _IntPromptDialog({required this.label});
+  final String label;
+
+  @override
+  State<_IntPromptDialog> createState() => _IntPromptDialogState();
+}
+
+class _IntPromptDialogState extends State<_IntPromptDialog> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.label),
+        content: TextField(
+          key: const Key('custom-roll-target'),
+          controller: _ctrl,
+          keyboardType: TextInputType.number,
+          decoration: InputDecoration(labelText: widget.label),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () =>
+                  Navigator.pop(context, int.tryParse(_ctrl.text) ?? 0),
+              child: const Text('Roll')),
         ],
       );
 }

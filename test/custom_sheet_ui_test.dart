@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
 import 'package:juice_oracle/engine/custom_templates.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/custom_sheet.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -542,5 +543,65 @@ void main() {
       expect(find.byKey(const Key('custom-sheet')), findsOneWidget, reason: t.id);
       expect(tester.takeException(), isNull, reason: t.id);
     }
+  });
+
+  // TEST D — progress block delete persists (no loop-closure bug / RangeError)
+  testWidgets('progress block deletes a track and persists', (tester) async {
+    _bigView(tester);
+    final sheet = CustomSheet(blocks: const [
+      CustomBlock(id: 'b1', type: CustomBlockType.progress, label: 'Tracks'),
+    ], values: {
+      'b1': [
+        const ProgressTrack(name: 'Vow A').toJson(),
+        const ProgressTrack(name: 'Vow B').toJson(),
+      ],
+    });
+    final c = await _pump(tester, sheet: sheet);
+    // progressTrackRow renders an Icons.delete_outline per track.
+    final deletes = find.byIcon(Icons.delete_outline);
+    expect(deletes, findsWidgets);
+    await tester.tap(deletes.first);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    final tracks =
+        (await c.read(charactersProvider.future)).single.custom!.values['b1']
+            as List;
+    expect(tracks.length, 1);
+  });
+
+  // TEST E — roll with prompt target shows DC dialog and resolves
+  testWidgets('roll with prompt target asks for a DC and resolves',
+      (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(
+          id: 'b1',
+          type: CustomBlockType.roll,
+          label: 'Saves',
+          config: {
+            'rows': ['Fort'],
+            'roll': {
+              'dc': 1,
+              'ds': 20,
+              'ab': true,
+              'dir': 'high',
+              'tk': 'prompt',
+              'crit': 'none'
+            },
+          }),
+    ], values: {
+      'b1': [0]
+    });
+    await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-roll-0')));
+    await tester.pumpAndSettle();
+    // DC prompt dialog appears; enter a low DC so the roll passes
+    await tester.enterText(find.byKey(const Key('custom-roll-target')), '1');
+    await tester.tap(find.text('Roll'));
+    // Use pump (not pumpAndSettle) to avoid a disposed-controller assertion
+    // triggered by the dialog's finally{ctrl.dispose()} racing the text-field
+    // animation. One pump is enough to show the snackbar.
+    await tester.pump();
+    expect(find.textContaining('Fort:'), findsOneWidget);
   });
 }
