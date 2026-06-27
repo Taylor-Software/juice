@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -40,6 +42,11 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   Map<String, dynamic> _valMap(String id) {
     final v = _s.values[id];
     return v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
+  }
+
+  List<dynamic> _valList(String id) {
+    final v = _s.values[id];
+    return v is List ? v : const [];
   }
 
   void _setVal(String id, dynamic value) =>
@@ -178,6 +185,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.counter => _playCounter(b),
         CustomBlockType.stat => _playStat(b),
         CustomBlockType.conditions => _playConditions(b),
+        CustomBlockType.roll => _playRoll(b),
         _ => const SizedBox.shrink(),
       };
 
@@ -187,6 +195,8 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         await _configCounter(b);
       case CustomBlockType.stat:
         await _configStat(b);
+      case CustomBlockType.roll:
+        await _configRoll(b);
       default:
         await _renameBlock(b);
     }
@@ -237,6 +247,103 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                       'min': result.min,
                       'max': result.max,
                       'step': result.step,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- roll ------------------------------------------------------------------
+
+  Widget _playRoll(CustomBlock b) {
+    final rows =
+        ((b.config['rows'] as List?) ?? const []).whereType<String>().toList();
+    final cfg = RollConfig.fromJson(b.config['roll']);
+    final raw = _valList(b.id);
+    final bonuses = [
+      for (var i = 0; i < rows.length; i++)
+        (i < raw.length ? (raw[i] as num).toInt() : 0)
+    ];
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      sheetSection(context, b.label),
+      for (var i = 0; i < rows.length; i++)
+        rollTrackRow(
+          prefix: 'custom-${b.id}',
+          index: i,
+          label: rows[i],
+          bonus: bonuses[i],
+          onBonus: (v) {
+            final next = [...bonuses]..[i] = v;
+            _setVal(b.id, next);
+          },
+          onRoll: () => _doRoll(b, cfg, rows[i], bonuses[i]),
+        ),
+    ]);
+  }
+
+  Future<void> _doRoll(
+      CustomBlock b, RollConfig cfg, String label, int bonus) async {
+    int? promptTarget;
+    if (cfg.targetKind == RollTargetKind.prompt) {
+      promptTarget = await _promptInt(context, 'Target / DC');
+      if (promptTarget == null) return;
+    }
+    final rng = Random();
+    final dice = [
+      for (var i = 0; i < cfg.diceCount; i++) rng.nextInt(cfg.diceSides) + 1
+    ];
+    final out = resolveRoll(cfg, bonus, dice, promptTarget: promptTarget);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('$label: ${out.total} — ${out.label}'),
+      duration: const Duration(seconds: 3),
+    ));
+  }
+
+  Future<int?> _promptInt(BuildContext context, String label) async {
+    final ctrl = TextEditingController();
+    try {
+      return await showDialog<int>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(label),
+          content: TextField(
+            key: const Key('custom-roll-target'),
+            controller: ctrl,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: label),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            FilledButton(
+                onPressed: () =>
+                    Navigator.pop(context, int.tryParse(ctrl.text) ?? 0),
+                child: const Text('Roll')),
+          ],
+        ),
+      );
+    } finally {
+      ctrl.dispose();
+    }
+  }
+
+  Future<void> _configRoll(CustomBlock b) async {
+    final result = await showDialog<_RollCfg>(
+      context: context,
+      builder: (_) => _RollConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'rows': result.rows,
+                      'roll': result.rollConfig.toJson(),
                     })
                 : x)
             .toList()));
@@ -364,6 +471,10 @@ Map<String, dynamic> defaultConfigFor(CustomBlockType type) => switch (type) {
         },
       CustomBlockType.counter => {'min': 0, 'max': 999, 'step': 1},
       CustomBlockType.hp => {'allowTemp': false},
+      CustomBlockType.roll => {
+          'rows': ['Row 1'],
+          'roll': const RollConfig().toJson(),
+        },
       CustomBlockType.dropdown => {'options': <String>[]},
       CustomBlockType.freeform => {'multiline': true},
       CustomBlockType.timer => {'start': 0},
@@ -648,6 +759,320 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
                             'label': _lblCtls[i].text
                           },
                       ],
+                    ),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _RollCfg {
+  const _RollCfg({
+    required this.label,
+    required this.rows,
+    required this.rollConfig,
+  });
+  final String label;
+  final List<String> rows;
+  final RollConfig rollConfig;
+}
+
+class _RollConfigDialog extends StatefulWidget {
+  const _RollConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_RollConfigDialog> createState() => _RollConfigDialogState();
+}
+
+class _RollConfigDialogState extends State<_RollConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+
+  // Row label controllers — growable; disposed when removed or in dispose().
+  final List<TextEditingController> _rowCtls = [];
+
+  // RollConfig knobs
+  late final TextEditingController _count;
+  late final TextEditingController _sides;
+  late final TextEditingController _fixedTarget;
+  late RollDirection _direction;
+  late bool _addBonus;
+  late RollTargetKind _targetKind;
+  late RollCrit _crit;
+
+  // Band (degree-of-success) controllers — threshold + label per band.
+  final List<TextEditingController> _bandThreshCtls = [];
+  final List<TextEditingController> _bandLblCtls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final rows =
+        ((widget.block.config['rows'] as List?) ?? const []).whereType<String>();
+    for (final r in rows) {
+      _rowCtls.add(TextEditingController(text: r));
+    }
+
+    final cfg = RollConfig.fromJson(widget.block.config['roll']);
+    _count = TextEditingController(text: '${cfg.diceCount}');
+    _sides = TextEditingController(text: '${cfg.diceSides}');
+    _fixedTarget = TextEditingController(text: '${cfg.fixedTarget}');
+    _direction = cfg.direction;
+    _addBonus = cfg.addBonus;
+    _targetKind = cfg.targetKind;
+    _crit = cfg.crit;
+
+    for (final band in cfg.bands) {
+      _bandThreshCtls.add(
+          TextEditingController(text: band.threshold.toStringAsFixed(2)));
+      _bandLblCtls.add(TextEditingController(text: band.label));
+    }
+  }
+
+  @override
+  void dispose() {
+    _label.dispose();
+    _count.dispose();
+    _sides.dispose();
+    _fixedTarget.dispose();
+    for (final c in _rowCtls) {
+      c.dispose();
+    }
+    for (final c in _bandThreshCtls) {
+      c.dispose();
+    }
+    for (final c in _bandLblCtls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addRow() {
+    setState(() {
+      _rowCtls.add(TextEditingController(text: 'Row ${_rowCtls.length + 1}'));
+    });
+  }
+
+  void _removeRow(int i) {
+    setState(() {
+      _rowCtls.removeAt(i).dispose();
+    });
+  }
+
+  void _addBand() {
+    setState(() {
+      _bandThreshCtls.add(TextEditingController(text: '10.00'));
+      _bandLblCtls.add(TextEditingController(text: 'Success'));
+    });
+  }
+
+  void _removeBand(int i) {
+    setState(() {
+      _bandThreshCtls.removeAt(i).dispose();
+      _bandLblCtls.removeAt(i).dispose();
+    });
+  }
+
+  RollConfig _buildConfig() => RollConfig(
+        diceCount: int.tryParse(_count.text) ?? 1,
+        diceSides: int.tryParse(_sides.text) ?? 20,
+        addBonus: _addBonus,
+        direction: _direction,
+        targetKind: _targetKind,
+        fixedTarget: int.tryParse(_fixedTarget.text) ?? 10,
+        crit: _crit,
+        bands: [
+          for (var i = 0; i < _bandThreshCtls.length; i++)
+            RollBand(
+              threshold: double.tryParse(_bandThreshCtls[i].text) ?? 0,
+              label: _bandLblCtls[i].text,
+            ),
+        ],
+      );
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Block label
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 12),
+
+            // --- Row labels ---
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Rows', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            for (var i = 0; i < _rowCtls.length; i++)
+              Row(key: ObjectKey(_rowCtls[i]), children: [
+                Expanded(
+                  child: TextField(
+                    controller: _rowCtls[i],
+                    decoration: const InputDecoration(labelText: 'Row label'),
+                  ),
+                ),
+                IconButton(
+                  key: Key('custom-cfg-roll-$i-remove'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => _removeRow(i),
+                ),
+              ]),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('custom-cfg-roll-add'),
+                icon: const Icon(Icons.add),
+                label: const Text('Add row'),
+                onPressed: _addRow,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // --- RollConfig knobs ---
+            const Align(
+              alignment: Alignment.centerLeft,
+              child:
+                  Text('Roll', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('custom-cfg-roll-count'),
+                  controller: _count,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Dice count'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  key: const Key('custom-cfg-roll-sides'),
+                  controller: _sides,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Dice sides'),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            DropdownButton<RollDirection>(
+              key: const Key('custom-cfg-roll-dir'),
+              value: _direction,
+              isExpanded: true,
+              items: RollDirection.values
+                  .map((d) => DropdownMenuItem(value: d, child: Text(d.name)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() {
+                    _direction = v;
+                    // roll bonus is ignored for direction==low — disable the toggle
+                    if (v == RollDirection.low) _addBonus = false;
+                  });
+                }
+              },
+            ),
+            // roll bonus is ignored for direction==low — disable the switch
+            SwitchListTile(
+              key: const Key('custom-cfg-roll-bonus'),
+              title: const Text('Add per-row bonus'),
+              value: _addBonus,
+              // Bonus is meaningless for roll-under (direction==low); disable
+              // the switch so users can't enable an option that has no effect.
+              onChanged: _direction == RollDirection.low
+                  ? null
+                  : (v) => setState(() => _addBonus = v),
+            ),
+            DropdownButton<RollTargetKind>(
+              key: const Key('custom-cfg-roll-target'),
+              value: _targetKind,
+              isExpanded: true,
+              items: RollTargetKind.values
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _targetKind = v);
+              },
+            ),
+            if (_targetKind == RollTargetKind.fixed)
+              TextField(
+                controller: _fixedTarget,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Fixed target'),
+              ),
+            DropdownButton<RollCrit>(
+              key: const Key('custom-cfg-roll-crit'),
+              value: _crit,
+              isExpanded: true,
+              items: RollCrit.values
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c.name)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _crit = v);
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // --- Bands (degrees of success) ---
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Degrees of success',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            for (var i = 0; i < _bandThreshCtls.length; i++)
+              Row(key: ObjectKey(_bandThreshCtls[i]), children: [
+                Expanded(
+                  child: TextField(
+                    controller: _bandThreshCtls[i],
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(labelText: 'Threshold'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: _bandLblCtls[i],
+                    decoration: const InputDecoration(labelText: 'Label'),
+                  ),
+                ),
+                IconButton(
+                  key: Key('custom-cfg-roll-band-$i-remove'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => _removeBand(i),
+                ),
+              ]),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('custom-cfg-roll-band-add'),
+                icon: const Icon(Icons.add),
+                label: const Text('Add band'),
+                onPressed: _addBand,
+              ),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _RollCfg(
+                      label: _label.text.trim(),
+                      rows: _rowCtls.map((c) => c.text).toList(),
+                      rollConfig: _buildConfig(),
                     ),
                   ),
               child: const Text('Save')),

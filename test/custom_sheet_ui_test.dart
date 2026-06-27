@@ -264,4 +264,50 @@ void main() {
         (await c.read(charactersProvider.future)).single.custom!.blocks.single;
     expect(blk.config['modFormula'], 'fived');
   });
+
+  // ---- Task 8: roll block renderer + rollTrackRow brick ----------------------
+
+  testWidgets('roll block shows a snackbar with the row label', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.roll, label: 'Saves', config: {
+        'rows': ['Fort', 'Ref'],
+        'roll': {
+          'dc': 1,
+          'ds': 20,
+          'ab': true,
+          'dir': 'high',
+          'tk': 'fixed',
+          'ft': 1, // always passes (d20 + bonus >= 1)
+          'crit': 'none',
+        },
+      }),
+    ], values: {
+      'b1': [3, 1]
+    });
+    await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-roll-0')));
+    await tester.pump(); // show snackbar
+    expect(find.textContaining('Fort:'), findsOneWidget);
+  });
+
+  testWidgets('roll config edits dice sides and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.roll, label: 'Saves', config: {
+        'rows': ['Fort'],
+        'roll': {'dc': 1, 'ds': 20, 'ab': true, 'dir': 'high', 'tk': 'prompt', 'crit': 'none'},
+      }),
+    ], values: {'b1': [0]});
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('custom-cfg-roll-sides')), '6');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['roll'] as Map)['ds'], 6);
+  });
 }
