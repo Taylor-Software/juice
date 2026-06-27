@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
 
 void main() {
@@ -75,6 +76,50 @@ void main() {
       final s = FunnelSheet.maybeFromJson(const {})!;
       expect(s.seedSystem, '');
       expect(s.peasants, isEmpty);
+    });
+  });
+
+  group('FunnelProfile registry', () {
+    test('funnelProfileFor returns null for unknown', () {
+      expect(funnelProfileFor('nope'), isNull);
+    });
+    test('dcc profile shape', () {
+      final p = funnelProfileFor('dcc')!;
+      expect(p.system, 'dcc');
+      expect(p.statKeys.map((s) => s.key),
+          containsAll(['str', 'agi', 'sta', 'per', 'int', 'lck']));
+      expect(p.flavorFields.map((f) => f.key),
+          containsAll(['occupation', 'weapon', 'tradeGoods']));
+      expect(p.graduateChoices.map((c) => c.key),
+          containsAll(['className', 'alignment']));
+    });
+    test('dcc seedPeasant has mid-range stats + hpMin hp', () {
+      final p = funnelProfileFor('dcc')!;
+      final peasant = p.seedPeasant();
+      expect(peasant.stats['str'], p.statDefault);
+      expect(peasant.hp, p.hpMin);
+      expect(peasant.alive, true);
+    });
+    test('dcc graduate builds a leveled DCC hero copying stats + hp', () {
+      final p = funnelProfileFor('dcc')!;
+      const peasant = FunnelPeasant(
+        name: 'Survivor',
+        hp: 5,
+        stats: {'str': 16, 'agi': 12, 'sta': 14, 'per': 9, 'int': 8, 'lck': 11},
+        flavor: {'occupation': 'Blacksmith'},
+      );
+      final hero = p.graduate('h1', peasant, {'className': 'Warrior', 'alignment': 'Lawful'});
+      expect(hero.id, 'h1');
+      expect(hero.name, 'Survivor');
+      expect(hero.dcc, isNotNull);
+      expect(hero.dcc!.className, 'Warrior');
+      expect(hero.dcc!.alignment, 'Lawful');
+      expect(hero.dcc!.stats['str'], 16);
+      expect(hero.dcc!.stats['lck'], 11);
+      expect(hero.dcc!.lckMax, 11);
+      expect(hero.dcc!.currentHp, 5);
+      expect(hero.dcc!.maxHp, 5);
+      expect(hero.dcc!.occupation, 'Blacksmith');
     });
   });
 
