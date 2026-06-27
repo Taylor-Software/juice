@@ -3171,7 +3171,7 @@ class Character {
       'kal-arath' => Character(
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
       'custom' => Character(
-          id: id, name: 'New custom character', custom: const CustomSheet()),
+          id: id, name: 'New Custom character', custom: const CustomSheet()),
       _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
     };
   }

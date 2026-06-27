@@ -87,7 +87,7 @@ void main() {
       ], values: {
         'b1': 'hi'
       });
-      final c = Character(id: 'c1', name: 'Homebrew', custom: sheet);
+      const c = Character(id: 'c1', name: 'Homebrew', custom: sheet);
       final back = Character.fromJson(c.toJson());
       expect(back.custom, isNotNull);
       expect(back.custom!.blocks.single.label, 'Notes');
@@ -99,8 +99,8 @@ void main() {
       expect(c.custom!.blocks, isEmpty);
     });
     test('copyWith clearCustom drops the sheet', () {
-      final c = Character(
-          id: 'c1', name: 'X', custom: const CustomSheet(blocks: []));
+      const c = Character(
+          id: 'c1', name: 'X', custom: CustomSheet(blocks: []));
       expect(c.copyWith(clearCustom: true).custom, isNull);
     });
     test('custom is a known, categorized ruleset system', () {

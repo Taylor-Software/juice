@@ -732,6 +732,9 @@ const kSystemBlurbs = <String, String>{
   'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
       'demonic pacts, Fate Points. Facts-only mechanics.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
+  'custom':
+      'Custom / Homebrew sheet: build your own from configurable blocks — '
+          'stats, HP, rolls, luck, timers, conditions. Facts-only; you author all content.',
 };
 
 const kPresetIcons = <String, IconData>{
@@ -789,6 +792,7 @@ const kSystemShortName = <String, String>{
   'hexcrawl': 'Hexcrawl',
   'party': 'Party',
   'lonelog': 'Lonelog',
+  'custom': 'Custom',
 };
 
 class NewCampaignDialog extends StatefulWidget {
