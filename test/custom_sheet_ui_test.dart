@@ -310,4 +310,46 @@ void main() {
     final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
     expect((blk.config['roll'] as Map)['ds'], 6);
   });
+
+  // ---- Task 9: luck block + luckTokensSection brick --------------------------
+
+  testWidgets('luck block spends and resets', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.luck, label: 'Luck'),
+    ], values: {
+      'b1': {'cur': 3, 'max': 5}
+    });
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-luck-spend')));
+    await tester.pumpAndSettle();
+    expect((((await c.read(charactersProvider.future)).single.custom!
+        .values['b1']) as Map)['cur'], 2);
+    await tester.tap(find.byKey(const Key('custom-b1-luck-reset')));
+    await tester.pumpAndSettle();
+    expect((((await c.read(charactersProvider.future)).single.custom!
+        .values['b1']) as Map)['cur'], 5);
+  });
+
+  testWidgets('luck config sets max tokens and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.luck, label: 'Luck'),
+    ], values: {'b1': {'cur': 0, 'max': 0}});
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    // bump the max stepper up 3 times
+    for (var i = 0; i < 3; i++) {
+      await tester.tap(find.byKey(const Key('custom-cfg-luck-max-plus')));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final v = (await c.read(charactersProvider.future)).single.custom!.values['b1'] as Map;
+    expect(v['max'], 3);
+    expect(v['cur'], 3);
+  });
 }

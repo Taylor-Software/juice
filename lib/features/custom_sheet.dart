@@ -186,6 +186,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.stat => _playStat(b),
         CustomBlockType.conditions => _playConditions(b),
         CustomBlockType.roll => _playRoll(b),
+        CustomBlockType.luck => _playLuck(b),
         _ => const SizedBox.shrink(),
       };
 
@@ -197,6 +198,8 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         await _configStat(b);
       case CustomBlockType.roll:
         await _configRoll(b);
+      case CustomBlockType.luck:
+        await _configLuck(b);
       default:
         await _renameBlock(b);
     }
@@ -425,6 +428,44 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                     })
                 : x)
             .toList()));
+  }
+
+  // --- luck ------------------------------------------------------------------
+
+  Widget _playLuck(CustomBlock b) {
+    final v = _valMap(b.id);
+    final cur = (v['cur'] as num?)?.toInt() ?? 0;
+    final max = (v['max'] as num?)?.toInt() ?? 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: luckTokensSection(
+        prefix: 'custom-${b.id}',
+        label: b.label,
+        current: cur,
+        max: max,
+        onDecrement: () => _setVal(b.id, {'cur': cur - 1, 'max': max}),
+        onReset: () => _setVal(b.id, {'cur': max, 'max': max}),
+      ),
+    );
+  }
+
+  Future<void> _configLuck(CustomBlock b) async {
+    final result = await showDialog<_LuckCfg>(
+      context: context,
+      builder: (_) => _LuckConfigDialog(block: b),
+    );
+    if (result == null) return;
+    // Persist label (block) and max value (play state) in one save.
+    final updatedBlocks = _s.blocks
+        .map((x) => x.id == b.id
+            ? x.copyWith(
+                label: result.label.isEmpty ? x.label : result.label)
+            : x)
+        .toList();
+    _save(_s.copyWith(
+      blocks: updatedBlocks,
+      values: {..._s.values, b.id: {'cur': result.max, 'max': result.max}},
+    ));
   }
 
   // --- conditions ------------------------------------------------------------
@@ -1074,6 +1115,74 @@ class _RollConfigDialogState extends State<_RollConfigDialog> {
                       rows: _rowCtls.map((c) => c.text).toList(),
                       rollConfig: _buildConfig(),
                     ),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _LuckCfg {
+  const _LuckCfg({required this.label, required this.max});
+  final String label;
+  final int max;
+}
+
+class _LuckConfigDialog extends StatefulWidget {
+  const _LuckConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_LuckConfigDialog> createState() => _LuckConfigDialogState();
+}
+
+class _LuckConfigDialogState extends State<_LuckConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+  int _max = 0;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              const Expanded(child: Text('Max tokens')),
+              IconButton(
+                key: const Key('custom-cfg-luck-max-minus'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: _max > 0 ? () => setState(() => _max--) : null,
+              ),
+              Text('$_max'),
+              IconButton(
+                key: const Key('custom-cfg-luck-max-plus'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => setState(() => _max++),
+              ),
+            ]),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _LuckCfg(label: _label.text.trim(), max: _max),
                   ),
               child: const Text('Save')),
         ],
