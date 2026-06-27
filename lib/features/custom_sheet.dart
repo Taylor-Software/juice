@@ -450,9 +450,10 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   }
 
   Future<void> _configLuck(CustomBlock b) async {
+    final currentMax = (_valMap(b.id)['max'] as num?)?.toInt() ?? 0;
     final result = await showDialog<_LuckCfg>(
       context: context,
-      builder: (_) => _LuckConfigDialog(block: b),
+      builder: (_) => _LuckConfigDialog(block: b, initialMax: currentMax),
     );
     if (result == null) return;
     // Persist label (block) and max value (play state) in one save.
@@ -1130,8 +1131,9 @@ class _LuckCfg {
 }
 
 class _LuckConfigDialog extends StatefulWidget {
-  const _LuckConfigDialog({required this.block});
+  const _LuckConfigDialog({required this.block, required this.initialMax});
   final CustomBlock block;
+  final int initialMax;
 
   @override
   State<_LuckConfigDialog> createState() => _LuckConfigDialogState();
@@ -1140,7 +1142,7 @@ class _LuckConfigDialog extends StatefulWidget {
 class _LuckConfigDialogState extends State<_LuckConfigDialog> {
   late final TextEditingController _label =
       TextEditingController(text: widget.block.label);
-  int _max = 0;
+  late int _max = widget.initialMax;
 
   @override
   void dispose() {

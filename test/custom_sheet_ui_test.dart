@@ -352,4 +352,23 @@ void main() {
     expect(v['max'], 3);
     expect(v['cur'], 3);
   });
+
+  testWidgets('luck config pre-fills the existing max', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.luck, label: 'Luck'),
+    ], values: {'b1': {'cur': 2, 'max': 5}});
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    // stepper should already show 5; one bump -> 6 (NOT 0 -> 1)
+    await tester.tap(find.byKey(const Key('custom-cfg-luck-max-plus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final v = (await c.read(charactersProvider.future)).single.custom!.values['b1'] as Map;
+    expect(v['max'], 6);
+  });
 }
