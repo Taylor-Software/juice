@@ -20,6 +20,7 @@ import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'custom_sheet.dart';
+import '../engine/custom_templates.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
 import 'sheet_widgets.dart';
@@ -791,8 +792,23 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _newCustom() async {
+    final template = await showDialog<CustomTemplate>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Start from…'),
+        children: [
+          for (final t in kCustomTemplates)
+            SimpleDialogOption(
+              key: Key('custom-template-${t.id}'),
+              child: Text(t.label),
+              onPressed: () => Navigator.pop(context, t),
+            ),
+        ],
+      ),
+    );
+    if (template == null) return;
     final id =
-        await ref.read(charactersProvider.notifier).addCustom(const []);
+        await ref.read(charactersProvider.notifier).addCustom(template.blocks);
     if (mounted) setState(() => _editingId = id);
   }
 

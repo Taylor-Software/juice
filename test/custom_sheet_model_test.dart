@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/campaign_presets.dart';
+import 'package:juice_oracle/engine/campaign_surfaces.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
 import 'package:juice_oracle/engine/custom_templates.dart';
 import 'package:juice_oracle/engine/models.dart';
@@ -239,5 +241,18 @@ void main() {
         expect(back.blocks.length, t.blocks.length, reason: t.id);
       }
     });
+  });
+
+  test('solo-custom preset resolves to the custom ruleset', () {
+    final p = kCampaignPresets.firstWhere((p) => p.id == 'solo-custom');
+    final (mode, systems) = presetConfig(p);
+    expect(systems.contains('custom'), isTrue);
+    expect(mode, CampaignMode.party);
+  });
+
+  test('custom lights up a Sheet surface', () {
+    final sheet = surfacesFor(CampaignMode.party, {'custom'})
+        .firstWhere((v) => v.verb == 'Sheet');
+    expect(sheet.rows.any((r) => r.on && r.requiresSystem == 'custom'), isTrue);
   });
 }

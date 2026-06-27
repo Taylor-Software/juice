@@ -105,6 +105,13 @@ const kCampaignPresets = <CampaignPreset>[
       mode: CampaignMode.party,
       systems: {'kal-arath', 'juice', 'party'}),
   CampaignPreset(
+      id: 'solo-custom',
+      label: 'Custom / Homebrew',
+      kind: 'Build your own sheet',
+      blurb: 'Any game, your blocks',
+      mode: CampaignMode.party,
+      systems: {'custom', 'juice', 'party'}),
+  CampaignPreset(
       id: 'oracle',
       label: 'System-agnostic oracle',
       kind: 'Pure oracle / journaling',
