@@ -162,6 +162,12 @@ void main() {
     test('blurb exists', () {
       expect(kSystemBlurbs['funnel'], isNotNull);
     });
+    test('every known system has a short name (no creation-chip drift)', () {
+      for (final sys in kKnownSystems) {
+        expect(kSystemShortName[sys], isNotNull,
+            reason: 'kSystemShortName missing "$sys"');
+      }
+    });
     test('solo-dcc preset includes funnel', () {
       final p = kCampaignPresets.firstWhere((x) => x.id == 'solo-dcc');
       expect(p.systems, contains('funnel'));

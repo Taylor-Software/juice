@@ -791,6 +791,8 @@ const kSystemShortName = <String, String>{
   'knave': 'Knave 2e',
   'ose': 'OSE/B/X',
   'kal-arath': 'Kal-Arath',
+  'dcc': 'DCC',
+  'funnel': '0-Level Funnel',
   'juice': 'Juice',
   'mythic': 'Mythic',
   'cards': 'Cards',
