@@ -336,4 +336,34 @@ void main() {
       expect(funnel.funnel!.peasants[0].graduated, true);
     });
   });
+
+  group('profile registry completeness', () {
+    test('every kSystemCategory ruleset has a profile', () {
+      final rulesets = kSystemCategory.entries
+          .where((e) => e.value == SystemCategory.ruleset)
+          .map((e) => e.key)
+          .toSet();
+      for (final sys in rulesets) {
+        expect(kFunnelProfiles.containsKey(sys), true,
+            reason: 'missing FunnelProfile for ruleset "$sys"');
+      }
+    });
+    test('every profile is well-formed', () {
+      kFunnelProfiles.forEach((sys, p) {
+        expect(p.system, sys);
+        expect(p.statKeys, isNotEmpty, reason: '$sys statKeys');
+        expect(p.statMin < p.statMax, true, reason: '$sys range');
+        expect(p.statDefault >= p.statMin && p.statDefault <= p.statMax, true,
+            reason: '$sys default in range');
+        expect(p.hpMin <= p.hpMax, true, reason: '$sys hp range');
+        for (final c in p.graduateChoices) {
+          expect(c.options, isNotEmpty, reason: '$sys choice ${c.key}');
+        }
+        final peasant = p.seedPeasant().copyWith(name: 'X');
+        final hero = p.graduate('hid', peasant, p.defaultPicks());
+        expect(hero.id, 'hid');
+        expect(hero.name, 'X');
+      });
+    });
+  });
 }
