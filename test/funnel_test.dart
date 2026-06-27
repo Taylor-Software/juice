@@ -82,6 +82,14 @@ void main() {
       expect(s.seedSystem, '');
       expect(s.peasants, isEmpty);
     });
+    test('seedVariant round-trips and defaults empty', () {
+      const s = FunnelSheet(
+          seedSystem: 'custom', seedVariant: 'generic-d20', peasants: []);
+      final back = FunnelSheet.maybeFromJson(s.toJson())!;
+      expect(back.seedVariant, 'generic-d20');
+      expect(FunnelSheet.maybeFromJson(const {})!.seedVariant, '');
+      expect(s.copyWith(seedVariant: 'osr').seedVariant, 'osr');
+    });
   });
 
   group('FunnelProfile registry', () {

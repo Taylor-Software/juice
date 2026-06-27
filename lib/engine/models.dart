@@ -3362,17 +3362,28 @@ class FunnelPeasant {
 /// lib/engine/funnel.dart). Graduating a survivor spawns a *separate* hero
 /// Character; the funnel persists (the promoted peasant is marked graduated).
 class FunnelSheet {
-  const FunnelSheet({this.seedSystem = '', this.peasants = const []});
+  const FunnelSheet(
+      {this.seedSystem = '', this.seedVariant = '', this.peasants = const []});
 
   final String seedSystem;
+
+  /// Sub-discriminator within [seedSystem]. For a custom funnel, the chosen
+  /// template id (locked at creation); '' for every other system.
+  final String seedVariant;
   final List<FunnelPeasant> peasants;
 
-  factory FunnelSheet.premade(String seedSystem, List<FunnelPeasant> seed) =>
-      FunnelSheet(seedSystem: seedSystem, peasants: seed);
+  factory FunnelSheet.premade(String seedSystem, List<FunnelPeasant> seed,
+          {String seedVariant = ''}) =>
+      FunnelSheet(
+          seedSystem: seedSystem, seedVariant: seedVariant, peasants: seed);
 
-  FunnelSheet copyWith({String? seedSystem, List<FunnelPeasant>? peasants}) =>
+  FunnelSheet copyWith(
+          {String? seedSystem,
+          String? seedVariant,
+          List<FunnelPeasant>? peasants}) =>
       FunnelSheet(
         seedSystem: seedSystem ?? this.seedSystem,
+        seedVariant: seedVariant ?? this.seedVariant,
         peasants: peasants ?? this.peasants,
       );
 
@@ -3388,6 +3399,7 @@ class FunnelSheet {
 
   Map<String, dynamic> toJson() => {
         'seedSystem': seedSystem,
+        if (seedVariant.isNotEmpty) 'seedVariant': seedVariant,
         'peasants': peasants.map((p) => p.toJson()).toList(),
       };
 
@@ -3396,6 +3408,7 @@ class FunnelSheet {
     final m = j.cast<String, dynamic>();
     return FunnelSheet(
       seedSystem: m['seedSystem'] as String? ?? '',
+      seedVariant: m['seedVariant'] as String? ?? '',
       peasants: ((m['peasants'] as List?) ?? const [])
           .whereType<Map<dynamic, dynamic>>()
           .map((e) => FunnelPeasant.fromJson(e.cast<String, dynamic>()))
