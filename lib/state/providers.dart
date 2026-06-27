@@ -25,6 +25,7 @@ import '../engine/tarot_meanings.dart';
 import '../engine/tarot_spreads.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
+import '../engine/custom_sheet.dart';
 import '../engine/system_primer.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
@@ -354,6 +355,17 @@ class CharacterNotifier extends _PersistedList<Character> {
       for (final c in await _ready)
         if (c.id == funnelChar.id) updated else c,
     ]);
+    return id;
+  }
+
+  /// Creates a custom/homebrew PC seeded with [blocks] at the top and returns
+  /// its id. Unlike the fixed sheets, the schema is supplied by the caller
+  /// (a chosen template, or empty for Blank).
+  Future<String> addCustom(List<CustomBlock> blocks) async {
+    final id = _newId();
+    final c = Character(
+        id: id, name: 'New custom character', custom: CustomSheet(blocks: blocks));
+    await _persist([c, ...await _ready]);
     return id;
   }
 

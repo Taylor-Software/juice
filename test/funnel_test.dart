@@ -344,10 +344,16 @@ void main() {
   });
 
   group('profile registry completeness', () {
-    test('every kSystemCategory ruleset has a profile', () {
+    test('every kSystemCategory ruleset has a profile (except custom)', () {
+      // 'custom' is a user-authored schema (the Custom/Homebrew creator), not a
+      // concrete game with a canonical hero shape, so it is deliberately not a
+      // funnel graduation target — it has no FunnelProfile. The runtime target
+      // pickers (funnel_sheet / tracker_screen) already filter by
+      // kFunnelProfiles.keys, so custom simply never appears as a funnel seed.
       final rulesets = kSystemCategory.entries
           .where((e) => e.value == SystemCategory.ruleset)
           .map((e) => e.key)
+          .where((s) => s != 'custom')
           .toSet();
       for (final sys in rulesets) {
         expect(kFunnelProfiles.containsKey(sys), true,

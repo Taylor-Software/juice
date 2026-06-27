@@ -105,6 +105,13 @@ const kCampaignPresets = <CampaignPreset>[
       mode: CampaignMode.party,
       systems: {'kal-arath', 'juice', 'party'}),
   CampaignPreset(
+      id: 'solo-custom',
+      label: 'Custom / Homebrew',
+      kind: 'Build your own sheet',
+      blurb: 'Any game, your blocks',
+      mode: CampaignMode.party,
+      systems: {'custom', 'juice', 'party'}),
+  CampaignPreset(
       id: 'solo-dcc',
       label: 'Dungeon Crawl Classics',
       kind: 'Brutal 0-level funnel',

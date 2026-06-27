@@ -22,6 +22,8 @@ import 'funnel_sheet.dart';
 import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
+import 'custom_sheet.dart';
+import '../engine/custom_templates.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
 import 'sheet_widgets.dart';
@@ -259,6 +261,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               _editingId = null;
             } else {
               final c = match.first;
+              if (c.custom != null) {
+                return CustomSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.starforged != null) {
                 return StarforgedSheetView(
                   character: c,
@@ -545,6 +558,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('knave') &&
         !systems.contains('ose') &&
         !systems.contains('kal-arath') &&
+        !systems.contains('custom') &&
         !systems.contains('dcc') &&
         !systems.contains('funnel')) {
       await _addCharacter(context);
@@ -643,6 +657,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Kal-Arath',
           blurb: '5 stats, 2d6+stat rolls, demonic pacts, Fate Points.'
         ),
+      if (systems.contains('custom'))
+        (
+          key: 'new-custom',
+          value: 'custom',
+          label: 'Custom / Homebrew',
+          blurb: 'Build your own sheet from blocks.'
+        ),
       if (systems.contains('dcc'))
         (
           key: 'new-dcc',
@@ -689,11 +710,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     !systems.contains('cairn') ||
                     !systems.contains('knave') ||
                     !systems.contains('ose') ||
-                    !systems.contains('kal-arath'))
+                    !systems.contains('kal-arath') ||
+                    !systems.contains('custom'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, or Kal-Arath in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, Kal-Arath, or Custom in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -738,6 +760,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newOse();
     } else if (choice == 'kal-arath') {
       await _newKalArath();
+    } else if (choice == 'custom') {
+      await _newCustom();
     } else if (choice == 'dcc') {
       await _newDcc();
     } else if (choice == 'funnel') {
@@ -809,6 +833,27 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newKalArath() async {
     final id = await ref.read(charactersProvider.notifier).addKalArath();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newCustom() async {
+    final template = await showDialog<CustomTemplate>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Start from…'),
+        children: [
+          for (final t in kCustomTemplates)
+            SimpleDialogOption(
+              key: Key('custom-template-${t.id}'),
+              child: Text(t.label),
+              onPressed: () => Navigator.pop(context, t),
+            ),
+        ],
+      ),
+    );
+    if (template == null) return;
+    final id =
+        await ref.read(charactersProvider.notifier).addCustom(template.blocks);
     if (mounted) setState(() => _editingId = id);
   }
 

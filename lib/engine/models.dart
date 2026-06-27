@@ -2,6 +2,8 @@
 /// No freezed/codegen — the data is small and stable.
 library;
 
+import 'custom_sheet.dart';
+
 // Tolerant JSON readers shared by the sheets' `maybeFromJson` factories.
 int _intOr(dynamic v, int d) => v is int ? v : d;
 String _strOr(dynamic v) => v is String ? v : '';
@@ -3424,6 +3426,7 @@ class Character {
     this.knave,
     this.ose,
     this.kalArath,
+    this.custom,
     this.dcc,
     this.funnel,
     this.starred = false,
@@ -3473,6 +3476,8 @@ class Character {
   /// Bespoke Kal-Arath sheet; null unless this is a Kal-Arath wanderer.
   final KalArathSheet? kalArath;
 
+  /// User-defined custom/homebrew sheet; null unless this is a custom PC.
+  final CustomSheet? custom;
   /// Bespoke DCC sheet; null unless this is a DCC character.
   final DccSheet? dcc;
 
@@ -3525,6 +3530,8 @@ class Character {
       'ose' => Character(id: id, name: 'New Adventurer', ose: const OseSheet()),
       'kal-arath' => Character(
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
+      'custom' => Character(
+          id: id, name: 'New Custom character', custom: const CustomSheet()),
       'dcc' =>
         Character(id: id, name: 'New DCC character', dcc: DccSheet.premade()),
       _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
@@ -3562,6 +3569,8 @@ class Character {
     bool clearOse = false,
     KalArathSheet? kalArath,
     bool clearKalArath = false,
+    CustomSheet? custom,
+    bool clearCustom = false,
     DccSheet? dcc,
     bool clearDcc = false,
     FunnelSheet? funnel,
@@ -3589,6 +3598,7 @@ class Character {
         knave: clearKnave ? null : (knave ?? this.knave),
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
+        custom: clearCustom ? null : (custom ?? this.custom),
         dcc: clearDcc ? null : (dcc ?? this.dcc),
         funnel: clearFunnel ? null : (funnel ?? this.funnel),
         starred: starred ?? this.starred,
@@ -3686,6 +3696,7 @@ class Character {
         if (knave != null) 'knave': knave!.toJson(),
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
+        if (custom != null) 'custom': custom!.toJson(),
         if (dcc != null) 'dcc': dcc!.toJson(),
         if (funnel != null) 'funnel': funnel!.toJson(),
         if (starred) 'starred': true,
@@ -3718,6 +3729,7 @@ class Character {
         knave: KnaveSheet.maybeFromJson(j['knave']),
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
+        custom: CustomSheet.maybeFromJson(j['custom']),
         dcc: DccSheet.maybeFromJson(j['dcc']),
         funnel: FunnelSheet.maybeFromJson(j['funnel']),
         starred: (j['starred'] as bool?) ?? false,
@@ -3811,6 +3823,7 @@ const kKnownSystems = <String>{
   'dcc',
   'funnel',
   'cards',
+  'custom',
 };
 
 /// The four buckets a system belongs to for grouped campaign setup.
@@ -3830,6 +3843,7 @@ const kSystemCategory = <String, SystemCategory>{
   'knave': SystemCategory.ruleset,
   'ose': SystemCategory.ruleset,
   'kal-arath': SystemCategory.ruleset,
+  'custom': SystemCategory.ruleset,
   'dcc': SystemCategory.ruleset,
   'juice': SystemCategory.oracle,
   'mythic': SystemCategory.oracle,

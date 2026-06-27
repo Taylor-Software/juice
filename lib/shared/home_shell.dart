@@ -736,6 +736,9 @@ const kSystemBlurbs = <String, String>{
           'spellburn, disapproval. Facts-only mechanics. '
           'Not affiliated with Goodman Games.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
+  'custom':
+      'Custom / Homebrew sheet: build your own from configurable blocks — '
+          'stats, HP, rolls, luck, timers, conditions. Facts-only; you author all content.',
   'funnel':
       '0-Level Funnel: run a pack of doomed peasants, then graduate '
           'survivors into full characters of any enabled system.',
@@ -752,6 +755,7 @@ const kPresetIcons = <String, IconData>{
   'solo-knave': Icons.content_cut,
   'solo-ose': Icons.auto_stories,
   'solo-kal-arath': Icons.whatshot,
+  'solo-custom': Icons.dashboard_customize,
   'solo-dcc': Icons.sports_martial_arts,
   'solo-funnel': Icons.groups,
   'oracle': Icons.casino,
@@ -800,6 +804,7 @@ const kSystemShortName = <String, String>{
   'hexcrawl': 'Hexcrawl',
   'party': 'Party',
   'lonelog': 'Lonelog',
+  'custom': 'Custom',
 };
 
 class NewCampaignDialog extends StatefulWidget {

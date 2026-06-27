@@ -45,6 +45,7 @@ const _table = <String, List<SurfaceRow>>{
     SurfaceRow('Knave sheet', requiresSystem: 'knave'),
     SurfaceRow('OSE / B/X sheet', requiresSystem: 'ose'),
     SurfaceRow('Kal-Arath sheet', requiresSystem: 'kal-arath'),
+    SurfaceRow('Custom / Homebrew sheet', requiresSystem: 'custom'),
     SurfaceRow('Dungeon Crawl Classics sheet', requiresSystem: 'dcc'),
     SurfaceRow('0-Level Funnel', requiresSystem: 'funnel'),
     SurfaceRow('Moves', requiresSystem: 'ironsworn', requiresModeKey: 'moves'),

@@ -614,3 +614,37 @@ Widget conditionsSection(
         ),
       ],
     );
+
+/// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
+/// + [index] key the controls (e.g. 'custom-b1' -> 'custom-b1-roll-0'). The
+/// caller owns rolling + the snackbar via [onRoll].
+Widget rollTrackRow({
+  required String prefix,
+  required int index,
+  required String label,
+  required int bonus,
+  required ValueChanged<int> onBonus,
+  required VoidCallback onRoll,
+}) =>
+    Row(children: [
+      Expanded(child: Text(label)),
+      IconButton(
+        key: Key('$prefix-roll-$index-bonus-minus'),
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.remove, size: 16),
+        onPressed: () => onBonus(bonus - 1),
+      ),
+      Text(bonus >= 0 ? '+$bonus' : '$bonus'),
+      IconButton(
+        key: Key('$prefix-roll-$index-bonus-plus'),
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.add, size: 16),
+        onPressed: () => onBonus(bonus + 1),
+      ),
+      IconButton(
+        key: Key('$prefix-roll-$index'),
+        icon: const Icon(Icons.casino_outlined, size: 18),
+        tooltip: 'Roll',
+        onPressed: onRoll,
+      ),
+    ]);
