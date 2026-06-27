@@ -428,12 +428,15 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final max = (v['max'] as num?)?.toInt() ?? 0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
+      // Uses the shared DCC luckTokensSection brick. keyPrefix '<id>-luck' keeps
+      // the spend key as 'custom-<id>-luck-spend'; the brick also renders a gain
+      // (+1) button and a 'restore' reset.
       child: luckTokensSection(
-        prefix: 'custom-${b.id}',
+        keyPrefix: 'custom-${b.id}-luck',
         label: b.label,
         current: cur,
         max: max,
-        onDecrement: () => _setVal(b.id, {'cur': cur - 1, 'max': max}),
+        onSet: (next) => _setVal(b.id, {'cur': next, 'max': max}),
         onReset: () => _setVal(b.id, {'cur': max, 'max': max}),
       ),
     );

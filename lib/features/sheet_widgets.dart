@@ -544,6 +544,40 @@ Future<void> showConditionsEditor(
       .setConditions(c.id, selected.toList());
 }
 
+/// A spend-down-from-a-ceiling token pool with a restore action. DCC LCK uses
+/// this; the generic shape also seeds the future custom-sheet builder.
+Widget luckTokensSection({
+  required String keyPrefix,
+  required String label,
+  required int current,
+  required int max,
+  required ValueChanged<int> onSet,
+  required VoidCallback onReset,
+}) =>
+    Row(mainAxisSize: MainAxisSize.min, children: [
+      Text('$label  '),
+      IconButton(
+        key: Key('$keyPrefix-spend'),
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.remove),
+        tooltip: 'Spend 1',
+        onPressed: current > 0 ? () => onSet(current - 1) : null,
+      ),
+      Text('$current / $max'),
+      IconButton(
+        key: Key('$keyPrefix-gain'),
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.add),
+        tooltip: 'Gain 1',
+        onPressed: current < max ? () => onSet(current + 1) : null,
+      ),
+      TextButton(
+        key: Key('$keyPrefix-restore'),
+        onPressed: onReset,
+        child: const Text('Restore'),
+      ),
+    ]);
+
 /// A "Status" section for the open sheets: the character's active conditions as
 /// chips (or a hint) plus an Edit button — so debuffs are visible and editable
 /// without backing out to the roster. [prefix] keys the edit button.
@@ -580,35 +614,6 @@ Widget conditionsSection(
         ),
       ],
     );
-
-/// Spendable luck/fate token pool: a label, current/max readout, a spend (−1)
-/// button, and a reset-to-max button. [prefix] keys the buttons (e.g.
-/// 'custom-b1' -> 'custom-b1-luck-spend'). Adopted by the custom luck block;
-/// the DCC sheet will adopt it too.
-Widget luckTokensSection({
-  required String prefix,
-  required String label,
-  required int current,
-  required int max,
-  required VoidCallback onDecrement,
-  required VoidCallback onReset,
-}) =>
-    Row(children: [
-      Expanded(child: Text(label)),
-      IconButton(
-        key: Key('$prefix-luck-spend'),
-        icon: const Icon(Icons.remove_circle_outline),
-        tooltip: 'Spend',
-        onPressed: current > 0 ? onDecrement : null,
-      ),
-      Text('$current / $max'),
-      const SizedBox(width: 8),
-      TextButton(
-        key: Key('$prefix-luck-reset'),
-        onPressed: onReset,
-        child: const Text('Reset'),
-      ),
-    ]);
 
 /// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
 /// + [index] key the controls (e.g. 'custom-b1' -> 'custom-b1-roll-0'). The

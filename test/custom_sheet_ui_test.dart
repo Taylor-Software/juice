@@ -326,7 +326,7 @@ void main() {
     await tester.pumpAndSettle();
     expect((((await c.read(charactersProvider.future)).single.custom!
         .values['b1']) as Map)['cur'], 2);
-    await tester.tap(find.byKey(const Key('custom-b1-luck-reset')));
+    await tester.tap(find.byKey(const Key('custom-b1-luck-restore')));
     await tester.pumpAndSettle();
     expect((((await c.read(charactersProvider.future)).single.custom!
         .values['b1']) as Map)['cur'], 5);

@@ -731,10 +731,17 @@ const kSystemBlurbs = <String, String>{
       'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
   'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
       'demonic pacts, Fate Points. Facts-only mechanics.',
+  'dcc':
+      'Dungeon Crawl Classics: 0-level funnel, dice chain, mighty deeds, '
+          'spellburn, disapproval. Facts-only mechanics. '
+          'Not affiliated with Goodman Games.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
   'custom':
       'Custom / Homebrew sheet: build your own from configurable blocks — '
           'stats, HP, rolls, luck, timers, conditions. Facts-only; you author all content.',
+  'funnel':
+      '0-Level Funnel: run a pack of doomed peasants, then graduate '
+          'survivors into full characters of any enabled system.',
 };
 
 const kPresetIcons = <String, IconData>{
@@ -749,6 +756,8 @@ const kPresetIcons = <String, IconData>{
   'solo-ose': Icons.auto_stories,
   'solo-kal-arath': Icons.whatshot,
   'solo-custom': Icons.dashboard_customize,
+  'solo-dcc': Icons.sports_martial_arts,
+  'solo-funnel': Icons.groups,
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };
@@ -786,6 +795,8 @@ const kSystemShortName = <String, String>{
   'knave': 'Knave 2e',
   'ose': 'OSE/B/X',
   'kal-arath': 'Kal-Arath',
+  'dcc': 'DCC',
+  'funnel': '0-Level Funnel',
   'juice': 'Juice',
   'mythic': 'Mythic',
   'cards': 'Cards',

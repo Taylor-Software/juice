@@ -2066,6 +2066,254 @@ const kOseSaveLabels = <String, String>{
 
 const kOseAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
 
+// --- Dungeon Crawl Classics (facts-only) ---------------------------------
+const kDccClasses = <String>[
+  'Warrior',
+  'Wizard',
+  'Cleric',
+  'Thief',
+  'Elf',
+  'Dwarf',
+  'Halfling',
+];
+const kDccClassHitDie = <String, int>{
+  'Warrior': 12,
+  'Wizard': 4,
+  'Cleric': 8,
+  'Thief': 6,
+  'Elf': 6,
+  'Dwarf': 10,
+  'Halfling': 6,
+};
+const kDccAlignments = <String>['Lawful', 'Neutral', 'Chaotic'];
+const kDccStats = <String>['str', 'agi', 'sta', 'per', 'int', 'lck'];
+const kDccStatLabels = <String, String>{
+  'str': 'STR',
+  'agi': 'AGI',
+  'sta': 'STA',
+  'per': 'PER',
+  'int': 'INT',
+  'lck': 'LCK',
+};
+const kDccSaveKeys = <String>['fort', 'ref', 'wil'];
+const kDccSaveLabels = <String, String>{
+  'fort': 'Fortitude',
+  'ref': 'Reflex',
+  'wil': 'Will',
+};
+const kDccDeedDieClasses = <String>{'Warrior', 'Dwarf'};
+const kDccCasterClasses = <String>{'Wizard', 'Elf', 'Cleric'};
+const kDccSpellburnStats = <String, List<String>>{
+  'Wizard': ['str', 'agi', 'sta'],
+  'Elf': ['str', 'agi', 'sta'],
+  'Cleric': ['per'],
+};
+const kDccActionDice = <String>['d20', 'd24', 'd30'];
+const kDccDeedDice = <String>['d3', 'd4', 'd5', 'd6', 'd7'];
+
+/// A Mighty Deed succeeds on a deed die of 3 or higher.
+const int kDccDeedSuccessMin = 3;
+
+/// DCC ability-modifier table (3-18, capped at +/-3). Distinct from the D&D 5e
+/// `((score-10)/2).floor()` curve. Non-copyrightable game-mechanic fact.
+int dccAbilityMod(int score) {
+  final s = score.clamp(3, 18);
+  if (s <= 3) return -3;
+  if (s <= 5) return -2;
+  if (s <= 8) return -1;
+  if (s <= 12) return 0;
+  if (s <= 15) return 1;
+  if (s <= 17) return 2;
+  return 3;
+}
+
+/// Bespoke Dungeon Crawl Classics sheet. Authors only game-mechanic facts
+/// (stats, classes, hit dice, dice-chain values); occupation/spells/notes
+/// are freeform.
+class DccSheet {
+  const DccSheet({
+    this.className = 'Warrior',
+    this.level = 1,
+    this.alignment = 'Neutral',
+    this.occupation = '',
+    this.luckySign = '',
+    this.stats = const {
+      'str': 10,
+      'agi': 10,
+      'sta': 10,
+      'per': 10,
+      'int': 10,
+      'lck': 10,
+    },
+    this.lckMax = 10,
+    this.currentHp = 4,
+    this.maxHp = 4,
+    this.ac = 10,
+    this.attackBonus = 0,
+    this.actionDie = 'd20',
+    this.initNote = '',
+    this.saves = const {'fort': 0, 'ref': 0, 'wil': 0},
+    this.deedDie = 'd3',
+    this.burns = const {'str': 0, 'agi': 0, 'sta': 0, 'per': 0},
+    this.disapprovalRange = 1,
+    this.notes = '',
+  });
+
+  final String className, alignment, occupation, luckySign;
+  final int level;
+  final Map<String, int> stats; // kDccStats, each 3..18
+  final int lckMax;
+  final int currentHp, maxHp, ac, attackBonus;
+  final String actionDie, initNote;
+  final Map<String, int> saves; // kDccSaveKeys bonuses
+  final String deedDie;
+  final Map<String, int> burns; // spellburn per stat
+  final int disapprovalRange;
+  final String notes;
+
+  int mod(String k) => dccAbilityMod(stats[k] ?? 10);
+  int burned(String k) => burns[k] ?? 0;
+  int effectiveScore(String k) => (stats[k] ?? 10) - burned(k);
+  bool get hasDeedDie => kDccDeedDieClasses.contains(className);
+  bool get isCaster => kDccCasterClasses.contains(className);
+  bool get isCleric => className == 'Cleric';
+  List<String> get burnableStats => kDccSpellburnStats[className] ?? const [];
+  int get totalSpellburn => burnableStats.fold(0, (sum, k) => sum + burned(k));
+  String? get castingStat => isCleric ? 'per' : (isCaster ? 'int' : null);
+
+  /// Thieves and Halflings regain spent Luck on rest (shown as a sheet note).
+  bool get luckyRecoveryClass =>
+      className == 'Thief' || className == 'Halfling';
+
+  factory DccSheet.premade() => const DccSheet();
+
+  DccSheet copyWith({
+    String? className,
+    int? level,
+    String? alignment,
+    String? occupation,
+    String? luckySign,
+    Map<String, int>? stats,
+    int? lckMax,
+    int? currentHp,
+    int? maxHp,
+    int? ac,
+    int? attackBonus,
+    String? actionDie,
+    String? initNote,
+    Map<String, int>? saves,
+    String? deedDie,
+    Map<String, int>? burns,
+    int? disapprovalRange,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final st = stats ?? this.stats;
+    final sv = saves ?? this.saves;
+    final bn = burns ?? this.burns;
+    final cls = className ?? this.className;
+    return DccSheet(
+      className: kDccClassHitDie.containsKey(cls) ? cls : 'Warrior',
+      level: (level ?? this.level).clamp(1, 10),
+      alignment: kDccAlignments.contains(alignment ?? this.alignment)
+          ? (alignment ?? this.alignment)
+          : 'Neutral',
+      occupation: occupation ?? this.occupation,
+      luckySign: luckySign ?? this.luckySign,
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      lckMax: (lckMax ?? this.lckMax).clamp(3, 18),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      maxHp: mh,
+      ac: (ac ?? this.ac).clamp(0, 30),
+      attackBonus: (attackBonus ?? this.attackBonus).clamp(-5, 20),
+      actionDie: kDccActionDice.contains(actionDie ?? this.actionDie)
+          ? (actionDie ?? this.actionDie)
+          : 'd20',
+      initNote: initNote ?? this.initNote,
+      saves: {
+        for (final k in kDccSaveKeys)
+          k: ((sv[k] ?? 0) as num).round().clamp(-5, 20),
+      },
+      deedDie: kDccDeedDice.contains(deedDie ?? this.deedDie)
+          ? (deedDie ?? this.deedDie)
+          : 'd3',
+      burns: {
+        for (final k in const ['str', 'agi', 'sta', 'per'])
+          k: ((bn[k] ?? 0) as num).round().clamp(0, 18),
+      },
+      disapprovalRange:
+          (disapprovalRange ?? this.disapprovalRange).clamp(1, 20),
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'className': className,
+        'level': level,
+        'alignment': alignment,
+        'occupation': occupation,
+        'luckySign': luckySign,
+        'stats': stats,
+        'lckMax': lckMax,
+        'currentHp': currentHp,
+        'maxHp': maxHp,
+        'ac': ac,
+        'attackBonus': attackBonus,
+        'actionDie': actionDie,
+        'initNote': initNote,
+        'saves': saves,
+        'deedDie': deedDie,
+        'burns': burns,
+        'disapprovalRange': disapprovalRange,
+        'notes': notes,
+      };
+
+  static DccSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? const {};
+    final sv = (j['saves'] as Map?) ?? const {};
+    final bn = (j['burns'] as Map?) ?? const {};
+    return DccSheet(
+      className: j['className'] as String? ?? 'Warrior',
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 10),
+      alignment: j['alignment'] as String? ?? 'Neutral',
+      occupation: j['occupation'] as String? ?? '',
+      luckySign: j['luckySign'] as String? ?? '',
+      stats: {
+        for (final k in kDccStats)
+          k: ((st[k] ?? 10) as num).round().clamp(3, 18),
+      },
+      lckMax: ((j['lckMax'] as num?)?.round() ?? 10).clamp(3, 18),
+      currentHp: ((j['currentHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
+      maxHp: ((j['maxHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
+      ac: ((j['ac'] as num?)?.round() ?? 10).clamp(0, 30),
+      attackBonus: ((j['attackBonus'] as num?)?.round() ?? 0).clamp(-5, 20),
+      // Validate the dice tokens: the widget parses sides via substring(1),
+      // so a corrupted/hand-edited value must not survive to int.parse.
+      actionDie: kDccActionDice.contains(j['actionDie'])
+          ? j['actionDie'] as String
+          : 'd20',
+      initNote: j['initNote'] as String? ?? '',
+      saves: {
+        for (final k in kDccSaveKeys)
+          k: ((sv[k] ?? 0) as num).round().clamp(-5, 20),
+      },
+      deedDie:
+          kDccDeedDice.contains(j['deedDie']) ? j['deedDie'] as String : 'd3',
+      burns: {
+        for (final k in const ['str', 'agi', 'sta', 'per'])
+          k: ((bn[k] ?? 0) as num).round().clamp(0, 18),
+      },
+      disapprovalRange:
+          ((j['disapprovalRange'] as num?)?.round() ?? 1).clamp(1, 20),
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 class OseSheet {
   const OseSheet({
     this.className = 'Fighter',
@@ -3051,6 +3299,111 @@ const kConditions = <String>[
   'blessed',
 ];
 
+/// One 0-level funnel character. Stats/flavor are keyed by the seed
+/// FunnelProfile (see lib/engine/funnel.dart); both are free-shaped maps so the
+/// funnel is system-agnostic. All descriptive content is user-entered.
+class FunnelPeasant {
+  const FunnelPeasant({
+    this.name = '',
+    this.hp = 0,
+    this.alive = true,
+    this.graduated = false,
+    this.stats = const {},
+    this.flavor = const {},
+  });
+
+  final String name;
+  final int hp;
+  final bool alive;
+  final bool graduated; // already promoted → not graduable again
+  final Map<String, int> stats;
+  final Map<String, String> flavor;
+
+  FunnelPeasant copyWith({
+    String? name,
+    int? hp,
+    bool? alive,
+    bool? graduated,
+    Map<String, int>? stats,
+    Map<String, String>? flavor,
+  }) =>
+      FunnelPeasant(
+        name: name ?? this.name,
+        hp: (hp ?? this.hp).clamp(0, 1 << 20),
+        alive: alive ?? this.alive,
+        graduated: graduated ?? this.graduated,
+        stats: stats ?? this.stats,
+        flavor: flavor ?? this.flavor,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'hp': hp,
+        'alive': alive,
+        'graduated': graduated,
+        'stats': stats,
+        'flavor': flavor,
+      };
+
+  factory FunnelPeasant.fromJson(Map<String, dynamic> j) => FunnelPeasant(
+        name: j['name'] as String? ?? '',
+        hp: ((j['hp'] as num?)?.round() ?? 0).clamp(0, 1 << 20),
+        alive: j['alive'] as bool? ?? true,
+        graduated: j['graduated'] as bool? ?? false,
+        stats: ((j['stats'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, (v as num).round())),
+        flavor: ((j['flavor'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, v as String)),
+      );
+}
+
+/// A standalone 0-level funnel roster entity. `seedSystem` is the sheet system
+/// whose FunnelProfile shaped the peasants' stat/flavor keys (see
+/// lib/engine/funnel.dart). Graduating a survivor spawns a *separate* hero
+/// Character; the funnel persists (the promoted peasant is marked graduated).
+class FunnelSheet {
+  const FunnelSheet({this.seedSystem = '', this.peasants = const []});
+
+  final String seedSystem;
+  final List<FunnelPeasant> peasants;
+
+  factory FunnelSheet.premade(String seedSystem, List<FunnelPeasant> seed) =>
+      FunnelSheet(seedSystem: seedSystem, peasants: seed);
+
+  FunnelSheet copyWith({String? seedSystem, List<FunnelPeasant>? peasants}) =>
+      FunnelSheet(
+        seedSystem: seedSystem ?? this.seedSystem,
+        peasants: peasants ?? this.peasants,
+      );
+
+  /// Returns a copy with peasant [i] flagged graduated.
+  FunnelSheet markGraduated(int i) {
+    final list = [...peasants];
+    list[i] = list[i].copyWith(graduated: true);
+    return copyWith(peasants: list);
+  }
+
+  int get aliveCount => peasants.where((p) => p.alive && !p.graduated).length;
+  int get graduatedCount => peasants.where((p) => p.graduated).length;
+
+  Map<String, dynamic> toJson() => {
+        'seedSystem': seedSystem,
+        'peasants': peasants.map((p) => p.toJson()).toList(),
+      };
+
+  static FunnelSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final m = j.cast<String, dynamic>();
+    return FunnelSheet(
+      seedSystem: m['seedSystem'] as String? ?? '',
+      peasants: ((m['peasants'] as List?) ?? const [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => FunnelPeasant.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+    );
+  }
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
@@ -3074,6 +3427,8 @@ class Character {
     this.ose,
     this.kalArath,
     this.custom,
+    this.dcc,
+    this.funnel,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -3123,6 +3478,11 @@ class Character {
 
   /// User-defined custom/homebrew sheet; null unless this is a custom PC.
   final CustomSheet? custom;
+  /// Bespoke DCC sheet; null unless this is a DCC character.
+  final DccSheet? dcc;
+
+  /// Standalone 0-level funnel; null unless this roster entry is a funnel.
+  final FunnelSheet? funnel;
 
   /// Whether this character is starred in the campaign header.
   final bool starred;
@@ -3172,6 +3532,8 @@ class Character {
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
       'custom' => Character(
           id: id, name: 'New Custom character', custom: const CustomSheet()),
+      'dcc' =>
+        Character(id: id, name: 'New DCC character', dcc: DccSheet.premade()),
       _ => throw StateError('Character.forSheet: unknown system "$systemKey"'),
     };
   }
@@ -3209,6 +3571,10 @@ class Character {
     bool clearKalArath = false,
     CustomSheet? custom,
     bool clearCustom = false,
+    DccSheet? dcc,
+    bool clearDcc = false,
+    FunnelSheet? funnel,
+    bool clearFunnel = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -3233,6 +3599,8 @@ class Character {
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
         custom: clearCustom ? null : (custom ?? this.custom),
+        dcc: clearDcc ? null : (dcc ?? this.dcc),
+        funnel: clearFunnel ? null : (funnel ?? this.funnel),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -3293,6 +3661,11 @@ class Character {
               currentHp:
                   (kalArath!.currentHp + delta).clamp(0, kalArath!.maxHp)));
     }
+    if (dcc != null) {
+      return copyWith(
+          dcc: dcc!.copyWith(
+              currentHp: (dcc!.currentHp + delta).clamp(0, dcc!.maxHp)));
+    }
     if (tracks.isNotEmpty) {
       final updated = [...tracks];
       updated[0] = tracks.first.adjusted(delta);
@@ -3324,6 +3697,8 @@ class Character {
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
         if (custom != null) 'custom': custom!.toJson(),
+        if (dcc != null) 'dcc': dcc!.toJson(),
+        if (funnel != null) 'funnel': funnel!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -3355,6 +3730,8 @@ class Character {
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
         custom: CustomSheet.maybeFromJson(j['custom']),
+        dcc: DccSheet.maybeFromJson(j['dcc']),
+        funnel: FunnelSheet.maybeFromJson(j['funnel']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
@@ -3443,6 +3820,8 @@ const kKnownSystems = <String>{
   'knave',
   'ose',
   'kal-arath',
+  'dcc',
+  'funnel',
   'cards',
   'custom',
 };
@@ -3465,6 +3844,7 @@ const kSystemCategory = <String, SystemCategory>{
   'ose': SystemCategory.ruleset,
   'kal-arath': SystemCategory.ruleset,
   'custom': SystemCategory.ruleset,
+  'dcc': SystemCategory.ruleset,
   'juice': SystemCategory.oracle,
   'mythic': SystemCategory.oracle,
   'cards': SystemCategory.oracle,
@@ -3472,6 +3852,7 @@ const kSystemCategory = <String, SystemCategory>{
   'hexcrawl': SystemCategory.exploration,
   'party': SystemCategory.tools,
   'lonelog': SystemCategory.tools,
+  'funnel': SystemCategory.tools,
 };
 
 /// Human display labels for system keys (incl. opt-in systems not in

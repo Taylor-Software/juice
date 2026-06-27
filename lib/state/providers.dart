@@ -18,6 +18,7 @@ import '../engine/help_data.dart';
 import '../engine/map_builder.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
+import '../engine/funnel.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
@@ -322,6 +323,40 @@ class CharacterNotifier extends _PersistedList<Character> {
   Future<String> addKnave() => addPreMadeSheet('knave');
   Future<String> addOse() => addPreMadeSheet('ose');
   Future<String> addKalArath() => addPreMadeSheet('kal-arath');
+  Future<String> addDcc() => addPreMadeSheet('dcc');
+
+  /// Creates a standalone funnel seeded from [seedSystem]'s FunnelProfile (one
+  /// empty peasant) at the top of the roster and returns its id.
+  Future<String> addFunnel(String seedSystem) async {
+    final id = _newId();
+    final profile = funnelProfileFor(seedSystem);
+    final seed =
+        profile == null ? const <FunnelPeasant>[] : [profile.seedPeasant()];
+    final ch = Character(
+      id: id,
+      name: '0-Level Funnel',
+      funnel: FunnelSheet(seedSystem: seedSystem, peasants: seed),
+    );
+    await _persist([ch, ...await _ready]);
+    return id;
+  }
+
+  /// Spawns a hero Character built by [buildHero] (top of roster) and marks
+  /// peasant [index] of [funnelChar] graduated — in one persist. Returns the
+  /// hero's id.
+  Future<String> graduateFunnelPeasant(Character funnelChar, int index,
+      Character Function(String id) buildHero) async {
+    final id = _newId();
+    final hero = buildHero(id);
+    final updated =
+        funnelChar.copyWith(funnel: funnelChar.funnel!.markGraduated(index));
+    await _persist([
+      hero,
+      for (final c in await _ready)
+        if (c.id == funnelChar.id) updated else c,
+    ]);
+    return id;
+  }
 
   /// Creates a custom/homebrew PC seeded with [blocks] at the top and returns
   /// its id. Unlike the fixed sheets, the schema is supplied by the caller
