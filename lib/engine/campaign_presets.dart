@@ -117,7 +117,9 @@ const kCampaignPresets = <CampaignPreset>[
       kind: 'Session-zero gauntlet',
       blurb: 'Doomed peasants → survivors',
       mode: CampaignMode.party,
-      systems: {'funnel', 'juice', 'party'}),
+      // Seeds the funnel with DCC (the archetypal funnel game); the player can
+      // enable other rulesets to graduate survivors into them.
+      systems: {'funnel', 'dcc', 'juice', 'party'}),
   CampaignPreset(
       id: 'oracle',
       label: 'System-agnostic oracle',

@@ -88,11 +88,10 @@ void main() {
       }
     });
 
-    test('solo-* ruleset presets (except solo-funnel) have exactly one ruleset',
-        () {
-      final rulesetPresets = kCampaignPresets
-          .where((p) => p.id.startsWith('solo-') && p.id != 'solo-funnel');
-      for (final p in rulesetPresets) {
+    test('solo-* presets have exactly one ruleset', () {
+      final soloPresets =
+          kCampaignPresets.where((p) => p.id.startsWith('solo-'));
+      for (final p in soloPresets) {
         final rulesets = p.systems
             .where((s) => kSystemCategory[s] == SystemCategory.ruleset);
         expect(rulesets.length, 1, reason: p.id);
