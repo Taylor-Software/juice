@@ -194,20 +194,27 @@ void main() {
           {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'});
       expect(h.shadowdark!.abilities['str'], 15);
       expect(h.shadowdark!.currentHp, 7);
+      expect(h.shadowdark!.maxHp, 7);
       expect(h.shadowdark!.className, 'Wizard');
+      expect(h.shadowdark!.ancestry, 'Human');     // ancestry pick lands
+      expect(h.shadowdark!.alignment, 'Neutral');  // alignment pick lands
     });
     test('argosa', () {
-      final h = funnelProfileFor('argosa')!.graduate('h', peasant,
-          {'className': funnelProfileFor('argosa')!.graduateChoices.first.options.first});
+      final cls = funnelProfileFor('argosa')!.graduateChoices.first.options.first;
+      final h = funnelProfileFor('argosa')!.graduate('h', peasant, {'className': cls});
       expect(h.argosa!.stats['str'], 15);
       expect(h.argosa!.currentHp, 7);
+      expect(h.argosa!.maxHp, 7);
+      expect(h.argosa!.className, cls); // class pick lands
     });
     test('ose', () {
       final h = funnelProfileFor('ose')!.graduate('h', peasant,
-          {'className': 'Fighter', 'alignment': 'Neutral'});
+          {'className': 'Fighter', 'alignment': 'Lawful'});
       expect(h.ose!.stats['str'], 15);
       expect(h.ose!.currentHp, 7);
+      expect(h.ose!.maxHp, 7);
       expect(h.ose!.className, 'Fighter');
+      expect(h.ose!.alignment, 'Lawful');  // alignment pick lands
     });
   });
 
