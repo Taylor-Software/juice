@@ -371,4 +371,76 @@ void main() {
     final v = (await c.read(charactersProvider.future)).single.custom!.values['b1'] as Map;
     expect(v['max'], 6);
   });
+
+  // ---- Task 10: HP + dropdown block renderers --------------------------------
+
+  testWidgets('hp block steps current and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.hp, label: 'HP'),
+    ], values: {
+      'b1': {'cur': 8, 'max': 10}
+    });
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-hp-cur-minus')));
+    await tester.pumpAndSettle();
+    expect((((await c.read(charactersProvider.future)).single.custom!
+        .values['b1']) as Map)['cur'], 7);
+  });
+
+  testWidgets('dropdown block selects and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.dropdown, label: 'Class', config: {
+        'options': ['Fighter', 'Mage']
+      }),
+    ], values: {
+      'b1': 'Fighter'
+    });
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-b1-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mage').last);
+    await tester.pumpAndSettle();
+    expect((await c.read(charactersProvider.future)).single.custom!.values['b1'],
+        'Mage');
+  });
+
+  // ---- Task 10 Part B: config dialogs ----------------------------------------
+
+  testWidgets('hp config toggles temp and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.hp, label: 'HP', config: {'allowTemp': false}),
+    ], values: {'b1': {'cur': 8, 'max': 10}});
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-cfg-hp-temp')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect(blk.config['allowTemp'], true);
+  });
+
+  testWidgets('dropdown config adds an option and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.dropdown, label: 'Class', config: {'options': ['Fighter']}),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-cfg-opt-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['options'] as List).length, 2);
+  });
 }

@@ -187,6 +187,8 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.conditions => _playConditions(b),
         CustomBlockType.roll => _playRoll(b),
         CustomBlockType.luck => _playLuck(b),
+        CustomBlockType.hp => _playHp(b),
+        CustomBlockType.dropdown => _playDropdown(b),
         _ => const SizedBox.shrink(),
       };
 
@@ -200,6 +202,10 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         await _configRoll(b);
       case CustomBlockType.luck:
         await _configLuck(b);
+      case CustomBlockType.hp:
+        await _configHp(b);
+      case CustomBlockType.dropdown:
+        await _configDropdown(b);
       default:
         await _renameBlock(b);
     }
@@ -467,6 +473,116 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
       blocks: updatedBlocks,
       values: {..._s.values, b.id: {'cur': result.max, 'max': result.max}},
     ));
+  }
+
+  // --- hp --------------------------------------------------------------------
+
+  Widget _playHp(CustomBlock b) {
+    final v = _valMap(b.id);
+    final cur = (v['cur'] as num?)?.toInt() ?? 0;
+    final max = (v['max'] as num?)?.toInt() ?? 0;
+    final temp = (v['temp'] as num?)?.toInt() ?? 0;
+    final allowTemp = b.config['allowTemp'] == true;
+    void set(Map<String, dynamic> next) => _setVal(b.id, {...v, ...next});
+    return Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
+      SizedBox(width: 64, child: Text(b.label)),
+      IconButton(
+          key: Key('custom-${b.id}-hp-cur-minus'),
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: () => set({'cur': cur - 1})),
+      Text('$cur / $max'),
+      IconButton(
+          key: Key('custom-${b.id}-hp-cur-plus'),
+          icon: const Icon(Icons.add_circle_outline),
+          onPressed: () => set({'cur': cur + 1})),
+      const SizedBox(width: 8),
+      const Text('Max'),
+      IconButton(
+          key: Key('custom-${b.id}-hp-max-minus'),
+          icon: const Icon(Icons.remove, size: 16),
+          onPressed: () => set({'max': max - 1})),
+      IconButton(
+          key: Key('custom-${b.id}-hp-max-plus'),
+          icon: const Icon(Icons.add, size: 16),
+          onPressed: () => set({'max': max + 1})),
+      if (allowTemp) ...[
+        const SizedBox(width: 8),
+        const Text('Temp'),
+        IconButton(
+            key: Key('custom-${b.id}-hp-temp-minus'),
+            icon: const Icon(Icons.remove, size: 16),
+            onPressed: () => set({'temp': temp - 1})),
+        Text('$temp'),
+        IconButton(
+            key: Key('custom-${b.id}-hp-temp-plus'),
+            icon: const Icon(Icons.add, size: 16),
+            onPressed: () => set({'temp': temp + 1})),
+      ],
+    ]);
+  }
+
+  Future<void> _configHp(CustomBlock b) async {
+    final result = await showDialog<_HpCfg>(
+      context: context,
+      builder: (_) => _HpConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'allowTemp': result.allowTemp,
+                    })
+                : x)
+            .toList()));
+  }
+
+  // --- dropdown --------------------------------------------------------------
+
+  Widget _playDropdown(CustomBlock b) {
+    final options =
+        ((b.config['options'] as List?) ?? const []).whereType<String>().toList();
+    final raw = _s.values[b.id];
+    final value = raw is String ? raw : (options.isEmpty ? '' : options.first);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        SizedBox(width: 96, child: Text(b.label)),
+        Expanded(
+          child: DropdownButton<String>(
+            key: Key('custom-${b.id}-dropdown'),
+            isExpanded: true,
+            value: options.contains(value) ? value : (options.isEmpty ? null : options.first),
+            items: [
+              for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
+            ],
+            onChanged: (v) => v == null ? null : _setVal(b.id, v),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Future<void> _configDropdown(CustomBlock b) async {
+    final result = await showDialog<_DropdownCfg>(
+      context: context,
+      builder: (_) => _DropdownConfigDialog(block: b),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.isEmpty ? x.label : result.label,
+                    config: {
+                      ...x.config,
+                      'options': result.options,
+                    })
+                : x)
+            .toList()));
   }
 
   // --- conditions ------------------------------------------------------------
@@ -1185,6 +1301,178 @@ class _LuckConfigDialogState extends State<_LuckConfigDialog> {
               onPressed: () => Navigator.pop(
                     context,
                     _LuckCfg(label: _label.text.trim(), max: _max),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _HpCfg {
+  const _HpCfg({required this.label, required this.allowTemp});
+  final String label;
+  final bool allowTemp;
+}
+
+class _HpConfigDialog extends StatefulWidget {
+  const _HpConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_HpConfigDialog> createState() => _HpConfigDialogState();
+}
+
+class _HpConfigDialogState extends State<_HpConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+  late bool _allowTemp = widget.block.config['allowTemp'] == true;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile(
+              key: const Key('custom-cfg-hp-temp'),
+              title: const Text('Allow temp HP'),
+              value: _allowTemp,
+              onChanged: (v) => setState(() => _allowTemp = v),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _HpCfg(label: _label.text.trim(), allowTemp: _allowTemp),
+                  ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _DropdownCfg {
+  const _DropdownCfg({required this.label, required this.options});
+  final String label;
+  final List<String> options;
+}
+
+class _DropdownConfigDialog extends StatefulWidget {
+  const _DropdownConfigDialog({required this.block});
+  final CustomBlock block;
+
+  @override
+  State<_DropdownConfigDialog> createState() => _DropdownConfigDialogState();
+}
+
+class _DropdownConfigDialogState extends State<_DropdownConfigDialog> {
+  late final TextEditingController _label =
+      TextEditingController(text: widget.block.label);
+
+  // One controller per option — growable; disposed when removed or in dispose().
+  final List<TextEditingController> _optCtls = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final rawOptions =
+        ((widget.block.config['options'] as List?) ?? const []).whereType<String>();
+    for (final o in rawOptions) {
+      _optCtls.add(TextEditingController(text: o));
+    }
+  }
+
+  @override
+  void dispose() {
+    _label.dispose();
+    for (final c in _optCtls) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _addOption() {
+    setState(() {
+      _optCtls.add(TextEditingController(text: 'Option ${_optCtls.length + 1}'));
+    });
+  }
+
+  void _removeOption(int i) {
+    setState(() {
+      _optCtls.removeAt(i).dispose();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit block'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(
+              key: const Key('custom-cfg-label'),
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+            ),
+            const SizedBox(height: 8),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            for (var i = 0; i < _optCtls.length; i++)
+              Row(key: ObjectKey(_optCtls[i]), children: [
+                Expanded(
+                  child: TextField(
+                    controller: _optCtls[i],
+                    decoration: const InputDecoration(labelText: 'Option'),
+                  ),
+                ),
+                IconButton(
+                  key: Key('custom-cfg-opt-$i-remove'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => _removeOption(i),
+                ),
+              ]),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('custom-cfg-opt-add'),
+                icon: const Icon(Icons.add),
+                label: const Text('Add option'),
+                onPressed: _addOption,
+              ),
+            ),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              onPressed: () => Navigator.pop(
+                    context,
+                    _DropdownCfg(
+                      label: _label.text.trim(),
+                      options: _optCtls.map((c) => c.text).toList(),
+                    ),
                   ),
               child: const Text('Save')),
         ],
