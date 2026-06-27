@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/custom_sheet.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   group('customStatMod', () {
@@ -107,5 +108,10 @@ void main() {
       expect(kKnownSystems.contains('custom'), isTrue);
       expect(kSystemCategory['custom'], SystemCategory.ruleset);
     });
+  });
+
+  test('kSystemBlurbs covers custom (new_campaign_dialog completeness)', () {
+    expect(kSystemBlurbs['custom'], isNotNull);
+    expect(kSystemBlurbs['custom']!.toLowerCase(), contains('custom'));
   });
 }

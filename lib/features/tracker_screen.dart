@@ -531,7 +531,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('cairn') &&
         !systems.contains('knave') &&
         !systems.contains('ose') &&
-        !systems.contains('kal-arath')) {
+        !systems.contains('kal-arath') &&
+        !systems.contains('custom')) {
       await _addCharacter(context);
       return;
     }
@@ -628,6 +629,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Kal-Arath',
           blurb: '5 stats, 2d6+stat rolls, demonic pacts, Fate Points.'
         ),
+      if (systems.contains('custom'))
+        (
+          key: 'new-custom',
+          value: 'custom',
+          label: 'Custom / Homebrew',
+          blurb: 'Build your own sheet from blocks.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -660,11 +668,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     !systems.contains('cairn') ||
                     !systems.contains('knave') ||
                     !systems.contains('ose') ||
-                    !systems.contains('kal-arath'))
+                    !systems.contains('kal-arath') ||
+                    !systems.contains('custom'))
                   Padding(
                     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
                     child: Text(
-                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, or Kal-Arath in '
+                      'Enable D&D 5e, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, Kal-Arath, or Custom in '
                       'Campaigns → Edit systems to add those sheets.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -709,6 +718,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newOse();
     } else if (choice == 'kal-arath') {
       await _newKalArath();
+    } else if (choice == 'custom') {
+      await _newCustom();
     }
   }
 
@@ -776,6 +787,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newKalArath() async {
     final id = await ref.read(charactersProvider.notifier).addKalArath();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newCustom() async {
+    final id =
+        await ref.read(charactersProvider.notifier).addCustom(const []);
     if (mounted) setState(() => _editingId = id);
   }
 
