@@ -35,87 +35,33 @@ void main() {
     expect(kDccSpellburnStats['Cleric'], ['per']);
   });
 
-  group('DccPeasant', () {
-    test('premade has clamped stats and is alive', () {
-      const p = DccPeasant();
-      expect(p.alive, true);
-      expect(p.hp, 1);
-      for (final k in kDccStats) {
-        expect(p.stats[k], 10);
-      }
-    });
-    test('copyWith clamps hp and stats', () {
-      const p = DccPeasant();
-      final p2 = p.copyWith(hp: 99, stats: {...p.stats, 'str': 25});
-      expect(p2.hp, 8);
-      expect(p2.stats['str'], 18);
-    });
-    test('round-trips through json', () {
-      const p = DccPeasant(
-          name: 'Bob', occupation: 'Farmer', weapon: 'Pitchfork', hp: 4);
-      final back = DccPeasant.fromJson(p.toJson());
-      expect(back.name, 'Bob');
-      expect(back.occupation, 'Farmer');
-      expect(back.weapon, 'Pitchfork');
-      expect(back.hp, 4);
-    });
-  });
-
   group('DccSheet', () {
-    test('premade is a one-peasant funnel', () {
+    test('premade is a leveled level-1 hero', () {
       final s = DccSheet.premade();
-      expect(s.mode, 'funnel');
-      expect(s.peasants.length, 1);
-      expect(s.peasants.first.alive, true);
+      expect(s.className, 'Warrior');
+      expect(s.level, 1);
     });
 
-    test('graduate copies stats, sets hp/lckMax, preserves peasants', () {
-      final s = DccSheet.premade().copyWith(peasants: [
-        const DccPeasant(
-            name: 'Survivor',
-            occupation: 'Blacksmith',
-            hp: 5,
-            stats: {
-              'str': 16,
-              'agi': 12,
-              'sta': 14,
-              'per': 9,
-              'int': 8,
-              'lck': 11,
-            }),
-      ]);
-      final g = s.graduate(0, 'Warrior', 'Lawful');
-      expect(g.mode, 'leveled');
-      expect(g.className, 'Warrior');
-      expect(g.alignment, 'Lawful');
-      expect(g.occupation, 'Blacksmith');
-      expect(g.stats['str'], 16);
-      expect(g.stats['lck'], 11);
-      expect(g.lckMax, 11);
-      expect(g.currentHp, 5);
-      expect(g.maxHp, 5);
-      expect(g.peasants.length, 1); // preserved
-    });
-
-    test('round-trips both modes through json', () {
-      final funnel = DccSheet.premade();
-      expect(DccSheet.maybeFromJson(funnel.toJson())!.mode, 'funnel');
-
-      final leveled = funnel
-          .copyWith(peasants: [
-            const DccPeasant(hp: 6, stats: {
-              'str': 13,
-              'agi': 10,
-              'sta': 12,
-              'per': 10,
-              'int': 14,
-              'lck': 9,
-            })
-          ])
-          .graduate(0, 'Wizard', 'Chaotic')
-          .copyWith(level: 2, ac: 11, burns: {'str': 2});
-      final back = DccSheet.maybeFromJson(leveled.toJson())!;
-      expect(back.mode, 'leveled');
+    test('round-trips through json', () {
+      final sheet = const DccSheet(
+        className: 'Wizard',
+        level: 2,
+        alignment: 'Chaotic',
+        stats: {
+          'str': 13,
+          'agi': 10,
+          'sta': 12,
+          'per': 10,
+          'int': 14,
+          'lck': 9,
+        },
+        lckMax: 9,
+        currentHp: 5,
+        maxHp: 6,
+        ac: 11,
+        burns: {'str': 2, 'agi': 0, 'sta': 0, 'per': 0},
+      );
+      final back = DccSheet.maybeFromJson(sheet.toJson())!;
       expect(back.className, 'Wizard');
       expect(back.level, 2);
       expect(back.ac, 11);
@@ -131,7 +77,7 @@ void main() {
     test('maybeFromJson sanitizes corrupted dice tokens', () {
       // The leveled UI parses dice sides via substring(1) + int.parse, so a
       // malformed token must default rather than survive (would crash on roll).
-      final j = DccSheet.premade().toJson()
+      final j = const DccSheet().toJson()
         ..['actionDie'] = 'foo'
         ..['deedDie'] = '';
       final s = DccSheet.maybeFromJson(j)!;
@@ -141,25 +87,29 @@ void main() {
   });
 
   group('Character DCC wiring', () {
-    test('forSheet builds a DCC funnel character', () {
+    test('forSheet builds a leveled DCC character', () {
       final c = Character.forSheet('dcc', 'id1');
       expect(c.dcc, isNotNull);
-      expect(c.dcc!.mode, 'funnel');
+      expect(c.name, 'New DCC character');
     });
 
     test('round-trips a dcc character through json', () {
       final c = Character.forSheet('dcc', 'id1')
-          .copyWith(dcc: DccSheet.premade().copyWith(notes: 'hi'));
+          .copyWith(dcc: const DccSheet(notes: 'hi'));
       final back = Character.fromJson(c.toJson());
       expect(back.dcc, isNotNull);
       expect(back.dcc!.notes, 'hi');
     });
 
-    test('withHpDelta adjusts leveled DCC hp clamped to maxHp', () {
-      final leveled = DccSheet.premade()
-          .copyWith(peasants: [const DccPeasant(hp: 6)]).graduate(
-              0, 'Warrior', 'Neutral');
-      final c = Character.forSheet('dcc', 'id1').copyWith(dcc: leveled);
+    test('withHpDelta adjusts DCC hp clamped to maxHp', () {
+      final sheet = const DccSheet(
+        className: 'Warrior',
+        stats: {'str': 16, 'agi': 12, 'sta': 13, 'per': 9, 'int': 8, 'lck': 11},
+        lckMax: 11,
+        currentHp: 6,
+        maxHp: 6,
+      );
+      final c = Character.forSheet('dcc', 'id1').copyWith(dcc: sheet);
       expect(c.dcc!.currentHp, 6);
       final hurt = c.withHpDelta(-4);
       expect(hurt.dcc!.currentHp, 2);

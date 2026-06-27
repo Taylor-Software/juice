@@ -87,7 +87,6 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       return base.copyWith(
         name: _heroName(p, base),
         dcc: base.dcc!.copyWith(
-          mode: 'leveled',
           stats: p.stats,
           lckMax: p.stats['lck'] ?? 10,
           currentHp: p.hp,

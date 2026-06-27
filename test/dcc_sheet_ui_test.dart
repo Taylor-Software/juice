@@ -95,27 +95,37 @@ void main() {
   });
 
   group('DccSheetView leveled', () {
-    DccSheet leveledWarrior() => DccSheet.premade().copyWith(peasants: [
-          const DccPeasant(hp: 8, stats: {
+    DccSheet leveledWarrior() => const DccSheet(
+          className: 'Warrior',
+          alignment: 'Lawful',
+          stats: {
             'str': 16,
             'agi': 12,
             'sta': 13,
             'per': 9,
             'int': 8,
             'lck': 11,
-          })
-        ]).graduate(0, 'Warrior', 'Lawful');
+          },
+          lckMax: 11,
+          currentHp: 8,
+          maxHp: 8,
+        );
 
-    DccSheet leveledCleric() => DccSheet.premade().copyWith(peasants: [
-          const DccPeasant(hp: 6, stats: {
+    DccSheet leveledCleric() => const DccSheet(
+          className: 'Cleric',
+          alignment: 'Lawful',
+          stats: {
             'str': 10,
             'agi': 10,
             'sta': 10,
             'per': 14,
             'int': 9,
             'lck': 10,
-          })
-        ]).graduate(0, 'Cleric', 'Lawful');
+          },
+          lckMax: 10,
+          currentHp: 6,
+          maxHp: 6,
+        );
 
     testWidgets('deed die only for Warrior/Dwarf', (tester) async {
       await _pumpDcc(tester, leveledWarrior());
@@ -177,38 +187,6 @@ void main() {
       expect(find.text('10 / 11'), findsOneWidget);
       expect((await c.read(charactersProvider.future)).single.dcc!.stats['lck'],
           10);
-    });
-  });
-
-  group('DccSheetView funnel', () {
-    testWidgets('shows survivor count and add-peasant button', (tester) async {
-      await _pumpDcc(tester, DccSheet.premade());
-      expect(find.text('1 / 1 alive'), findsOneWidget);
-      expect(find.byKey(const Key('dcc-add-peasant')), findsOneWidget);
-    });
-
-    testWidgets('add peasant raises count and disables at 4', (tester) async {
-      await _pumpDcc(tester, DccSheet.premade());
-      for (var n = 0; n < 3; n++) {
-        await tester.tap(find.byKey(const Key('dcc-add-peasant')));
-        await tester.pumpAndSettle();
-      }
-      expect(find.text('4 / 4 alive'), findsOneWidget);
-      final btn =
-          tester.widget<FilledButton>(find.byKey(const Key('dcc-add-peasant')));
-      expect(btn.onPressed, isNull);
-    });
-
-    testWidgets('graduate switches to leveled mode', (tester) async {
-      await _pumpDcc(tester, DccSheet.premade());
-      await tester.tap(find.byKey(const Key('dcc-peasant-0')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('dcc-peasant-0-graduate')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('dcc-graduate-confirm')));
-      await tester.pumpAndSettle();
-      // leveled stub renders nothing visible yet, but the funnel header is gone
-      expect(find.text('0-Level Funnel'), findsNothing);
     });
   });
 }
