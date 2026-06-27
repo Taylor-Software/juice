@@ -1,6 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/state/providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('FunnelPeasant', () {
@@ -146,6 +149,56 @@ void main() {
       final c = Character(
           id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
       expect(identical(c.withHpDelta(-5), c), true);
+    });
+  });
+
+  group('CharacterNotifier funnel', () {
+    setUp(() => SharedPreferences.setMockInitialValues({
+          'juice.sessions.v1':
+              '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        }));
+
+    test('addFunnel creates a funnel seeded from the system profile', () async {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final id = await c.read(charactersProvider.notifier).addFunnel('dcc');
+      final list = await c.read(charactersProvider.future);
+      final f = list.firstWhere((x) => x.id == id);
+      expect(f.funnel, isNotNull);
+      expect(f.funnel!.seedSystem, 'dcc');
+      expect(f.funnel!.peasants.length, 1);
+      expect(f.funnel!.peasants.first.stats['str'], 10); // dcc statDefault
+    });
+
+    test('graduateFunnelPeasant spawns a hero + marks the peasant graduated',
+        () async {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final notifier = c.read(charactersProvider.notifier);
+      final fid = await notifier.addFunnel('dcc');
+      final funnelChar = (await c.read(charactersProvider.future))
+          .firstWhere((x) => x.id == fid);
+      final seeded = funnelChar.copyWith(
+          funnel: funnelChar.funnel!.copyWith(peasants: [
+        funnelChar.funnel!.peasants.first.copyWith(
+            name: 'Reaper',
+            hp: 6,
+            stats: {...funnelChar.funnel!.peasants.first.stats, 'str': 15}),
+      ]));
+      await notifier.replace(seeded);
+      final profile = funnelProfileFor('dcc')!;
+      final heroId = await notifier.graduateFunnelPeasant(
+          seeded,
+          0,
+          (id) => profile.graduate(id, seeded.funnel!.peasants[0],
+              {'className': 'Warrior', 'alignment': 'Lawful'}));
+      final list = await c.read(charactersProvider.future);
+      final hero = list.firstWhere((x) => x.id == heroId);
+      expect(hero.dcc, isNotNull);
+      expect(hero.dcc!.stats['str'], 15);
+      expect(hero.name, 'Reaper');
+      final funnel = list.firstWhere((x) => x.id == fid);
+      expect(funnel.funnel!.peasants[0].graduated, true);
     });
   });
 }
