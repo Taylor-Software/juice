@@ -218,6 +218,47 @@ void main() {
     });
   });
 
+  group('profiles: modifier-stat systems', () {
+    test('nimble', () {
+      const peasant = FunnelPeasant(hp: 12, stats: {'str': 2, 'dex': 1, 'int': 0, 'wis': -1});
+      final h = funnelProfileFor('nimble')!
+          .graduate('h', peasant, {'className': kNimbleClasses.first});
+      expect(h.nimble!.stats['str'], 2);
+      expect(h.nimble!.currentHp, 12);
+      expect(h.nimble!.maxHp, 12);
+      expect(h.nimble!.className, kNimbleClasses.first);
+      expect(funnelProfileFor('nimble')!.statDefault, 0);
+    });
+    test('draw-steel maps stamina', () {
+      const peasant = FunnelPeasant(hp: 20,
+          stats: {'might': 2, 'agility': 1, 'reason': 0, 'intuition': 0, 'presence': -1});
+      final h = funnelProfileFor('draw-steel')!
+          .graduate('h', peasant, {'className': kDrawSteelClasses.first});
+      expect(h.drawSteel!.characteristics['might'], 2);
+      expect(h.drawSteel!.currentStamina, 20);
+      expect(h.drawSteel!.maxStamina, 20);
+      expect(h.drawSteel!.className, kDrawSteelClasses.first);
+    });
+    test('knave has no class choice', () {
+      expect(funnelProfileFor('knave')!.graduateChoices, isEmpty);
+      const peasant = FunnelPeasant(hp: 6, stats: {'str': 3, 'dex': 2});
+      final h = funnelProfileFor('knave')!.graduate('h', peasant, const {});
+      expect(h.knave!.stats['str'], 3);
+      expect(h.knave!.currentHp, 6);
+      expect(h.knave!.maxHp, 6);
+    });
+    test('kal-arath', () {
+      const peasant = FunnelPeasant(hp: 8, stats: {'str': 3, 'tou': 2, 'agi': 1, 'int': 0, 'pre': -1});
+      final h = funnelProfileFor('kal-arath')!.graduate('h', peasant,
+          {'archetype': kKalArathArchetypes.first, 'pact': kKalArathPacts.first});
+      expect(h.kalArath!.stats['str'], 3);
+      expect(h.kalArath!.currentHp, 8);
+      expect(h.kalArath!.maxHp, 8);
+      expect(h.kalArath!.archetype, kKalArathArchetypes.first);
+      expect(h.kalArath!.pact, kKalArathPacts.first);
+    });
+  });
+
   group('CharacterNotifier funnel', () {
     setUp(() => SharedPreferences.setMockInitialValues({
           'juice.sessions.v1':

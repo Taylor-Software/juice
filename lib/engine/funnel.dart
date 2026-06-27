@@ -202,4 +202,98 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       );
     },
   ),
+  'nimble': FunnelProfile(
+    system: 'nimble',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'int', label: 'INT'), (key: 'wis', label: 'WIS'),
+    ],
+    statMin: -9, statMax: 9, statDefault: 0,
+    flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
+    hpMin: 1, hpMax: 20,
+    graduateChoices: const [FunnelChoice('className', 'Class', kNimbleClasses)],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('nimble', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        nimble: base.nimble!.copyWith(
+          stats: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          className: picks['className'] ?? kNimbleClasses.first,
+        ),
+      );
+    },
+  ),
+  'draw-steel': FunnelProfile(
+    system: 'draw-steel',
+    statKeys: const [
+      (key: 'might', label: 'Might'), (key: 'agility', label: 'Agility'),
+      (key: 'reason', label: 'Reason'), (key: 'intuition', label: 'Intuition'),
+      (key: 'presence', label: 'Presence'),
+    ],
+    statMin: -5, statMax: 5, statDefault: 0,
+    flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
+    hpMin: 1, hpMax: 24,
+    graduateChoices: const [FunnelChoice('className', 'Class', kDrawSteelClasses)],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('draw-steel', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        drawSteel: base.drawSteel!.copyWith(
+          characteristics: p.stats,
+          currentStamina: p.hp, maxStamina: p.hp,
+          className: picks['className'] ?? kDrawSteelClasses.first,
+        ),
+      );
+    },
+  ),
+  'knave': FunnelProfile(
+    system: 'knave',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'con', label: 'CON'), (key: 'int', label: 'INT'),
+      (key: 'wis', label: 'WIS'), (key: 'cha', label: 'CHA'),
+    ],
+    statMin: 0, statMax: 10, statDefault: 0,
+    flavorFields: const [(key: 'career', label: 'Career')],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: const [],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('knave', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        knave: base.knave!.copyWith(
+          stats: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+        ),
+      );
+    },
+  ),
+  'kal-arath': FunnelProfile(
+    system: 'kal-arath',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'tou', label: 'TOU'),
+      (key: 'agi', label: 'AGI'), (key: 'int', label: 'INT'),
+      (key: 'pre', label: 'PRE'),
+    ],
+    statMin: -1, statMax: 5, statDefault: 0,
+    flavorFields: const [(key: 'doom', label: 'Doom')],
+    hpMin: 1, hpMax: 10,
+    graduateChoices: const [
+      FunnelChoice('archetype', 'Archetype', kKalArathArchetypes),
+      FunnelChoice('pact', 'Demonic Pact', kKalArathPacts),
+    ],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('kal-arath', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        kalArath: base.kalArath!.copyWith(
+          stats: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          archetype: picks['archetype'] ?? kKalArathArchetypes.first,
+          pact: picks['pact'] ?? kKalArathPacts.first,
+        ),
+      );
+    },
+  ),
 };
