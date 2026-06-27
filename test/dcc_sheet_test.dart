@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/campaign_presets.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 
 void main() {
   group('dccAbilityMod', () {
@@ -182,6 +183,10 @@ void main() {
       final (mode, systems) = presetConfig(preset);
       expect(systems, contains('dcc'));
       expect(mode, CampaignMode.party);
+    });
+    test('kSystemBlurbs dcc carries the non-affiliation note', () {
+      final blurb = kSystemBlurbs['dcc'] ?? '';
+      expect(blurb.toLowerCase(), contains('not affiliated'));
     });
   });
 }
