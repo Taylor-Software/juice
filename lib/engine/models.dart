@@ -3411,6 +3411,64 @@ const kConditions = <String>[
   'blessed',
 ];
 
+/// One 0-level funnel character. Stats/flavor are keyed by the seed
+/// FunnelProfile (see lib/engine/funnel.dart); both are free-shaped maps so the
+/// funnel is system-agnostic. All descriptive content is user-entered.
+class FunnelPeasant {
+  const FunnelPeasant({
+    this.name = '',
+    this.hp = 0,
+    this.alive = true,
+    this.graduated = false,
+    this.stats = const {},
+    this.flavor = const {},
+  });
+
+  final String name;
+  final int hp;
+  final bool alive;
+  final bool graduated; // already promoted → not graduable again
+  final Map<String, int> stats;
+  final Map<String, String> flavor;
+
+  FunnelPeasant copyWith({
+    String? name,
+    int? hp,
+    bool? alive,
+    bool? graduated,
+    Map<String, int>? stats,
+    Map<String, String>? flavor,
+  }) =>
+      FunnelPeasant(
+        name: name ?? this.name,
+        hp: (hp ?? this.hp).clamp(0, 1 << 20),
+        alive: alive ?? this.alive,
+        graduated: graduated ?? this.graduated,
+        stats: stats ?? this.stats,
+        flavor: flavor ?? this.flavor,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'hp': hp,
+        'alive': alive,
+        'graduated': graduated,
+        'stats': stats,
+        'flavor': flavor,
+      };
+
+  factory FunnelPeasant.fromJson(Map<String, dynamic> j) => FunnelPeasant(
+        name: j['name'] as String? ?? '',
+        hp: ((j['hp'] as num?)?.round() ?? 0).clamp(0, 1 << 20),
+        alive: j['alive'] as bool? ?? true,
+        graduated: j['graduated'] as bool? ?? false,
+        stats: ((j['stats'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, (v as num).round())),
+        flavor: ((j['flavor'] as Map?) ?? const {}).map(
+            (k, v) => MapEntry(k as String, v as String)),
+      );
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {
