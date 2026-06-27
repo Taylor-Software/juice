@@ -28,8 +28,19 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
       .read(charactersProvider.notifier)
       .replace(widget.character.copyWith(custom: next));
 
-  /// Reads a block's live value, or [fallback] when unset.
-  dynamic _val(String id, dynamic fallback) => _s.values[id] ?? fallback;
+  // Defensive typed reads. A campaign file can be hand-edited or corrupted, so
+  // a value of the wrong JSON shape must degrade gracefully (this file is
+  // tolerant elsewhere) rather than throw a TypeError and crash the sheet.
+  // Reused by every block renderer that reads a typed value.
+  int _valInt(String id, int fallback) {
+    final v = _s.values[id];
+    return v is num ? v.toInt() : fallback;
+  }
+
+  Map<String, dynamic> _valMap(String id) {
+    final v = _s.values[id];
+    return v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
+  }
 
   void _setVal(String id, dynamic value) =>
       _save(_s.copyWith(values: {..._s.values, id: value}));
@@ -190,7 +201,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final min = _intCfg(b, 'min', 0);
     final max = _intCfg(b, 'max', 999);
     final step = _intCfg(b, 'step', 1);
-    final v = (_val(b.id, min) as num).toInt();
+    final v = _valInt(b.id, min);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(children: [
@@ -240,7 +251,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final stats = ((b.config['stats'] as List?) ?? const [])
         .whereType<Map<dynamic, dynamic>>()
         .toList();
-    final cur = (_val(b.id, const {}) as Map).cast<String, dynamic>();
+    final cur = _valMap(b.id);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       sheetSection(context, b.label),
       Wrap(spacing: 8, runSpacing: 8, children: [
@@ -326,16 +337,19 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
 
   // --- freeform (placeholder real block) -------------------------------------
 
-  Widget _playFreeform(CustomBlock b) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: TextFormField(
-          key: Key('custom-${b.id}-freeform'),
-          initialValue: _val(b.id, '') as String,
-          maxLines: (b.config['multiline'] == true) ? 4 : 1,
-          decoration: InputDecoration(labelText: b.label),
-          onChanged: (v) => _setVal(b.id, v),
-        ),
-      );
+  Widget _playFreeform(CustomBlock b) {
+    final raw = _s.values[b.id];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: TextFormField(
+        key: Key('custom-${b.id}-freeform'),
+        initialValue: raw is String ? raw : '',
+        maxLines: (b.config['multiline'] == true) ? 4 : 1,
+        decoration: InputDecoration(labelText: b.label),
+        onChanged: (v) => _setVal(b.id, v),
+      ),
+    );
+  }
 }
 
 /// Default config for a freshly added block of [type].
