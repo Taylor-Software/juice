@@ -296,4 +296,72 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       );
     },
   ),
+  'cairn': FunnelProfile(
+    system: 'cairn',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'wil', label: 'WIL'),
+    ],
+    statMin: 3, statMax: 18, statDefault: 10,
+    flavorFields: const [],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: const [FunnelChoice('background', 'Background', kCairnBackgrounds)],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('cairn', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        cairn: base.cairn!.copyWith(
+          str: p.stats['str'], dex: p.stats['dex'], wil: p.stats['wil'],
+          currentHp: p.hp, maxHp: p.hp,
+          background: picks['background'] ?? kCairnBackgrounds.first,
+        ),
+      );
+    },
+  ),
+  'ironsworn': FunnelProfile(
+    system: 'ironsworn',
+    statKeys: const [
+      (key: 'edge', label: 'Edge'), (key: 'heart', label: 'Heart'),
+      (key: 'iron', label: 'Iron'), (key: 'shadow', label: 'Shadow'),
+      (key: 'wits', label: 'Wits'),
+    ],
+    statMin: 1, statMax: 3, statDefault: 1,
+    flavorFields: const [],
+    hpMin: 0, hpMax: 5,
+    graduateChoices: const [],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('ironsworn', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        ironsworn: base.ironsworn!.copyWith(
+          edge: p.stats['edge'], heart: p.stats['heart'],
+          iron: p.stats['iron'], shadow: p.stats['shadow'],
+          wits: p.stats['wits'],
+        ),
+      );
+    },
+  ),
+  'starforged': FunnelProfile(
+    system: 'starforged',
+    statKeys: const [
+      (key: 'edge', label: 'Edge'), (key: 'heart', label: 'Heart'),
+      (key: 'iron', label: 'Iron'), (key: 'shadow', label: 'Shadow'),
+      (key: 'wits', label: 'Wits'),
+    ],
+    statMin: 1, statMax: 3, statDefault: 1,
+    flavorFields: const [],
+    hpMin: 0, hpMax: 5,
+    graduateChoices: const [],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('starforged', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        starforged: base.starforged!.copyWith(
+          edge: p.stats['edge'], heart: p.stats['heart'],
+          iron: p.stats['iron'], shadow: p.stats['shadow'],
+          wits: p.stats['wits'],
+        ),
+      );
+    },
+  ),
 };

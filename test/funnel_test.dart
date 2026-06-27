@@ -259,6 +259,34 @@ void main() {
     });
   });
 
+  group('profiles: individual-field + meter systems', () {
+    test('cairn maps individual stats + hp + background', () {
+      const peasant = FunnelPeasant(hp: 5, stats: {'str': 12, 'dex': 9, 'wil': 14});
+      final h = funnelProfileFor('cairn')!.graduate('h', peasant,
+          {'background': kCairnBackgrounds.first});
+      expect(h.cairn!.str, 12);
+      expect(h.cairn!.dex, 9);
+      expect(h.cairn!.wil, 14);
+      expect(h.cairn!.currentHp, 5);
+      expect(h.cairn!.maxHp, 5);
+      expect(h.cairn!.background, kCairnBackgrounds.first);
+    });
+    test('ironsworn maps individual stats, ignores hp (no pool)', () {
+      const peasant = FunnelPeasant(hp: 4,
+          stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
+      final h = funnelProfileFor('ironsworn')!.graduate('h', peasant, const {});
+      expect(h.ironsworn!.edge, 2);
+      expect(h.ironsworn!.iron, 3);
+      expect(funnelProfileFor('ironsworn')!.graduateChoices, isEmpty);
+    });
+    test('starforged maps individual stats', () {
+      const peasant = FunnelPeasant(hp: 4,
+          stats: {'edge': 1, 'heart': 2, 'iron': 1, 'shadow': 3, 'wits': 2});
+      final h = funnelProfileFor('starforged')!.graduate('h', peasant, const {});
+      expect(h.starforged!.shadow, 3);
+    });
+  });
+
   group('CharacterNotifier funnel', () {
     setUp(() => SharedPreferences.setMockInitialValues({
           'juice.sessions.v1':
