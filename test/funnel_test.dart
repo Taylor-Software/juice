@@ -412,16 +412,10 @@ void main() {
   });
 
   group('profile registry completeness', () {
-    test('every kSystemCategory ruleset has a profile (except custom)', () {
-      // 'custom' is a user-authored schema (the Custom/Homebrew creator), not a
-      // concrete game with a canonical hero shape, so it is deliberately not a
-      // funnel graduation target — it has no FunnelProfile. The runtime target
-      // pickers (funnel_sheet / tracker_screen) already filter by
-      // kFunnelProfiles.keys, so custom simply never appears as a funnel seed.
+    test('every kSystemCategory ruleset has a profile', () {
       final rulesets = kSystemCategory.entries
           .where((e) => e.value == SystemCategory.ruleset)
           .map((e) => e.key)
-          .where((s) => s != 'custom')
           .toSet();
       for (final sys in rulesets) {
         expect(kFunnelProfiles.containsKey(sys), true,
@@ -431,7 +425,6 @@ void main() {
     test('every profile is well-formed', () {
       kFunnelProfiles.forEach((sys, p) {
         expect(p.system, sys);
-        expect(p.statKeys, isNotEmpty, reason: '$sys statKeys');
         expect(p.statMin < p.statMax, true, reason: '$sys range');
         expect(p.statDefault >= p.statMin && p.statDefault <= p.statMax, true,
             reason: '$sys default in range');
@@ -439,11 +432,50 @@ void main() {
         for (final c in p.graduateChoices) {
           expect(c.options, isNotEmpty, reason: '$sys choice ${c.key}');
         }
-        final peasant = p.seedPeasant('').copyWith(name: 'X');
-        final hero = p.graduate('hid', peasant, p.defaultPicks(), '');
+        if (sys == 'custom') {
+          expect(funnelPeasantSchema('custom', 'generic-d20').statKeys,
+              isNotEmpty);
+        } else {
+          expect(p.statKeys, isNotEmpty, reason: '$sys statKeys');
+        }
+        final variant = sys == 'custom' ? 'generic-d20' : '';
+        final peasant = p.seedPeasant(variant).copyWith(name: 'X');
+        final hero = p.graduate('hid', peasant, p.defaultPicks(), variant);
         expect(hero.id, 'hid');
         expect(hero.name, 'X');
       });
+    });
+  });
+
+  group('custom funnel profile', () {
+    test('custom profile exists with no graduate choices', () {
+      final p = funnelProfileFor('custom');
+      expect(p, isNotNull);
+      expect(p!.graduateChoices, isEmpty);
+    });
+    test('custom seedPeasant uses the template schema', () {
+      final p = funnelProfileFor('custom')!;
+      final peasant = p.seedPeasant('osr');
+      expect(peasant.stats.keys, containsAll(['str', 'dex', 'wil']));
+    });
+    test('graduate builds the template blocks + injects stats and hp', () {
+      const peasant = FunnelPeasant(name: 'Reaper', hp: 6,
+          stats: {'str': 15, 'dex': 13, 'con': 14, 'int': 8, 'wis': 9, 'cha': 11});
+      final h = funnelProfileFor('custom')!
+          .graduate('h', peasant, const {}, 'generic-d20');
+      expect(h.custom, isNotNull);
+      expect(h.name, 'Reaper');
+      expect(h.custom!.blocks.any((b) => b.id == 'g-stat'), true);
+      expect((h.custom!.values['g-stat'] as Map)['str'], 15);
+      expect(h.custom!.values['g-hp'], 6);
+    });
+    test('graduate into blank template yields an empty custom sheet', () {
+      const peasant = FunnelPeasant(name: 'Nobody', hp: 4);
+      final h = funnelProfileFor('custom')!
+          .graduate('h', peasant, const {}, 'blank');
+      expect(h.custom, isNotNull);
+      expect(h.custom!.blocks, isEmpty);
+      expect(h.name, 'Nobody');
     });
   });
 }

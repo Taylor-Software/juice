@@ -386,6 +386,38 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       );
     },
   ),
+  'custom': FunnelProfile(
+    system: 'custom',
+    statKeys: const [], // template-driven; see funnelPeasantSchema
+    statMin: 1, statMax: 18, statDefault: 10,
+    flavorFields: const [],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: const [], // template locked at creation
+    graduate: (id, p, picks, seedVariant) {
+      final t = kCustomTemplates.firstWhere((x) => x.id == seedVariant,
+          orElse: () => kCustomTemplates.first);
+      final values = <String, dynamic>{};
+      var didStat = false, didHp = false;
+      for (final b in t.blocks) {
+        if (!didStat && b.type == CustomBlockType.stat) {
+          final rawStats = (b.config['stats'] as List?) ?? const [];
+          values[b.id] = {
+            for (final s in rawStats)
+              (s as Map)['key'] as String: p.stats[s['key']] ?? 0,
+          };
+          didStat = true;
+        } else if (!didHp && b.type == CustomBlockType.hp) {
+          values[b.id] = p.hp;
+          didHp = true;
+        }
+      }
+      final base = Character.forSheet('custom', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        custom: CustomSheet(blocks: t.blocks, values: values),
+      );
+    },
+  ),
   'ironsworn': FunnelProfile(
     system: 'ironsworn',
     statKeys: const [
