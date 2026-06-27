@@ -77,4 +77,30 @@ void main() {
       expect(s.peasants, isEmpty);
     });
   });
+
+  group('Character funnel wiring', () {
+    test('round-trips a funnel character through json', () {
+      final c = Character(
+        id: 'f1',
+        name: 'Funnel',
+        funnel: FunnelSheet(seedSystem: 'dcc', peasants: const [
+          FunnelPeasant(name: 'A', hp: 3, stats: {'str': 12}),
+        ]),
+      );
+      final back = Character.fromJson(c.toJson());
+      expect(back.funnel, isNotNull);
+      expect(back.funnel!.seedSystem, 'dcc');
+      expect(back.funnel!.peasants.single.name, 'A');
+    });
+    test('clearFunnel drops the sheet', () {
+      final c = Character(
+          id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
+      expect(c.copyWith(clearFunnel: true).funnel, isNull);
+    });
+    test('withHpDelta leaves a funnel character unchanged', () {
+      final c = Character(
+          id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
+      expect(identical(c.withHpDelta(-5), c), true);
+    });
+  });
 }

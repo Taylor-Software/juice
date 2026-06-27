@@ -3539,6 +3539,7 @@ class Character {
     this.ose,
     this.kalArath,
     this.dcc,
+    this.funnel,
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
@@ -3588,6 +3589,9 @@ class Character {
 
   /// Bespoke DCC sheet; null unless this is a DCC character.
   final DccSheet? dcc;
+
+  /// Standalone 0-level funnel; null unless this roster entry is a funnel.
+  final FunnelSheet? funnel;
 
   /// Whether this character is starred in the campaign header.
   final bool starred;
@@ -3674,6 +3678,8 @@ class Character {
     bool clearKalArath = false,
     DccSheet? dcc,
     bool clearDcc = false,
+    FunnelSheet? funnel,
+    bool clearFunnel = false,
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
@@ -3698,6 +3704,7 @@ class Character {
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
         dcc: clearDcc ? null : (dcc ?? this.dcc),
+        funnel: clearFunnel ? null : (funnel ?? this.funnel),
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
@@ -3794,6 +3801,7 @@ class Character {
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
         if (dcc != null) 'dcc': dcc!.toJson(),
+        if (funnel != null) 'funnel': funnel!.toJson(),
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
@@ -3825,6 +3833,7 @@ class Character {
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
         dcc: DccSheet.maybeFromJson(j['dcc']),
+        funnel: FunnelSheet.maybeFromJson(j['funnel']),
         starred: (j['starred'] as bool?) ?? false,
         role: _roleFromName(j['role'] as String?),
         conditions: ((j['conditions'] as List?) ?? const [])
