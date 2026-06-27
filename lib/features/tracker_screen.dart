@@ -19,6 +19,7 @@ import 'knave_sheet.dart';
 import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
+import 'custom_sheet.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
 import 'sheet_widgets.dart';
@@ -256,6 +257,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               _editingId = null;
             } else {
               final c = match.first;
+              if (c.custom != null) {
+                return CustomSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.starforged != null) {
                 return StarforgedSheetView(
                   character: c,
