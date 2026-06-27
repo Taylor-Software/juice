@@ -148,6 +148,34 @@ Working rules for this repo:
   text + attribution) is deferred pending explicit permission from Castle Grief. Registered
   as a ruleset in `kKnownSystems`/`kSystemCategory`, with a `solo-kal-arath` preset +
   `surfacesFor` row. See `docs/superpowers/plans/2026-06-25-kal-arath-sheet.md`.
+- A facts-only **Dungeon Crawl Classics** sheet (`lib/features/dcc_sheet.dart`,
+  rendered when `Character.dcc` is set; opt-in `dcc` system, NOT in `kAllSystems`).
+  Models the full **0-level funnel → graduate-in-place** arc via a `DccSheet.mode`
+  discriminator (`funnel`|`leveled`) over a `DccPeasant` list: the funnel tracks up
+  to `kDccMaxPeasants` (4) peasants (occupation/weapon/trade-goods + 6 stats +
+  kill/revive), and a per-peasant **Graduate** dialog promotes one survivor in place
+  (copies stats/hp, sets `lckMax`, carries occupation, preserves the peasant list as
+  history). Authored constants only (`kDccClasses`/`kDccClassHitDie`/`kDccStats`/
+  `kDccSaveKeys`/`kDccDeedDieClasses`/`kDccCasterClasses`/`kDccSpellburnStats`) + the
+  DCC-specific `dccAbilityMod` (3–18 capped ±3 — distinct from the 5e `(s-10)/2`
+  curve). Leveled interactivity: Fort/Ref/Will **save rolls** (DC-prompt dialog →
+  d20+bonus → Pass/Fail snackbar), LCK **luck-token** spend via the shared
+  `luckTokensSection` (sheet_widgets.dart — DCC's LCK is both stat + spendable pool,
+  so `stats['lck']`/`lckMax`; Shadowdark's bool + Kal-Arath's counter were
+  intentionally NOT migrated — different mechanics), Thief/Halfling Luck-recovery
+  caption (`DccSheet.luckyRecoveryClass`), **Mighty Deeds** deed die (Warrior/Dwarf),
+  **spellburn** (Wizard/Elf/Cleric — burn steppers lower the effective score; spell
+  check = action die + level + casting mod + burn vs DC), and Cleric **disapproval**
+  (d20 ≤ range). `DccSheet.maybeFromJson` validates `actionDie`/`deedDie` against the
+  dice sets (the leveled UI parses sides via `substring(1)`, so a corrupted token
+  must not reach `int.parse`). **Licensing:** DCC core is OGL 1.0a, but per the
+  repo's facts-only posture the sheet ships NO occupation table / spell lists /
+  class prose; the blurb carries "Not affiliated with Goodman Games" (no
+  compatible-with claim). Created via `CharacterNotifier.addDcc` (roster `new-dcc`),
+  registered in `kKnownSystems`/`kSystemCategory` with a `solo-dcc` preset, a
+  system-primer line, and a `surfacesFor` row. See
+  `docs/superpowers/specs/2026-06-26-dcc-sheet-design.md` and the plan
+  `docs/superpowers/plans/2026-06-26-dcc-sheet.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting

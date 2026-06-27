@@ -16,6 +16,7 @@ import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
 import 'knave_sheet.dart';
+import 'dcc_sheet.dart';
 import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
@@ -300,6 +301,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.dcc != null) {
+                return DccSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.knave != null) {
                 return KnaveSheetView(
                   character: c,
@@ -519,7 +531,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('cairn') &&
         !systems.contains('knave') &&
         !systems.contains('ose') &&
-        !systems.contains('kal-arath')) {
+        !systems.contains('kal-arath') &&
+        !systems.contains('dcc')) {
       await _addCharacter(context);
       return;
     }
@@ -616,6 +629,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Kal-Arath',
           blurb: '5 stats, 2d6+stat rolls, demonic pacts, Fate Points.'
         ),
+      if (systems.contains('dcc'))
+        (
+          key: 'new-dcc',
+          value: 'dcc',
+          label: 'Dungeon Crawl Classics',
+          blurb: '0-level funnel, dice chain, deeds, spellburn.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -697,6 +717,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newOse();
     } else if (choice == 'kal-arath') {
       await _newKalArath();
+    } else if (choice == 'dcc') {
+      await _newDcc();
     }
   }
 
@@ -764,6 +786,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newKalArath() async {
     final id = await ref.read(charactersProvider.notifier).addKalArath();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newDcc() async {
+    final id = await ref.read(charactersProvider.notifier).addDcc();
     if (mounted) setState(() => _editingId = id);
   }
 

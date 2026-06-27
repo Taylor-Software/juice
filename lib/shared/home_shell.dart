@@ -731,6 +731,10 @@ const kSystemBlurbs = <String, String>{
       'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
   'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
       'demonic pacts, Fate Points. Facts-only mechanics.',
+  'dcc':
+      'Dungeon Crawl Classics: 0-level funnel, dice chain, mighty deeds, '
+          'spellburn, disapproval. Facts-only mechanics. '
+          'Not affiliated with Goodman Games.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
 };
 
@@ -745,6 +749,7 @@ const kPresetIcons = <String, IconData>{
   'solo-knave': Icons.content_cut,
   'solo-ose': Icons.auto_stories,
   'solo-kal-arath': Icons.whatshot,
+  'solo-dcc': Icons.sports_martial_arts,
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };

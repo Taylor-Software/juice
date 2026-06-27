@@ -105,6 +105,13 @@ const kCampaignPresets = <CampaignPreset>[
       mode: CampaignMode.party,
       systems: {'kal-arath', 'juice', 'party'}),
   CampaignPreset(
+      id: 'solo-dcc',
+      label: 'Dungeon Crawl Classics',
+      kind: 'Brutal 0-level funnel',
+      blurb: 'Peasants die, heroes rise',
+      mode: CampaignMode.party,
+      systems: {'dcc', 'juice', 'party'}),
+  CampaignPreset(
       id: 'oracle',
       label: 'System-agnostic oracle',
       kind: 'Pure oracle / journaling',
