@@ -174,6 +174,43 @@ void main() {
     });
   });
 
+  group('profiles: map-stat hp systems', () {
+    const peasant = FunnelPeasant(
+      name: 'Hero', hp: 7,
+      stats: {'str': 15, 'dex': 13, 'con': 14, 'int': 8, 'wis': 9, 'cha': 11},
+    );
+    test('dnd', () {
+      final h = funnelProfileFor('dnd')!
+          .graduate('h', peasant, {'className': 'Wizard'});
+      expect(h.dnd, isNotNull);
+      expect(h.dnd!.abilities['str'], 15);
+      expect(h.dnd!.currentHp, 7);
+      expect(h.dnd!.maxHp, 7);
+      expect(h.dnd!.className, 'Wizard');
+      expect(h.name, 'Hero');
+    });
+    test('shadowdark', () {
+      final h = funnelProfileFor('shadowdark')!.graduate('h', peasant,
+          {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'});
+      expect(h.shadowdark!.abilities['str'], 15);
+      expect(h.shadowdark!.currentHp, 7);
+      expect(h.shadowdark!.className, 'Wizard');
+    });
+    test('argosa', () {
+      final h = funnelProfileFor('argosa')!.graduate('h', peasant,
+          {'className': funnelProfileFor('argosa')!.graduateChoices.first.options.first});
+      expect(h.argosa!.stats['str'], 15);
+      expect(h.argosa!.currentHp, 7);
+    });
+    test('ose', () {
+      final h = funnelProfileFor('ose')!.graduate('h', peasant,
+          {'className': 'Fighter', 'alignment': 'Neutral'});
+      expect(h.ose!.stats['str'], 15);
+      expect(h.ose!.currentHp, 7);
+      expect(h.ose!.className, 'Fighter');
+    });
+  });
+
   group('CharacterNotifier funnel', () {
     setUp(() => SharedPreferences.setMockInitialValues({
           'juice.sessions.v1':

@@ -99,4 +99,107 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       );
     },
   ),
+  'dnd': FunnelProfile(
+    system: 'dnd',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'con', label: 'CON'), (key: 'int', label: 'INT'),
+      (key: 'wis', label: 'WIS'), (key: 'cha', label: 'CHA'),
+    ],
+    statMin: 3, statMax: 18, statDefault: 10,
+    flavorFields: const [(key: 'background', label: 'Background')],
+    hpMin: 1, hpMax: 10,
+    graduateChoices: [const FunnelChoice('className', 'Class', kDndClasses)],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('dnd', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        dnd: base.dnd!.copyWith(
+          abilities: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          className: picks['className'] ?? 'Fighter',
+        ),
+      );
+    },
+  ),
+  'shadowdark': FunnelProfile(
+    system: 'shadowdark',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'con', label: 'CON'), (key: 'int', label: 'INT'),
+      (key: 'wis', label: 'WIS'), (key: 'cha', label: 'CHA'),
+    ],
+    statMin: 3, statMax: 18, statDefault: 10,
+    flavorFields: const [(key: 'background', label: 'Background')],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: [
+      const FunnelChoice('className', 'Class', kShadowdarkClasses),
+      const FunnelChoice('ancestry', 'Ancestry', kShadowdarkAncestries),
+      const FunnelChoice('alignment', 'Alignment', kShadowdarkAlignments),
+    ],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('shadowdark', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        shadowdark: base.shadowdark!.copyWith(
+          abilities: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          className: picks['className'] ?? 'Fighter',
+          ancestry: picks['ancestry'] ?? 'Human',
+          alignment: picks['alignment'] ?? 'Neutral',
+        ),
+      );
+    },
+  ),
+  'argosa': FunnelProfile(
+    system: 'argosa',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'dex', label: 'DEX'),
+      (key: 'con', label: 'CON'), (key: 'int', label: 'INT'),
+      (key: 'per', label: 'PER'), (key: 'wil', label: 'WIL'),
+      (key: 'cha', label: 'CHA'),
+    ],
+    statMin: 3, statMax: 18, statDefault: 10,
+    flavorFields: const [(key: 'occupation', label: 'Occupation')],
+    hpMin: 1, hpMax: 10,
+    graduateChoices: [const FunnelChoice('className', 'Class', kArgosaClasses)],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('argosa', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        argosa: base.argosa!.copyWith(
+          stats: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          className: picks['className'] ?? kArgosaClasses.first,
+        ),
+      );
+    },
+  ),
+  'ose': FunnelProfile(
+    system: 'ose',
+    statKeys: const [
+      (key: 'str', label: 'STR'), (key: 'int', label: 'INT'),
+      (key: 'wis', label: 'WIS'), (key: 'dex', label: 'DEX'),
+      (key: 'con', label: 'CON'), (key: 'cha', label: 'CHA'),
+    ],
+    statMin: 3, statMax: 18, statDefault: 10,
+    flavorFields: const [(key: 'occupation', label: 'Occupation')],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: [
+      const FunnelChoice('className', 'Class', kOseClasses),
+      const FunnelChoice('alignment', 'Alignment', kOseAlignments),
+    ],
+    graduate: (id, p, picks) {
+      final base = Character.forSheet('ose', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        ose: base.ose!.copyWith(
+          stats: p.stats,
+          currentHp: p.hp, maxHp: p.hp,
+          className: picks['className'] ?? 'Fighter',
+          alignment: picks['alignment'] ?? 'Neutral',
+        ),
+      );
+    },
+  ),
 };
