@@ -106,6 +106,47 @@ void main() {
           })
         ]).graduate(0, 'Warrior', 'Lawful');
 
+    DccSheet leveledCleric() => DccSheet.premade().copyWith(peasants: [
+          const DccPeasant(hp: 6, stats: {
+            'str': 10,
+            'agi': 10,
+            'sta': 10,
+            'per': 14,
+            'int': 9,
+            'lck': 10,
+          })
+        ]).graduate(0, 'Cleric', 'Lawful');
+
+    testWidgets('deed die only for Warrior/Dwarf', (tester) async {
+      await _pumpDcc(tester, leveledWarrior());
+      expect(find.byKey(const Key('dcc-deed-roll')), findsOneWidget);
+      expect(find.byKey(const Key('dcc-spell-check-roll')), findsNothing);
+      expect(find.byKey(const Key('dcc-disapproval-roll')), findsNothing);
+    });
+
+    testWidgets('caster sections only for Cleric', (tester) async {
+      await _pumpDcc(tester, leveledCleric());
+      expect(find.byKey(const Key('dcc-deed-roll')), findsNothing);
+      expect(find.byKey(const Key('dcc-spell-check-roll')), findsOneWidget);
+      expect(find.byKey(const Key('dcc-disapproval-roll')), findsOneWidget);
+    });
+
+    testWidgets('spellburn stepper reduces effective stat', (tester) async {
+      await _pumpDcc(tester, leveledCleric());
+      // PER 14 -> burn raises spellburn; tap the per burn +
+      await tester.tap(find.byKey(const Key('dcc-burn-per-plus')));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Spellburn: +1'), findsOneWidget);
+    });
+
+    testWidgets('disapproval roll shows snackbar', (tester) async {
+      await _pumpDcc(tester, leveledCleric());
+      await tester.tap(find.byKey(const Key('dcc-disapproval-roll')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.textContaining('Disapproval check:'), findsOneWidget);
+    });
+
     testWidgets('renders stats grid and lucky-sign field', (tester) async {
       await _pumpDcc(tester, leveledWarrior());
       expect(find.byKey(const Key('dcc-sheet')), findsOneWidget);
