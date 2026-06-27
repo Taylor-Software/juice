@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/campaign_presets.dart';
+import 'package:juice_oracle/engine/custom_templates.dart';
 import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
@@ -348,6 +349,37 @@ void main() {
       expect(hero.name, 'Reaper');
       final funnel = list.firstWhere((x) => x.id == fid);
       expect(funnel.funnel!.peasants[0].graduated, true);
+    });
+  });
+
+  group('funnelPeasantSchema', () {
+    test('non-custom returns the profile fixed schema', () {
+      final sc = funnelPeasantSchema('dcc', '');
+      final p = funnelProfileFor('dcc')!;
+      expect(sc.statKeys.map((s) => s.key), p.statKeys.map((s) => s.key));
+      expect(sc.statMin, p.statMin);
+      expect(sc.statMax, p.statMax);
+      expect(sc.hpMin, p.hpMin);
+      expect(sc.hpMax, p.hpMax);
+    });
+    test('custom derives stat keys from the chosen template', () {
+      final g = funnelPeasantSchema('custom', 'generic-d20');
+      expect(g.statKeys.map((s) => s.key),
+          ['str', 'dex', 'con', 'int', 'wis', 'cha']);
+      expect(g.statMin, 3);
+      expect(g.statMax, 18);
+
+      final osr = funnelPeasantSchema('custom', 'osr');
+      expect(osr.statKeys.map((s) => s.key), ['str', 'dex', 'wil']);
+
+      final pbta = funnelPeasantSchema('custom', 'pbta');
+      expect(pbta.statKeys.length, 5);
+      expect(pbta.statMin, -1);
+      expect(pbta.statMax, 3);
+
+      final blank = funnelPeasantSchema('custom', 'blank');
+      expect(blank.statKeys, isEmpty);
+      expect(blank.hpMin >= 1, true);
     });
   });
 

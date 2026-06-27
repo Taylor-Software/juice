@@ -1,3 +1,5 @@
+import 'custom_sheet.dart';
+import 'custom_templates.dart';
 import 'models.dart';
 
 /// Max 0-level peasants a funnel tracks at once.
@@ -40,11 +42,14 @@ class FunnelProfile {
       String seedVariant) graduate;
 
   /// A fresh empty peasant seeded from this profile (mid-range stats, hpMin).
-  FunnelPeasant seedPeasant(String seedVariant) => FunnelPeasant(
-        hp: hpMin,
-        stats: {for (final s in statKeys) s.key: statDefault},
-        flavor: {for (final f in flavorFields) f.key: ''},
-      );
+  FunnelPeasant seedPeasant(String seedVariant) {
+    final sc = funnelPeasantSchema(system, seedVariant);
+    return FunnelPeasant(
+      hp: sc.hpMin,
+      stats: {for (final s in sc.statKeys) s.key: sc.statDefault},
+      flavor: {for (final f in sc.flavorFields) f.key: ''},
+    );
+  }
 
   /// The default pick for each choice (its first option), for the graduate dialog.
   Map<String, String> defaultPicks() =>
@@ -52,6 +57,70 @@ class FunnelProfile {
 }
 
 FunnelProfile? funnelProfileFor(String system) => kFunnelProfiles[system];
+
+/// The effective peasant schema for a funnel — what stat/HP steppers to render
+/// and seed. For custom it derives from the chosen template's stat block; for
+/// every other system it is the profile's fixed schema.
+typedef FunnelPeasantSchema = ({
+  List<({String key, String label})> statKeys,
+  int statMin,
+  int statMax,
+  int statDefault,
+  List<({String key, String label})> flavorFields,
+  int hpMin,
+  int hpMax,
+});
+
+FunnelPeasantSchema funnelPeasantSchema(String seedSystem, String seedVariant) {
+  if (seedSystem == 'custom') {
+    final t = kCustomTemplates.firstWhere((x) => x.id == seedVariant,
+        orElse: () => kCustomTemplates.first); // 'blank' is first
+    CustomBlock? statBlock;
+    for (final b in t.blocks) {
+      if (b.type == CustomBlockType.stat) {
+        statBlock = b;
+        break;
+      }
+    }
+    final rawStats = (statBlock?.config['stats'] as List?) ?? const [];
+    final keys = [
+      for (final s in rawStats)
+        (key: (s as Map)['key'] as String, label: s['label'] as String),
+    ];
+    final min = (statBlock?.config['min'] as int?) ?? 1;
+    final max = (statBlock?.config['max'] as int?) ?? 18;
+    return (
+      statKeys: keys,
+      statMin: min,
+      statMax: max,
+      statDefault: ((min + max) / 2).round(),
+      flavorFields: const [],
+      hpMin: 1, // peasants always track death, even if the template has no HP block
+      hpMax: 8,
+    );
+  }
+  final p = funnelProfileFor(seedSystem);
+  if (p == null) {
+    return (
+      statKeys: const [],
+      statMin: 1,
+      statMax: 18,
+      statDefault: 10,
+      flavorFields: const [],
+      hpMin: 0,
+      hpMax: 0,
+    );
+  }
+  return (
+    statKeys: p.statKeys,
+    statMin: p.statMin,
+    statMax: p.statMax,
+    statDefault: p.statDefault,
+    flavorFields: p.flavorFields,
+    hpMin: p.hpMin,
+    hpMax: p.hpMax,
+  );
+}
 
 /// Helper: hero name from the peasant, falling back to the forSheet default.
 String _heroName(FunnelPeasant p, Character base) =>
