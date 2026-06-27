@@ -491,9 +491,10 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
   late StatModFormula _formula = statModFormulaFromName(
       widget.block.config['modFormula'] as String?);
 
-  // One pair of controllers per stat row (fixed count; add/remove deferred).
-  late final List<TextEditingController> _keyCtls;
-  late final List<TextEditingController> _lblCtls;
+  // One pair of controllers per stat row. Both lists grow/shrink together via
+  // _addRow/_removeRow; every controller ever created is disposed in dispose().
+  final List<TextEditingController> _keyCtls = [];
+  final List<TextEditingController> _lblCtls = [];
 
   @override
   void initState() {
@@ -501,12 +502,10 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
     final rawStats = ((widget.block.config['stats'] as List?) ?? const [])
         .whereType<Map<dynamic, dynamic>>()
         .toList();
-    _keyCtls = rawStats
-        .map((s) => TextEditingController(text: s['key'] as String? ?? ''))
-        .toList();
-    _lblCtls = rawStats
-        .map((s) => TextEditingController(text: s['label'] as String? ?? ''))
-        .toList();
+    for (final s in rawStats) {
+      _keyCtls.add(TextEditingController(text: s['key'] as String? ?? ''));
+      _lblCtls.add(TextEditingController(text: s['label'] as String? ?? ''));
+    }
   }
 
   @override
@@ -521,6 +520,23 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void _addRow() {
+    setState(() {
+      _keyCtls.add(TextEditingController(text: 'stat${_keyCtls.length + 1}'));
+      _lblCtls.add(TextEditingController());
+    });
+  }
+
+  void _removeRow(int i) {
+    setState(() {
+      // Dispose the removed row's controllers immediately — they are no longer
+      // mounted in the tree, so disposing now (not in dispose()) is safe and
+      // avoids leaking a controller per removed row.
+      _keyCtls.removeAt(i).dispose();
+      _lblCtls.removeAt(i).dispose();
+    });
   }
 
   @override
@@ -559,9 +575,11 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
               },
             ),
             const SizedBox(height: 8),
-            // Editable stat rows (fixed count; add/remove is a P2 concern).
+            // Editable stat rows. Key each row by its key-controller identity so
+            // a removal re-pairs the right element with the right controller
+            // (index keys would shift a controller into a stale element).
             for (var i = 0; i < _keyCtls.length; i++)
-              Row(children: [
+              Row(key: ObjectKey(_keyCtls[i]), children: [
                 Expanded(
                   child: TextField(
                     controller: _keyCtls[i],
@@ -575,7 +593,22 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
                     decoration: const InputDecoration(labelText: 'Label'),
                   ),
                 ),
+                IconButton(
+                  key: Key('custom-cfg-stat-$i-remove'),
+                  icon: const Icon(Icons.remove_circle_outline),
+                  tooltip: 'Remove',
+                  onPressed: () => _removeRow(i),
+                ),
               ]),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('custom-cfg-stat-add'),
+                icon: const Icon(Icons.add),
+                label: const Text('Add stat'),
+                onPressed: _addRow,
+              ),
+            ),
           ]),
         ),
         actions: [

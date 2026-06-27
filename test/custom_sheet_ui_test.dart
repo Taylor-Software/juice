@@ -189,6 +189,27 @@ void main() {
     expect((blk.config['max'] as num).toInt(), 25);
   });
 
+  testWidgets('stat config adds a stat row and persists', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 'b1', type: CustomBlockType.stat, label: 'Abilities', config: {
+        'stats': [{'key': 'str', 'label': 'STR'}],
+        'min': 3, 'max': 18, 'modFormula': 'raw',
+      }),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-block-b1-config')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('custom-cfg-stat-add')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    final blk = (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    expect((blk.config['stats'] as List).length, 2);
+  });
+
   testWidgets('stat config changes the modifier formula and persists',
       (tester) async {
     _bigView(tester);
