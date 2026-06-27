@@ -3469,6 +3469,53 @@ class FunnelPeasant {
       );
 }
 
+/// A standalone 0-level funnel roster entity. `seedSystem` is the sheet system
+/// whose FunnelProfile shaped the peasants' stat/flavor keys (see
+/// lib/engine/funnel.dart). Graduating a survivor spawns a *separate* hero
+/// Character; the funnel persists (the promoted peasant is marked graduated).
+class FunnelSheet {
+  const FunnelSheet({this.seedSystem = '', this.peasants = const []});
+
+  final String seedSystem;
+  final List<FunnelPeasant> peasants;
+
+  factory FunnelSheet.premade(String seedSystem, List<FunnelPeasant> seed) =>
+      FunnelSheet(seedSystem: seedSystem, peasants: seed);
+
+  FunnelSheet copyWith({String? seedSystem, List<FunnelPeasant>? peasants}) =>
+      FunnelSheet(
+        seedSystem: seedSystem ?? this.seedSystem,
+        peasants: peasants ?? this.peasants,
+      );
+
+  /// Returns a copy with peasant [i] flagged graduated.
+  FunnelSheet markGraduated(int i) {
+    final list = [...peasants];
+    list[i] = list[i].copyWith(graduated: true);
+    return copyWith(peasants: list);
+  }
+
+  int get aliveCount => peasants.where((p) => p.alive && !p.graduated).length;
+  int get graduatedCount => peasants.where((p) => p.graduated).length;
+
+  Map<String, dynamic> toJson() => {
+        'seedSystem': seedSystem,
+        'peasants': peasants.map((p) => p.toJson()).toList(),
+      };
+
+  static FunnelSheet? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final m = j.cast<String, dynamic>();
+    return FunnelSheet(
+      seedSystem: m['seedSystem'] as String? ?? '',
+      peasants: ((m['peasants'] as List?) ?? const [])
+          .whereType<Map<dynamic, dynamic>>()
+          .map((e) => FunnelPeasant.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+    );
+  }
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {

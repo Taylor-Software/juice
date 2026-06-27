@@ -41,4 +41,40 @@ void main() {
       expect(p.stats, isEmpty);
     });
   });
+
+  group('FunnelSheet', () {
+    test('premade has the seed system + one empty peasant', () {
+      final s = FunnelSheet.premade('dcc', const [FunnelPeasant(hp: 1)]);
+      expect(s.seedSystem, 'dcc');
+      expect(s.peasants.length, 1);
+      expect(s.peasants.first.hp, 1);
+    });
+    test('markGraduated flips one peasant', () {
+      final s = FunnelSheet(seedSystem: 'dcc', peasants: const [
+        FunnelPeasant(name: 'A'),
+        FunnelPeasant(name: 'B'),
+      ]);
+      final s2 = s.markGraduated(1);
+      expect(s2.peasants[0].graduated, false);
+      expect(s2.peasants[1].graduated, true);
+    });
+    test('round-trips through json', () {
+      final s = FunnelSheet(seedSystem: 'ose', peasants: const [
+        FunnelPeasant(name: 'A', hp: 4, stats: {'str': 12}),
+      ]);
+      final back = FunnelSheet.maybeFromJson(s.toJson())!;
+      expect(back.seedSystem, 'ose');
+      expect(back.peasants.single.name, 'A');
+      expect(back.peasants.single.stats['str'], 12);
+    });
+    test('maybeFromJson returns null for non-map', () {
+      expect(FunnelSheet.maybeFromJson(null), isNull);
+      expect(FunnelSheet.maybeFromJson('x'), isNull);
+    });
+    test('maybeFromJson defaults a missing seedSystem to empty + tolerates no peasants', () {
+      final s = FunnelSheet.maybeFromJson(const {})!;
+      expect(s.seedSystem, '');
+      expect(s.peasants, isEmpty);
+    });
+  });
 }
