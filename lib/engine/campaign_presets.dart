@@ -110,7 +110,14 @@ const kCampaignPresets = <CampaignPreset>[
       kind: 'Brutal 0-level funnel',
       blurb: 'Peasants die, heroes rise',
       mode: CampaignMode.party,
-      systems: {'dcc', 'juice', 'party'}),
+      systems: {'dcc', 'juice', 'party', 'funnel'}),
+  CampaignPreset(
+      id: 'solo-funnel',
+      label: 'Character Funnel',
+      kind: 'Session-zero gauntlet',
+      blurb: 'Doomed peasants → survivors',
+      mode: CampaignMode.party,
+      systems: {'funnel', 'juice', 'party'}),
   CampaignPreset(
       id: 'oracle',
       label: 'System-agnostic oracle',

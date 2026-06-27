@@ -736,6 +736,9 @@ const kSystemBlurbs = <String, String>{
           'spellburn, disapproval. Facts-only mechanics. '
           'Not affiliated with Goodman Games.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
+  'funnel':
+      '0-Level Funnel: run a pack of doomed peasants, then graduate '
+          'survivors into full characters of any enabled system.',
 };
 
 const kPresetIcons = <String, IconData>{
@@ -750,6 +753,7 @@ const kPresetIcons = <String, IconData>{
   'solo-ose': Icons.auto_stories,
   'solo-kal-arath': Icons.whatshot,
   'solo-dcc': Icons.sports_martial_arts,
+  'solo-funnel': Icons.groups,
   'oracle': Icons.casino,
   'gm-toolkit': Icons.book,
 };

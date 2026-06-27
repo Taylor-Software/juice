@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/campaign_presets.dart';
 import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/shared/home_shell.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -149,6 +151,26 @@ void main() {
       final c = Character(
           id: 'f1', name: 'F', funnel: const FunnelSheet(seedSystem: 'dcc'));
       expect(identical(c.withHpDelta(-5), c), true);
+    });
+  });
+
+  group('funnel system registration', () {
+    test('funnel is a known tools system', () {
+      expect(kKnownSystems, contains('funnel'));
+      expect(kSystemCategory['funnel'], SystemCategory.tools);
+    });
+    test('blurb exists', () {
+      expect(kSystemBlurbs['funnel'], isNotNull);
+    });
+    test('solo-dcc preset includes funnel', () {
+      final p = kCampaignPresets.firstWhere((x) => x.id == 'solo-dcc');
+      expect(p.systems, contains('funnel'));
+    });
+    test('solo-funnel preset resolves', () {
+      final p = kCampaignPresets.firstWhere((x) => x.id == 'solo-funnel');
+      final (mode, systems) = presetConfig(p);
+      expect(systems, contains('funnel'));
+      expect(mode, CampaignMode.party);
     });
   });
 

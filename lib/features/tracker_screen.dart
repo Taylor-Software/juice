@@ -16,7 +16,9 @@ import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
 import 'knave_sheet.dart';
+import '../engine/funnel.dart';
 import 'dcc_sheet.dart';
+import 'funnel_sheet.dart';
 import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
@@ -312,6 +314,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   },
                 );
               }
+              if (c.funnel != null) {
+                return FunnelSheetView(
+                  character: c,
+                  onBack: () {
+                    ref
+                        .read(playContextProvider.notifier)
+                        .setActiveCharacter(null);
+                    setState(() => _editingId = null);
+                  },
+                );
+              }
               if (c.knave != null) {
                 return KnaveSheetView(
                   character: c,
@@ -532,7 +545,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         !systems.contains('knave') &&
         !systems.contains('ose') &&
         !systems.contains('kal-arath') &&
-        !systems.contains('dcc')) {
+        !systems.contains('dcc') &&
+        !systems.contains('funnel')) {
       await _addCharacter(context);
       return;
     }
@@ -636,6 +650,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Dungeon Crawl Classics',
           blurb: '0-level funnel, dice chain, deeds, spellburn.'
         ),
+      if (systems.contains('funnel'))
+        (
+          key: 'new-funnel',
+          value: 'funnel',
+          label: '0-Level Funnel',
+          blurb: 'Doomed peasants → graduate survivors into any system.'
+        ),
     ];
     final choice = await showDialog<String>(
       context: context,
@@ -719,6 +740,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newKalArath();
     } else if (choice == 'dcc') {
       await _newDcc();
+    } else if (choice == 'funnel') {
+      await _newFunnel(context);
     }
   }
 
@@ -791,6 +814,41 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newDcc() async {
     final id = await ref.read(charactersProvider.notifier).addDcc();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newFunnel(BuildContext context) async {
+    final enabled = ref
+            .read(sessionsProvider)
+            .valueOrNull
+            ?.activeMeta
+            .enabledSystems ??
+        const <String>{};
+    final seeds =
+        kFunnelProfiles.keys.where((s) => enabled.contains(s)).toList();
+    if (seeds.isEmpty) {
+      final id = await ref.read(charactersProvider.notifier).addFunnel('dcc');
+      if (mounted) setState(() => _editingId = id);
+      return;
+    }
+    final seed = seeds.length == 1
+        ? seeds.first
+        : await showDialog<String>(
+            context: context,
+            builder: (ctx) => SimpleDialog(
+              title: const Text('Funnel for which system?'),
+              children: [
+                for (final s in seeds)
+                  SimpleDialogOption(
+                    key: Key('funnel-seed-$s'),
+                    onPressed: () => Navigator.pop(ctx, s),
+                    child: Text(s),
+                  ),
+              ],
+            ),
+          );
+    if (seed == null || !mounted) return;
+    final id = await ref.read(charactersProvider.notifier).addFunnel(seed);
     if (mounted) setState(() => _editingId = id);
   }
 

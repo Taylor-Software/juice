@@ -3923,6 +3923,7 @@ const kKnownSystems = <String>{
   'ose',
   'kal-arath',
   'dcc',
+  'funnel',
   'cards',
 };
 
@@ -3951,6 +3952,7 @@ const kSystemCategory = <String, SystemCategory>{
   'hexcrawl': SystemCategory.exploration,
   'party': SystemCategory.tools,
   'lonelog': SystemCategory.tools,
+  'funnel': SystemCategory.tools,
 };
 
 /// Human display labels for system keys (incl. opt-in systems not in
