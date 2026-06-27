@@ -148,6 +148,38 @@ Working rules for this repo:
   text + attribution) is deferred pending explicit permission from Castle Grief. Registered
   as a ruleset in `kKnownSystems`/`kSystemCategory`, with a `solo-kal-arath` preset +
   `surfacesFor` row. See `docs/superpowers/plans/2026-06-25-kal-arath-sheet.md`.
+- A user-defined **Custom / Homebrew** sheet (`lib/features/custom_sheet.dart`,
+  rendered when `Character.custom` is set; opt-in `custom` system, NOT in
+  `kAllSystems`) — the generic creator exposing the SUPERSET of configurable
+  mechanics across every pre-made sheet, so a player can build a sheet for an
+  unsupported game. Schema-driven: `CustomSheet { List<CustomBlock> blocks;
+  Map<String,dynamic> values }` (blocks = ordered schema, values = play state
+  keyed by `block.id`). One `CustomSheetView` renders two ways — a **Play** mode
+  uses the sheet, an **Edit** mode authors the schema (add/configure/reorder/
+  delete via a `ReorderableListView` + per-type config dialogs). **11 block
+  types** (`CustomBlockType`): stat (label + range + `StatModFormula`
+  raw/fived/dccTight/scoreIsMod/halfFloor via `customStatMod`), counter, hp
+  (cur/max + optional temp), roll, luck, conditions (shared `conditionsSection`),
+  dropdown, freeform, timer, togglechips, progress (`ProgressTrack`). Computed
+  badges + cross-block refs deferred. The **roll model** is a pure, self-contained
+  `resolveRoll(RollConfig, rowValue, dice)` (dice·bonus·`RollDirection`·
+  `RollTargetKind`·degree `RollBand`s·`RollCrit`) — covers roll-under, +mod vs DC,
+  vs-fixed, 2d6 ladders, 2d10 tiers, matching-dice/natural crits; NO expression
+  parser. Pure model + roll logic live in `lib/engine/custom_sheet.dart` (NO
+  Flutter, NO `models.dart` import — `models.dart` imports IT, so the reverse
+  would cycle). Starter **templates** (`lib/engine/custom_templates.dart`:
+  `kCustomTemplates` = Blank / Generic d20 / OSR roll-under / 2d6 Moves) pre-seed
+  `blocks` via a creation picker (`CharacterNotifier.addCustom(blocks)`). Adds the
+  shared `luckTokensSection` + `rollTrackRow` bricks to `sheet_widgets.dart`.
+  **Facts-only:** ships zero vendored content — the user authors all labels/
+  options; templates are generic mechanics only. Registered in
+  `kKnownSystems`/`kSystemCategory`/`kSystemBlurbs`/`kSystemShortName`/
+  `kPresetIcons` with a `solo-custom` preset + `surfacesFor` row. See
+  `docs/superpowers/specs/2026-06-26-custom-character-creator-design.md` and the
+  plan `docs/superpowers/plans/2026-06-26-custom-character-creator.md`. **NOTE:**
+  shares `luckTokensSection` + system-registration files with the parallel
+  `feat/dcc-sheet` branch — see that branch's `dcc` additions; reconcile the
+  `luckTokensSection` signature at whichever merge lands second.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
