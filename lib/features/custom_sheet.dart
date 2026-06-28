@@ -734,14 +734,19 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   }
 
   Future<void> _configComputed(CustomBlock b) async {
-    final result = await showDialog<ComputedConfig>(
+    final result =
+        await showDialog<({ComputedConfig cfg, String label})>(
       context: context,
       builder: (_) => _ComputedConfigDialog(block: b, blocks: _s.blocks),
     );
     if (result == null) return;
     _save(_s.copyWith(
         blocks: _s.blocks
-            .map((x) => x.id == b.id ? x.copyWith(config: result.toJson()) : x)
+            .map((x) => x.id == b.id
+                ? x.copyWith(
+                    label: result.label.trim().isEmpty ? x.label : result.label.trim(),
+                    config: result.cfg.toJson())
+                : x)
             .toList()));
   }
 
@@ -1832,6 +1837,7 @@ class _ComputedConfigDialog extends StatefulWidget {
 
 class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
   late ComputedConfig _cfg = ComputedConfig.maybeFromJson(widget.block.config);
+  late String _label = widget.block.label;
 
   static const _refTypes = {
     CustomBlockType.stat,
@@ -1941,6 +1947,13 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
         title: const Text('Edit computed value'),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextFormField(
+              key: const Key('custom-computed-label'),
+              initialValue: _label,
+              decoration: const InputDecoration(labelText: 'Label'),
+              onChanged: (v) => _label = v,
+            ),
+            const SizedBox(height: 12),
             _operandEditor('Operand A', _cfg.a,
                 (o) => setState(() => _cfg = ComputedConfig(a: o, op: _cfg.op, b: _cfg.b))),
             const SizedBox(height: 12),
@@ -1973,7 +1986,8 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
               child: const Text('Cancel')),
           FilledButton(
               key: const Key('custom-computed-save'),
-              onPressed: () => Navigator.pop(context, _cfg),
+              onPressed: () =>
+                  Navigator.pop(context, (cfg: _cfg, label: _label)),
               child: const Text('Save')),
         ],
       );

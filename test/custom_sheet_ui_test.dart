@@ -685,6 +685,11 @@ void main() {
     await tester.tap(find.byKey(const Key('custom-block-cm-config')));
     await tester.pumpAndSettle();
 
+    // Label: rename the badge
+    await tester.enterText(
+        find.byKey(const Key('custom-computed-label')), 'Inventory');
+    await tester.pumpAndSettle();
+
     // Operand A: set constant to 10
     await tester.enterText(
         find.byKey(const ValueKey('Operand A-const')), '10');
@@ -711,10 +716,11 @@ void main() {
     expect(cfg.op, ComputedOp.add);
     expect(cfg.b.isConst, true);
     expect(cfg.b.constant, 5);
+    expect(blk.label, 'Inventory'); // label edit persisted
 
     // Switch back to play mode and verify the rendered badge shows 10+5=15
     await tester.tap(find.byKey(const Key('custom-mode-toggle')));
     await tester.pumpAndSettle();
-    expect(find.text('Slots: 15'), findsOneWidget);
+    expect(find.text('Inventory: 15'), findsOneWidget);
   });
 }
