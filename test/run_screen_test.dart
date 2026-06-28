@@ -102,4 +102,24 @@ void main() {
     await _pump(tester, data, _prefs());
     expect(find.byKey(const Key('run-init-empty')), findsOneWidget);
   });
+
+  testWidgets('party: shows PCs with HP and applies inline damage', (tester) async {
+    const chars =
+        '[{"id":"p1","name":"Vex","stats":[],"tracks":[{"label":"HP","current":10,"max":10}],"tags":[],"role":"pc"},{"id":"n1","name":"Goon","stats":[],"tracks":[],"tags":[],"role":"npc"}]';
+    final c = await _pump(tester, data, _prefs(charsJson: chars));
+    expect(find.text('Vex'), findsOneWidget);
+    expect(find.text('Goon'), findsNothing); // npc not in party panel
+    expect(find.textContaining('10/10'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('run-party-p1-dec')));
+    await tester.pumpAndSettle();
+    final vex = (await c.read(charactersProvider.future))
+        .firstWhere((x) => x.id == 'p1');
+    expect(vex.tracks.first.current, 9);
+  });
+
+  testWidgets('party: empty state when no PCs', (tester) async {
+    await _pump(tester, data, _prefs());
+    expect(find.byKey(const Key('run-party-empty')), findsOneWidget);
+  });
 }

@@ -175,9 +175,62 @@ class _InitiativePanel extends ConsumerWidget {
 
 class _PartyPanel extends ConsumerWidget {
   const _PartyPanel();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => const _Panel(
-      k: Key('run-panel-party'), title: 'Party', child: SizedBox());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final all = ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
+    final notifier = ref.read(charactersProvider.notifier);
+    final party = all
+        .where((c) =>
+            c.role == CharacterRole.pc || c.role == CharacterRole.companion)
+        .toList();
+
+    return _Panel(
+      k: const Key('run-panel-party'),
+      title: 'Party',
+      child: party.isEmpty
+          ? const Text('No party yet.', key: Key('run-party-empty'))
+          : Column(
+              children: [
+                for (final c in party)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(c.name, style: theme.textTheme.bodyMedium),
+                            Builder(builder: (_) {
+                              final hp = characterHpPool(c);
+                              final cond = c.conditions.join(', ');
+                              final parts = [
+                                if (hp != null) '${hp.$1}/${hp.$2}',
+                                if (cond.isNotEmpty) cond,
+                              ];
+                              return Text(parts.join(' · '),
+                                  style: theme.textTheme.bodySmall);
+                            }),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        key: Key('run-party-${c.id}-dec'),
+                        icon: const Icon(Icons.remove, size: 18),
+                        onPressed: () => notifier.replace(c.withHpDelta(-1)),
+                      ),
+                      IconButton(
+                        key: Key('run-party-${c.id}-inc'),
+                        icon: const Icon(Icons.add, size: 18),
+                        onPressed: () => notifier.replace(c.withHpDelta(1)),
+                      ),
+                    ]),
+                  ),
+              ],
+            ),
+    );
+  }
 }
 
 class _ScenePanel extends ConsumerWidget {
