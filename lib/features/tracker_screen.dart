@@ -892,11 +892,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               ],
             ),
           );
-    if (seed == null || !mounted) return;
+    if (seed == null || !context.mounted) return;
     var seedVariant = '';
     if (seed == 'custom') {
       seedVariant = await showDialog<String>(
-            context: context, // ignore: use_build_context_synchronously
+            context: context,
             builder: (ctx) => SimpleDialog(
               title: const Text('Custom funnel template'),
               children: [
