@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/custom_templates.dart';
 import '../engine/funnel.dart';
 import '../engine/models.dart';
+import '../engine/system_primer.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -46,13 +48,17 @@ class FunnelSheetView extends ConsumerWidget {
     final theme = Theme.of(context);
     final s = _s;
     final profile = funnelProfileFor(s.seedSystem);
+    final schema = funnelPeasantSchema(s.seedSystem, s.seedVariant);
     return ListView(
       key: const Key('funnel-sheet'),
       padding: const EdgeInsets.all(12),
       children: [
         sheetNameHeader(context, ref, character,
             onBack: onBack, nameKey: 'funnel-name'),
-        Text('0-Level Funnel — ${s.seedSystem}',
+        Text(
+            s.seedSystem == 'custom' && s.seedVariant.isNotEmpty
+                ? '0-Level Funnel — Custom (${_templateLabel(s.seedVariant)})'
+                : '0-Level Funnel — ${s.seedSystem}',
             style: theme.textTheme.labelSmall),
         Text('${s.aliveCount} / ${s.peasants.length} alive · '
             '${s.graduatedCount} graduated',
@@ -65,7 +71,7 @@ class FunnelSheetView extends ConsumerWidget {
           )
         else ...[
           for (var i = 0; i < s.peasants.length; i++)
-            _peasantCard(context, ref, s, profile, i),
+            _peasantCard(context, ref, s, schema, i),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
@@ -74,7 +80,7 @@ class FunnelSheetView extends ConsumerWidget {
               onPressed: s.peasants.length >= kFunnelMaxPeasants
                   ? null
                   : () => _save(ref,
-                      s.copyWith(peasants: [...s.peasants, profile.seedPeasant()])),
+                      s.copyWith(peasants: [...s.peasants, profile.seedPeasant(s.seedVariant)])),
               icon: const Icon(Icons.person_add),
               label: const Text('Add peasant'),
             ),
@@ -85,7 +91,7 @@ class FunnelSheetView extends ConsumerWidget {
   }
 
   Widget _peasantCard(BuildContext context, WidgetRef ref, FunnelSheet s,
-      FunnelProfile profile, int i) {
+      FunnelPeasantSchema schema, int i) {
     final p = s.peasants[i];
     void setP(FunnelPeasant np) {
       final list = [...s.peasants];
@@ -118,7 +124,7 @@ class FunnelSheetView extends ConsumerWidget {
             decoration: const InputDecoration(labelText: 'Name'),
             onChanged: (v) => setP(p.copyWith(name: v)),
           ),
-          for (final f in profile.flavorFields)
+          for (final f in schema.flavorFields)
             TextFormField(
               key: Key('funnel-peasant-$i-flavor-${f.key}'),
               initialValue: p.flavor[f.key] ?? '',
@@ -129,20 +135,20 @@ class FunnelSheetView extends ConsumerWidget {
             ),
           const SizedBox(height: 8),
           _stepper('funnel-peasant-$i-hp', 'HP', p.hp,
-              min: profile.hpMin,
-              max: profile.hpMax,
+              min: schema.hpMin,
+              max: schema.hpMax,
               enabled: !p.graduated,
               onSet: (v) => setP(p.copyWith(hp: v))),
           const SizedBox(height: 8),
           Wrap(spacing: 8, runSpacing: 4, children: [
-            for (final st in profile.statKeys)
+            for (final st in schema.statKeys)
               Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(st.label,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 _stepper('funnel-peasant-$i-${st.key}',
-                    '', p.stats[st.key] ?? profile.statDefault,
-                    min: profile.statMin,
-                    max: profile.statMax,
+                    '', p.stats[st.key] ?? schema.statDefault,
+                    min: schema.statMin,
+                    max: schema.statMax,
                     enabled: !p.graduated,
                     onSet: (v) =>
                         setP(p.copyWith(stats: {...p.stats, st.key: v}))),
@@ -178,8 +184,20 @@ class FunnelSheetView extends ConsumerWidget {
     final targets = kFunnelProfiles.keys
         .where((sys) => sys == s.seedSystem || enabled.contains(sys))
         .toList();
+    final rulesets = ref.read(rulesetsProvider).valueOrNull ?? const <String>{};
+    Map<String, String> picksFor(String t) {
+      final m = {...funnelProfileFor(t)!.defaultPicks()};
+      if (t == 'ironsworn') {
+        final resolved = resolveSystem(enabled, rulesets);
+        if (const {'ironsworn', 'starforged', 'sundered_isles'}
+            .contains(resolved)) {
+          m['variant'] = resolved;
+        }
+      }
+      return m;
+    }
     var target = s.seedSystem;
-    var picks = {...funnelProfileFor(target)!.defaultPicks()};
+    var picks = picksFor(target);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -198,7 +216,7 @@ class FunnelSheetView extends ConsumerWidget {
                     .toList(),
                 onChanged: (v) => setState(() {
                   target = v ?? target;
-                  picks = {...funnelProfileFor(target)!.defaultPicks()};
+                  picks = picksFor(target);
                 }),
               ),
               for (final ch in profile.graduateChoices)
@@ -207,7 +225,8 @@ class FunnelSheetView extends ConsumerWidget {
                   value: picks[ch.key],
                   isExpanded: true,
                   items: ch.options
-                      .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                      .map((o) => DropdownMenuItem(
+                          value: o, child: Text(_prettyOption(o))))
                       .toList(),
                   onChanged: (v) =>
                       setState(() => picks[ch.key] = v ?? picks[ch.key]!),
@@ -231,7 +250,7 @@ class FunnelSheetView extends ConsumerWidget {
     final peasant = s.peasants[i];
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(charactersProvider.notifier).graduateFunnelPeasant(
-        character, i, (id) => profile.graduate(id, peasant, picks));
+        character, i, (id) => profile.graduate(id, peasant, picks, s.seedVariant));
     final cls = picks['className'] ?? picks.values.firstOrNull ?? '';
     messenger.showSnackBar(SnackBar(
       content: Text(
@@ -240,4 +259,18 @@ class FunnelSheetView extends ConsumerWidget {
       duration: const Duration(seconds: 3),
     ));
   }
+
+  String _templateLabel(String id) {
+    for (final t in kCustomTemplates) {
+      if (t.id == id) return t.label;
+    }
+    return id;
+  }
+
+  String _prettyOption(String o) => switch (o) {
+        'ironsworn' => 'Ironsworn',
+        'starforged' => 'Starforged',
+        'sundered_isles' => 'Sundered Isles',
+        _ => o,
+      };
 }

@@ -892,8 +892,30 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               ],
             ),
           );
-    if (seed == null || !mounted) return;
-    final id = await ref.read(charactersProvider.notifier).addFunnel(seed);
+    if (seed == null || !context.mounted) return;
+    var seedVariant = '';
+    if (seed == 'custom') {
+      seedVariant = await showDialog<String>(
+            context: context,
+            builder: (ctx) => SimpleDialog(
+              title: const Text('Custom funnel template'),
+              children: [
+                for (final t in kCustomTemplates)
+                  SimpleDialogOption(
+                    key: Key('funnel-template-${t.id}'),
+                    onPressed: () => Navigator.pop(ctx, t.id),
+                    child: Text(t.label),
+                  ),
+              ],
+            ),
+          ) ??
+          '';
+      if (!mounted) return;
+      if (seedVariant.isEmpty) return; // cancelled the template pick
+    }
+    final id = await ref
+        .read(charactersProvider.notifier)
+        .addFunnel(seed, seedVariant: seedVariant);
     if (mounted) setState(() => _editingId = id);
   }
 

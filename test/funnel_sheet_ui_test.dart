@@ -76,6 +76,29 @@ void main() {
     expect(btn.onPressed, isNull);
   });
 
+  testWidgets('custom funnel renders template stats + graduates a custom hero',
+      (tester) async {
+    const sheet = FunnelSheet(seedSystem: 'custom', seedVariant: 'generic-d20',
+        peasants: [
+          FunnelPeasant(name: '', hp: 6, stats: {
+            'str': 12, 'dex': 10, 'con': 11, 'int': 10, 'wis': 9, 'cha': 8,
+          }),
+        ]);
+    final c = await _pump(tester, sheet);
+    await tester.tap(find.byKey(const Key('funnel-peasant-0')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('funnel-peasant-0-str-plus')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('funnel-peasant-0-graduate')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('funnel-graduate-confirm')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final hero = (await c.read(charactersProvider.future))
+        .firstWhere((x) => x.custom != null);
+    expect((hero.custom!.values['g-stat'] as Map)['str'], 12);
+    expect(hero.custom!.values['g-hp'], 6);
+  });
+
   testWidgets('graduate spawns a hero + funnel persists', (tester) async {
     final c = await _pump(tester, _dccFunnel());
     await tester.tap(find.byKey(const Key('funnel-peasant-0')));

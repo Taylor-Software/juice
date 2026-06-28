@@ -1,3 +1,5 @@
+import 'custom_sheet.dart';
+import 'custom_templates.dart';
 import 'models.dart';
 
 /// Max 0-level peasants a funnel tracks at once.
@@ -36,15 +38,18 @@ class FunnelProfile {
   /// Builds a hero Character of [system] from [p], applying graduation [picks]
   /// (keyed by [graduateChoices] key). Maps stats by key into the target sheet
   /// (the sheet's own copyWith clamps/defaults); HP into the sheet's pool.
-  final Character Function(String id, FunnelPeasant p, Map<String, String> picks)
-      graduate;
+  final Character Function(String id, FunnelPeasant p, Map<String, String> picks,
+      String seedVariant) graduate;
 
   /// A fresh empty peasant seeded from this profile (mid-range stats, hpMin).
-  FunnelPeasant seedPeasant() => FunnelPeasant(
-        hp: hpMin,
-        stats: {for (final s in statKeys) s.key: statDefault},
-        flavor: {for (final f in flavorFields) f.key: ''},
-      );
+  FunnelPeasant seedPeasant(String seedVariant) {
+    final sc = funnelPeasantSchema(system, seedVariant);
+    return FunnelPeasant(
+      hp: sc.hpMin,
+      stats: {for (final s in sc.statKeys) s.key: sc.statDefault},
+      flavor: {for (final f in sc.flavorFields) f.key: ''},
+    );
+  }
 
   /// The default pick for each choice (its first option), for the graduate dialog.
   Map<String, String> defaultPicks() =>
@@ -52,6 +57,70 @@ class FunnelProfile {
 }
 
 FunnelProfile? funnelProfileFor(String system) => kFunnelProfiles[system];
+
+/// The effective peasant schema for a funnel — what stat/HP steppers to render
+/// and seed. For custom it derives from the chosen template's stat block; for
+/// every other system it is the profile's fixed schema.
+typedef FunnelPeasantSchema = ({
+  List<({String key, String label})> statKeys,
+  int statMin,
+  int statMax,
+  int statDefault,
+  List<({String key, String label})> flavorFields,
+  int hpMin,
+  int hpMax,
+});
+
+FunnelPeasantSchema funnelPeasantSchema(String seedSystem, String seedVariant) {
+  if (seedSystem == 'custom') {
+    final t = kCustomTemplates.firstWhere((x) => x.id == seedVariant,
+        orElse: () => kCustomTemplates.first); // 'blank' is first
+    CustomBlock? statBlock;
+    for (final b in t.blocks) {
+      if (b.type == CustomBlockType.stat) {
+        statBlock = b;
+        break;
+      }
+    }
+    final rawStats = (statBlock?.config['stats'] as List?) ?? const [];
+    final keys = [
+      for (final s in rawStats)
+        (key: (s as Map)['key'] as String, label: s['label'] as String),
+    ];
+    final min = (statBlock?.config['min'] as int?) ?? 1;
+    final max = (statBlock?.config['max'] as int?) ?? 18;
+    return (
+      statKeys: keys,
+      statMin: min,
+      statMax: max,
+      statDefault: ((min + max) / 2).round(),
+      flavorFields: const [],
+      hpMin: 1, // peasants always track death, even if the template has no HP block
+      hpMax: 8,
+    );
+  }
+  final p = funnelProfileFor(seedSystem);
+  if (p == null) {
+    return (
+      statKeys: const [],
+      statMin: 1,
+      statMax: 18,
+      statDefault: 10,
+      flavorFields: const [],
+      hpMin: 0,
+      hpMax: 0,
+    );
+  }
+  return (
+    statKeys: p.statKeys,
+    statMin: p.statMin,
+    statMax: p.statMax,
+    statDefault: p.statDefault,
+    flavorFields: p.flavorFields,
+    hpMin: p.hpMin,
+    hpMax: p.hpMax,
+  );
+}
 
 /// Helper: hero name from the peasant, falling back to the forSheet default.
 String _heroName(FunnelPeasant p, Character base) =>
@@ -82,7 +151,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('className', 'Class', kDccClasses),
       const FunnelChoice('alignment', 'Alignment', kDccAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('dcc', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -109,7 +178,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'background', label: 'Background')],
     hpMin: 1, hpMax: 10,
     graduateChoices: [const FunnelChoice('className', 'Class', kDndClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('dnd', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -136,7 +205,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('ancestry', 'Ancestry', kShadowdarkAncestries),
       const FunnelChoice('alignment', 'Alignment', kShadowdarkAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('shadowdark', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -162,7 +231,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'occupation', label: 'Occupation')],
     hpMin: 1, hpMax: 10,
     graduateChoices: [const FunnelChoice('className', 'Class', kArgosaClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('argosa', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -188,7 +257,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       const FunnelChoice('className', 'Class', kOseClasses),
       const FunnelChoice('alignment', 'Alignment', kOseAlignments),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('ose', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -211,7 +280,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
     hpMin: 1, hpMax: 20,
     graduateChoices: const [FunnelChoice('className', 'Class', kNimbleClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('nimble', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -234,7 +303,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'ancestry', label: 'Ancestry')],
     hpMin: 1, hpMax: 24,
     graduateChoices: const [FunnelChoice('className', 'Class', kDrawSteelClasses)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('draw-steel', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -257,7 +326,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [(key: 'career', label: 'Career')],
     hpMin: 1, hpMax: 8,
     graduateChoices: const [],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('knave', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -282,7 +351,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
       FunnelChoice('archetype', 'Archetype', kKalArathArchetypes),
       FunnelChoice('pact', 'Demonic Pact', kKalArathPacts),
     ],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('kal-arath', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -305,7 +374,7 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     flavorFields: const [],
     hpMin: 1, hpMax: 8,
     graduateChoices: const [FunnelChoice('background', 'Background', kCairnBackgrounds)],
-    graduate: (id, p, picks) {
+    graduate: (id, p, picks, seedVariant) {
       final base = Character.forSheet('cairn', id);
       return base.copyWith(
         name: _heroName(p, base),
@@ -314,6 +383,38 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
           currentHp: p.hp, maxHp: p.hp,
           background: picks['background'] ?? kCairnBackgrounds.first,
         ),
+      );
+    },
+  ),
+  'custom': FunnelProfile(
+    system: 'custom',
+    statKeys: const [], // template-driven; see funnelPeasantSchema
+    statMin: 1, statMax: 18, statDefault: 10,
+    flavorFields: const [],
+    hpMin: 1, hpMax: 8,
+    graduateChoices: const [], // template locked at creation
+    graduate: (id, p, picks, seedVariant) {
+      final t = kCustomTemplates.firstWhere((x) => x.id == seedVariant,
+          orElse: () => kCustomTemplates.first);
+      final values = <String, dynamic>{};
+      var didStat = false, didHp = false;
+      for (final b in t.blocks) {
+        if (!didStat && b.type == CustomBlockType.stat) {
+          final rawStats = (b.config['stats'] as List?) ?? const [];
+          values[b.id] = {
+            for (final s in rawStats)
+              (s as Map)['key'] as String: p.stats[s['key']] ?? 0,
+          };
+          didStat = true;
+        } else if (!didHp && b.type == CustomBlockType.hp) {
+          values[b.id] = p.hp;
+          didHp = true;
+        }
+      }
+      final base = Character.forSheet('custom', id);
+      return base.copyWith(
+        name: _heroName(p, base),
+        custom: CustomSheet(blocks: t.blocks, values: values),
       );
     },
   ),
@@ -327,32 +428,24 @@ final Map<String, FunnelProfile> kFunnelProfiles = {
     statMin: 1, statMax: 3, statDefault: 1,
     flavorFields: const [],
     hpMin: 0, hpMax: 5,
-    graduateChoices: const [],
-    graduate: (id, p, picks) {
-      final base = Character.forSheet('ironsworn', id);
-      return base.copyWith(
-        name: _heroName(p, base),
-        ironsworn: base.ironsworn!.copyWith(
-          edge: p.stats['edge'], heart: p.stats['heart'],
-          iron: p.stats['iron'], shadow: p.stats['shadow'],
-          wits: p.stats['wits'],
-        ),
-      );
-    },
-  ),
-  'starforged': FunnelProfile(
-    system: 'starforged',
-    statKeys: const [
-      (key: 'edge', label: 'Edge'), (key: 'heart', label: 'Heart'),
-      (key: 'iron', label: 'Iron'), (key: 'shadow', label: 'Shadow'),
-      (key: 'wits', label: 'Wits'),
+    graduateChoices: const [
+      FunnelChoice('variant', 'Ruleset',
+          ['ironsworn', 'starforged', 'sundered_isles']),
     ],
-    statMin: 1, statMax: 3, statDefault: 1,
-    flavorFields: const [],
-    hpMin: 0, hpMax: 5,
-    graduateChoices: const [],
-    graduate: (id, p, picks) {
-      final base = Character.forSheet('starforged', id);
+    graduate: (id, p, picks, seedVariant) {
+      final variant = picks['variant'] ?? 'ironsworn';
+      final base = Character.forSheet(variant, id);
+      if (variant == 'ironsworn') {
+        return base.copyWith(
+          name: _heroName(p, base),
+          ironsworn: base.ironsworn!.copyWith(
+            edge: p.stats['edge'], heart: p.stats['heart'],
+            iron: p.stats['iron'], shadow: p.stats['shadow'],
+            wits: p.stats['wits'],
+          ),
+        );
+      }
+      // starforged or sundered_isles → StarforgedSheet (forSheet sets assetRuleset)
       return base.copyWith(
         name: _heroName(p, base),
         starforged: base.starforged!.copyWith(
