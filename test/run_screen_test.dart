@@ -8,6 +8,8 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/run_screen.dart';
+import 'package:juice_oracle/shared/destination.dart';
+import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
@@ -28,15 +30,21 @@ Map<String, Object> _prefs({
   String? encounterJson,
   String? crawlJson,
   String? contextJson,
+  String? threadsJson,
+  String? rumorsJson,
+  bool gm = false,
 }) =>
     {
       'juice.sessions.v1':
-          '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
+          '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"'
+              '${gm ? ',"mode":"gm"' : ''}}]}',
       if (journalJson != null) 'juice.journal.v2.$_sid': journalJson,
       if (charsJson != null) 'juice.characters.v1.$_sid': charsJson,
       if (encounterJson != null) 'juice.encounter.v1.$_sid': encounterJson,
       if (crawlJson != null) 'juice.crawl.v1.$_sid': crawlJson,
       if (contextJson != null) 'juice.context.v1.$_sid': contextJson,
+      if (threadsJson != null) 'juice.threads.v1.$_sid': threadsJson,
+      if (rumorsJson != null) 'juice.rumors.v1.$_sid': rumorsJson,
     };
 
 Future<ProviderContainer> _pump(
@@ -235,5 +243,51 @@ void main() {
         tester.getTopLeft(find.byKey(const Key('run-panel-initiative')));
     final sceneN = tester.getTopLeft(find.byKey(const Key('run-panel-scene')));
     expect(sceneN.dy, greaterThan(initN.dy));
+  });
+
+  testWidgets('threads panel: shows open threads; rumors GM-only; routes',
+      (tester) async {
+    const threads =
+        '[{"id":"t1","title":"Find the Relic","open":true,"pinned":false,"progress":3,"progressMax":8}]';
+    const rumors = '[{"id":"r1","text":"The mayor lies","resolved":false}]';
+    // Party mode: thread shows, rumor hidden.
+    final c = await _pump(tester, data,
+        _prefs(threadsJson: threads, rumorsJson: rumors));
+    expect(find.byKey(const Key('run-thread-t1')), findsOneWidget);
+    expect(find.text('Find the Relic'), findsOneWidget);
+    expect(find.byKey(const Key('run-rumor-r1')), findsNothing);
+    // Tap a thread → routes to Track/threads.
+    await tester.tap(find.byKey(const Key('run-thread-t1')));
+    await tester.pumpAndSettle();
+    expect(c.read(shellRouteProvider).destination, Destination.track);
+    expect(c.read(shellRouteProvider).subtab, 'threads');
+
+    // GM mode: rumor shows too.
+    await _pump(tester, data,
+        _prefs(threadsJson: threads, rumorsJson: rumors, gm: true));
+    expect(find.byKey(const Key('run-rumor-r1')), findsOneWidget);
+  });
+
+  testWidgets('threads panel: empty state', (tester) async {
+    await _pump(tester, data, _prefs());
+    expect(find.byKey(const Key('run-threads-empty')), findsOneWidget);
+  });
+
+  testWidgets('party effect: bulk damage applies to selected members',
+      (tester) async {
+    const chars =
+        '[{"id":"p1","name":"Vex","stats":[],"tracks":[{"label":"HP","current":10,"max":10}],"tags":[],"role":"pc"},'
+        '{"id":"p2","name":"Brakk","stats":[],"tracks":[{"label":"HP","current":8,"max":8}],"tags":[],"role":"pc"}]';
+    final c = await _pump(tester, data, _prefs(charsJson: chars));
+    await tester.tap(find.byKey(const Key('run-party-effect')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('run-effect-target-p1')));
+    await tester.tap(find.byKey(const Key('run-effect-target-p2')));
+    await tester.enterText(find.byKey(const Key('run-effect-hp')), '-3');
+    await tester.tap(find.byKey(const Key('run-effect-apply')));
+    await tester.pumpAndSettle();
+    final chs = await c.read(charactersProvider.future);
+    expect(chs.firstWhere((x) => x.id == 'p1').tracks.first.current, 7);
+    expect(chs.firstWhere((x) => x.id == 'p2').tracks.first.current, 5);
   });
 }
