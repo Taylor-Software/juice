@@ -228,6 +228,14 @@ Working rules for this repo:
   enables `funnel`, plus a `solo-funnel` preset (seeds DCC) + the `cat-funnel`
   creation chip. See `docs/superpowers/specs/2026-06-27-generalized-funnel-design.md`
   and the plan `docs/superpowers/plans/2026-06-27-generalized-funnel.md`.
+  Custom-sheet + Ironsworn-family funnels are supported: a `custom` funnel locks
+  a template at creation (`FunnelSheet.seedVariant`) and graduates 1:1 into it
+  (peasant stats injected into the template's first stat/hp block); the
+  `ironsworn` profile offers a `variant` graduation choice (Ironsworn / Starforged
+  / Sundered Isles) defaulted from the active ruleset (the dead standalone
+  `starforged` profile was removed). Peasant rendering/seeding goes through the
+  pure `funnelPeasantSchema(seedSystem, seedVariant)`. See
+  `docs/superpowers/specs/2026-06-27-funnel-generalization-completion-design.md`.
 - The on-device interpreter gets an authored, facts-only **system primer**
   (`lib/engine/system_primer.dart`): one line per sheet system (Ironsworn /
   Starforged / Sundered Isles / D&D 5e / Shadowdark) carrying a setting
