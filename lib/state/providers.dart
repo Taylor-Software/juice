@@ -1248,6 +1248,43 @@ class AiEnabledNotifier extends AsyncNotifier<bool> {
 final aiEnabledProvider =
     AsyncNotifierProvider<AiEnabledNotifier, bool>(AiEnabledNotifier.new);
 
+/// App-global saved-creature library (the bestiary). NOT session-scoped and NOT
+/// part of campaign export — a bestiary is reusable across campaigns (same
+/// posture as [aiEnabledProvider]).
+class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
+  static const _key = 'juice.bestiary.v1';
+
+  @override
+  Future<List<Creature>> build() async {
+    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return (jsonDecode(raw) as List)
+        .map(Creature.maybeFromJson)
+        .whereType<Creature>()
+        .toList();
+  }
+
+  Future<List<Creature>> get _ready async => state.valueOrNull ?? await future;
+
+  Future<void> _save(List<Creature> list) async {
+    await (await SharedPreferences.getInstance())
+        .setString(_key, jsonEncode(list.map((c) => c.toJson()).toList()));
+    state = AsyncData(list);
+  }
+
+  Future<void> add(Creature c) async {
+    await _save([...await _ready, c]);
+  }
+
+  Future<void> remove(String id) async {
+    await _save((await _ready).where((c) => c.id != id).toList());
+  }
+}
+
+final bestiaryProvider =
+    AsyncNotifierProvider<BestiaryNotifier, List<Creature>>(
+        BestiaryNotifier.new);
+
 /// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
 /// App-global (NOT session-scoped, NOT exported) — same posture as
 /// [aiEnabledProvider]: the nudge is a per-device first-run affordance.
