@@ -2833,6 +2833,49 @@ class StatBlock {
   }
 }
 
+/// A saved bestiary creature: a named [StatBlock] plus a default [maxHp] used to
+/// seed a combatant's HP track when added to an encounter. App-global library
+/// (see BestiaryNotifier); reusable across campaigns, not part of campaign export.
+class Creature {
+  const Creature({
+    required this.id,
+    required this.name,
+    this.statBlock = const StatBlock(),
+    this.maxHp = 0,
+  });
+  final String id;
+  final String name;
+  final StatBlock statBlock;
+  final int maxHp;
+
+  Creature copyWith({String? name, StatBlock? statBlock, int? maxHp}) => Creature(
+        id: id,
+        name: name ?? this.name,
+        statBlock: statBlock ?? this.statBlock,
+        maxHp: maxHp ?? this.maxHp,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (!statBlock.isEmpty) 'statBlock': statBlock.toJson(),
+        if (maxHp > 0) 'maxHp': maxHp,
+      };
+
+  static Creature? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    final id = j['id'] as String?;
+    final name = j['name'] as String?;
+    if (id == null || id.isEmpty || name == null) return null;
+    return Creature(
+      id: id,
+      name: name,
+      statBlock: StatBlock.maybeFromJson(j['statBlock']) ?? const StatBlock(),
+      maxHp: (j['maxHp'] as int?) ?? 0,
+    );
+  }
+}
+
 /// One combatant in the encounter. Linked combatants ([characterId] != null)
 /// read/write the character's first track; ad-hoc ones own [track].
 class Combatant {
