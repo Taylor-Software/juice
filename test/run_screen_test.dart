@@ -141,4 +141,25 @@ void main() {
     await _pump(tester, data, _prefs());
     expect(find.byKey(const Key('run-scene-empty')), findsOneWidget);
   });
+
+  testWidgets('dice: roll logs a journal result; interpret hidden when AI off',
+      (tester) async {
+    final c = await _pump(tester, data, _prefs(crawlJson: '{"chaosFactor":5}'));
+    expect(find.byKey(const Key('run-dice-interpret')), findsNothing); // AI off
+    await tester.tap(find.byKey(const Key('run-dice-roll')));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'fate-check'), hasLength(1));
+  });
+
+  testWidgets('capture: logs a text note and clears', (tester) async {
+    final c = await _pump(tester, data, _prefs());
+    await tester.enterText(
+        find.byKey(const Key('run-capture-field')), 'Brakk shoves the archer');
+    await tester.tap(find.byKey(const Key('run-capture-log')));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.where((e) => e.body == 'Brakk shoves the archer'),
+        hasLength(1));
+  });
 }
