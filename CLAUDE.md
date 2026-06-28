@@ -386,9 +386,15 @@ Working rules for this repo:
   suffix over a text button beside an `Expanded` field; `IconButton` is immune
   (fixed size). Also `ref.watch` `oracleProvider` in build (not a cold `ref.read`
   in a tap handler — an unwatched FutureProvider is `AsyncLoading` on first read).
-  Deferred: per-combatant init modifiers, reorder/collapse
+  Deferred: reorder/collapse
   panels, threads/rumors panel, inline interpret, a party-effect bulk button. See
-  `docs/superpowers/specs/2026-06-28-gm-run-screen-design.md`.
+  `docs/superpowers/specs/2026-06-28-gm-run-screen-design.md`. A **pacing-timers**
+  panel (`run-panel-timers`, `_TimersPanel`) shows a real-time turn stopwatch
+  (resets each Next-turn via a `(round,turnIndex)`-change check) + a session
+  stopwatch, driven by a widget-local `Timer.periodic` that runs only while an
+  encounter has combatants; ephemeral (no persistence), cancelled on dispose. Pure
+  top-level `formatDuration` is unit-tested; the tick is device-verified. See
+  `docs/superpowers/specs/2026-06-28-pacing-timers-design.md`.
 - **Combatant stat blocks** (`StatBlock`/`Attack` in `models.dart`, a nullable
   `Combatant.statBlock`): user-authored AC + attacks (name + freeform detail) +
   saves/speed/notes (all freeform, facts-only, NO parser — attacks are display
