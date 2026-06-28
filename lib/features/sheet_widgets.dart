@@ -685,7 +685,7 @@ class StatBlockView extends StatelessWidget {
       children: [
         Wrap(spacing: 6, runSpacing: 6, children: [
           if (block.ac != 0) chip('AC ${block.ac}'),
-          if (curHp != null) chip('$curHp/$maxHp'),
+          if (curHp != null && maxHp != null) chip('$curHp/$maxHp'),
           if (block.speed.isNotEmpty) chip(block.speed),
         ]),
         if (block.attacks.isNotEmpty) ...[

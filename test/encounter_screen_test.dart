@@ -298,6 +298,33 @@ void main() {
         isNull);
   });
 
+  testWidgets('stat-block: add two attacks, remove the first, save keeps second',
+      (tester) async {
+    final c = await pump(tester,
+        encounterJson: _enc([
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 7, 'max': 7}),
+        ]));
+    await tester.tap(find.byKey(const Key('enc-statblock-g')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('statblock-add-attack')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('statblock-attack-name-0')), 'Bite');
+    await tester.tap(find.byKey(const Key('statblock-add-attack')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('statblock-attack-name-1')), 'Claw');
+    // Remove the first attack (Bite); the disposed controllers must not crash.
+    await tester.tap(find.byKey(const Key('statblock-attack-remove-0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('statblock-save')));
+    await tester.pumpAndSettle();
+    final sb = (await c.read(encounterProvider.future))
+        .combatants.single.statBlock!;
+    expect(sb.attacks.map((a) => a.name).toList(), ['Claw']);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Generate monster prefills the ad-hoc combatant name',
       (tester) async {
     SharedPreferences.setMockInitialValues({

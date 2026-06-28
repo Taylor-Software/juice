@@ -394,8 +394,10 @@ Working rules for this repo:
   saves/speed/notes (all freeform, facts-only, NO parser — attacks are display
   text). Edited on the Encounter screen (`enc-statblock-<id>` →
   `_StatBlockDialog`), glanced read-only on the Run-screen initiative panel (tap
-  `run-init-row-<id>` → `StatBlockView` dialog). Shared read-only render is
-  `StatBlockView` (`sheet_widgets.dart`, used by both surfaces). Ephemeral on the
+  `run-init-row-<id>` → `StatBlockView` dialog). The read-only render is
+  `StatBlockView` (`sheet_widgets.dart`), which backs the run-screen glance; the
+  encounter side uses the editor + a colored shield indicator on the row (no
+  inline summary — tap to edit shows all fields). Ephemeral on the
   combatant (gone on encounter reset); persisted inside the existing
   `juice.encounter.v1` key — no new key. `Combatant.copyWith` gained a
   `clearStatBlock` flag (mirrors `EncounterState.clearLocationRef`) so an emptied
