@@ -334,4 +334,91 @@ void main() {
         .firstWhere((v) => v.verb == 'Sheet');
     expect(sheet.rows.any((r) => r.on && r.requiresSystem == 'custom'), isTrue);
   });
+
+  group('resolveComputed', () {
+    const blocks = [
+      CustomBlock(id: 's1', type: CustomBlockType.stat, label: 'Abilities', config: {
+        'stats': [
+          {'key': 'con', 'label': 'CON'}
+        ],
+        'min': 3,
+        'max': 18,
+      }),
+      CustomBlock(id: 'h1', type: CustomBlockType.hp, label: 'HP'),
+      CustomBlock(id: 'c1', type: CustomBlockType.counter, label: 'AC'),
+    ];
+    const values = {
+      's1': {'con': 14},
+      'h1': {'cur': 4, 'max': 10},
+      'c1': 15,
+    };
+
+    test('10 + CON → number 24', () {
+      const cfg = ComputedConfig(
+        a: ComputedOperand(constant: 10),
+        op: ComputedOp.add,
+        b: ComputedOperand(isConst: false, blockId: 's1', subKey: 'con'),
+      );
+      final r = resolveComputed(blocks, values, cfg);
+      expect(r.number, 24);
+      expect(r.flag, isNull);
+    });
+    test('cur*2 <= max → flag (true then false)', () {
+      const cfg = ComputedConfig(
+        a: ComputedOperand(isConst: false, blockId: 'h1', subKey: 'cur', coeff: 2),
+        op: ComputedOp.le,
+        b: ComputedOperand(isConst: false, blockId: 'h1', subKey: 'max'),
+      );
+      expect(resolveComputed(blocks, values, cfg).flag, true);
+      final hi = {...values, 'h1': {'cur': 6, 'max': 10}};
+      expect(resolveComputed(blocks, hi, cfg).flag, false);
+    });
+    test('counter ref + arithmetic ops', () {
+      ComputedConfig c(ComputedOp op, int k) => ComputedConfig(
+          a: const ComputedOperand(isConst: false, blockId: 'c1'),
+          op: op,
+          b: ComputedOperand(constant: k));
+      expect(resolveComputed(blocks, values, c(ComputedOp.sub, 5)).number, 10);
+      expect(resolveComputed(blocks, values, c(ComputedOp.mul, 2)).number, 30);
+      expect(resolveComputed(blocks, values, c(ComputedOp.divFloor, 4)).number, 3);
+      expect(resolveComputed(blocks, values, c(ComputedOp.divFloor, 0)).number, 0);
+    });
+    test('comparison ops over constants', () {
+      ({int? number, bool? flag}) r(ComputedOp op) => resolveComputed(blocks, values,
+          ComputedConfig(
+              a: const ComputedOperand(constant: 5), op: op, b: const ComputedOperand(constant: 5)));
+      expect(r(ComputedOp.eq).flag, true);
+      expect(r(ComputedOp.lt).flag, false);
+      expect(r(ComputedOp.ge).flag, true);
+      expect(r(ComputedOp.gt).flag, false);
+    });
+    test('graceful: missing block, missing key → 0', () {
+      const missBlock = ComputedConfig(
+          a: ComputedOperand(isConst: false, blockId: 'nope'),
+          op: ComputedOp.add,
+          b: ComputedOperand(constant: 7));
+      expect(resolveComputed(blocks, values, missBlock).number, 7);
+      const missKey = ComputedConfig(
+          a: ComputedOperand(isConst: false, blockId: 's1', subKey: 'xyz'),
+          op: ComputedOp.add,
+          b: ComputedOperand(constant: 7));
+      expect(resolveComputed(blocks, values, missKey).number, 7);
+    });
+    test('ComputedConfig JSON round-trips; fromJson tolerant', () {
+      const cfg = ComputedConfig(
+        a: ComputedOperand(isConst: false, blockId: 's1', subKey: 'con', coeff: 2),
+        op: ComputedOp.ge,
+        b: ComputedOperand(constant: 12),
+      );
+      final back = ComputedConfig.maybeFromJson(cfg.toJson());
+      expect(back.op, ComputedOp.ge);
+      expect(back.a.blockId, 's1');
+      expect(back.a.coeff, 2);
+      expect(back.b.constant, 12);
+      final d = ComputedConfig.maybeFromJson('nope');
+      expect(d.op, ComputedOp.add);
+      expect(d.a.isConst, true);
+      expect(d.a.constant, 0);
+    });
+  });
 }
