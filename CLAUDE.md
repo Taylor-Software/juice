@@ -421,14 +421,24 @@ Working rules for this repo:
   combatant (gone on encounter reset); persisted inside the existing
   `juice.encounter.v1` key — no new key. `Combatant.copyWith` gained a
   `clearStatBlock` flag (mirrors `EncounterState.clearLocationRef`) so an emptied
-  block saves as null. Deferred: rollable attacks (needs a parser), reusable
-  bestiary library (Tier-2.5). See
+  block saves as null. Deferred: rollable attacks (needs a parser). See
   `docs/superpowers/specs/2026-06-28-combatant-stat-blocks-design.md`.
   Per-combatant **initiative modifiers** (`Combatant.initMod`): tap the encounter
   row's init avatar (`enc-init-<id>`) → `_InitDialog` sets initiative + mod (shown
   on the row as `enc-initmod-<id>` when nonzero); `rollInitiativeForAll` rolls
   `d20 + initMod` for unset combatants and tie-breaks by mod. See
   `docs/superpowers/specs/2026-06-28-initiative-modifiers-design.md`.
+- The **Bestiary library** (`Creature {id,name,statBlock,maxHp}` in `models.dart`,
+  `BestiaryNotifier`/`bestiaryProvider` in `providers.dart`) is an **app-global**
+  saved-creature store (key `juice.bestiary.v1`, NOT session-scoped, NOT in
+  campaign export — reusable across campaigns, like `aiEnabledProvider`). Reuses
+  the `StatBlock` model. Save a stat-blocked combatant via the encounter row's
+  `enc-save-bestiary-<id>` button; add one back via the encounter `add-bestiary`
+  button → `_BestiaryPickerDialog` (`bestiary-pick-<id>` / `bestiary-del-<id>`),
+  which seeds a combatant with an HP track (from `maxHp`) + the stat block. No
+  management screen (save from encounter, pick/delete from the picker). See
+  `docs/superpowers/specs/2026-06-28-bestiary-library-design.md`. Deferred:
+  per-campaign/hybrid scope, management screen, library import/export, categories.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
   Journal verb (collapsed by default — a thin `assistant-expand` header; chips +
   ask box render only when expanded, so it doesn't crowd the journal). Suggestion
