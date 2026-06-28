@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/features/sheet_widgets.dart';
 
 void main() {
   group('StatBlock / Attack', () {
@@ -81,6 +83,43 @@ void main() {
       expect(withSb.copyWith(clearStatBlock: true).statBlock, isNull);
       // a plain copyWith preserves it:
       expect(withSb.copyWith(defeated: true).statBlock!.ac, 12);
+    });
+  });
+
+  group('StatBlockView', () {
+    testWidgets('StatBlockView renders AC, attacks, saves/speed/notes',
+        (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(
+          body: StatBlockView(
+            block: StatBlock(
+              ac: 14,
+              attacks: [Attack(name: 'Scimitar', detail: '+4, 1d6+2')],
+              saves: 'Dex +2',
+              speed: '30 ft',
+              notes: 'Nimble Escape',
+            ),
+            curHp: 7,
+            maxHp: 7,
+          ),
+        ),
+      ));
+      expect(find.textContaining('AC 14'), findsOneWidget);
+      expect(find.textContaining('7/7'), findsOneWidget);
+      expect(find.textContaining('30 ft'), findsOneWidget);
+      expect(find.text('Scimitar'), findsOneWidget);
+      expect(find.textContaining('+4, 1d6+2'), findsOneWidget);
+      expect(find.textContaining('Dex +2'), findsOneWidget);
+      expect(find.textContaining('Nimble Escape'), findsOneWidget);
+    });
+
+    testWidgets('StatBlockView omits empty sections', (tester) async {
+      await tester.pumpWidget(const MaterialApp(
+        home: Scaffold(body: StatBlockView(block: StatBlock(ac: 12))),
+      ));
+      expect(find.textContaining('AC 12'), findsOneWidget);
+      expect(find.text('SAVES'), findsNothing);
+      expect(find.text('ATTACKS'), findsNothing);
     });
   });
 }

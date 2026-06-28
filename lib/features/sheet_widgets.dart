@@ -648,3 +648,67 @@ Widget rollTrackRow({
         onPressed: onRoll,
       ),
     ]);
+
+/// Read-only render of a combatant [StatBlock]: AC / HP / speed chips, an
+/// attacks list, and saves / notes lines. Empty sections are omitted. Shared by
+/// the encounter screen (inline) and the run-screen (glance dialog).
+class StatBlockView extends StatelessWidget {
+  const StatBlockView({super.key, required this.block, this.curHp, this.maxHp});
+  final StatBlock block;
+  final int? curHp;
+  final int? maxHp;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Widget chip(String text) => Chip(
+          label: Text(text),
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        );
+    Widget labeled(String label, String value) => Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(
+              width: 56,
+              child: Text(label,
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: theme.colorScheme.outline)),
+            ),
+            Expanded(child: Text(value, style: theme.textTheme.bodySmall)),
+          ]),
+        );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          if (block.ac != 0) chip('AC ${block.ac}'),
+          if (curHp != null) chip('$curHp/$maxHp'),
+          if (block.speed.isNotEmpty) chip(block.speed),
+        ]),
+        if (block.attacks.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text('ATTACKS',
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: theme.colorScheme.outline)),
+          for (final a in block.attacks)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(children: [
+                Text(a.name,
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
+                if (a.detail.isNotEmpty)
+                  Text(' — ${a.detail}',
+                      style: TextStyle(
+                          color: theme.colorScheme.onSurfaceVariant)),
+              ]),
+            ),
+        ],
+        if (block.saves.isNotEmpty) labeled('SAVES', block.saves),
+        if (block.notes.isNotEmpty) labeled('NOTES', block.notes),
+      ],
+    );
+  }
+}
