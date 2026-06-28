@@ -44,7 +44,6 @@ Future<ProviderContainer> _pump(
   OracleData data,
   Map<String, Object> prefs, {
   Size size = const Size(1000, 2200),
-  bool aiReady = false,
 }) async {
   SharedPreferences.setMockInitialValues(prefs);
   tester.view.physicalSize = size;
@@ -161,5 +160,28 @@ void main() {
     final entries = await c.read(journalProvider.future);
     expect(entries.where((e) => e.body == 'Brakk shoves the archer'),
         hasLength(1));
+  });
+
+  testWidgets('layout: two columns when wide, one column when narrow',
+      (tester) async {
+    const chars =
+        '[{"id":"p1","name":"Vex","stats":[],"tracks":[{"label":"HP","current":10,"max":10}],"tags":[],"role":"pc"}]';
+    // Wide: initiative and scene panels sit in two side-by-side columns → the
+    // initiative panel's left edge is left of the scene panel's left edge.
+    await _pump(tester, data, _prefs(charsJson: chars),
+        size: const Size(1100, 1600));
+    final initWide =
+        tester.getTopLeft(find.byKey(const Key('run-panel-initiative')));
+    final sceneWide =
+        tester.getTopLeft(find.byKey(const Key('run-panel-scene')));
+    expect(initWide.dx, lessThan(sceneWide.dx));
+
+    // Narrow: stacked → scene sits below initiative.
+    await _pump(tester, data, _prefs(charsJson: chars),
+        size: const Size(500, 2400));
+    final initN =
+        tester.getTopLeft(find.byKey(const Key('run-panel-initiative')));
+    final sceneN = tester.getTopLeft(find.byKey(const Key('run-panel-scene')));
+    expect(sceneN.dy, greaterThan(initN.dy));
   });
 }

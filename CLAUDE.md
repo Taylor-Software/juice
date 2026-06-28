@@ -365,6 +365,30 @@ Working rules for this repo:
   plan `docs/superpowers/plans/2026-06-18-context-spine-verb-nav.md`. Deferred
   follow-ups: contextual generator distribution, GM/Party mode-switch,
   journal-as-canvas, formal party grouping.
+- The **GM Run-screen** (`lib/features/run_screen.dart`, `RunScreen`) is a new
+  6th verb `Destination.run` — a live read-and-act GM dashboard: a responsive
+  `LayoutBuilder` grid (2-col ≥ `kRunWideBreakpoint` 720, else stacked single
+  column) of five self-contained panels — **Initiative** (`encounterProvider` +
+  `nextTurn` + new `EncounterNotifier.rollInitiativeForAll({Dice?})` — d20 for
+  unset/≤0 inits, re-sort desc, turn pointer to 0), **Party** (PC/companion
+  HP+conditions via the shared `characterHpPool` + inline `withHpDelta`), **Scene**
+  (`activeSceneEntry` title/body + chaos via `crawlProvider.setChaos`),
+  **Dice/oracle** (default-oracle roll → `addResult`; aiReady-gated Interpret
+  routes to the Journal verb), and **Capture** (`addText` quick note). Pure
+  composition over existing providers + one new encounter helper; **NO new
+  persistence/export**. GM mode now lands on Run (`landingDestination` gm→run, was
+  track). The shared `(int,int)? characterHpPool(Character)` (models.dart) is the
+  single HP-pool resolver — `track_home_pane`'s `_hpOf` delegates to it.
+  **Loose-constraints gotcha:** Material text buttons (`OutlinedButton`/
+  `FilledButton`) throw "forces an infinite width" when measured under unbounded
+  width — i.e. inside a `Wrap`, or as a non-flex child of a `Row` that has a flex
+  sibling. Use `Flexible`-wrapped buttons (not `Wrap`) and prefer an `IconButton`
+  suffix over a text button beside an `Expanded` field; `IconButton` is immune
+  (fixed size). Also `ref.watch` `oracleProvider` in build (not a cold `ref.read`
+  in a tap handler — an unwatched FutureProvider is `AsyncLoading` on first read).
+  Deferred: stat-block cards, per-combatant init modifiers, reorder/collapse
+  panels, threads/rumors panel, inline interpret, a party-effect bulk button. See
+  `docs/superpowers/specs/2026-06-28-gm-run-screen-design.md`.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
   Journal verb (collapsed by default — a thin `assistant-expand` header; chips +
   ask box render only when expanded, so it doesn't crowd the journal). Suggestion

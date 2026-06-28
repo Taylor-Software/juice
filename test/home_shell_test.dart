@@ -59,14 +59,14 @@ final _rulesetOverrides = [
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('shell shows five nav destinations and opens on Journal',
+  testWidgets('shell shows six nav destinations and opens on Journal',
       (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: [_verdantOverride, _emulatorOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
     ));
     await t.pumpAndSettle();
-    for (final label in ['Journal', 'Sheet', 'Ask', 'Map', 'Track']) {
+    for (final label in ['Journal', 'Sheet', 'Ask', 'Map', 'Track', 'Run']) {
       expect(find.text(label), findsWidgets);
     }
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
