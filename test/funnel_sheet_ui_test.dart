@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/funnel.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/funnel_sheet.dart';
 import 'package:juice_oracle/shared/theme.dart';
@@ -79,9 +78,9 @@ void main() {
 
   testWidgets('custom funnel renders template stats + graduates a custom hero',
       (tester) async {
-    final sheet = FunnelSheet(seedSystem: 'custom', seedVariant: 'generic-d20',
+    const sheet = FunnelSheet(seedSystem: 'custom', seedVariant: 'generic-d20',
         peasants: [
-          const FunnelPeasant(name: '', hp: 6, stats: {
+          FunnelPeasant(name: '', hp: 6, stats: {
             'str': 12, 'dex': 10, 'con': 11, 'int': 10, 'wis': 9, 'cha': 8,
           }),
         ]);
