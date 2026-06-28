@@ -386,9 +386,22 @@ Working rules for this repo:
   suffix over a text button beside an `Expanded` field; `IconButton` is immune
   (fixed size). Also `ref.watch` `oracleProvider` in build (not a cold `ref.read`
   in a tap handler — an unwatched FutureProvider is `AsyncLoading` on first read).
-  Deferred: stat-block cards, per-combatant init modifiers, reorder/collapse
+  Deferred: per-combatant init modifiers, reorder/collapse
   panels, threads/rumors panel, inline interpret, a party-effect bulk button. See
   `docs/superpowers/specs/2026-06-28-gm-run-screen-design.md`.
+- **Combatant stat blocks** (`StatBlock`/`Attack` in `models.dart`, a nullable
+  `Combatant.statBlock`): user-authored AC + attacks (name + freeform detail) +
+  saves/speed/notes (all freeform, facts-only, NO parser — attacks are display
+  text). Edited on the Encounter screen (`enc-statblock-<id>` →
+  `_StatBlockDialog`), glanced read-only on the Run-screen initiative panel (tap
+  `run-init-row-<id>` → `StatBlockView` dialog). Shared read-only render is
+  `StatBlockView` (`sheet_widgets.dart`, used by both surfaces). Ephemeral on the
+  combatant (gone on encounter reset); persisted inside the existing
+  `juice.encounter.v1` key — no new key. `Combatant.copyWith` gained a
+  `clearStatBlock` flag (mirrors `EncounterState.clearLocationRef`) so an emptied
+  block saves as null. Deferred: rollable attacks (needs a parser), reusable
+  bestiary library (Tier-2.5). See
+  `docs/superpowers/specs/2026-06-28-combatant-stat-blocks-design.md`.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
   Journal verb (collapsed by default — a thin `assistant-expand` header; chips +
   ask box render only when expanded, so it doesn't crowd the journal). Suggestion
