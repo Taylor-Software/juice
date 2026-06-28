@@ -348,6 +348,20 @@ void main() {
       expect(f.funnel!.peasants.first.stats['str'], 10); // dcc statDefault
     });
 
+    test('addFunnel custom seeds from the template variant', () async {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final id = await c
+          .read(charactersProvider.notifier)
+          .addFunnel('custom', seedVariant: 'osr');
+      final f = (await c.read(charactersProvider.future))
+          .firstWhere((x) => x.id == id);
+      expect(f.funnel!.seedSystem, 'custom');
+      expect(f.funnel!.seedVariant, 'osr');
+      expect(f.funnel!.peasants.first.stats.keys,
+          containsAll(['str', 'dex', 'wil']));
+    });
+
     test('graduateFunnelPeasant spawns a hero + marks the peasant graduated',
         () async {
       final c = ProviderContainer();

@@ -327,15 +327,17 @@ class CharacterNotifier extends _PersistedList<Character> {
 
   /// Creates a standalone funnel seeded from [seedSystem]'s FunnelProfile (one
   /// empty peasant) at the top of the roster and returns its id.
-  Future<String> addFunnel(String seedSystem) async {
+  Future<String> addFunnel(String seedSystem, {String seedVariant = ''}) async {
     final id = _newId();
     final profile = funnelProfileFor(seedSystem);
-    final seed =
-        profile == null ? const <FunnelPeasant>[] : [profile.seedPeasant('')];
+    final seed = profile == null
+        ? const <FunnelPeasant>[]
+        : [profile.seedPeasant(seedVariant)];
     final ch = Character(
       id: id,
       name: '0-Level Funnel',
-      funnel: FunnelSheet(seedSystem: seedSystem, peasants: seed),
+      funnel: FunnelSheet(
+          seedSystem: seedSystem, seedVariant: seedVariant, peasants: seed),
     );
     await _persist([ch, ...await _ready]);
     return id;
