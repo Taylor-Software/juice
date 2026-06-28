@@ -52,6 +52,7 @@ enum CustomBlockType {
   timer,
   togglechips,
   progress,
+  computed,
 }
 
 CustomBlockType? _blockTypeFromName(String? n) =>
@@ -221,6 +222,149 @@ class RollOutcome {
   const RollOutcome(this.total, this.label);
   final int total;
   final String label;
+}
+
+// ---------------------------------------------------------------------------
+// Computed block model. A read-only derived value (number or boolean flag)
+// computed from other blocks' live values. resolveComputed is pure + total:
+// missing refs → 0, div-by-zero → 0, never throws.
+// ---------------------------------------------------------------------------
+
+/// Operators for a computed block. Arithmetic ops yield a number; comparison
+/// ops yield a boolean (a conditional chip).
+enum ComputedOp { add, sub, mul, divFloor, le, lt, eq, ge, gt }
+
+/// One operand of a computed formula: a constant, or a reference to another
+/// block's value (a stat key, an hp/luck 'cur'/'max' field, or a counter/timer
+/// int) scaled by [coeff].
+class ComputedOperand {
+  const ComputedOperand({
+    this.isConst = true,
+    this.constant = 0,
+    this.blockId = '',
+    this.subKey = '',
+    this.coeff = 1,
+  });
+
+  final bool isConst;
+  final int constant;
+  final String blockId;
+  final String subKey;
+  final int coeff;
+
+  Map<String, dynamic> toJson() => {
+        'k': isConst ? 'c' : 'r',
+        if (isConst) 'v': constant,
+        if (!isConst) 'b': blockId,
+        if (!isConst) 's': subKey,
+        if (!isConst) 'co': coeff,
+      };
+
+  factory ComputedOperand.fromJson(dynamic j) {
+    if (j is! Map) return const ComputedOperand();
+    return ComputedOperand(
+      isConst: j['k'] != 'r',
+      constant: (j['v'] as num?)?.toInt() ?? 0,
+      blockId: j['b'] as String? ?? '',
+      subKey: j['s'] as String? ?? '',
+      coeff: (j['co'] as num?)?.toInt() ?? 1,
+    );
+  }
+
+  ComputedOperand copyWith({
+    bool? isConst,
+    int? constant,
+    String? blockId,
+    String? subKey,
+    int? coeff,
+  }) =>
+      ComputedOperand(
+        isConst: isConst ?? this.isConst,
+        constant: constant ?? this.constant,
+        blockId: blockId ?? this.blockId,
+        subKey: subKey ?? this.subKey,
+        coeff: coeff ?? this.coeff,
+      );
+}
+
+/// A computed block's formula: `a op b`. Stored directly as the block's config.
+class ComputedConfig {
+  const ComputedConfig({required this.a, required this.op, required this.b});
+
+  final ComputedOperand a, b;
+  final ComputedOp op;
+
+  Map<String, dynamic> toJson() => {
+        'a': a.toJson(),
+        'op': op.name,
+        'b': b.toJson(),
+      };
+
+  factory ComputedConfig.maybeFromJson(dynamic j) {
+    if (j is! Map) {
+      return const ComputedConfig(
+          a: ComputedOperand(), op: ComputedOp.add, b: ComputedOperand());
+    }
+    return ComputedConfig(
+      a: ComputedOperand.fromJson(j['a']),
+      op: ComputedOp.values
+          .firstWhere((o) => o.name == j['op'], orElse: () => ComputedOp.add),
+      b: ComputedOperand.fromJson(j['b']),
+    );
+  }
+}
+
+int _computedLookup(List<CustomBlock> blocks, Map<String, dynamic> values,
+    String blockId, String subKey) {
+  CustomBlock? b;
+  for (final x in blocks) {
+    if (x.id == blockId) {
+      b = x;
+      break;
+    }
+  }
+  if (b == null) return 0;
+  final v = values[blockId];
+  switch (b.type) {
+    case CustomBlockType.stat:
+    case CustomBlockType.hp:
+    case CustomBlockType.luck:
+      if (v is Map) {
+        final n = v[subKey];
+        return n is num ? n.toInt() : 0;
+      }
+      return 0;
+    case CustomBlockType.counter:
+    case CustomBlockType.timer:
+      return v is num ? v.toInt() : 0;
+    default:
+      return 0; // not referenceable (incl. another computed block)
+  }
+}
+
+int _operandValue(List<CustomBlock> blocks, Map<String, dynamic> values,
+        ComputedOperand o) =>
+    o.isConst
+        ? o.constant
+        : o.coeff * _computedLookup(blocks, values, o.blockId, o.subKey);
+
+/// Pure + total. Arithmetic op → `(number: …, flag: null)`; comparison op →
+/// `(number: null, flag: …)`. Missing refs → 0; divFloor by 0 → 0.
+({int? number, bool? flag}) resolveComputed(List<CustomBlock> blocks,
+    Map<String, dynamic> values, ComputedConfig cfg) {
+  final a = _operandValue(blocks, values, cfg.a);
+  final b = _operandValue(blocks, values, cfg.b);
+  return switch (cfg.op) {
+    ComputedOp.add => (number: a + b, flag: null),
+    ComputedOp.sub => (number: a - b, flag: null),
+    ComputedOp.mul => (number: a * b, flag: null),
+    ComputedOp.divFloor => (number: b == 0 ? 0 : (a / b).floor(), flag: null),
+    ComputedOp.le => (number: null, flag: a <= b),
+    ComputedOp.lt => (number: null, flag: a < b),
+    ComputedOp.eq => (number: null, flag: a == b),
+    ComputedOp.ge => (number: null, flag: a >= b),
+    ComputedOp.gt => (number: null, flag: a > b),
+  };
 }
 
 /// Resolves a roll. [rowValue] is the row's own bonus/target number, [dice]
