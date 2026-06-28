@@ -41,6 +41,7 @@ class RunScreen extends ConsumerWidget {
         const initiative = _InitiativePanel();
         const party = _PartyPanel();
         const scene = _ScenePanel();
+        const threads = _ThreadsRumorsPanel();
         const dice = _DiceOraclePanel();
         const capture = _CapturePanel();
         if (wide) {
@@ -63,6 +64,8 @@ class RunScreen extends ConsumerWidget {
                   child: Column(children: [
                     scene,
                     SizedBox(height: 12),
+                    threads,
+                    SizedBox(height: 12),
                     dice,
                     SizedBox(height: 12),
                     capture,
@@ -82,6 +85,8 @@ class RunScreen extends ConsumerWidget {
             party,
             SizedBox(height: 12),
             scene,
+            SizedBox(height: 12),
+            threads,
             SizedBox(height: 12),
             dice,
             SizedBox(height: 12),
@@ -356,8 +361,111 @@ class _PartyPanel extends ConsumerWidget {
                       ),
                     ]),
                   ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    key: const Key('run-party-effect'),
+                    icon: const Icon(Icons.bolt_outlined, size: 18),
+                    label: const Text('Effect…'),
+                    onPressed: () => _bulkEffect(context, ref, party),
+                  ),
+                ),
               ],
             ),
+    );
+  }
+
+  Future<void> _bulkEffect(
+      BuildContext context, WidgetRef ref, List<Character> party) async {
+    final result =
+        await showDialog<({Set<String> ids, int hpDelta, List<String> conditions})>(
+      context: context,
+      builder: (_) => _RunEffectDialog(party: party),
+    );
+    if (result == null || result.ids.isEmpty) return;
+    await ref.read(charactersProvider.notifier).applyPartyEffect(
+          result.ids,
+          hpDelta: result.hpDelta,
+          addConditions: result.conditions,
+        );
+  }
+}
+
+/// Minimal bulk party-effect dialog for the run-screen: pick members, set an
+/// HP delta and/or comma-separated conditions, apply via [applyPartyEffect].
+class _RunEffectDialog extends StatefulWidget {
+  const _RunEffectDialog({required this.party});
+  final List<Character> party;
+  @override
+  State<_RunEffectDialog> createState() => _RunEffectDialogState();
+}
+
+class _RunEffectDialogState extends State<_RunEffectDialog> {
+  final Set<String> _ids = {};
+  final TextEditingController _hp = TextEditingController();
+  final TextEditingController _cond = TextEditingController();
+
+  @override
+  void dispose() {
+    _hp.dispose();
+    _cond.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Party effect'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          for (final c in widget.party)
+            CheckboxListTile(
+              key: Key('run-effect-target-${c.id}'),
+              dense: true,
+              value: _ids.contains(c.id),
+              title: Text(c.name),
+              onChanged: (on) => setState(() {
+                if (on ?? false) {
+                  _ids.add(c.id);
+                } else {
+                  _ids.remove(c.id);
+                }
+              }),
+            ),
+          TextField(
+            key: const Key('run-effect-hp'),
+            controller: _hp,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+                labelText: 'HP delta (negative = damage)'),
+          ),
+          TextField(
+            key: const Key('run-effect-conditions'),
+            controller: _cond,
+            decoration:
+                const InputDecoration(labelText: 'Conditions (comma-separated)'),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('run-effect-apply'),
+          onPressed: () => Navigator.pop(context, (
+            ids: _ids,
+            hpDelta: int.tryParse(_hp.text.trim()) ?? 0,
+            conditions: _cond.text
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList(),
+          )),
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }
@@ -411,6 +519,75 @@ class _ScenePanel extends ConsumerWidget {
                 ),
               ]),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Read-only glance at the live plot: open threads (+ unresolved rumors in GM
+/// mode). Tapping a row jumps to the matching Track subtab.
+class _ThreadsRumorsPanel extends ConsumerWidget {
+  const _ThreadsRumorsPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
+        .where((t) => t.open)
+        .toList();
+    final gm = ref.watch(modeProvider) == CampaignMode.gm;
+    final rumors = gm
+        ? (ref.watch(rumorsProvider).valueOrNull ?? const <Rumor>[])
+            .where((r) => !r.resolved)
+            .toList()
+        : const <Rumor>[];
+    final nav = ref.read(shellRouteProvider.notifier);
+
+    if (threads.isEmpty && rumors.isEmpty) {
+      return const _Panel(
+        k: Key('run-panel-threads'),
+        title: 'Threads',
+        child: Text('No open threads.', key: Key('run-threads-empty')),
+      );
+    }
+
+    return _Panel(
+      k: const Key('run-panel-threads'),
+      title: 'Threads',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final t in threads.take(5))
+            InkWell(
+              key: Key('run-thread-${t.id}'),
+              onTap: () =>
+                  nav.goTo(Destination.track, subtab: 'threads'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(children: [
+                  Expanded(
+                      child: Text(t.title, style: theme.textTheme.bodyMedium)),
+                  Text('${t.progress}/${t.progressMax}',
+                      style: theme.textTheme.bodySmall),
+                ]),
+              ),
+            ),
+          if (rumors.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('RUMORS',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: theme.colorScheme.outline)),
+            for (final r in rumors.take(5))
+              InkWell(
+                key: Key('run-rumor-${r.id}'),
+                onTap: () => nav.goTo(Destination.track, subtab: 'rumors'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Text(r.text, style: theme.textTheme.bodySmall),
+                ),
+              ),
+          ],
         ],
       ),
     );
