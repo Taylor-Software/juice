@@ -10,6 +10,7 @@ import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/encounter_screen.dart';
 import 'package:juice_oracle/state/providers.dart';
 
@@ -369,5 +370,45 @@ void main() {
     await tester.pumpAndSettle();
     final name = tester.widget<TextField>(find.byKey(const Key('adhoc-name')));
     expect(name.controller?.text.trim(), isNotEmpty);
+  });
+
+  testWidgets('save a combatant with a stat block to the bestiary',
+      (tester) async {
+    final c = await pump(tester,
+        encounterJson: _enc([
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 7, 'max': 7})
+            ..['statBlock'] = {
+              'ac': 13,
+              'attacks': [
+                {'name': 'Scimitar'}
+              ]
+            },
+        ]));
+    await tester.tap(find.byKey(const Key('enc-save-bestiary-g')));
+    await tester.pumpAndSettle();
+    final saved = await c.read(bestiaryProvider.future);
+    expect(saved.single.name, 'Goblin');
+    expect(saved.single.statBlock.ac, 13);
+    expect(saved.single.maxHp, 7);
+  });
+
+  testWidgets('add a creature from the bestiary into the encounter',
+      (tester) async {
+    final c = await pump(tester, encounterJson: _enc([]));
+    await c.read(bestiaryProvider.notifier).add(const Creature(
+          id: 'cr1',
+          name: 'Orc',
+          statBlock: StatBlock(ac: 14),
+          maxHp: 15,
+        ));
+    await tester.tap(find.byKey(const Key('add-bestiary')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('bestiary-pick-cr1')));
+    await tester.pumpAndSettle();
+    final combatant =
+        (await c.read(encounterProvider.future)).combatants.single;
+    expect(combatant.name, 'Orc');
+    expect(combatant.track!.max, 15);
+    expect(combatant.statBlock!.ac, 14);
   });
 }

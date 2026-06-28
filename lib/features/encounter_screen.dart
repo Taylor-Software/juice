@@ -269,6 +269,13 @@ class EncounterScreen extends ConsumerWidget {
               tooltip: 'Stat block',
               onPressed: () => _editStatBlock(context, ref, c),
             ),
+            if (c.statBlock != null && !c.statBlock!.isEmpty)
+              IconButton(
+                key: Key('enc-save-bestiary-${c.id}'),
+                icon: const Icon(Icons.bookmark_add_outlined),
+                tooltip: 'Save to bestiary',
+                onPressed: () => _saveToBestiary(context, ref, c),
+              ),
             IconButton(
               key: Key('enc-defeat-$i'),
               icon: Icon(c.defeated
@@ -321,9 +328,36 @@ class EncounterScreen extends ConsumerWidget {
               onPressed: () => _generateMonster(context, ref),
             ),
           ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: OutlinedButton.icon(
+              key: const Key('add-bestiary'),
+              icon: const Icon(Icons.pets_outlined),
+              label: const Text('Bestiary'),
+              onPressed: () => _addFromBestiary(context, ref),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _addFromBestiary(BuildContext context, WidgetRef ref) async {
+    final creature = await showDialog<Creature>(
+      context: context,
+      builder: (_) => const _BestiaryPickerDialog(),
+    );
+    if (creature == null) return;
+    await ref.read(encounterProvider.notifier).addCombatant(Combatant(
+          id: _newId(),
+          name: creature.name,
+          initiative: 0,
+          track: creature.maxHp > 0
+              ? CharTrack(
+                  label: 'HP', current: creature.maxHp, max: creature.maxHp)
+              : null,
+          statBlock: creature.statBlock.isEmpty ? null : creature.statBlock,
+        ));
   }
 
   String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
@@ -543,6 +577,22 @@ class EncounterScreen extends ConsumerWidget {
       await notifier.updateCombatant(c.copyWith(clearStatBlock: true));
     } else {
       await notifier.updateCombatant(c.copyWith(statBlock: result));
+    }
+  }
+
+  Future<void> _saveToBestiary(
+      BuildContext context, WidgetRef ref, Combatant c) async {
+    final sb = c.statBlock;
+    if (sb == null || sb.isEmpty) return;
+    await ref.read(bestiaryProvider.notifier).add(Creature(
+          id: _newId(),
+          name: c.name,
+          statBlock: sb,
+          maxHp: c.track?.max ?? 0,
+        ));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Saved ${c.name} to bestiary')));
     }
   }
 
@@ -801,6 +851,55 @@ class _InitDialogState extends State<_InitDialog> {
             mod: int.tryParse(_m.text.trim()) ?? 0,
           )),
           child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Picks a saved creature to add to the encounter (or delete from the library).
+/// Pops the chosen [Creature], or null on cancel.
+class _BestiaryPickerDialog extends ConsumerWidget {
+  const _BestiaryPickerDialog();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final creatures =
+        ref.watch(bestiaryProvider).valueOrNull ?? const <Creature>[];
+    return AlertDialog(
+      title: const Text('Add from bestiary'),
+      content: SizedBox(
+        width: 320,
+        child: creatures.isEmpty
+            ? const Text('No saved creatures yet. Save one from a combatant '
+                'with a stat block.')
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final cr in creatures)
+                    ListTile(
+                      key: Key('bestiary-pick-${cr.id}'),
+                      dense: true,
+                      title: Text(cr.name),
+                      subtitle: Text([
+                        if (cr.statBlock.ac != 0) 'AC ${cr.statBlock.ac}',
+                        if (cr.maxHp > 0) 'HP ${cr.maxHp}',
+                      ].join(' · ')),
+                      trailing: IconButton(
+                        key: Key('bestiary-del-${cr.id}'),
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () =>
+                            ref.read(bestiaryProvider.notifier).remove(cr.id),
+                      ),
+                      onTap: () => Navigator.pop(context, cr),
+                    ),
+                ],
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
         ),
       ],
     );
