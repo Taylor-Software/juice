@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/oracle_interpreter.dart';
+import 'oracle_interpretation_sheet.dart';
 import 'sheet_widgets.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
@@ -594,10 +596,16 @@ class _ThreadsRumorsPanel extends ConsumerWidget {
   }
 }
 
-class _DiceOraclePanel extends ConsumerWidget {
+class _DiceOraclePanel extends ConsumerStatefulWidget {
   const _DiceOraclePanel();
+  @override
+  ConsumerState<_DiceOraclePanel> createState() => _DiceOraclePanelState();
+}
 
-  void _roll(WidgetRef ref) {
+class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
+  GenResult? _last;
+
+  void _roll() {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final defaultOracle =
@@ -618,10 +626,48 @@ class _DiceOraclePanel extends ConsumerWidget {
     }
     ref.read(journalProvider.notifier).addResult(g.title, g.asText,
         sourceTool: tool, payload: g.toPayload());
+    setState(() => _last = g);
+  }
+
+  /// Interpret the last roll inline (on-device LLM): seed from the result + the
+  /// active scene + PC, run the shared interpretation sheet, log the reading.
+  Future<void> _interpret() async {
+    final g = _last;
+    if (g == null) return;
+    final journal =
+        ref.read(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final ctx = ref.read(playContextProvider).valueOrNull;
+    final scene = activeSceneEntry(journal, ctx?.activeSceneId);
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+    final seed = OracleSeed(
+      resultText: g.asText,
+      genre: settings.genre,
+      tone: settings.tone,
+      sceneContext: scene == null
+          ? ''
+          : '${scene.title}\n${scene.body}'.trim(),
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      systemPrimer: ref.read(systemPrimerProvider),
+    );
+    final accepted = await showModalBottomSheet<OracleInterpretation>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetCtx) => OracleInterpretationSheet(
+        seed: seed,
+        onAccept: (card) => Navigator.pop(sheetCtx, card),
+      ),
+    );
+    if (accepted == null || !mounted) return;
+    await ref.read(journalProvider.notifier).addResult(
+          'Oracle reading',
+          '(${accepted.lens}): ${accepted.reading}',
+          sourceTool: 'interpret',
+        );
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     // Watch the oracle (not just read in _roll): an unwatched FutureProvider is
     // AsyncLoading on first read, so _roll would early-return. Watching keeps it
     // warm + gates the button until it resolves.
@@ -639,19 +685,17 @@ class _DiceOraclePanel extends ConsumerWidget {
           Flexible(
             child: OutlinedButton(
               key: const Key('run-dice-roll'),
-              onPressed: oracle == null ? null : () => _roll(ref),
+              onPressed: oracle == null ? null : _roll,
               child: const Text('Roll oracle'),
             ),
           ),
-          if (aiReady) ...[
+          if (aiReady && _last != null) ...[
             const SizedBox(width: 8),
             Flexible(
               child: OutlinedButton(
                 key: const Key('run-dice-interpret'),
-                onPressed: () => ref
-                    .read(shellRouteProvider.notifier)
-                    .goTo(Destination.journal),
-                child: const Text('Interpret in journal'),
+                onPressed: _interpret,
+                child: const Text('Interpret'),
               ),
             ),
           ],

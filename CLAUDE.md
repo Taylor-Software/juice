@@ -399,7 +399,13 @@ Working rules for this repo:
   open threads (+ unresolved rumors in GM mode via `modeProvider`), each row
   tapping to the matching Track subtab; and the Party panel gained a
   **party-effect bulk button** (`run-party-effect` → `_RunEffectDialog`: target
-  checkboxes + HP delta + comma-conditions → `applyPartyEffect`). A minimal inline
+  checkboxes + HP delta + comma-conditions → `applyPartyEffect`). The dice panel
+  (`_DiceOraclePanel`, now ConsumerStatefulWidget holding the last `GenResult`)
+  does **inline AI interpret**: the aiReady-gated `run-dice-interpret` button
+  (shown only after a roll) seeds `OracleSeed` from the result + active scene + PC
+  + primer, runs the shared `OracleInterpretationSheet`, and logs an `'interpret'`
+  reading entry (see
+  `docs/superpowers/specs/2026-06-28-run-dice-inline-interpret-design.md`). A minimal inline
   effect dialog (not the tracker's private one; DRY cleanup deferred). See
   `docs/superpowers/specs/2026-06-28-run-screen-polish-design.md`. Deferred:
   inline AI interpret on the dice panel (own follow-up).
