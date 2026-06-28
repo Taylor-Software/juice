@@ -394,7 +394,15 @@ Working rules for this repo:
   stopwatch, driven by a widget-local `Timer.periodic` that runs only while an
   encounter has combatants; ephemeral (no persistence), cancelled on dispose. Pure
   top-level `formatDuration` is unit-tested; the tick is device-verified. See
-  `docs/superpowers/specs/2026-06-28-pacing-timers-design.md`.
+  `docs/superpowers/specs/2026-06-28-pacing-timers-design.md`. A
+  **Threads/Rumors glance** panel (`run-panel-threads`, `_ThreadsRumorsPanel`) shows
+  open threads (+ unresolved rumors in GM mode via `modeProvider`), each row
+  tapping to the matching Track subtab; and the Party panel gained a
+  **party-effect bulk button** (`run-party-effect` → `_RunEffectDialog`: target
+  checkboxes + HP delta + comma-conditions → `applyPartyEffect`). A minimal inline
+  effect dialog (not the tracker's private one; DRY cleanup deferred). See
+  `docs/superpowers/specs/2026-06-28-run-screen-polish-design.md`. Deferred:
+  inline AI interpret on the dice panel (own follow-up).
 - **Combatant stat blocks** (`StatBlock`/`Attack` in `models.dart`, a nullable
   `Combatant.statBlock`): user-authored AC + attacks (name + freeform detail) +
   saves/speed/notes (all freeform, facts-only, NO parser — attacks are display
