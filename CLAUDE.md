@@ -404,6 +404,11 @@ Working rules for this repo:
   block saves as null. Deferred: rollable attacks (needs a parser), reusable
   bestiary library (Tier-2.5). See
   `docs/superpowers/specs/2026-06-28-combatant-stat-blocks-design.md`.
+  Per-combatant **initiative modifiers** (`Combatant.initMod`): tap the encounter
+  row's init avatar (`enc-init-<id>`) → `_InitDialog` sets initiative + mod (shown
+  on the row as `enc-initmod-<id>` when nonzero); `rollInitiativeForAll` rolls
+  `d20 + initMod` for unset combatants and tie-breaks by mod. See
+  `docs/superpowers/specs/2026-06-28-initiative-modifiers-design.md`.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
   Journal verb (collapsed by default — a thin `assistant-expand` header; chips +
   ask box render only when expanded, so it doesn't crowd the journal). Suggestion
