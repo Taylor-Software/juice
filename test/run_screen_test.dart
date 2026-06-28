@@ -11,7 +11,8 @@ import 'package:juice_oracle/features/run_screen.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/interpreter.dart'
+    show interpreterServiceProvider, InterpreterStatus, InterpreterPhase;
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -52,16 +53,24 @@ Future<ProviderContainer> _pump(
   OracleData data,
   Map<String, Object> prefs, {
   Size size = const Size(1000, 2200),
+  bool aiReady = false,
 }) async {
-  SharedPreferences.setMockInitialValues(prefs);
+  SharedPreferences.setMockInitialValues({
+    ...prefs,
+    if (aiReady) 'juice.ai_enabled.v1': true,
+  });
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final oracle = Oracle(data, Dice(Random(1)));
+  final fake = aiReady
+      ? FakeInterpreterService(
+          initial: const InterpreterStatus(InterpreterPhase.ready))
+      : FakeInterpreterService();
   final container = ProviderContainer(overrides: [
     oracleProvider.overrideWith((ref) async => oracle),
-    interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
+    interpreterServiceProvider.overrideWithValue(fake),
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -188,6 +197,17 @@ void main() {
     await tester.pumpAndSettle();
     final entries = await c.read(journalProvider.future);
     expect(entries.where((e) => e.sourceTool == 'fate-check'), hasLength(1));
+  });
+
+  testWidgets('dice: interpret appears after a roll when AI is ready',
+      (tester) async {
+    await _pump(tester, data, _prefs(crawlJson: '{"chaosFactor":5}'),
+        aiReady: true);
+    // Hidden until there's a result to interpret.
+    expect(find.byKey(const Key('run-dice-interpret')), findsNothing);
+    await tester.tap(find.byKey(const Key('run-dice-roll')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('run-dice-interpret')), findsOneWidget);
   });
 
   testWidgets('capture: logs a text note and clears', (tester) async {
