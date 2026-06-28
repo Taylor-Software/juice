@@ -39,13 +39,32 @@ void main() {
     expect(s.turnIndex, 0);
   });
 
-  test('rollInitiativeForAll is a no-op on empty + resorts when all typed',
-      () async {
+  test('rollInitiativeForAll is a no-op on empty', () async {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     final n = c.read(encounterProvider.notifier);
     await c.read(encounterProvider.future);
     await n.rollInitiativeForAll(dice: Dice(Random(1))); // empty: no throw
     expect((await c.read(encounterProvider.future)).combatants, isEmpty);
+  });
+
+  test('rollInitiativeForAll preserves all-typed inits and re-sorts desc',
+      () async {
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    final n = c.read(encounterProvider.notifier);
+    await c.read(encounterProvider.future);
+    // All typed (> 0); addCombatant already inserts in desc order.
+    await n.addCombatant(const Combatant(
+        id: 'a', name: 'A', initiative: 8, track: CharTrack(label: 'HP', current: 5, max: 5)));
+    await n.addCombatant(const Combatant(
+        id: 'b', name: 'B', initiative: 20, track: CharTrack(label: 'HP', current: 5, max: 5)));
+
+    await n.rollInitiativeForAll(dice: Dice(Random(1)));
+    final s = await c.read(encounterProvider.future);
+    // No rolls happened (values unchanged), order is descending.
+    expect(s.combatants.firstWhere((x) => x.id == 'a').initiative, 8);
+    expect(s.combatants.firstWhere((x) => x.id == 'b').initiative, 20);
+    expect(s.combatants.map((x) => x.initiative).toList(), [20, 8]);
   });
 }

@@ -3433,6 +3433,7 @@ class FunnelSheet {
   if (c.knave != null) return (c.knave!.currentHp, c.knave!.maxHp);
   if (c.ose != null) return (c.ose!.currentHp, c.ose!.maxHp);
   if (c.kalArath != null) return (c.kalArath!.currentHp, c.kalArath!.maxHp);
+  if (c.dcc != null) return (c.dcc!.currentHp, c.dcc!.maxHp);
   if (c.tracks.isNotEmpty) return (c.tracks.first.current, c.tracks.first.max);
   return null;
 }
