@@ -52,6 +52,7 @@ enum CustomBlockType {
   timer,
   togglechips,
   progress,
+  computed,
 }
 
 CustomBlockType? _blockTypeFromName(String? n) =>

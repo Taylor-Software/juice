@@ -569,6 +569,50 @@ void main() {
     expect(tracks.length, 1);
   });
 
+  // ---- Task 2 (computed-badges): computed block play renderer ----------------
+
+  testWidgets('computed number badge renders label: n', (tester) async {
+    _bigView(tester);
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(id: 's1', type: CustomBlockType.stat, label: 'Abilities', config: {
+        'stats': [
+          {'key': 'con', 'label': 'CON'}
+        ],
+        'min': 3,
+        'max': 18,
+      }),
+      CustomBlock(id: 'cm', type: CustomBlockType.computed, label: 'Slots', config: {
+        'a': {'k': 'c', 'v': 10},
+        'op': 'add',
+        'b': {'k': 'r', 'b': 's1', 's': 'con', 'co': 1},
+      }),
+    ], values: {
+      's1': {'con': 14}
+    });
+    await _pump(tester, sheet: sheet);
+    expect(find.text('Slots: 24'), findsOneWidget);
+  });
+
+  testWidgets('computed comparison chip shows when true, hidden when false',
+      (tester) async {
+    _bigView(tester);
+    CustomSheet sheetWith(int cur) => CustomSheet(blocks: const [
+          CustomBlock(id: 'h1', type: CustomBlockType.hp, label: 'HP'),
+          CustomBlock(id: 'cm', type: CustomBlockType.computed, label: 'Staggered',
+              config: {
+                'a': {'k': 'r', 'b': 'h1', 's': 'cur', 'co': 2},
+                'op': 'le',
+                'b': {'k': 'r', 'b': 'h1', 's': 'max', 'co': 1},
+              }),
+        ], values: {
+          'h1': {'cur': cur, 'max': 10}
+        });
+    await _pump(tester, sheet: sheetWith(4));
+    expect(find.widgetWithText(Chip, 'Staggered'), findsOneWidget);
+    await _pump(tester, sheet: sheetWith(6));
+    expect(find.widgetWithText(Chip, 'Staggered'), findsNothing);
+  });
+
   // TEST E — roll with prompt target shows DC dialog and resolves
   testWidgets('roll with prompt target asks for a DC and resolves',
       (tester) async {

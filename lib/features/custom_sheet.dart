@@ -176,6 +176,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.timer => 'Timer',
         CustomBlockType.togglechips => 'Flags',
         CustomBlockType.progress => 'Tracks',
+        CustomBlockType.computed => 'Computed',
       };
 
   // --- play + config dispatch -------------------------------------------------
@@ -192,6 +193,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         CustomBlockType.timer => _playTimer(b),
         CustomBlockType.togglechips => _playToggleChips(b),
         CustomBlockType.progress => _playProgress(b),
+        CustomBlockType.computed => _playComputed(b),
       };
 
   Future<void> _configBlock(CustomBlock b) async {
@@ -212,6 +214,8 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         await _configTimer(b);
       case CustomBlockType.togglechips:
         await _configToggleChips(b);
+      case CustomBlockType.computed:
+        await _configComputed(b);
       default:
         await _renameBlock(b);
     }
@@ -704,6 +708,43 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     ]);
   }
 
+  // --- computed -----------------------------------------------------------------
+
+  Widget _playComputed(CustomBlock b) {
+    final cfg = ComputedConfig.maybeFromJson(b.config);
+    final r = resolveComputed(_s.blocks, _s.values, cfg);
+    if (r.flag != null) {
+      return r.flag!
+          ? Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Chip(
+                    key: Key('custom-${b.id}-computed-chip'),
+                    label: Text(b.label)),
+              ),
+            )
+          : const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Text('${b.label}: ${r.number ?? 0}',
+          key: Key('custom-${b.id}-computed')),
+    );
+  }
+
+  Future<void> _configComputed(CustomBlock b) async {
+    final result = await showDialog<ComputedConfig>(
+      context: context,
+      builder: (_) => _ComputedConfigDialog(block: b, blocks: _s.blocks),
+    );
+    if (result == null) return;
+    _save(_s.copyWith(
+        blocks: _s.blocks
+            .map((x) => x.id == b.id ? x.copyWith(config: result.toJson()) : x)
+            .toList()));
+  }
+
   Future<void> _renameBlock(CustomBlock b) async {
     final name = await renameDialog(context,
         nameKey: 'custom-block-${b.id}-label', current: b.label);
@@ -751,6 +792,8 @@ Map<String, dynamic> defaultConfigFor(CustomBlockType type) => switch (type) {
       CustomBlockType.freeform => {'multiline': true},
       CustomBlockType.timer => {'start': 0},
       CustomBlockType.togglechips => {'options': <String>[]},
+      CustomBlockType.computed => const ComputedConfig(
+          a: ComputedOperand(), op: ComputedOp.add, b: ComputedOperand()).toJson(),
       _ => const {},
     };
 
@@ -1771,6 +1814,164 @@ class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
                       options: _optCtls.map((c) => c.text).toList(),
                     ),
                   ),
+              child: const Text('Save')),
+        ],
+      );
+}
+
+// ---------------------------------------------------------------------------
+
+class _ComputedConfigDialog extends StatefulWidget {
+  const _ComputedConfigDialog({required this.block, required this.blocks});
+  final CustomBlock block;
+  final List<CustomBlock> blocks;
+
+  @override
+  State<_ComputedConfigDialog> createState() => _ComputedConfigDialogState();
+}
+
+class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
+  late ComputedConfig _cfg = ComputedConfig.maybeFromJson(widget.block.config);
+
+  static const _refTypes = {
+    CustomBlockType.stat,
+    CustomBlockType.hp,
+    CustomBlockType.luck,
+    CustomBlockType.counter,
+    CustomBlockType.timer,
+  };
+
+  List<CustomBlock> get _refBlocks =>
+      widget.blocks.where((x) => _refTypes.contains(x.type)).toList();
+
+  List<String> _subKeysFor(String blockId) {
+    CustomBlock? b;
+    for (final x in widget.blocks) {
+      if (x.id == blockId) {
+        b = x;
+        break;
+      }
+    }
+    if (b == null) return const [];
+    switch (b.type) {
+      case CustomBlockType.stat:
+        return [
+          for (final s in (b.config['stats'] as List?) ?? const [])
+            if (s is Map && s['key'] is String) s['key'] as String,
+        ];
+      case CustomBlockType.hp:
+      case CustomBlockType.luck:
+        return const ['cur', 'max'];
+      default:
+        return const [];
+    }
+  }
+
+  Widget _operandEditor(
+      String title, ComputedOperand o, ValueChanged<ComputedOperand> onChange) {
+    final refs = _refBlocks;
+    final subKeys = _subKeysFor(o.blockId);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      Row(children: [
+        ChoiceChip(
+          label: const Text('Constant'),
+          selected: o.isConst,
+          onSelected: (_) => onChange(o.copyWith(isConst: true)),
+        ),
+        const SizedBox(width: 8),
+        ChoiceChip(
+          label: const Text('Reference'),
+          selected: !o.isConst,
+          onSelected: refs.isEmpty
+              ? null
+              : (_) => onChange(o.copyWith(
+                  isConst: false,
+                  blockId: o.blockId.isEmpty ? refs.first.id : o.blockId)),
+        ),
+      ]),
+      if (o.isConst)
+        TextFormField(
+          initialValue: '${o.constant}',
+          decoration: const InputDecoration(labelText: 'Value'),
+          keyboardType: TextInputType.number,
+          onChanged: (v) => onChange(o.copyWith(constant: int.tryParse(v) ?? 0)),
+        )
+      else ...[
+        DropdownButton<String>(
+          isExpanded: true,
+          value: refs.any((x) => x.id == o.blockId) ? o.blockId : null,
+          hint: const Text('Block'),
+          items: [
+            for (final x in refs)
+              DropdownMenuItem(value: x.id, child: Text(x.label)),
+          ],
+          onChanged: (v) {
+            if (v == null) return;
+            final keys = _subKeysFor(v);
+            onChange(
+                o.copyWith(blockId: v, subKey: keys.isEmpty ? '' : keys.first));
+          },
+        ),
+        if (subKeys.isNotEmpty)
+          DropdownButton<String>(
+            isExpanded: true,
+            value: subKeys.contains(o.subKey) ? o.subKey : null,
+            hint: const Text('Field'),
+            items: [
+              for (final k in subKeys)
+                DropdownMenuItem(value: k, child: Text(k)),
+            ],
+            onChanged: (v) => onChange(o.copyWith(subKey: v ?? '')),
+          ),
+        TextFormField(
+          initialValue: '${o.coeff}',
+          decoration: const InputDecoration(labelText: 'Coefficient (×)'),
+          keyboardType: TextInputType.number,
+          onChanged: (v) => onChange(o.copyWith(coeff: int.tryParse(v) ?? 1)),
+        ),
+      ],
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: const Text('Edit computed value'),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _operandEditor('Operand A', _cfg.a,
+                (o) => setState(() => _cfg = ComputedConfig(a: o, op: _cfg.op, b: _cfg.b))),
+            const SizedBox(height: 12),
+            DropdownButton<ComputedOp>(
+              key: const Key('custom-computed-op'),
+              isExpanded: true,
+              value: _cfg.op,
+              items: const [
+                DropdownMenuItem(value: ComputedOp.add, child: Text('+ (number)')),
+                DropdownMenuItem(value: ComputedOp.sub, child: Text('- (number)')),
+                DropdownMenuItem(value: ComputedOp.mul, child: Text('x (number)')),
+                DropdownMenuItem(value: ComputedOp.divFloor, child: Text('/ floor (number)')),
+                DropdownMenuItem(value: ComputedOp.le, child: Text('<= (chip)')),
+                DropdownMenuItem(value: ComputedOp.lt, child: Text('< (chip)')),
+                DropdownMenuItem(value: ComputedOp.eq, child: Text('= (chip)')),
+                DropdownMenuItem(value: ComputedOp.ge, child: Text('>= (chip)')),
+                DropdownMenuItem(value: ComputedOp.gt, child: Text('> (chip)')),
+              ],
+              onChanged: (v) => setState(
+                  () => _cfg = ComputedConfig(a: _cfg.a, op: v ?? _cfg.op, b: _cfg.b)),
+            ),
+            const SizedBox(height: 12),
+            _operandEditor('Operand B', _cfg.b,
+                (o) => setState(() => _cfg = ComputedConfig(a: _cfg.a, op: _cfg.op, b: o))),
+          ]),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('custom-computed-save'),
+              onPressed: () => Navigator.pop(context, _cfg),
               child: const Text('Save')),
         ],
       );
