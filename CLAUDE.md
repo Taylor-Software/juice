@@ -180,6 +180,14 @@ Working rules for this repo:
   shares `luckTokensSection` + system-registration files with the parallel
   `feat/dcc-sheet` branch — see that branch's `dcc` additions; reconcile the
   `luckTokensSection` signature at whichever merge lands second.
+  A **computed** block (`CustomBlockType.computed`, P2) adds read-only derived
+  values: a two-operand single-binary-op formula (`ComputedConfig` /
+  `ComputedOperand` / `ComputedOp` in `lib/engine/custom_sheet.dart` — each
+  operand a constant or a block-reference with a coefficient; arithmetic op →
+  number badge, comparison op → conditional chip) resolved by the pure total
+  `resolveComputed`. Cycle-free — a computed block can't reference another
+  computed block. Covers e.g. Knave `10+CON`, Argosa `currentHp*2 ≤ maxHp`. See
+  `docs/superpowers/specs/2026-06-27-custom-computed-badges-design.md`.
 - A facts-only **Dungeon Crawl Classics** sheet (`lib/features/dcc_sheet.dart`,
   rendered when `Character.dcc` is set; opt-in `dcc` system, NOT in `kAllSystems`).
   `DccSheet` is **leveled-only** (a 1st-level+ hero); the 0-level funnel arc was

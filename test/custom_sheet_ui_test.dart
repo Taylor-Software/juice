@@ -648,4 +648,73 @@ void main() {
     await tester.pump();
     expect(find.textContaining('Fort:'), findsOneWidget);
   });
+
+  // ---- Task 3 (computed-badges): config dialog → resolve path ----------------
+
+  testWidgets(
+      'computed config dialog: constant op constant persists and renders badge',
+      (tester) async {
+    // Use a narrow viewport so the AlertDialog fits comfortably and its action
+    // buttons (Save) are hit-testable. The large 1200×5000 viewport used by
+    // other tests makes the dialog content taller than the render window,
+    // pushing the actions bar outside the hit-testable region.
+    tester.view.physicalSize = const Size(600, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Computed block 'cm' starts with a default all-zero config (0 + 0 = 0).
+    const sheet = CustomSheet(blocks: [
+      CustomBlock(
+          id: 'cm',
+          type: CustomBlockType.computed,
+          label: 'Slots',
+          config: {
+            'a': {'k': 'c', 'v': 0},
+            'op': 'add',
+            'b': {'k': 'c', 'v': 0},
+          }),
+    ]);
+    final c = await _pump(tester, sheet: sheet);
+
+    // Enter edit mode
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+
+    // Open the computed block config dialog
+    await tester.tap(find.byKey(const Key('custom-block-cm-config')));
+    await tester.pumpAndSettle();
+
+    // Operand A: set constant to 10
+    await tester.enterText(
+        find.byKey(const ValueKey('Operand A-const')), '10');
+    await tester.pumpAndSettle();
+
+    // Op: already 'add' (default) — leave as-is.
+
+    // Operand B: set constant to 5. Both operands stay as Constant so the
+    // dialog stays compact (no Reference dropdowns expanding its height).
+    await tester.enterText(
+        find.byKey(const ValueKey('Operand B-const')), '5');
+    await tester.pumpAndSettle();
+
+    // Save
+    await tester.tap(find.byKey(const Key('custom-computed-save')));
+    await tester.pumpAndSettle();
+
+    // Verify persisted config
+    final blk =
+        (await c.read(charactersProvider.future)).single.custom!.blocks.single;
+    final cfg = ComputedConfig.maybeFromJson(blk.config);
+    expect(cfg.a.isConst, true);
+    expect(cfg.a.constant, 10);
+    expect(cfg.op, ComputedOp.add);
+    expect(cfg.b.isConst, true);
+    expect(cfg.b.constant, 5);
+
+    // Switch back to play mode and verify the rendered badge shows 10+5=15
+    await tester.tap(find.byKey(const Key('custom-mode-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.text('Slots: 15'), findsOneWidget);
+  });
 }
