@@ -261,6 +261,25 @@ void main() {
     expect(s.combatants.single.tags, isEmpty);
   });
 
+  testWidgets('tap init avatar edits initiative + mod; mod shows on row',
+      (tester) async {
+    final c = await pump(tester,
+        encounterJson: _enc([
+          _c('g', 'Goblin', 12, track: {'label': 'HP', 'current': 7, 'max': 7}),
+        ]));
+    expect(find.byKey(const Key('enc-initmod-g')), findsNothing); // mod 0
+    await tester.tap(find.byKey(const Key('enc-init-g')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('init-dialog-value')), '18');
+    await tester.enterText(find.byKey(const Key('init-dialog-mod')), '2');
+    await tester.tap(find.byKey(const Key('init-dialog-save')));
+    await tester.pumpAndSettle();
+    final cm = (await c.read(encounterProvider.future)).combatants.single;
+    expect(cm.initiative, 18);
+    expect(cm.initMod, 2);
+    expect(find.byKey(const Key('enc-initmod-g')), findsOneWidget);
+  });
+
   testWidgets('stat-block dialog sets AC + an attack and persists', (tester) async {
     final c = await pump(tester,
         encounterJson: _enc([
