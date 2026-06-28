@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import '../engine/models.dart';
 
 /// Top-level verbs of the home shell.
-enum Destination { journal, sheet, ask, map, track }
+enum Destination { journal, sheet, ask, map, track, run }
 
 /// The verb a campaign lands on when entered, by player-focus mode: GM runs the
 /// world (Track = scenes/threads/encounter), Party directs characters (Sheet =
 /// roster + Moves). Applied at campaign entry via `ShellRouteNotifier.landFor`.
 Destination landingDestination(CampaignMode mode) =>
-    mode == CampaignMode.gm ? Destination.track : Destination.sheet;
+    mode == CampaignMode.gm ? Destination.run : Destination.sheet;
 
 class DestinationMeta {
   const DestinationMeta(this.label, this.icon);
@@ -23,6 +23,7 @@ const destinationMeta = <Destination, DestinationMeta>{
   Destination.ask: DestinationMeta('Ask', Icons.casino_outlined),
   Destination.map: DestinationMeta('Map', Icons.map_outlined),
   Destination.track: DestinationMeta('Track', Icons.checklist_outlined),
+  Destination.run: DestinationMeta('Run', Icons.play_circle_outline),
 };
 
 /// Registry tool id -> (destination, subtab key). Tools absent here have no

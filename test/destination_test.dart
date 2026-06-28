@@ -4,7 +4,7 @@ import 'package:juice_oracle/shared/destination.dart';
 
 void main() {
   test('landingDestination maps mode to its home verb', () {
-    expect(landingDestination(CampaignMode.gm), Destination.track);
+    expect(landingDestination(CampaignMode.gm), Destination.run);
     expect(landingDestination(CampaignMode.party), Destination.sheet);
   });
 
