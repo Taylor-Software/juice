@@ -122,4 +122,23 @@ void main() {
     await _pump(tester, data, _prefs());
     expect(find.byKey(const Key('run-party-empty')), findsOneWidget);
   });
+
+  testWidgets('scene: shows active scene + steps chaos', (tester) async {
+    const journal =
+        '[{"id":"e1","timestamp":"2026-01-01T10:00:00.000Z","title":"The Vault","body":"Dust everywhere.","kind":"scene","chaosFactor":6,"tags":[]}]';
+    final c = await _pump(tester, data,
+        _prefs(journalJson: journal, crawlJson: '{"chaosFactor":6}'));
+    expect(find.text('The Vault'), findsWidgets);
+    expect(find.text('Dust everywhere.'), findsOneWidget);
+    expect(find.textContaining('Chaos 6'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('run-scene-chaos-inc')));
+    await tester.pumpAndSettle();
+    expect((await c.read(crawlProvider.future)).chaosFactor, 7);
+  });
+
+  testWidgets('scene: empty state when no scene', (tester) async {
+    await _pump(tester, data, _prefs());
+    expect(find.byKey(const Key('run-scene-empty')), findsOneWidget);
+  });
 }

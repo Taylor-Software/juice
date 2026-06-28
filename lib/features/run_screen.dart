@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 
 /// Width at or above which the run-screen shows a two-column dashboard;
@@ -235,9 +236,57 @@ class _PartyPanel extends ConsumerWidget {
 
 class _ScenePanel extends ConsumerWidget {
   const _ScenePanel();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => const _Panel(
-      k: Key('run-panel-scene'), title: 'Scene', child: SizedBox());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final journal =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final ctx = ref.watch(playContextProvider).valueOrNull;
+    final scene = activeSceneEntry(journal, ctx?.activeSceneId);
+    final chaos = ref.watch(crawlProvider).valueOrNull?.chaosFactor;
+
+    return _Panel(
+      k: const Key('run-panel-scene'),
+      title: 'Scene',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (scene == null)
+            const Text('No active scene.', key: Key('run-scene-empty'))
+          else ...[
+            Text(scene.title.isEmpty ? '(untitled scene)' : scene.title,
+                style: theme.textTheme.titleSmall),
+            if (scene.body.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(scene.body, style: theme.textTheme.bodySmall),
+              ),
+          ],
+          if (chaos != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(children: [
+                Text('Chaos $chaos', style: theme.textTheme.bodyMedium),
+                const Spacer(),
+                IconButton(
+                  key: const Key('run-scene-chaos-dec'),
+                  icon: const Icon(Icons.remove, size: 18),
+                  onPressed: () =>
+                      ref.read(crawlProvider.notifier).setChaos(chaos - 1),
+                ),
+                IconButton(
+                  key: const Key('run-scene-chaos-inc'),
+                  icon: const Icon(Icons.add, size: 18),
+                  onPressed: () =>
+                      ref.read(crawlProvider.notifier).setChaos(chaos + 1),
+                ),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DiceOraclePanel extends ConsumerWidget {
