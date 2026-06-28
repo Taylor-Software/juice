@@ -91,7 +91,7 @@ void main() {
     ]);
   }
 
-  testWidgets('Continue lands on the active campaign mode home (gm→track)',
+  testWidgets('Continue lands on the active campaign mode home (gm→run)',
       (t) async {
     final c = modedContainer();
     addTearDown(c.dispose);
@@ -100,7 +100,7 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.journal);
     await t.tap(find.byKey(const Key('launcher-continue')));
     await t.pumpAndSettle();
-    expect(c.read(shellRouteProvider).destination, Destination.track);
+    expect(c.read(shellRouteProvider).destination, Destination.run);
   });
 
   testWidgets('switching to a party campaign lands on Sheet', (t) async {

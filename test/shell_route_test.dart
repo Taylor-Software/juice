@@ -11,11 +11,11 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
-  test('landFor lands on the mode home verb (gm→track, party→sheet)', () {
+  test('landFor lands on the mode home verb (gm→run, party→sheet)', () {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     c.read(shellRouteProvider.notifier).landFor(CampaignMode.gm);
-    expect(c.read(shellRouteProvider).destination, Destination.track);
+    expect(c.read(shellRouteProvider).destination, Destination.run);
     expect(c.read(shellRouteProvider).subtab, '');
     c.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
     expect(c.read(shellRouteProvider).destination, Destination.sheet);

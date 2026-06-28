@@ -404,25 +404,6 @@ class TrackHomePane extends ConsumerWidget {
   // -- Helpers -------------------------------------------------------------
 
   /// Resolves a character's HP pool the same way the encounter tracker does
-  /// (Character.withHpDelta's order): the active sheet's currentHp/maxHp, or
-  /// the first generic track. Returns null for pool-less sheets.
-  (int, int)? _hpOf(Character c) {
-    if (c.dnd != null) return (c.dnd!.currentHp, c.dnd!.maxHp);
-    if (c.shadowdark != null) {
-      return (c.shadowdark!.currentHp, c.shadowdark!.maxHp);
-    }
-    if (c.nimble != null) return (c.nimble!.currentHp, c.nimble!.maxHp);
-    if (c.drawSteel != null) {
-      return (c.drawSteel!.currentStamina, c.drawSteel!.maxStamina);
-    }
-    if (c.argosa != null) return (c.argosa!.currentHp, c.argosa!.maxHp);
-    if (c.cairn != null) return (c.cairn!.currentHp, c.cairn!.maxHp);
-    if (c.knave != null) return (c.knave!.currentHp, c.knave!.maxHp);
-    if (c.ose != null) return (c.ose!.currentHp, c.ose!.maxHp);
-    if (c.kalArath != null) return (c.kalArath!.currentHp, c.kalArath!.maxHp);
-    if (c.tracks.isNotEmpty) {
-      return (c.tracks.first.current, c.tracks.first.max);
-    }
-    return null;
-  }
+  /// (Character.withHpDelta's order). Delegates to the shared [characterHpPool].
+  (int, int)? _hpOf(Character c) => characterHpPool(c);
 }

@@ -840,6 +840,20 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
     await save(s.copyWith(turnIndex: i, round: round));
   }
 
+  /// Roll a d20 for every combatant whose initiative is unset (<= 0), then
+  /// re-sort descending and reset the turn pointer to the top of the order.
+  /// Initiatives the GM already entered (> 0) are preserved. No-op when empty.
+  Future<void> rollInitiativeForAll({Dice? dice}) async {
+    final s = await _ready;
+    if (s.combatants.isEmpty) return;
+    final d = dice ?? Dice();
+    final rolled = [
+      for (final c in s.combatants)
+        c.initiative <= 0 ? c.copyWith(initiative: d.dN(20)) : c,
+    ]..sort((a, b) => b.initiative.compareTo(a.initiative));
+    await save(s.copyWith(combatants: rolled, turnIndex: 0));
+  }
+
   /// Link the encounter to a map cell (room or hex), or clear it with null.
   Future<void> setLocation(LocationRef? ref) async {
     final s = await _ready;

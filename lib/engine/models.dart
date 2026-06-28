@@ -3417,6 +3417,27 @@ class FunnelSheet {
   }
 }
 
+/// A character's HP pool `(current, max)` resolved the same way
+/// [Character.withHpDelta] applies damage: the active sheet's pool, else the
+/// first generic track, else null (pool-less sheets). Shared by the roster, the
+/// encounter tracker, and the run-screen.
+(int, int)? characterHpPool(Character c) {
+  if (c.dnd != null) return (c.dnd!.currentHp, c.dnd!.maxHp);
+  if (c.shadowdark != null) return (c.shadowdark!.currentHp, c.shadowdark!.maxHp);
+  if (c.nimble != null) return (c.nimble!.currentHp, c.nimble!.maxHp);
+  if (c.drawSteel != null) {
+    return (c.drawSteel!.currentStamina, c.drawSteel!.maxStamina);
+  }
+  if (c.argosa != null) return (c.argosa!.currentHp, c.argosa!.maxHp);
+  if (c.cairn != null) return (c.cairn!.currentHp, c.cairn!.maxHp);
+  if (c.knave != null) return (c.knave!.currentHp, c.knave!.maxHp);
+  if (c.ose != null) return (c.ose!.currentHp, c.ose!.maxHp);
+  if (c.kalArath != null) return (c.kalArath!.currentHp, c.kalArath!.maxHp);
+  if (c.dcc != null) return (c.dcc!.currentHp, c.dcc!.maxHp);
+  if (c.tracks.isNotEmpty) return (c.tracks.first.current, c.tracks.first.max);
+  return null;
+}
+
 /// Persisted character/NPC the player tracks, with an optional sheet
 /// (stats, tracks, tags). Legacy JSON without those keys parses fine.
 class Character {

@@ -16,6 +16,7 @@ import '../features/maps_tab.dart';
 import '../features/settings_sheet.dart';
 import '../features/oracles_tab.dart';
 import '../features/sheet_tab.dart';
+import '../features/run_screen.dart';
 import '../features/tracking_tab.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
@@ -382,6 +383,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         Destination.ask,
         Destination.map,
         Destination.track,
+        Destination.run,
       ];
 
   Widget _root(Destination d, Set<String> systems, List<String> family) {
@@ -396,6 +398,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         return MapsTab(oracle: widget.oracle, systems: systems);
       case Destination.track:
         return TrackingTab(systems: systems);
+      case Destination.run:
+        return const RunScreen();
     }
   }
 
