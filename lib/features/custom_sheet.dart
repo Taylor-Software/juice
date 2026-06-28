@@ -1892,6 +1892,7 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
       ]),
       if (o.isConst)
         TextFormField(
+          key: ValueKey('$title-const'),
           initialValue: '${o.constant}',
           decoration: const InputDecoration(labelText: 'Value'),
           keyboardType: TextInputType.number,
@@ -1925,6 +1926,7 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
             onChanged: (v) => onChange(o.copyWith(subKey: v ?? '')),
           ),
         TextFormField(
+          key: ValueKey('$title-coeff'),
           initialValue: '${o.coeff}',
           decoration: const InputDecoration(labelText: 'Coefficient (×)'),
           keyboardType: TextInputType.number,

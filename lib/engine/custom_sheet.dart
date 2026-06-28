@@ -234,16 +234,6 @@ class RollOutcome {
 /// ops yield a boolean (a conditional chip).
 enum ComputedOp { add, sub, mul, divFloor, le, lt, eq, ge, gt }
 
-bool _isComparison(ComputedOp op) => switch (op) {
-      ComputedOp.le ||
-      ComputedOp.lt ||
-      ComputedOp.eq ||
-      ComputedOp.ge ||
-      ComputedOp.gt =>
-        true,
-      _ => false,
-    };
-
 /// One operand of a computed formula: a constant, or a reference to another
 /// block's value (a stat key, an hp/luck 'cur'/'max' field, or a counter/timer
 /// int) scaled by [coeff].
@@ -303,8 +293,6 @@ class ComputedConfig {
 
   final ComputedOperand a, b;
   final ComputedOp op;
-
-  bool get isComparison => _isComparison(op);
 
   Map<String, dynamic> toJson() => {
         'a': a.toJson(),
