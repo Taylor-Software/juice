@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import 'sheet_widgets.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/play_context.dart';
@@ -113,30 +114,36 @@ class _InitiativePanel extends ConsumerWidget {
     for (var i = 0; i < enc.combatants.length; i++) {
       final c = enc.combatants[i];
       final current = i == enc.turnIndex;
-      rows.add(Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: current
-                ? theme.colorScheme.primaryContainer
-                : theme.colorScheme.surfaceContainerHighest,
-            child: Text('${c.initiative}',
-                style: theme.textTheme.labelMedium),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(c.name,
-                style: c.defeated
-                    ? const TextStyle(decoration: TextDecoration.lineThrough)
-                    : (current
-                        ? TextStyle(color: theme.colorScheme.primary)
-                        : null)),
-          ),
-          if (c.track != null)
-            Text('${c.track!.current}/${c.track!.max}',
-                style: theme.textTheme.bodySmall),
-        ]),
+      rows.add(InkWell(
+        key: Key('run-init-row-${c.id}'),
+        onTap: (c.statBlock != null && !c.statBlock!.isEmpty)
+            ? () => _showStatBlock(context, c)
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: current
+                  ? theme.colorScheme.primaryContainer
+                  : theme.colorScheme.surfaceContainerHighest,
+              child: Text('${c.initiative}',
+                  style: theme.textTheme.labelMedium),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(c.name,
+                  style: c.defeated
+                      ? const TextStyle(decoration: TextDecoration.lineThrough)
+                      : (current
+                          ? TextStyle(color: theme.colorScheme.primary)
+                          : null)),
+            ),
+            if (c.track != null)
+              Text('${c.track!.current}/${c.track!.max}',
+                  style: theme.textTheme.bodySmall),
+          ]),
+        ),
       ));
     }
 
@@ -171,6 +178,28 @@ class _InitiativePanel extends ConsumerWidget {
               ),
             ),
           ]),
+        ],
+      ),
+    );
+  }
+
+  void _showStatBlock(BuildContext context, Combatant c) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(c.name),
+        content: SingleChildScrollView(
+          child: StatBlockView(
+            block: c.statBlock!,
+            curHp: c.track?.current,
+            maxHp: c.track?.max,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );

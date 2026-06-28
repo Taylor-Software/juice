@@ -162,6 +162,27 @@ void main() {
         hasLength(1));
   });
 
+  testWidgets('initiative: tapping a combatant with a stat block shows it',
+      (tester) async {
+    const enc =
+        '{"combatants":[{"id":"g","name":"Goblin","initiative":12,"track":{"label":"HP","current":7,"max":7},"tags":[],"defeated":false,"statBlock":{"ac":13,"attacks":[{"name":"Scimitar","detail":"+4"}]}}],"turnIndex":0,"round":1}';
+    await _pump(tester, data, _prefs(encounterJson: enc));
+    await tester.tap(find.byKey(const Key('run-init-row-g')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('AC 13'), findsOneWidget);
+    expect(find.text('Scimitar'), findsOneWidget);
+  });
+
+  testWidgets('initiative: a combatant without a stat block does not open one',
+      (tester) async {
+    const enc =
+        '{"combatants":[{"id":"g","name":"Goblin","initiative":12,"track":{"label":"HP","current":7,"max":7},"tags":[],"defeated":false}],"turnIndex":0,"round":1}';
+    await _pump(tester, data, _prefs(encounterJson: enc));
+    await tester.tap(find.byKey(const Key('run-init-row-g')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('AC '), findsNothing); // no glance dialog
+  });
+
   testWidgets('layout: two columns when wide, one column when narrow',
       (tester) async {
     const chars =

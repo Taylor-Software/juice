@@ -251,6 +251,17 @@ class EncounterScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
+              key: Key('enc-statblock-${c.id}'),
+              icon: Icon(
+                Icons.shield_outlined,
+                color: (c.statBlock != null && !c.statBlock!.isEmpty)
+                    ? theme.colorScheme.primary
+                    : null,
+              ),
+              tooltip: 'Stat block',
+              onPressed: () => _editStatBlock(context, ref, c),
+            ),
+            IconButton(
               key: Key('enc-defeat-$i'),
               icon: Icon(c.defeated
                   ? Icons.favorite_outline
@@ -512,6 +523,20 @@ class EncounterScreen extends ConsumerWidget {
           track: CharTrack(label: 'HP', current: max, max: max),
         ));
   }
+  Future<void> _editStatBlock(
+      BuildContext context, WidgetRef ref, Combatant c) async {
+    final result = await showDialog<StatBlock>(
+      context: context,
+      builder: (_) => _StatBlockDialog(initial: c.statBlock),
+    );
+    if (result == null) return; // dialog cancelled
+    final notifier = ref.read(encounterProvider.notifier);
+    if (result.isEmpty) {
+      await notifier.updateCombatant(c.copyWith(clearStatBlock: true));
+    } else {
+      await notifier.updateCombatant(c.copyWith(statBlock: result));
+    }
+  }
 }
 
 /// End-encounter confirmation that also captures an optional outcome note
@@ -561,6 +586,143 @@ class _EndEncounterDialogState extends State<_EndEncounterDialog> {
           key: const Key('end-encounter-confirm'),
           onPressed: () => Navigator.pop(context, (note: _ctrl.text)),
           child: const Text('End'),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatBlockDialog extends StatefulWidget {
+  const _StatBlockDialog({this.initial});
+  final StatBlock? initial;
+  @override
+  State<_StatBlockDialog> createState() => _StatBlockDialogState();
+}
+
+class _StatBlockDialogState extends State<_StatBlockDialog> {
+  late final TextEditingController _ac =
+      TextEditingController(text: (widget.initial?.ac ?? 0) == 0 ? '' : '${widget.initial!.ac}');
+  late final TextEditingController _saves =
+      TextEditingController(text: widget.initial?.saves ?? '');
+  late final TextEditingController _speed =
+      TextEditingController(text: widget.initial?.speed ?? '');
+  late final TextEditingController _notes =
+      TextEditingController(text: widget.initial?.notes ?? '');
+  // Each attack = a (name, detail) controller pair.
+  late final List<(TextEditingController, TextEditingController)> _attacks = [
+    for (final a in widget.initial?.attacks ?? const <Attack>[])
+      (TextEditingController(text: a.name), TextEditingController(text: a.detail)),
+  ];
+
+  @override
+  void dispose() {
+    _ac.dispose();
+    _saves.dispose();
+    _speed.dispose();
+    _notes.dispose();
+    for (final (n, d) in _attacks) {
+      n.dispose();
+      d.dispose();
+    }
+    super.dispose();
+  }
+
+  StatBlock _build() => StatBlock(
+        ac: int.tryParse(_ac.text.trim()) ?? 0,
+        attacks: [
+          for (final (n, d) in _attacks)
+            if (n.text.trim().isNotEmpty)
+              Attack(name: n.text.trim(), detail: d.text.trim()),
+        ],
+        saves: _saves.text.trim(),
+        speed: _speed.text.trim(),
+        notes: _notes.text.trim(),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Stat block'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            key: const Key('statblock-ac'),
+            controller: _ac,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'AC'),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Attacks', style: Theme.of(context).textTheme.labelLarge),
+          ),
+          for (var i = 0; i < _attacks.length; i++)
+            Row(children: [
+              Expanded(
+                child: TextField(
+                  key: Key('statblock-attack-name-$i'),
+                  controller: _attacks[i].$1,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                flex: 2,
+                child: TextField(
+                  key: Key('statblock-attack-detail-$i'),
+                  controller: _attacks[i].$2,
+                  decoration: const InputDecoration(labelText: 'Detail'),
+                ),
+              ),
+              IconButton(
+                key: Key('statblock-attack-remove-$i'),
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    final (n, d) = _attacks.removeAt(i);
+                    n.dispose();
+                    d.dispose();
+                  });
+                },
+              ),
+            ]),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              key: const Key('statblock-add-attack'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add attack'),
+              onPressed: () => setState(() => _attacks
+                  .add((TextEditingController(), TextEditingController()))),
+            ),
+          ),
+          TextField(
+            key: const Key('statblock-saves'),
+            controller: _saves,
+            decoration: const InputDecoration(labelText: 'Saves'),
+          ),
+          TextField(
+            key: const Key('statblock-speed'),
+            controller: _speed,
+            decoration: const InputDecoration(labelText: 'Speed'),
+          ),
+          TextField(
+            key: const Key('statblock-notes'),
+            controller: _notes,
+            decoration: const InputDecoration(labelText: 'Notes'),
+            maxLines: 3,
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('statblock-save'),
+          onPressed: () => Navigator.pop(context, _build()),
+          child: const Text('Save'),
         ),
       ],
     );
