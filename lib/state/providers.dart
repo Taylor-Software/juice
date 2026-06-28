@@ -849,8 +849,11 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
     final d = dice ?? Dice();
     final rolled = [
       for (final c in s.combatants)
-        c.initiative <= 0 ? c.copyWith(initiative: d.dN(20)) : c,
-    ]..sort((a, b) => b.initiative.compareTo(a.initiative));
+        c.initiative <= 0 ? c.copyWith(initiative: d.dN(20) + c.initMod) : c,
+    ]..sort((a, b) {
+        final byInit = b.initiative.compareTo(a.initiative);
+        return byInit != 0 ? byInit : b.initMod.compareTo(a.initMod);
+      });
     await save(s.copyWith(combatants: rolled, turnIndex: 0));
   }
 

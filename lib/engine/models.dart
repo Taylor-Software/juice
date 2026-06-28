@@ -2845,6 +2845,7 @@ class Combatant {
     this.tags = const [],
     this.defeated = false,
     this.statBlock,
+    this.initMod = 0,
   });
   final String id;
   final String name;
@@ -2855,6 +2856,10 @@ class Combatant {
   final bool defeated;
   final StatBlock? statBlock;
 
+  /// Per-combatant initiative modifier: `rollInitiativeForAll` rolls `d20 +
+  /// initMod` for unset combatants and tie-breaks by it. 0 = none.
+  final int initMod;
+
   Combatant copyWith({
     int? initiative,
     CharTrack? track,
@@ -2862,6 +2867,7 @@ class Combatant {
     bool? defeated,
     StatBlock? statBlock,
     bool clearStatBlock = false,
+    int? initMod,
   }) =>
       Combatant(
         id: id,
@@ -2872,6 +2878,7 @@ class Combatant {
         tags: tags ?? this.tags,
         defeated: defeated ?? this.defeated,
         statBlock: clearStatBlock ? null : (statBlock ?? this.statBlock),
+        initMod: initMod ?? this.initMod,
       );
 
   Map<String, dynamic> toJson() => {
@@ -2884,6 +2891,7 @@ class Combatant {
         'defeated': defeated,
         if (statBlock != null && !statBlock!.isEmpty)
           'statBlock': statBlock!.toJson(),
+        if (initMod != 0) 'initMod': initMod,
       };
 
   /// Tolerant like [Character]: missing tags -> [], missing defeated ->
@@ -2897,6 +2905,7 @@ class Combatant {
         tags: ((j['tags'] as List?) ?? const []).whereType<String>().toList(),
         defeated: (j['defeated'] as bool?) ?? false,
         statBlock: StatBlock.maybeFromJson(j['statBlock']),
+        initMod: (j['initMod'] as int?) ?? 0,
       );
 }
 

@@ -173,14 +173,18 @@ class EncounterScreen extends ConsumerWidget {
       key: ValueKey(c.id),
       child: ListTile(
         selected: isTurn,
-        leading: CircleAvatar(
-          backgroundColor: c.defeated
-              ? theme.colorScheme.surfaceContainerHighest
-              : (isTurn ? theme.colorScheme.primaryContainer : null),
-          foregroundColor: c.defeated
-              ? theme.colorScheme.onSurfaceVariant
-              : (isTurn ? theme.colorScheme.onPrimaryContainer : null),
-          child: Text('${c.initiative}'),
+        leading: InkWell(
+          key: Key('enc-init-${c.id}'),
+          onTap: () => _editInit(context, ref, c),
+          child: CircleAvatar(
+            backgroundColor: c.defeated
+                ? theme.colorScheme.surfaceContainerHighest
+                : (isTurn ? theme.colorScheme.primaryContainer : null),
+            foregroundColor: c.defeated
+                ? theme.colorScheme.onSurfaceVariant
+                : (isTurn ? theme.colorScheme.onPrimaryContainer : null),
+            child: Text('${c.initiative}'),
+          ),
         ),
         title: Text(
           name,
@@ -193,6 +197,10 @@ class EncounterScreen extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (c.initMod != 0)
+              Text('init ${c.initMod >= 0 ? '+' : ''}${c.initMod}',
+                  key: Key('enc-initmod-${c.id}'),
+                  style: theme.textTheme.bodySmall),
             if (curHp != null)
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -537,6 +545,17 @@ class EncounterScreen extends ConsumerWidget {
       await notifier.updateCombatant(c.copyWith(statBlock: result));
     }
   }
+
+  Future<void> _editInit(
+      BuildContext context, WidgetRef ref, Combatant c) async {
+    final result = await showDialog<({int initiative, int mod})>(
+      context: context,
+      builder: (_) => _InitDialog(initiative: c.initiative, mod: c.initMod),
+    );
+    if (result == null) return;
+    await ref.read(encounterProvider.notifier).updateCombatant(
+        c.copyWith(initiative: result.initiative, initMod: result.mod));
+  }
 }
 
 /// End-encounter confirmation that also captures an optional outcome note
@@ -722,6 +741,65 @@ class _StatBlockDialogState extends State<_StatBlockDialog> {
         FilledButton(
           key: const Key('statblock-save'),
           onPressed: () => Navigator.pop(context, _build()),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Edits a combatant's initiative value + per-combatant modifier. Pops
+/// `({initiative, mod})` on Save, null on Cancel.
+class _InitDialog extends StatefulWidget {
+  const _InitDialog({required this.initiative, required this.mod});
+  final int initiative;
+  final int mod;
+  @override
+  State<_InitDialog> createState() => _InitDialogState();
+}
+
+class _InitDialogState extends State<_InitDialog> {
+  late final TextEditingController _v =
+      TextEditingController(text: '${widget.initiative}');
+  late final TextEditingController _m =
+      TextEditingController(text: widget.mod == 0 ? '' : '${widget.mod}');
+
+  @override
+  void dispose() {
+    _v.dispose();
+    _m.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Initiative'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(
+          key: const Key('init-dialog-value'),
+          controller: _v,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Initiative'),
+        ),
+        TextField(
+          key: const Key('init-dialog-mod'),
+          controller: _m,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Modifier'),
+        ),
+      ]),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('init-dialog-save'),
+          onPressed: () => Navigator.pop(context, (
+            initiative: int.tryParse(_v.text.trim()) ?? widget.initiative,
+            mod: int.tryParse(_m.text.trim()) ?? 0,
+          )),
           child: const Text('Save'),
         ),
       ],
