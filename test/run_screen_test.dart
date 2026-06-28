@@ -80,4 +80,26 @@ void main() {
     expect(find.byKey(const Key('run-panel-dice')), findsOneWidget);
     expect(find.byKey(const Key('run-panel-capture')), findsOneWidget);
   });
+
+  testWidgets('initiative: next turn advances; roll-all fills unset', (tester) async {
+    const enc =
+        '{"combatants":[{"id":"a","name":"Ash","initiative":15,"track":{"current":5,"max":5},"tags":[],"defeated":false},{"id":"b","name":"Bog","initiative":0,"track":{"current":4,"max":4},"tags":[],"defeated":false}],"turnIndex":0,"round":1}';
+    final c = await _pump(tester, data, _prefs(encounterJson: enc));
+    expect(find.text('Ash'), findsOneWidget);
+    expect(find.textContaining('Round 1'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('run-init-next')));
+    await tester.pumpAndSettle();
+    expect((await c.read(encounterProvider.future)).turnIndex, 1);
+
+    await tester.tap(find.byKey(const Key('run-init-roll-all')));
+    await tester.pumpAndSettle();
+    expect((await c.read(encounterProvider.future))
+        .combatants.firstWhere((x) => x.id == 'b').initiative, greaterThan(0));
+  });
+
+  testWidgets('initiative: empty state when no combatants', (tester) async {
+    await _pump(tester, data, _prefs());
+    expect(find.byKey(const Key('run-init-empty')), findsOneWidget);
+  });
 }

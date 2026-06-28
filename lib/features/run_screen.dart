@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/models.dart';
+import '../state/providers.dart';
+
 /// Width at or above which the run-screen shows a two-column dashboard;
 /// below it the panels stack in a single scrolling column.
 const double kRunWideBreakpoint = 720;
@@ -96,9 +99,78 @@ class _Panel extends StatelessWidget {
 
 class _InitiativePanel extends ConsumerWidget {
   const _InitiativePanel();
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => const _Panel(
-      k: Key('run-panel-initiative'), title: 'Initiative', child: SizedBox());
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final enc = ref.watch(encounterProvider).valueOrNull ?? const EncounterState();
+    final notifier = ref.read(encounterProvider.notifier);
+    final rows = <Widget>[];
+    for (var i = 0; i < enc.combatants.length; i++) {
+      final c = enc.combatants[i];
+      final current = i == enc.turnIndex;
+      rows.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        child: Row(children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: current
+                ? theme.colorScheme.primaryContainer
+                : theme.colorScheme.surfaceContainerHighest,
+            child: Text('${c.initiative}',
+                style: theme.textTheme.labelMedium),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(c.name,
+                style: c.defeated
+                    ? const TextStyle(decoration: TextDecoration.lineThrough)
+                    : (current
+                        ? TextStyle(color: theme.colorScheme.primary)
+                        : null)),
+          ),
+          if (c.track != null)
+            Text('${c.track!.current}/${c.track!.max}',
+                style: theme.textTheme.bodySmall),
+        ]),
+      ));
+    }
+
+    return _Panel(
+      k: const Key('run-panel-initiative'),
+      title: 'Initiative · Round ${enc.round}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (enc.combatants.isEmpty)
+            const Text('No encounter yet.', key: Key('run-init-empty'))
+          else
+            ...rows,
+          const SizedBox(height: 8),
+          Row(children: [
+            Flexible(
+              child: FilledButton.tonal(
+                key: const Key('run-init-next'),
+                onPressed:
+                    enc.combatants.isEmpty ? null : () => notifier.nextTurn(),
+                child: const Text('Next turn'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: OutlinedButton(
+                key: const Key('run-init-roll-all'),
+                onPressed: enc.combatants.isEmpty
+                    ? null
+                    : () => notifier.rollInitiativeForAll(),
+                child: const Text('Roll all init'),
+              ),
+            ),
+          ]),
+        ],
+      ),
+    );
+  }
 }
 
 class _PartyPanel extends ConsumerWidget {
