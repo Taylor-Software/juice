@@ -70,6 +70,37 @@ void main() {
   late OracleData data;
   setUpAll(() => data = _loadData());
 
+  test('formatDuration', () {
+    expect(formatDuration(0), '0:00');
+    expect(formatDuration(5), '0:05');
+    expect(formatDuration(65), '1:05');
+    expect(formatDuration(600), '10:00');
+    expect(formatDuration(3661), '1:01:01');
+    expect(formatDuration(-5), '0:00');
+  });
+
+  testWidgets('timers: idle with no encounter, ticks + resets on turn change',
+      (tester) async {
+    await _pump(tester, data, _prefs());
+    expect(find.byKey(const Key('run-timers-idle')), findsOneWidget);
+
+    const enc =
+        '{"combatants":[{"id":"a","name":"A","initiative":15,"track":{"current":5,"max":5},"tags":[],"defeated":false},{"id":"b","name":"B","initiative":10,"track":{"current":5,"max":5},"tags":[],"defeated":false}],"turnIndex":0,"round":1}';
+    final c = await _pump(tester, data, _prefs(encounterJson: enc));
+    expect(find.byKey(const Key('run-timers-readout')), findsOneWidget);
+    // Discrete 1s pumps each fire the periodic timer exactly once.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Turn 0:02'), findsOneWidget);
+    // Advance the turn: rebuild resets the turn stopwatch, session keeps going.
+    await c.read(encounterProvider.notifier).nextTurn();
+    await tester.pump(); // process the provider rebuild (turn reset)
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('Turn 0:01 · Session 0:03'), findsOneWidget);
+    // Dispose the tree so the periodic timer is cancelled (no pending timer).
+    await tester.pumpWidget(const SizedBox());
+  });
+
   testWidgets('run-screen renders the four panel headers', (tester) async {
     await _pump(tester, data, _prefs());
     expect(find.byKey(const Key('run-screen')), findsOneWidget);
