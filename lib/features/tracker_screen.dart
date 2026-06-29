@@ -1940,27 +1940,43 @@ class _ThreadTallyRow extends ConsumerWidget {
         : tally.failed
             ? Colors.red
             : Theme.of(context).colorScheme.primary;
-    return Row(
+    // Wrap (not Row) + compact buttons so the chip + four controls never
+    // overflow a narrow thread card (matches the progress-row density above).
+    const dense = BoxConstraints(minWidth: 32, minHeight: 32);
+    return Wrap(
+      spacing: 2,
+      runSpacing: 0,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Chip(
           label: Text(status),
+          visualDensity: VisualDensity.compact,
           labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
         ),
         IconButton(
           key: Key('thread-tally-dec-${thread.id}'),
-          icon: const Icon(Icons.remove),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.remove, size: 18),
           tooltip: 'Setback (-1)',
           onPressed: () => notifier.adjustTally(thread.id, -1),
         ),
         IconButton(
           key: Key('thread-tally-inc-${thread.id}'),
-          icon: const Icon(Icons.add),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.add, size: 18),
           tooltip: 'Progress (+1)',
           onPressed: () => notifier.adjustTally(thread.id, 1),
         ),
         IconButton(
           key: Key('thread-tally-roll-${thread.id}'),
-          icon: const Icon(Icons.casino_outlined),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.casino_outlined, size: 18),
           tooltip: 'Roll vs tally',
           onPressed: () {
             final outcome = rollVsTally(tally, Dice());
@@ -1973,7 +1989,10 @@ class _ThreadTallyRow extends ConsumerWidget {
         ),
         IconButton(
           key: Key('thread-tally-remove-${thread.id}'),
-          icon: const Icon(Icons.close),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.close, size: 18),
           tooltip: 'Remove tally',
           onPressed: () => notifier.clearTally(thread.id),
         ),
