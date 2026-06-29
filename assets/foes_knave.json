@@ -1,0 +1,284 @@
+[
+  {
+    "id": "knave-bandit",
+    "name": "Bandit",
+    "maxHp": 6,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Sword",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "Morale 7. Waylays travellers; flees if losing."
+    }
+  },
+  {
+    "id": "knave-goblin",
+    "name": "Goblin",
+    "maxHp": 4,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Crude spear",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "Morale 6. Swarms; cunning traps."
+    }
+  },
+  {
+    "id": "knave-hobgoblin",
+    "name": "Hobgoblin",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Blade",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "Morale 9. Disciplined goblinoid soldiers."
+    }
+  },
+  {
+    "id": "knave-orc",
+    "name": "Orc",
+    "maxHp": 8,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Axe",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "Morale 8. Brutal raiders in warbands."
+    }
+  },
+  {
+    "id": "knave-skeleton",
+    "name": "Skeleton",
+    "maxHp": 5,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Old blade",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "Morale 12. Undead; mindless, fearless."
+    }
+  },
+  {
+    "id": "knave-zombie",
+    "name": "Zombie",
+    "maxHp": 8,
+    "statBlock": {
+      "ac": 10,
+      "attacks": [
+        {
+          "name": "Slam",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "Morale 12. Undead; slow, never flees."
+    }
+  },
+  {
+    "id": "knave-ghoul",
+    "name": "Ghoul",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Claws",
+          "detail": "1d6 + paralysis"
+        }
+      ],
+      "notes": "Morale 9. Undead; touch paralyses."
+    }
+  },
+  {
+    "id": "knave-giant-rat",
+    "name": "Giant Rat",
+    "maxHp": 3,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d4 + disease"
+        }
+      ],
+      "notes": "Morale 5. Infests sewers and dungeons."
+    }
+  },
+  {
+    "id": "knave-giant-spider",
+    "name": "Giant Spider",
+    "maxHp": 12,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d6 + poison"
+        }
+      ],
+      "notes": "Morale 8. Webs the unwary."
+    }
+  },
+  {
+    "id": "knave-wolf",
+    "name": "Wolf",
+    "maxHp": 6,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "Morale 7. Hunts in packs."
+    }
+  },
+  {
+    "id": "knave-bear",
+    "name": "Cave Bear",
+    "maxHp": 18,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d8"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "Morale 8. Ferocious when cornered."
+    }
+  },
+  {
+    "id": "knave-ogre",
+    "name": "Ogre",
+    "maxHp": 19,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Club",
+          "detail": "1d10"
+        }
+      ],
+      "notes": "Morale 10. Hurls boulders; dim-witted."
+    }
+  },
+  {
+    "id": "knave-troll",
+    "name": "Troll",
+    "maxHp": 28,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Claws",
+          "detail": "1d8+1d8"
+        }
+      ],
+      "notes": "Morale 10. Regenerates unless burned."
+    }
+  },
+  {
+    "id": "knave-giant",
+    "name": "Hill Giant",
+    "maxHp": 32,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Greatclub",
+          "detail": "2d8"
+        }
+      ],
+      "notes": "Morale 9. Hurls rocks at range."
+    }
+  },
+  {
+    "id": "knave-harpy",
+    "name": "Harpy",
+    "maxHp": 11,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Talons",
+          "detail": "1d6"
+        },
+        {
+          "name": "Song",
+          "detail": "save or lured"
+        }
+      ],
+      "notes": "Morale 7. Beguiling song; flight."
+    }
+  },
+  {
+    "id": "knave-wraith",
+    "name": "Wraith",
+    "maxHp": 16,
+    "statBlock": {
+      "ac": 15,
+      "attacks": [
+        {
+          "name": "Chill touch",
+          "detail": "1d6 + level drain"
+        }
+      ],
+      "notes": "Morale 12. Undead; only magic harms."
+    }
+  },
+  {
+    "id": "knave-dragon-young",
+    "name": "Young Dragon",
+    "maxHp": 40,
+    "statBlock": {
+      "ac": 17,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "2d8"
+        },
+        {
+          "name": "Breath",
+          "detail": "3d6 (save half)"
+        }
+      ],
+      "notes": "Morale 10. Flight; greedy and cunning."
+    }
+  },
+  {
+    "id": "knave-slime",
+    "name": "Grey Slime",
+    "maxHp": 10,
+    "statBlock": {
+      "ac": 8,
+      "attacks": [
+        {
+          "name": "Acid",
+          "detail": "1d6 (corrodes gear)"
+        }
+      ],
+      "notes": "Morale 12. Mindless; clings to ceilings."
+    }
+  }
+]

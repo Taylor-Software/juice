@@ -77,4 +77,8 @@ const kContentAttributions = <String, String>{
   'ose':
       'Compatible with Old-School Essentials (Necrotic Gnome). B/X mechanics; '
           'not affiliated.',
+  'argosa': 'Tales of Argosa © S.J. Grodzicki / Pickpocket Press, licensed '
+      'under CC-BY-SA-4.0.',
+  'knave': 'Knave Second Edition © Ben Milton / Questing Beast Games, licensed '
+      'under CC-BY-4.0.',
 };

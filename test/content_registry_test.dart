@@ -48,4 +48,9 @@ void main() {
   test('attribution map carries the D&D SRD line', () {
     expect(kContentAttributions['dnd'], contains('System Reference Document'));
   });
+
+  test('argosa + knave attributions are registered', () {
+    expect(kContentAttributions['argosa'], contains('Argosa'));
+    expect(kContentAttributions['knave'], contains('Knave'));
+  });
 }

@@ -1,0 +1,146 @@
+[
+  {
+    "id": "knave-adhere",
+    "system": "knave",
+    "name": "Adhere",
+    "description": "An object becomes coated in a strong adhesive."
+  },
+  {
+    "id": "knave-animate-object",
+    "system": "knave",
+    "name": "Animate Object",
+    "description": "An object obeys your spoken commands as if alive."
+  },
+  {
+    "id": "knave-anthropomorphize",
+    "system": "knave",
+    "name": "Anthropomorphize",
+    "description": "An animal gains human intelligence, or a human becomes animal-like."
+  },
+  {
+    "id": "knave-arcane-eye",
+    "system": "knave",
+    "name": "Arcane Eye",
+    "description": "A floating invisible eye relays what it sees to you."
+  },
+  {
+    "id": "knave-astral-prison",
+    "system": "knave",
+    "name": "Astral Prison",
+    "description": "An object is frozen in time and space within an invisible sphere."
+  },
+  {
+    "id": "knave-auditory-illusion",
+    "system": "knave",
+    "name": "Auditory Illusion",
+    "description": "You create illusory sounds from a point you choose."
+  },
+  {
+    "id": "knave-babble",
+    "system": "knave",
+    "name": "Babble",
+    "description": "A creature must loudly and uncontrollably speak its surface thoughts."
+  },
+  {
+    "id": "knave-charm",
+    "system": "knave",
+    "name": "Charm",
+    "description": "A creature treats you as a trusted friend until you act against it."
+  },
+  {
+    "id": "knave-control-weather",
+    "system": "knave",
+    "name": "Control Weather",
+    "description": "You shift the local weather over several minutes."
+  },
+  {
+    "id": "knave-counterspell",
+    "system": "knave",
+    "name": "Counterspell",
+    "description": "You negate another spell as it is cast."
+  },
+  {
+    "id": "knave-darkness",
+    "system": "knave",
+    "name": "Darkness",
+    "description": "Lightless shadow fills an area, blocking even darkvision."
+  },
+  {
+    "id": "knave-deafen",
+    "system": "knave",
+    "name": "Deafen",
+    "description": "All creatures in an area are struck deaf for a time."
+  },
+  {
+    "id": "knave-detect-magic",
+    "system": "knave",
+    "name": "Detect Magic",
+    "description": "You sense the presence and strength of nearby magic."
+  },
+  {
+    "id": "knave-elemental-wall",
+    "system": "knave",
+    "name": "Elemental Wall",
+    "description": "A wall of fire, ice, or stone springs up where you direct."
+  },
+  {
+    "id": "knave-filch",
+    "system": "knave",
+    "name": "Filch",
+    "description": "An unattended object teleports into your hand from afar."
+  },
+  {
+    "id": "knave-fog",
+    "system": "knave",
+    "name": "Fog",
+    "description": "Thick fog billows out, obscuring sight."
+  },
+  {
+    "id": "knave-frenzy",
+    "system": "knave",
+    "name": "Frenzy",
+    "description": "Creatures in an area are driven into a violent rage."
+  },
+  {
+    "id": "knave-gravity-shift",
+    "system": "knave",
+    "name": "Gravity Shift",
+    "description": "You reverse or redirect gravity in an area."
+  },
+  {
+    "id": "knave-haste",
+    "system": "knave",
+    "name": "Haste",
+    "description": "A creature moves and acts with doubled speed."
+  },
+  {
+    "id": "knave-knock",
+    "system": "knave",
+    "name": "Knock",
+    "description": "A locked or stuck object springs open."
+  },
+  {
+    "id": "knave-levitate",
+    "system": "knave",
+    "name": "Levitate",
+    "description": "An object or creature rises and floats under your control."
+  },
+  {
+    "id": "knave-mirror-image",
+    "system": "knave",
+    "name": "Mirror Image",
+    "description": "Illusory duplicates of yourself confuse attackers."
+  },
+  {
+    "id": "knave-telekinesis",
+    "system": "knave",
+    "name": "Telekinesis",
+    "description": "You move an object at a distance with your mind."
+  },
+  {
+    "id": "knave-telepathy",
+    "system": "knave",
+    "name": "Telepathy",
+    "description": "You exchange silent thoughts with a creature you can see."
+  }
+]
