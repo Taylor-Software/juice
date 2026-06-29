@@ -17,6 +17,11 @@ import '../state/providers.dart';
 /// below it the panels stack in a single scrolling column.
 const double kRunWideBreakpoint = 720;
 
+TextStyle _dimStyle(BuildContext context) =>
+    Theme.of(context).textTheme.bodySmall!.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        );
+
 /// Formats a duration in seconds as `M:SS` (or `H:MM:SS` past an hour).
 /// Negative clamps to `0:00`.
 String formatDuration(int seconds) {
@@ -149,10 +154,17 @@ class _TimersPanelState extends ConsumerState<_TimersPanel> {
       _turn = 0;
       _lastRound = null;
       _lastTurnIndex = null;
-      return const _Panel(
-        k: Key('run-panel-timers'),
+      return _Panel(
+        k: const Key('run-panel-timers'),
         title: 'Timers',
-        child: Text('—', key: Key('run-timers-idle')),
+        child: Text(
+          'No active encounter',
+          key: const Key('run-timers-idle'),
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall!
+              .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
       );
     }
 
@@ -257,7 +269,8 @@ class _InitiativePanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (enc.combatants.isEmpty)
-            const Text('No encounter yet.', key: Key('run-init-empty'))
+            Text('No encounter yet.',
+                key: const Key('run-init-empty'), style: _dimStyle(context))
           else
             ...rows,
           const SizedBox(height: 8),
@@ -326,7 +339,8 @@ class _PartyPanel extends ConsumerWidget {
       k: const Key('run-panel-party'),
       title: 'Party',
       child: party.isEmpty
-          ? const Text('No party yet.', key: Key('run-party-empty'))
+          ? Text('No party yet.',
+              key: const Key('run-party-empty'), style: _dimStyle(context))
           : Column(
               children: [
                 for (final c in party)
@@ -491,7 +505,8 @@ class _ScenePanel extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (scene == null)
-            const Text('No active scene.', key: Key('run-scene-empty'))
+            Text('No active scene.',
+                key: const Key('run-scene-empty'), style: _dimStyle(context))
           else ...[
             Text(scene.title.isEmpty ? '(untitled scene)' : scene.title,
                 style: theme.textTheme.titleSmall),
@@ -547,10 +562,13 @@ class _ThreadsRumorsPanel extends ConsumerWidget {
     final nav = ref.read(shellRouteProvider.notifier);
 
     if (threads.isEmpty && rumors.isEmpty) {
-      return const _Panel(
-        k: Key('run-panel-threads'),
+      return _Panel(
+        k: const Key('run-panel-threads'),
         title: 'Threads',
-        child: Text('No open threads.', key: Key('run-threads-empty')),
+        child: Builder(
+          builder: (ctx) => Text('No open threads.',
+              key: const Key('run-threads-empty'), style: _dimStyle(ctx)),
+        ),
       );
     }
 
