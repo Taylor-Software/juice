@@ -13,6 +13,8 @@ import 'package:juice_oracle/shared/shell_route.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart'
     show interpreterServiceProvider, InterpreterStatus, InterpreterPhase;
+import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/spell.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
@@ -71,6 +73,8 @@ Future<ProviderContainer> _pump(
   final container = ProviderContainer(overrides: [
     oracleProvider.overrideWith((ref) async => oracle),
     interpreterServiceProvider.overrideWithValue(fake),
+    contentMonstersProvider.overrideWith((ref) async => const <Creature>[]),
+    contentSpellsProvider.overrideWith((ref) async => const <SpellEntry>[]),
   ]);
   addTearDown(container.dispose);
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -291,6 +295,11 @@ void main() {
   testWidgets('threads panel: empty state', (tester) async {
     await _pump(tester, data, _prefs());
     expect(find.byKey(const Key('run-threads-empty')), findsOneWidget);
+  });
+
+  testWidgets('Run screen shows a reference lookup panel', (t) async {
+    await _pump(t, data, _prefs());
+    expect(find.byKey(const Key('run-panel-reference')), findsOneWidget);
   });
 
   testWidgets('party effect: bulk damage applies to selected members',
