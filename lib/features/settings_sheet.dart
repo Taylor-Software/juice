@@ -109,7 +109,12 @@ class _SettingsSheet extends ConsumerWidget {
                 builder: (_) => AlertDialog(
                   title: const Text('Sources & licenses'),
                   content: SingleChildScrollView(
-                    child: Text(kContentAttributions.values.join('\n\n')),
+                    // Vendored-content attributions, then a goodwill credit for
+                    // mechanics-only inspirations (no content vendored, so not a
+                    // licensing obligation — kept out of kContentAttributions).
+                    child: Text('${kContentAttributions.values.join('\n\n')}'
+                        '\n\nSolo loop inspired by Cairn Solo '
+                        '(CC-BY-SA 4.0, Andrew Cavanagh, EpicEmpires.org).'),
                   ),
                   actions: [
                     TextButton(
