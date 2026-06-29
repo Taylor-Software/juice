@@ -10,6 +10,7 @@ import '../engine/funnel.dart';
 import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../features/campaign_search_sheet.dart';
 import '../features/enter_campaign.dart';
 import '../features/journal_screen.dart';
 import '../features/maps_tab.dart';
@@ -549,6 +550,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 ],
               ),
         actions: [
+          IconButton(
+            key: const Key('shell-search-campaign'),
+            icon: const Icon(Icons.manage_search),
+            tooltip: 'Search campaign',
+            onPressed: () => showCampaignSearchSheet(context),
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Find tools & rolls',
