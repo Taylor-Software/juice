@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/dice.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
+import '../engine/tally.dart';
 import '../shared/ai_badge.dart';
 import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
@@ -158,6 +160,7 @@ class ThreadsPane extends ConsumerWidget {
                                   color: tk.inkMuted)),
                         ],
                       ),
+                      _ThreadTallyRow(t),
                       Builder(builder: (ctx) {
                         final linked = journal
                             .where((e) => e.threadId == t.id)
@@ -1904,5 +1907,121 @@ class _Empty extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// -- Thread tally row -----------------------------------------------------
+class _ThreadTallyRow extends ConsumerWidget {
+  const _ThreadTallyRow(this.thread);
+  final Thread thread;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(threadsProvider.notifier);
+    final tally = thread.tally;
+    if (tally == null) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton.icon(
+          key: Key('thread-tally-add-${thread.id}'),
+          icon: const Icon(Icons.flag_outlined, size: 18),
+          label: const Text('Add success tally'),
+          onPressed: () => _pickPreset(context, ref),
+        ),
+      );
+    }
+    final status = tally.won
+        ? 'Success'
+        : tally.failed
+            ? 'Failed'
+            : tally.label;
+    final color = tally.won
+        ? Colors.green
+        : tally.failed
+            ? Colors.red
+            : Theme.of(context).colorScheme.primary;
+    // Wrap (not Row) + compact buttons so the chip + four controls never
+    // overflow a narrow thread card (matches the progress-row density above).
+    const dense = BoxConstraints(minWidth: 32, minHeight: 32);
+    return Wrap(
+      spacing: 2,
+      runSpacing: 0,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Chip(
+          label: Text(status),
+          visualDensity: VisualDensity.compact,
+          labelStyle: TextStyle(color: color, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          key: Key('thread-tally-dec-${thread.id}'),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.remove, size: 18),
+          tooltip: 'Setback (-1)',
+          onPressed: () => notifier.adjustTally(thread.id, -1),
+        ),
+        IconButton(
+          key: Key('thread-tally-inc-${thread.id}'),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.add, size: 18),
+          tooltip: 'Progress (+1)',
+          onPressed: () => notifier.adjustTally(thread.id, 1),
+        ),
+        IconButton(
+          key: Key('thread-tally-roll-${thread.id}'),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.casino_outlined, size: 18),
+          tooltip: 'Roll vs tally',
+          onPressed: () {
+            final outcome = rollVsTally(tally, Dice());
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(outcome == TallyRollOutcome.clean
+                  ? 'Roll vs ${tally.label}: clean'
+                  : 'Roll vs ${tally.label}: complication'),
+            ));
+          },
+        ),
+        IconButton(
+          key: Key('thread-tally-remove-${thread.id}'),
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: dense,
+          icon: const Icon(Icons.close, size: 18),
+          tooltip: 'Remove tally',
+          onPressed: () => notifier.clearTally(thread.id),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickPreset(BuildContext context, WidgetRef ref) async {
+    final choice = await showModalBottomSheet<(String, int, int)>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final p in kTallyPresets)
+              ListTile(
+                key: Key('tally-preset-${p.$1}'),
+                title: Text(p.$1),
+                trailing: Text('${p.$2}(${p.$3})'),
+                onTap: () => Navigator.pop(context, p),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) return;
+    await ref.read(threadsProvider.notifier).setTally(
+          thread.id,
+          Tally(start: choice.$2, current: choice.$2, target: choice.$3),
+        );
   }
 }

@@ -30,6 +30,7 @@ import '../engine/custom_table.dart';
 import '../engine/system_primer.dart';
 import '../engine/spell.dart';
 import '../engine/content_registry.dart';
+import '../engine/tally.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
 import 'campaign_io.dart';
@@ -262,6 +263,28 @@ class ThreadNotifier extends _PersistedList<Thread> {
     if (thread == null) return;
     final clamped = value.clamp(0, thread.progressMax);
     await replace(thread.copyWith(progress: clamped));
+  }
+
+  /// Attaches (or replaces) a success tally on thread [id].
+  Future<void> setTally(String id, Tally tally) async {
+    final thread = (await _ready).where((t) => t.id == id).firstOrNull;
+    if (thread == null) return;
+    await replace(thread.copyWith(tally: tally));
+  }
+
+  /// Removes the tally from thread [id], leaving the thread itself intact.
+  Future<void> clearTally(String id) async {
+    final thread = (await _ready).where((t) => t.id == id).firstOrNull;
+    if (thread == null) return;
+    await replace(thread.copyWith(clearTally: true));
+  }
+
+  /// Nudges the tally's current value by [delta] (clamped by Tally).
+  Future<void> adjustTally(String id, int delta) async {
+    final thread = (await _ready).where((t) => t.id == id).firstOrNull;
+    final tally = thread?.tally;
+    if (thread == null || tally == null) return;
+    await replace(thread.copyWith(tally: tally.adjust(delta)));
   }
 
   Future<void> remove(String id) async {
