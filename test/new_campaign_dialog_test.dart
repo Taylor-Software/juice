@@ -142,7 +142,8 @@ void main() {
 
   // ── Navigation gating ─────────────────────────────────────────────────────
 
-  testWidgets('Next is disabled when no stance is chosen', (tester) async {
+  testWidgets('Next is enabled on step 0 with the default stance selected',
+      (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
         return ElevatedButton(
