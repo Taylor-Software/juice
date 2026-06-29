@@ -56,8 +56,9 @@ file + register it; no UI changes.
 
 ```dart
 class SpellEntry {
-  final String id;          // e.g. "dnd-fireball"
+  final String id;          // e.g. "dnd-fireball" (edition-scoped: "dnd-2024-fireball")
   final String system;      // "dnd"
+  final String? edition;    // "5.1" | "5.2" | null (non-D&D); see Forward compatibility
   final String name;
   final int level;          // 0 = cantrip
   final String school;      // "Evocation"
@@ -92,7 +93,9 @@ final List<StatTrait>? traits;    // [{name, text}] — traits/actions/legendary
 - `StatTrait { String name; String text; }` (new, small value class in models.dart).
 - `StatBlock.maybeFromJson` / `toJson` / `copyWith` extended; all new fields optional,
   so persisted encounters and `foes_cairn.json` / `foes_ose.json` parse unchanged.
-- Monsters reuse `Creature { id, name, statBlock, maxHp }` as-is.
+- Monsters reuse `Creature { id, name, statBlock, maxHp }`, plus an optional nullable
+  `edition` field (same role as `SpellEntry.edition`; null for non-D&D). Back-compat:
+  existing creature files omit it and parse unchanged.
 
 ### 2. Content registry (`lib/engine/content_registry.dart` pure + `lib/state/`)
 
@@ -185,6 +188,29 @@ final List<StatTrait>? traits;    // [{name, text}] — traits/actions/legendary
 **Follow-up content-only specs (same rails, no UI work):** Argosa, Knave, Nimble,
 Draw Steel, DCC spells/monsters; deeper Cairn/OSE spells. Each = a `build_<sys>_content.py`
 (or extend the foes script) + asset files + registration + attribution entry.
+
+### 7a. Forward compatibility — D&D editions (5.1 / 5.2)
+
+D&D now has two free SRDs: **SRD 5.1** (the 2014 "5e" rules, CC-BY-4.0) and **SRD 5.2**
+(the 2024 "5.5e" rules, CC-BY-4.0). Both are in scope; we ship **5.1 first** and add 5.2
+**one at a time** as a content-only follow-up — handled by the model now so no rework:
+
+- **`edition` field** on `SpellEntry` and `Creature` ("5.1" | "5.2"; null for non-D&D).
+  Ids are edition-scoped (`dnd-fireball` vs `dnd-2024-fireball`) so the two sets coexist
+  without id collisions in the registry.
+- **Separate asset files per edition:** `spells_dnd.json` / `foes_dnd.json` = 5.1 now;
+  `spells_dnd_2024.json` / `foes_dnd_2024.json` = 5.2 later. The build script
+  (`build_dnd_content.py`) takes an `--edition` parameter and reuses one transform over
+  the matching vendored source — only the input data differs.
+- **Reference filter:** the system filter exposes "D&D 5e (2014)" and "D&D 5e (2024)" as
+  edition sub-filters when both sets are present; a campaign-level edition preference
+  (default 5.1) sets the initial filter. Until 5.2 ships, the filter shows only 5.1.
+- **Delta management:** the 5.2 build can diff against the committed 5.1 output to surface
+  changed/added/removed entries, keeping the follow-up review focused on the delta rather
+  than the full set. (Diff is a build-time aid, not shipped data.)
+
+This is a forward-compatibility note only — **no 5.2 content or edition UI ships in this
+spec**; the field + file-naming convention exist so the later 5.2 PR is pure data.
 
 ## Data flow
 
