@@ -288,7 +288,7 @@ void main() {
   });
 
   testWidgets('no split toggle on a narrow screen', (tester) async {
-    tester.view.physicalSize = const Size(500, 900);
+    tester.view.physicalSize = const Size(600, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);

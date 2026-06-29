@@ -520,6 +520,20 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+- **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
+  `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
+  app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
+  a modal bottom sheet with a live search field (`campaign-search-field`) that
+  queries all five entity types in one pass via the pure `searchCampaign` function
+  (`lib/engine/campaign_search.dart`). Results group by kind (Journal / Threads /
+  Rumors / Progress Tracks / Characters), each row keyed
+  `search-result-<kind>-<id>`; tapping navigates via the existing
+  `shellRouteProvider.goTo(destination, subtab)` primitive and pops the sheet.
+  Navigation mapping: journalEntry→journal, thread→track/threads,
+  rumor→track/rumors, track→track/tracks, character→sheet/characters.
+  `SearchDestination` is a pure-engine enum (no Flutter import) that the sheet
+  maps to the real `Destination`. See
+  `docs/superpowers/plans/2026-06-29-campaign-search.md`.
 - **Custom random tables** (Streamline epic Phase 1) — user-authored oracle
   tables. Pure model + roll in `lib/engine/custom_table.dart` (`CustomTable
   {id,name,rows}` + `rollCustomTable(table, Dice) → GenResult`, a uniform `dN`
