@@ -17,6 +17,12 @@ import '../state/providers.dart';
 /// below it the panels stack in a single scrolling column.
 const double kRunWideBreakpoint = 720;
 
+String _oracleLabel(String id) => switch (id) {
+      'mythic' => 'Mythic',
+      'roll-high' => 'Roll High',
+      _ => 'Juice',
+    };
+
 TextStyle _dimStyle(BuildContext context) =>
     Theme.of(context).textTheme.bodySmall!.copyWith(
           color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -691,6 +697,8 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
     // warm + gates the button until it resolves.
     final oracle = ref.watch(oracleProvider).valueOrNull;
     final aiReady = ref.watch(aiReadyProvider);
+    final defaultOracle =
+        ref.watch(settingsProvider).valueOrNull?.defaultOracle ?? 'juice';
     // A Row (not Wrap): Wrap measures children with unbounded width, and a
     // Material button's internal _InputPadding throws "forces an infinite
     // width" under unbounded constraints (see the loose-constraints note in
@@ -704,7 +712,7 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
             child: OutlinedButton(
               key: const Key('run-dice-roll'),
               onPressed: oracle == null ? null : _roll,
-              child: const Text('Roll oracle'),
+              child: Text('Roll ${_oracleLabel(defaultOracle)}'),
             ),
           ),
           if (aiReady && _last != null) ...[
