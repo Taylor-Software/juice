@@ -520,6 +520,17 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+  A **Word Oracle** generator (`GeneratorDef('Word Oracle', GenSection.story)` →
+  `Oracle.wordOracle()`) is a 3-column **d66** Action/Descriptor/Subject
+  inspiration table — one tap rolls all three columns (`_pickD66` + top-level
+  `d66Index`, column-major (tens,ones)→0..35; the mapping is a uniform bijection,
+  not row-aligned) into one combined `GenResult`. The three word lists
+  (`word_action`/`word_descriptor`/`word_subject`, 36 each) are **original
+  authored** words in `build_oracle.py` → `oracle_data.json` (facts-only, no
+  vendored content/attribution; build self-check enforces 36-unique-non-empty +
+  exempts them from the d10 length check). Auto-surfaces in `GenerateSheet`
+  ("Story & Scenes") + the Solo Loop Inspire step — no widget changes. See
+  `docs/superpowers/specs/2026-06-29-word-oracle-design.md`.
 - **Backup safety** (Streamline epic Phase 5) — export timestamp tracking +
   a backup nudge on the launcher. `LastExportNotifier` / `lastExportProvider`
   (`juice.last_export.v1`, app-global, non-session-scoped, same pattern as
