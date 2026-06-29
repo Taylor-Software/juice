@@ -1279,6 +1279,10 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
   Future<void> remove(String id) async {
     await _save((await _ready).where((c) => c.id != id).toList());
   }
+
+  Future<void> replace(Creature c) async {
+    await _save((await _ready).map((e) => e.id == c.id ? c : e).toList());
+  }
 }
 
 final bestiaryProvider =

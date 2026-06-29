@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/models.dart';
 import '../shared/help_nav.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
@@ -8,6 +9,13 @@ import '../state/providers.dart';
 /// App-wide settings. P1 holds a single "AI assistant" section that owns the
 /// on-device model download + the global enable toggle. AI affordances stay
 /// hidden across the app until the model is downloaded AND enabled here.
+Future<void> showBestiarySheet(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const _BestiaryManageSheet(),
+    );
+
 Future<void> showSettingsSheet(BuildContext context) =>
     showModalBottomSheet<void>(
       context: context,
@@ -71,6 +79,20 @@ class _SettingsSheet extends ConsumerWidget {
                 Navigator.of(context).pop();
                 openHelp(context, ref, topic: 'credits');
               },
+            ),
+            const SizedBox(height: 16),
+            Text('Bestiary', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            const Text(
+              'Saved creatures are app-global and reusable across all campaigns.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              key: const Key('bestiary-manage-open'),
+              icon: const Icon(Icons.pets_outlined),
+              label: const Text('Manage bestiary'),
+              onPressed: () => showBestiarySheet(context),
             ),
           ],
         ),
@@ -145,5 +167,185 @@ class _SettingsSheet extends ConsumerWidget {
       case InterpreterPhase.unsupported:
         return const SizedBox.shrink();
     }
+  }
+}
+
+class _BestiaryManageSheet extends ConsumerWidget {
+  const _BestiaryManageSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final creatures =
+        ref.watch(bestiaryProvider).valueOrNull ?? const <Creature>[];
+    return SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Bestiary',
+                      style: Theme.of(context).textTheme.titleMedium),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: Navigator.of(context).pop,
+                ),
+              ],
+            ),
+          ),
+          const Divider(),
+          if (creatures.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: Text(
+                'No saved creatures. Save one from the Encounter stat block dialog.',
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(
+                      color:
+                          Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.55,
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: creatures.length,
+                itemBuilder: (_, i) {
+                  final cr = creatures[i];
+                  return ListTile(
+                    title: Text(cr.name),
+                    subtitle:
+                        cr.maxHp > 0 ? Text('HP ${cr.maxHp}') : null,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('bestiary-edit-${cr.id}'),
+                          icon: const Icon(Icons.edit_outlined),
+                          tooltip: 'Edit',
+                          onPressed: () => _editCreature(context, ref, cr),
+                        ),
+                        IconButton(
+                          key: Key('bestiary-del-${cr.id}'),
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: 'Delete',
+                          onPressed: () => ref
+                              .read(bestiaryProvider.notifier)
+                              .remove(cr.id),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editCreature(
+      BuildContext context, WidgetRef ref, Creature cr) async {
+    final updated = await showDialog<Creature>(
+      context: context,
+      builder: (_) => _CreatureEditDialog(creature: cr),
+    );
+    if (updated != null) {
+      await ref.read(bestiaryProvider.notifier).replace(updated);
+    }
+  }
+}
+
+class _CreatureEditDialog extends StatefulWidget {
+  const _CreatureEditDialog({required this.creature});
+  final Creature creature;
+
+  @override
+  State<_CreatureEditDialog> createState() => _CreatureEditDialogState();
+}
+
+class _CreatureEditDialogState extends State<_CreatureEditDialog> {
+  late final TextEditingController _name;
+  late int _maxHp;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.creature.name);
+    _maxHp = widget.creature.maxHp;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit creature'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            key: const Key('bestiary-edit-name'),
+            controller: _name,
+            decoration: const InputDecoration(labelText: 'Name'),
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 16),
+          Text('Max HP', style: Theme.of(context).textTheme.labelMedium),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              IconButton(
+                key: const Key('bestiary-edit-hp-dec'),
+                icon: const Icon(Icons.remove_circle_outline),
+                onPressed: _maxHp > 0
+                    ? () => setState(() => _maxHp--)
+                    : null,
+              ),
+              SizedBox(
+                width: 40,
+                child: Text(
+                  '$_maxHp',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              IconButton(
+                key: const Key('bestiary-edit-hp-inc'),
+                icon: const Icon(Icons.add_circle_outline),
+                onPressed: () => setState(() => _maxHp++),
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: Navigator.of(context).pop,
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final name = _name.text.trim();
+            if (name.isEmpty) return;
+            Navigator.of(context).pop(
+              widget.creature.copyWith(name: name, maxHp: _maxHp),
+            );
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
   }
 }
