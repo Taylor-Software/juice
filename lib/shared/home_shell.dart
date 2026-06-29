@@ -192,16 +192,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _createSession(BuildContext dialogContext) async {
-    final result = await showDialog<
-        ({
-          String name,
-          Set<String> systems,
-          CampaignMode mode,
-          String genre,
-          String tone,
-          String start,
-          String seedSystem,
-        })>(
+    final result = await showDialog<NewCampaignResult>(
       context: dialogContext,
       builder: (context) => const NewCampaignDialog(),
     );
@@ -800,6 +791,19 @@ const kSystemShortName = <String, String>{
   'lonelog': 'Lonelog',
   'custom': 'Custom',
 };
+
+/// Result of the campaign-creation wizard. Defined once so every `showDialog`
+/// call site (home-shell + launcher) and `_submit` share the exact record shape
+/// — a drifting field here is a runtime TypeError on pop, not a compile error.
+typedef NewCampaignResult = ({
+  String name,
+  Set<String> systems,
+  CampaignMode mode,
+  String genre,
+  String tone,
+  String start,
+  String seedSystem,
+});
 
 class NewCampaignDialog extends StatefulWidget {
   const NewCampaignDialog({super.key});

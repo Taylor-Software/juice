@@ -6,8 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../shared/destination.dart';
 import '../shared/home_shell.dart'
-    show CampaignIdentityLeading, NewCampaignDialog, campaignSubtitle;
+    show
+        CampaignIdentityLeading,
+        NewCampaignDialog,
+        NewCampaignResult,
+        campaignSubtitle;
 import '../shared/shell_route.dart';
 import '../state/providers.dart';
 import 'enter_campaign.dart';
@@ -80,14 +85,7 @@ class LauncherScreen extends ConsumerWidget {
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<
-        ({
-          String name,
-          Set<String> systems,
-          CampaignMode mode,
-          String genre,
-          String tone
-        })>(
+    final result = await showDialog<NewCampaignResult>(
       context: context,
       builder: (context) => const NewCampaignDialog(),
     );
@@ -97,7 +95,15 @@ class LauncherScreen extends ConsumerWidget {
         mode: result.mode,
         genre: result.genre,
         tone: result.tone);
-    _enter(ref, result.mode);
+    if (result.start == 'funnel') {
+      // Seed the funnel into the new (now-active) campaign, then land on the
+      // roster where it lives + dismiss the launcher.
+      await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
+      ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
+      ref.read(launcherGateProvider.notifier).dismiss();
+    } else {
+      _enter(ref, result.mode);
+    }
   }
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {

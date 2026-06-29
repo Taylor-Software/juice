@@ -152,4 +152,45 @@ void main() {
         c.read(sessionsProvider).valueOrNull!.sessions.any((m) => m.id == 'b'),
         isFalse);
   });
+
+  // Regression: the launcher's New-campaign → wizard → Create path must pop a
+  // record matching its showDialog<NewCampaignResult> generic. A drifting shape
+  // throws a TypeError on pop (caught live on macOS, missed by unit tests that
+  // pump the dialog directly). Drives the real launcher caller end to end.
+  testWidgets('New campaign wizard (funnel) creates without a type error',
+      (t) async {
+    final c = _container();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+
+    await t.tap(find.byKey(const Key('launcher-new')));
+    await t.pumpAndSettle();
+    await t.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Wizard Funnel');
+    await t.tap(find.byKey(const Key('new-stance-solo-gm')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('ruleset-dcc')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> start
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('new-start-funnel')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-create')));
+    await t.pumpAndSettle();
+
+    // No TypeError on pop (the bug), the gate dismissed, the campaign exists
+    // with the funnel system + a funnel character was seeded.
+    expect(t.takeException(), isNull);
+    expect(c.read(launcherGateProvider), isFalse);
+    final created = c
+        .read(sessionsProvider)
+        .valueOrNull!
+        .sessions
+        .firstWhere((m) => m.name == 'Wizard Funnel');
+    expect(created.enabledSystems.contains('funnel'), isTrue);
+    final chars = await c.read(charactersProvider.future);
+    expect(chars.any((ch) => ch.funnel != null), isTrue);
+  });
 }
