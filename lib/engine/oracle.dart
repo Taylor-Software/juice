@@ -3,6 +3,11 @@ import 'models.dart';
 import 'oracle_data.dart';
 import 'tarot_spreads.dart';
 
+/// Maps a two-d6 "d66" roll (tens, ones each 1..6) to a 0..35 list index.
+/// The ones die selects the group (0..5) and the tens die selects the entry
+/// within that group (0..5), giving column-major order over the d66 grid.
+int d66Index(int tens, int ones) => (ones - 1) * 6 + (tens - 1);
+
 /// The journal representation of a Fate Check roll. Shared by the Fate screen
 /// and the assistant rail's inline "Roll the oracle" so the mapping lives once.
 GenResult fateCheckGenResult(FateResult result) {
@@ -780,6 +785,30 @@ class Oracle {
       Roll(label: 'Fragment', value: fragment, detail: tense),
       Roll(label: 'Tone', value: tone, detail: 'd10 ${d10Label(d1)}'),
       Roll(label: 'Subject', value: subject, detail: 'd10 ${d10Label(d2)}'),
+    ]);
+  }
+
+  // -- d66 helpers -------------------------------------------------------
+
+  /// Picks from a 36-entry d66 table: two d6 → index 0..35 via [d66Index].
+  /// Returns the picked value plus the "11".."66" face string for display.
+  (String, String) _pickD66(String key) {
+    final tens = dice.dN(6);
+    final ones = dice.dN(6);
+    return (data.table(key)[d66Index(tens, ones)], '$tens$ones');
+  }
+
+  /// d66 word oracle (Action / Descriptor / Subject) — one combined prompt.
+  GenResult wordOracle() {
+    Roll col(String key, String label) {
+      final (value, face) = _pickD66(key);
+      return Roll(label: label, value: value, detail: 'd66 → $face');
+    }
+
+    return GenResult(title: 'Word Oracle', rolls: [
+      col('word_action', 'Action'),
+      col('word_descriptor', 'Descriptor'),
+      col('word_subject', 'Subject'),
     ]);
   }
 }
