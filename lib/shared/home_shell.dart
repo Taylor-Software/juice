@@ -415,6 +415,19 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       index: index,
       children: [for (final d in destinations) _root(d, systems, family)],
     );
+    // Show a dot badge on Track + Run when there are active (non-defeated)
+    // combatants — a persistent signal that an encounter is in progress.
+    final enc = ref.watch(encounterProvider).valueOrNull;
+    final hasEnc = enc != null && enc.combatants.any((c) => !c.defeated);
+    Widget navIcon(Destination d) {
+      final icon = Icon(destinationMeta[d]!.icon);
+      if (!hasEnc) return icon;
+      if (d == Destination.track || d == Destination.run) {
+        return Badge(child: icon);
+      }
+      return icon;
+    }
+
     return LayoutBuilder(builder: (context, c) {
       final wide = c.maxWidth >= 840;
       final canSplit = c.maxWidth >= 1000;
@@ -436,7 +449,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             destinations: [
               for (final d in leftDest)
                 NavigationRailDestination(
-                  icon: Icon(destinationMeta[d]!.icon),
+                  icon: navIcon(d),
                   label: Text(destinationMeta[d]!.label),
                 ),
             ],
@@ -475,7 +488,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             destinations: [
               for (final d in destinations)
                 NavigationRailDestination(
-                  icon: Icon(destinationMeta[d]!.icon),
+                  icon: navIcon(d),
                   label: Text(destinationMeta[d]!.label),
                 ),
             ],
@@ -493,7 +506,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           destinations: [
             for (final d in destinations)
               NavigationDestination(
-                icon: Icon(destinationMeta[d]!.icon),
+                icon: navIcon(d),
                 label: destinationMeta[d]!.label,
               ),
           ],
