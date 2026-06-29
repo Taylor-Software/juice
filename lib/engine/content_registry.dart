@@ -81,4 +81,6 @@ const kContentAttributions = <String, String>{
       'under CC-BY-SA-4.0.',
   'knave': 'Knave Second Edition © Ben Milton / Questing Beast Games, licensed '
       'under CC-BY-4.0.',
+  'dcc': 'Dungeon Crawl Classics mechanics used under the Open Game License '
+      '1.0a. Not affiliated with Goodman Games.',
 };

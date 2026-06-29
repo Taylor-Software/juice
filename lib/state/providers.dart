@@ -1828,7 +1828,14 @@ final systemFoesProvider =
 });
 
 /// Systems that ship bundled content files (foes_/spells_). Drives aggregation.
-const kContentSystemsWithFiles = ['dnd', 'cairn', 'ose', 'argosa', 'knave'];
+const kContentSystemsWithFiles = [
+  'dnd',
+  'cairn',
+  'ose',
+  'argosa',
+  'knave',
+  'dcc',
+];
 
 /// Enabled systems that also have bundled content files.
 final enabledContentSystemsProvider = Provider<List<String>>((ref) {

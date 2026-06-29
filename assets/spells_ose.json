@@ -1,0 +1,420 @@
+[
+  {
+    "id": "ose-charm-person",
+    "system": "ose",
+    "name": "Charm Person",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "One humanoid sees you as a trusted ally until dispelled."
+  },
+  {
+    "id": "ose-detect-magic",
+    "system": "ose",
+    "name": "Detect Magic",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You perceive enchantments and magic auras nearby for a short time."
+  },
+  {
+    "id": "ose-floating-disc",
+    "system": "ose",
+    "name": "Floating Disc",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A levitating disc of force follows you, carrying heavy loads."
+  },
+  {
+    "id": "ose-hold-portal",
+    "system": "ose",
+    "name": "Hold Portal",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A door or gate is magically held shut."
+  },
+  {
+    "id": "ose-light",
+    "system": "ose",
+    "name": "Light",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "An object glows like a torch, or blinds a target who fails a save."
+  },
+  {
+    "id": "ose-magic-missile",
+    "system": "ose",
+    "name": "Magic Missile",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "An unerring dart of force strikes for 1d6+1 damage."
+  },
+  {
+    "id": "ose-protection-from-evil",
+    "system": "ose",
+    "name": "Protection from Evil",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A ward hampers enemy attacks and bars enchanted creatures."
+  },
+  {
+    "id": "ose-read-magic",
+    "system": "ose",
+    "name": "Read Magic",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You decipher magical writing and scrolls."
+  },
+  {
+    "id": "ose-sleep",
+    "system": "ose",
+    "name": "Sleep",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Weak creatures in an area fall into magical slumber."
+  },
+  {
+    "id": "ose-ventriloquism",
+    "system": "ose",
+    "name": "Ventriloquism",
+    "level": 1,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Your voice seems to issue from elsewhere."
+  },
+  {
+    "id": "ose-continual-light",
+    "system": "ose",
+    "name": "Continual Light",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A permanent, bright daylight glow, or blinding burst on a target."
+  },
+  {
+    "id": "ose-detect-invisible",
+    "system": "ose",
+    "name": "Detect Invisible",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You see invisible and hidden creatures and objects."
+  },
+  {
+    "id": "ose-esp",
+    "system": "ose",
+    "name": "ESP",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You read the surface thoughts of nearby creatures."
+  },
+  {
+    "id": "ose-invisibility",
+    "system": "ose",
+    "name": "Invisibility",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A creature or object becomes unseen until it attacks."
+  },
+  {
+    "id": "ose-knock",
+    "system": "ose",
+    "name": "Knock",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Locked, barred, or stuck doors and chests spring open."
+  },
+  {
+    "id": "ose-levitate",
+    "system": "ose",
+    "name": "Levitate",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You move yourself vertically through the air by will."
+  },
+  {
+    "id": "ose-mirror-image",
+    "system": "ose",
+    "name": "Mirror Image",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Illusory duplicates of you absorb incoming attacks."
+  },
+  {
+    "id": "ose-web",
+    "system": "ose",
+    "name": "Web",
+    "level": 2,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Sticky strands fill an area, entangling those within."
+  },
+  {
+    "id": "ose-dispel-magic",
+    "system": "ose",
+    "name": "Dispel Magic",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You end ongoing spells and magical effects in an area."
+  },
+  {
+    "id": "ose-fire-ball",
+    "system": "ose",
+    "name": "Fire Ball",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A burst of flame deals damage to all in the area (save for half)."
+  },
+  {
+    "id": "ose-fly",
+    "system": "ose",
+    "name": "Fly",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A creature gains the power of flight for a time."
+  },
+  {
+    "id": "ose-haste",
+    "system": "ose",
+    "name": "Haste",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Targets move and attack at double speed."
+  },
+  {
+    "id": "ose-hold-person",
+    "system": "ose",
+    "name": "Hold Person",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "Humanoid targets are paralysed unless they save."
+  },
+  {
+    "id": "ose-lightning-bolt",
+    "system": "ose",
+    "name": "Lightning Bolt",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "A stroke of lightning blasts everything in a line (save for half)."
+  },
+  {
+    "id": "ose-invisibility-10-radius",
+    "system": "ose",
+    "name": "Invisibility 10' Radius",
+    "level": 3,
+    "school": "Arcane",
+    "classes": [
+      "Magic-User"
+    ],
+    "description": "You and nearby allies become invisible."
+  },
+  {
+    "id": "ose-cure-light-wounds",
+    "system": "ose",
+    "name": "Cure Light Wounds",
+    "level": 1,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "Heals 1d6+1 damage, or harms undead with reversed casting."
+  },
+  {
+    "id": "ose-detect-evil",
+    "system": "ose",
+    "name": "Detect Evil",
+    "level": 1,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You sense evil intent and cursed objects nearby."
+  },
+  {
+    "id": "ose-light-cleric",
+    "system": "ose",
+    "name": "Light (Cleric)",
+    "level": 1,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "An object glows like a torch, or blinds a target who fails a save."
+  },
+  {
+    "id": "ose-protection-from-evil-cleric",
+    "system": "ose",
+    "name": "Protection from Evil (Cleric)",
+    "level": 1,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "A ward hampers enemy attacks and bars enchanted creatures."
+  },
+  {
+    "id": "ose-purify-food-and-water",
+    "system": "ose",
+    "name": "Purify Food and Water",
+    "level": 1,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "Spoiled rations and tainted water are made wholesome."
+  },
+  {
+    "id": "ose-bless",
+    "system": "ose",
+    "name": "Bless",
+    "level": 2,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "Allies gain bonuses to attacks and morale (or a curse, reversed)."
+  },
+  {
+    "id": "ose-find-traps",
+    "system": "ose",
+    "name": "Find Traps",
+    "level": 2,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "Nearby mechanical and magical traps are revealed."
+  },
+  {
+    "id": "ose-hold-person-cleric",
+    "system": "ose",
+    "name": "Hold Person (Cleric)",
+    "level": 2,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "Humanoid targets are paralysed unless they save."
+  },
+  {
+    "id": "ose-silence-15-radius",
+    "system": "ose",
+    "name": "Silence 15' Radius",
+    "level": 2,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "An area is wrapped in total silence, foiling spellcasting."
+  },
+  {
+    "id": "ose-speak-with-animals",
+    "system": "ose",
+    "name": "Speak with Animals",
+    "level": 2,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You converse with natural beasts."
+  },
+  {
+    "id": "ose-cure-disease",
+    "system": "ose",
+    "name": "Cure Disease",
+    "level": 3,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You cure a creature of disease (or inflict one, reversed)."
+  },
+  {
+    "id": "ose-remove-curse",
+    "system": "ose",
+    "name": "Remove Curse",
+    "level": 3,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You lift a curse from a creature or object (or bestow one)."
+  },
+  {
+    "id": "ose-striking",
+    "system": "ose",
+    "name": "Striking",
+    "level": 3,
+    "school": "Divine",
+    "classes": [
+      "Cleric"
+    ],
+    "description": "A weapon deals extra magical damage for a time."
+  }
+]

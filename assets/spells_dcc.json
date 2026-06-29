@@ -1,0 +1,232 @@
+[
+  {
+    "id": "dcc-magic-missile",
+    "system": "dcc",
+    "name": "Magic Missile",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "Bolts of force strike targets; the result die scales the number and damage."
+  },
+  {
+    "id": "dcc-magic-shield",
+    "system": "dcc",
+    "name": "Magic Shield",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "An invisible shield of force improves your defenses."
+  },
+  {
+    "id": "dcc-cantrip",
+    "system": "dcc",
+    "name": "Cantrip",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "Minor magical tricks and effects of the caster's choosing."
+  },
+  {
+    "id": "dcc-choking-cloud",
+    "system": "dcc",
+    "name": "Choking Cloud",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "A cloud of noxious vapor sickens and damages those within."
+  },
+  {
+    "id": "dcc-ropework",
+    "system": "dcc",
+    "name": "Ropework",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You command a rope to move, bind, or animate."
+  },
+  {
+    "id": "dcc-spider-climb",
+    "system": "dcc",
+    "name": "Spider Climb",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You climb walls and ceilings as a spider does."
+  },
+  {
+    "id": "dcc-sleep",
+    "system": "dcc",
+    "name": "Sleep",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "Creatures in an area fall into magical slumber."
+  },
+  {
+    "id": "dcc-invoke-patron",
+    "system": "dcc",
+    "name": "Invoke Patron",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You call on your otherworldly patron for aid; results vary wildly."
+  },
+  {
+    "id": "dcc-detect-magic",
+    "system": "dcc",
+    "name": "Detect Magic",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You sense magical auras and their relative power."
+  },
+  {
+    "id": "dcc-animal-summoning",
+    "system": "dcc",
+    "name": "Animal Summoning",
+    "level": 2,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You call beasts to your aid; greater results summon stronger creatures."
+  },
+  {
+    "id": "dcc-levitate",
+    "system": "dcc",
+    "name": "Levitate",
+    "level": 2,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You rise and float, controlling your vertical movement."
+  },
+  {
+    "id": "dcc-scorching-ray",
+    "system": "dcc",
+    "name": "Scorching Ray",
+    "level": 2,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "Searing rays of flame lance out at your foes."
+  },
+  {
+    "id": "dcc-fireball",
+    "system": "dcc",
+    "name": "Fireball",
+    "level": 3,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "A roaring burst of flame engulfs an area (save for half)."
+  },
+  {
+    "id": "dcc-lightning-bolt",
+    "system": "dcc",
+    "name": "Lightning Bolt",
+    "level": 3,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "A stroke of lightning blasts everything in a line."
+  },
+  {
+    "id": "dcc-runic-alphabet",
+    "system": "dcc",
+    "name": "Runic Alphabet",
+    "level": 3,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You inscribe potent magical runes with delayed or triggered effects."
+  },
+  {
+    "id": "dcc-polymorph",
+    "system": "dcc",
+    "name": "Polymorph",
+    "level": 4,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You reshape a creature into another form."
+  },
+  {
+    "id": "dcc-control-fire",
+    "system": "dcc",
+    "name": "Control Fire",
+    "level": 1,
+    "classes": [
+      "Wizard"
+    ],
+    "description": "You shape, douse, or kindle flames within range."
+  },
+  {
+    "id": "dcc-lay-on-hands",
+    "system": "dcc",
+    "name": "Lay on Hands",
+    "level": 1,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You heal wounds by touch; aligned targets benefit most."
+  },
+  {
+    "id": "dcc-word-of-command",
+    "system": "dcc",
+    "name": "Word of Command",
+    "level": 1,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "A divine command compels a creature to obey a single word."
+  },
+  {
+    "id": "dcc-holy-sanctuary",
+    "system": "dcc",
+    "name": "Holy Sanctuary",
+    "level": 2,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "A blessed ward protects an area or creature from harm."
+  },
+  {
+    "id": "dcc-cure-paralysis",
+    "system": "dcc",
+    "name": "Cure Paralysis",
+    "level": 2,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You free a creature from paralysis and similar bonds."
+  },
+  {
+    "id": "dcc-banish",
+    "system": "dcc",
+    "name": "Banish",
+    "level": 4,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You drive an extraplanar creature back to its home plane."
+  },
+  {
+    "id": "dcc-divine-symbol",
+    "system": "dcc",
+    "name": "Divine Symbol",
+    "level": 3,
+    "classes": [
+      "Cleric"
+    ],
+    "description": "You manifest your deity's symbol to smite foes or shield allies."
+  }
+]
