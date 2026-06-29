@@ -480,28 +480,22 @@ Working rules for this repo:
   `party`; legacy campaigns → party). `modeProvider` exposes the active
   campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
   a `copyWith` and `rename`/`editSystems`/`setMode` all route through it (so no
-  field-drop). A pure `lib/engine/role_tags.dart` (`visibleForMode`) tags
-  role-specific sub-options: `rumors` → gm; `emulator`/`sidekick`/`behavior`/
-  `moves` → party; everything else `both`. `TrackingTab` and `SheetTab` (both
-  read `modeProvider`) drop the hidden subtabs; an app-bar `mode-toggle` flips
-  it. NOTE: default `party` means legacy campaigns hide the Track `Rumors`
-  subtab until toggled to GM. The parallel discovery/nav surfaces are also
-  mode-aware (so off-mode tools can't silently mis-land on a hidden subtab):
-  `buildToolRegistry` takes a `mode` (drops a tool whose `toolLocation` subtab
-  is role-hidden; threaded from `home_shell`), `ShellRouteNotifier.openTool`
-  takes an optional `mode` and returns false for a hidden target (caller's
-  "Tool not available" snackbar fires; wired at `journal_screen._openTool` +
-  `tool_search_sheet._open`), and `suggestionsFor` gates `make-move` on a
-  `partyMode` flag. The mode is chosen at campaign creation (`NewCampaignDialog`
-  has a `new-campaign-mode` Party|GM `SegmentedButton`; `SessionsNotifier.create`
-  takes a `mode` param) and each campaign **lands on its mode home** when entered:
-  pure `landingDestination(mode)` (gm→Track, party→Sheet) drives
+  field-drop). **Mode no longer gates tool/subtab visibility** — `lib/engine/
+  role_tags.dart` (`visibleForMode`/`kSubtabRoles`/`SubtabRole`) was deleted
+  (PR refactor(modes)); tools and subtabs follow the enabled `systems` set only
+  (`TrackingTab` shows Rumors always; Moves shows whenever the ironsworn family
+  is non-empty; party tools show when `party` system is enabled; `suggestionsFor`
+  emits `develop-rumor`/`seed-npc` unconditionally and `make-move` on
+  ironsworn-family + focus character). An app-bar `mode-toggle` flips it.
+  Mode now drives ONLY: (1) **landing** — each campaign lands on its mode home
+  when entered: pure `landingDestination(mode)` (gm→Run, party→Sheet) drives
   `ShellRouteNotifier.landFor`, called from every entry point (launcher
-  Continue/New/switch/import + in-shell switch/New). `build()` stays
-  `journal` — landing only applies on explicit entry, so toggling mode
-  mid-session doesn't re-land. Deferred: richer per-mode assistant suggestions
-  (beyond `make-move`). See
-  `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
+  Continue/New/switch/import + in-shell switch/New). `build()` stays `journal` —
+  landing only applies on explicit entry, so toggling mode mid-session doesn't
+  re-land. (2) **framing** — the mode-toggle chip in the app-bar. The mode is
+  chosen at campaign creation (`NewCampaignDialog` has a `new-campaign-mode`
+  Party|GM `SegmentedButton`; `SessionsNotifier.create` takes a `mode` param).
+  See `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
 - **Campaign creation is presets-first** (`NewCampaignDialog` in
   `lib/shared/home_shell.dart`). The 16 systems are categorized by
   `kSystemCategory` (`SystemCategory {ruleset, oracle, exploration, tools}`,
@@ -519,10 +513,11 @@ Working rules for this repo:
   (callers + `SessionsNotifier.create` unchanged). **P2 (live preview)** added a
   `CampaignPreviewPane` (`lib/shared/campaign_preview_pane.dart`) embedded in the
   dialog (below genre/tone, live-updating via `_resolved()`): it shows which app
-  surfaces the current (mode, systems) light up, reading the pure `surfacesFor`
-  (`lib/engine/campaign_surfaces.dart`) — an authored surface table whose mode
-  gates call the real `visibleForMode` (role_tags) and whose system gates a test
-  validates against `kKnownSystems`, so the preview can't drift from runtime. A
+  surfaces the current systems set lights up, reading the pure `surfacesFor(systems)`
+  (`lib/engine/campaign_surfaces.dart`) — an authored surface table whose system
+  gates a test validates against `kKnownSystems`, so the preview can't drift from
+  runtime. (The mode-gate `requiresModeKey` field and `visibleForMode` call were
+  removed — surfaces are now system-gated only.) A
   full multi-step stepper was judged unnecessary (P1's grouped Custom picker +
   the preview cover direction B). See
   `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md` and the
