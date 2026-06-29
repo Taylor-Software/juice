@@ -207,6 +207,19 @@ class LauncherScreen extends ConsumerWidget {
         ref.watch(welcomeSeenProvider).valueOrNull ?? false;
     final showWelcome =
         !welcomeSeen && sessions.sessions.length == 1;
+    final lastExport = ref.watch(lastExportProvider).valueOrNull;
+    final journalEntries =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final hasJournal = journalEntries.isNotEmpty;
+    final staleDays = lastExport == null
+        ? null
+        : DateTime.now()
+            .difference(
+                DateTime.fromMillisecondsSinceEpoch(lastExport))
+            .inDays;
+    final showBackupNudge = !showWelcome &&
+        hasJournal &&
+        (lastExport == null || (staleDays != null && staleDays >= 7));
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -224,6 +237,10 @@ class LauncherScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   _WelcomeCard(onDismiss: () =>
                       ref.read(welcomeSeenProvider.notifier).markSeen()),
+                ],
+                if (showBackupNudge) ...[
+                  const SizedBox(height: 16),
+                  _BackupNudge(lastExportMs: lastExport),
                 ],
                 const SizedBox(height: 24),
                 FilledButton.icon(
@@ -363,4 +380,58 @@ class _Bullet extends StatelessWidget {
           ),
         ]),
       );
+}
+
+/// Backup nudge card shown when the campaign has journal entries but hasn't
+/// been exported recently (never or >7 days ago).
+class _BackupNudge extends StatelessWidget {
+  const _BackupNudge({required this.lastExportMs});
+  final int? lastExportMs;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final subtitle = lastExportMs == null
+        ? 'You haven\'t exported this campaign yet.'
+        : 'Last exported ${_daysAgo(lastExportMs!)} ago.';
+    return Card(
+      key: const Key('backup-nudge'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Row(
+          children: [
+            Icon(Icons.backup_outlined, color: muted, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Back up your campaign',
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(subtitle,
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: muted)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text('Campaigns menu → Export',
+                style: theme.textTheme.labelSmall
+                    ?.copyWith(color: muted)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _daysAgo(int ms) {
+    final days = DateTime.now()
+        .difference(DateTime.fromMillisecondsSinceEpoch(ms))
+        .inDays;
+    if (days == 0) return 'today';
+    if (days == 1) return '1 day';
+    return '$days days';
+  }
 }
