@@ -37,6 +37,7 @@ final List<GeneratorDef> kGenerators = [
   GeneratorDef('Pay the Price', GenSection.story, (o) => o.payThePrice()),
   GeneratorDef('Major Plot Twist', GenSection.story,
       (o) => o.payThePrice(critical: true)),
+  GeneratorDef('Word Oracle', GenSection.story, (o) => o.wordOracle()),
   GeneratorDef('NPC', GenSection.npcs, (o) => o.npc()),
   GeneratorDef('NPC Behavior', GenSection.npcs, (o) => o.npcBehavior()),
   GeneratorDef(

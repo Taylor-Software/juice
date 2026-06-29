@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/generator_registry.dart';
 
 void main() {
-  test('registry holds all 28 generators', () {
-    expect(kGenerators.length, 28);
+  test('registry holds all 29 generators', () {
+    expect(kGenerators.length, 29);
   });
 
   test('flavorGenerators excludes exactly the 4 entity generators', () {
@@ -12,7 +12,7 @@ void main() {
       expect(flavorLabels.contains(entity), isFalse,
           reason: '$entity excluded');
     }
-    expect(flavorGenerators.length, 24);
+    expect(flavorGenerators.length, 25);
   });
 
   test('sourceToolFor maps sections to gen-* ids', () {

@@ -222,6 +222,32 @@ TABLES = {
                    "Path", "Poison", "Projectile"],
     "dungeon_feature": ["Library", "Mural", "Mushrooms", "Prison", "Runes", "Shrine",
                       "Storage", "Vault", "Well", "Workshop"],
+
+    # ---- Word Oracle (d66 each): Action / Descriptor / Subject ----
+    "word_action": [
+        "Abandon", "Ambush", "Betray", "Bind", "Break", "Burn",
+        "Capture", "Conceal", "Conquer", "Corrupt", "Deceive", "Defend",
+        "Deliver", "Demand", "Destroy", "Discover", "Escape", "Expose",
+        "Gather", "Guard", "Haggle", "Hunt", "Ignite", "Imprison",
+        "Negotiate", "Offer", "Pursue", "Reveal", "Sabotage", "Scatter",
+        "Seize", "Summon", "Surrender", "Threaten", "Transform", "Warn",
+    ],
+    "word_descriptor": [
+        "Ancient", "Bitter", "Blazing", "Broken", "Cold", "Concealed",
+        "Corrupt", "Cruel", "Decaying", "Distant", "Fading", "Fertile",
+        "Forbidden", "Fragile", "Frozen", "Glittering", "Hidden", "Hollow",
+        "Hostile", "Luminous", "Massive", "Noble", "Ominous", "Radiant",
+        "Restless", "Ruined", "Sacred", "Savage", "Shifting", "Silent",
+        "Tangled", "Twisted", "Vast", "Withered", "Wounded", "Youthful",
+    ],
+    "word_subject": [
+        "Altar", "Beast", "Bridge", "Cage", "Caravan", "Children",
+        "Coin", "Crown", "Debt", "Disease", "Door", "Dream",
+        "Enemy", "Feast", "Gate", "Grave", "Harvest", "Hideout",
+        "Hunger", "Journey", "Letter", "Map", "Mountain", "Oath",
+        "Omen", "Prisoner", "Prophecy", "Relic", "Ruin", "Secret",
+        "Shelter", "Shrine", "Storm", "Stranger", "Weapon", "Wound",
+    ],
 }
 
 # d6 sub-tables for Object/Treasure (each list is index 1..6)
@@ -685,8 +711,11 @@ def verify():
         failures.append("disadvantage did not skew toward low index")
 
     # 5. Table length sanity: every d10 table has exactly 10 entries.
+    _D66_TABLES = {"word_action", "word_descriptor", "word_subject"}
     for name, vals in TABLES.items():
-        if name == "intensity":
+        if name in _D66_TABLES:
+            pass  # validated separately below
+        elif name == "intensity":
             if len(vals) != 6:
                 failures.append(f"{name} len {len(vals)} != 6")
         elif len(vals) != 10:
@@ -839,6 +868,16 @@ def verify():
             len(LOCATION_GRID["row_labels"]) != 5 or \
             len(LOCATION_GRID["col_labels"]) != 5:
         failures.append("location grid metadata not 5x5")
+
+    # Word Oracle: three authored d66 columns, each exactly 36 unique non-empty.
+    for col in ("word_action", "word_descriptor", "word_subject"):
+        words = TABLES[col]
+        if len(words) != 36:
+            failures.append(f"{col}: expected 36 entries, got {len(words)}")
+        if any(not w.strip() for w in words):
+            failures.append(f"{col}: contains an empty entry")
+        if len(set(words)) != len(words):
+            failures.append(f"{col}: contains duplicate entries")
 
     return failures
 
