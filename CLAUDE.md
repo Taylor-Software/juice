@@ -541,6 +541,14 @@ Working rules for this repo:
   hides when user creates a second campaign. Covered by
   `test/launcher_welcome_test.dart` (4 widget tests). See
   `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
+- **Play-loop consolidation** (Streamline epic Phase 6) — assistant rail now
+  defaults open and persists its expand/collapse state per device
+  (`assistantRailExpandedProvider`, `juice.assistant_rail_expanded.v1`, app-global
+  like `aiNudgeSeenProvider`). Track tab order resequenced: Home → Scenes →
+  Threads → **Encounter** → Rumors → Tracks → party tools → lonelog (Encounter
+  surfaced earlier so an active fight is one tap away). Sheet empty-state
+  ("Every story needs a hero. Create your first character.") was already built;
+  confirmed complete. See `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **Thread backlinks** (Streamline epic Phase 3) — each thread card in
   `ThreadsPane` (`lib/features/tracker_screen.dart`) now shows a
   `thread-entries-<id>` `ActionChip` ("N entr[y/ies]") when journal entries
