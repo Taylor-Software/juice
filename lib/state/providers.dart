@@ -1808,6 +1808,23 @@ final foesProvider = FutureProvider<List<FoeCollection>>((ref) async {
   return results;
 });
 
+/// Loads a system-specific foe file (e.g. foes_cairn.json) as a Creature list.
+/// Returns empty list when the file is absent or malformed.
+final systemFoesProvider =
+    FutureProvider.family<List<Creature>, String>((ref, system) async {
+  try {
+    final raw = await rootBundle.loadString('assets/foes_$system.json');
+    final list = jsonDecode(raw) as List?;
+    return list
+            ?.map(Creature.maybeFromJson)
+            .whereType<Creature>()
+            .toList() ??
+        const <Creature>[];
+  } catch (_) {
+    return const <Creature>[];
+  }
+});
+
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.
 final emulatorDataProvider =
     FutureProvider<EmulatorData>((ref) => EmulatorData.load());

@@ -1,0 +1,543 @@
+[
+  {
+    "id": "ose-bandit",
+    "name": "Bandit",
+    "maxHp": 4,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1, Move 120', Morale 8, Save F1"
+    }
+  },
+  {
+    "id": "ose-bugbear",
+    "name": "Bugbear",
+    "maxHp": 16,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "2d4"
+        }
+      ],
+      "notes": "HD 3+1, Move 90', Morale 9, Save F3\nSurprise on 3-in-6."
+    }
+  },
+  {
+    "id": "ose-gnoll",
+    "name": "Gnoll",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "HD 2, Move 90', Morale 8, Save F2"
+    }
+  },
+  {
+    "id": "ose-goblin",
+    "name": "Goblin",
+    "maxHp": 4,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1-1, Move 60', Morale 7, Save NM\n-1 to attack in sunlight."
+    }
+  },
+  {
+    "id": "ose-hobgoblin",
+    "name": "Hobgoblin",
+    "maxHp": 6,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "HD 1+1, Move 90', Morale 8, Save F1"
+    }
+  },
+  {
+    "id": "ose-kobold",
+    "name": "Kobold",
+    "maxHp": 2,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d4"
+        }
+      ],
+      "notes": "HD ½, Move 60', Morale 6, Save NM\n-1 to attack in full daylight."
+    }
+  },
+  {
+    "id": "ose-lizard-man",
+    "name": "Lizard Man",
+    "maxHp": 10,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d3"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d3"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 2+1, Move 60'/120' swim, Morale 11, Save F2"
+    }
+  },
+  {
+    "id": "ose-ogre",
+    "name": "Ogre",
+    "maxHp": 19,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Club",
+          "detail": "1d10"
+        }
+      ],
+      "notes": "HD 4+1, Move 90', Morale 10, Save F4"
+    }
+  },
+  {
+    "id": "ose-orc",
+    "name": "Orc",
+    "maxHp": 4,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Weapon",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1, Move 120', Morale 8, Save F1\n-1 to attack in sunlight."
+    }
+  },
+  {
+    "id": "ose-troglodyte",
+    "name": "Troglodyte",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d4"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d4"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d4"
+        }
+      ],
+      "notes": "HD 2*, Move 120', Morale 9, Save F2\nStench: -2 to attack rolls nearby."
+    }
+  },
+  {
+    "id": "ose-ghoul",
+    "name": "Ghoul",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d3 + paralysis"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d3 + paralysis"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d3"
+        }
+      ],
+      "notes": "HD 2*, Move 90', Morale 9, Save F2\nParalysis (except elves, 2d4 turns). Undead."
+    }
+  },
+  {
+    "id": "ose-mummy",
+    "name": "Mummy",
+    "maxHp": 23,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "1d12 + mummy rot"
+        }
+      ],
+      "notes": "HD 5+1*, Move 60', Morale 12, Save F5\nMummy rot disease; half damage from mundane. Undead."
+    }
+  },
+  {
+    "id": "ose-skeleton",
+    "name": "Skeleton",
+    "maxHp": 5,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Weapon or Claw",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1, Move 60', Morale 12, Save F1\nImmune to sleep/charm. Undead."
+    }
+  },
+  {
+    "id": "ose-wight",
+    "name": "Wight",
+    "maxHp": 13,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "energy drain (1 level)"
+        }
+      ],
+      "notes": "HD 3*, Move 90', Morale 12, Save F3\nLevel drain. Only silver/magic. Undead."
+    }
+  },
+  {
+    "id": "ose-wraith",
+    "name": "Wraith",
+    "maxHp": 18,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "energy drain (1 level)"
+        }
+      ],
+      "notes": "HD 4*, Move 120'/240' fly, Morale 12, Save F4\nLevel drain. Only silver/magic. Undead."
+    }
+  },
+  {
+    "id": "ose-vampire",
+    "name": "Vampire",
+    "maxHp": 35,
+    "statBlock": {
+      "ac": 17,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d10 + level drain (2 levels)"
+        }
+      ],
+      "notes": "HD 7+3**, Move 120'/180' fly, Morale 11, Save F7\nLevel drain. Charm. Regen 3/rd. Magic only. Undead."
+    }
+  },
+  {
+    "id": "ose-zombie",
+    "name": "Zombie",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Weapon or Strike",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "HD 2, Move 60', Morale 12, Save F1\nAlways last in initiative. Undead."
+    }
+  },
+  {
+    "id": "ose-giant-spider",
+    "name": "Spider (Giant)",
+    "maxHp": 22,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d8 + poison (save or die in 1d4 turns)"
+        }
+      ],
+      "notes": "HD 4+4*, Move 60'/Web 30', Morale 8, Save F4\nPoison bite; web immobilizes."
+    }
+  },
+  {
+    "id": "ose-harpy",
+    "name": "Harpy",
+    "maxHp": 13,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Talons",
+          "detail": "1d4+1d4"
+        },
+        {
+          "name": "Weapon",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 3*, Move 60'/150' fly, Morale 7, Save F3\nSong charms (save or approach); touch continues charm."
+    }
+  },
+  {
+    "id": "ose-minotaur",
+    "name": "Minotaur",
+    "maxHp": 27,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Gore",
+          "detail": "1d6"
+        },
+        {
+          "name": "Axe",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 6, Move 120', Morale 12, Save F6\nNever lost in a maze."
+    }
+  },
+  {
+    "id": "ose-troll",
+    "name": "Troll",
+    "maxHp": 30,
+    "statBlock": {
+      "ac": 15,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d6"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d6"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d10"
+        }
+      ],
+      "notes": "HD 6+3*, Move 120', Morale 10, Save F6\nRegenerate 3 HP/rd (not fire/acid). Severed limbs reattach."
+    }
+  },
+  {
+    "id": "ose-basilisk",
+    "name": "Basilisk",
+    "maxHp": 28,
+    "statBlock": {
+      "ac": 15,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d10"
+        },
+        {
+          "name": "Gaze",
+          "detail": "petrify (save or stone)"
+        }
+      ],
+      "notes": "HD 6+1*, Move 60', Morale 9, Save F6\nMeeting gaze: save vs petrify. Reflection safe."
+    }
+  },
+  {
+    "id": "ose-cockatrice",
+    "name": "Cockatrice",
+    "maxHp": 22,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Beak",
+          "detail": "1d6 + petrify (save or stone)"
+        }
+      ],
+      "notes": "HD 5*, Move 90'/180' fly, Morale 7, Save F5"
+    }
+  },
+  {
+    "id": "ose-gargoyle",
+    "name": "Gargoyle",
+    "maxHp": 18,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d3"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d3"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d6"
+        },
+        {
+          "name": "Horn",
+          "detail": "1d4"
+        }
+      ],
+      "notes": "HD 4*, Move 90'/150' fly, Morale 11, Save F4\nMagic weapons to hit."
+    }
+  },
+  {
+    "id": "ose-medusa",
+    "name": "Medusa",
+    "maxHp": 18,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Snake Bite",
+          "detail": "1d6 + poison (save or die)"
+        },
+        {
+          "name": "Gaze",
+          "detail": "petrify (save or stone)"
+        }
+      ],
+      "notes": "HD 4**, Move 90', Morale 8, Save F4\nGaze petrifies; snake bite poisonous."
+    }
+  },
+  {
+    "id": "ose-specter",
+    "name": "Specter",
+    "maxHp": 27,
+    "statBlock": {
+      "ac": 17,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "energy drain (2 levels)"
+        }
+      ],
+      "notes": "HD 6*, Move 150'/300' fly, Morale 11, Save F6\nLevel drain. Magic only. Undead."
+    }
+  },
+  {
+    "id": "ose-wyvern",
+    "name": "Wyvern",
+    "maxHp": 31,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "2d8"
+        },
+        {
+          "name": "Sting",
+          "detail": "1d6 + poison (save or die in 1d6 rounds)"
+        }
+      ],
+      "notes": "HD 7*, Move 90'/240' fly, Morale 9, Save F7"
+    }
+  },
+  {
+    "id": "ose-animated-statue-crystal",
+    "name": "Statue (Crystal)",
+    "maxHp": 31,
+    "statBlock": {
+      "ac": 18,
+      "attacks": [
+        {
+          "name": "Strike",
+          "detail": "1d6"
+        },
+        {
+          "name": "Strike",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 7*, Move 90', Morale 11, Save F7\nImmune to fire, lightning. Immune to sleep/charm."
+    }
+  },
+  {
+    "id": "ose-gelatinous-cube",
+    "name": "Gelatinous Cube",
+    "maxHp": 18,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "2d4 + paralysis (save or 2d4 turns)"
+        }
+      ],
+      "notes": "HD 4*, Move 60', Morale 12, Save F2\nInvisible until struck. Absorbs items. Immune to lightning/cold."
+    }
+  },
+  {
+    "id": "ose-black-pudding",
+    "name": "Black Pudding",
+    "maxHp": 45,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Pseudopod",
+          "detail": "3d8 + corrode metal"
+        }
+      ],
+      "notes": "HD 10*, Move 60', Morale 12, Save F5\nCorodes metal; immune to cold. Splits on lightning/slash."
+    }
+  },
+  {
+    "id": "ose-young-red-dragon",
+    "name": "Dragon (Red, Young)",
+    "maxHp": 40,
+    "statBlock": {
+      "ac": 17,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d8"
+        },
+        {
+          "name": "Claw",
+          "detail": "1d8"
+        },
+        {
+          "name": "Bite",
+          "detail": "3d10"
+        }
+      ],
+      "notes": "HD 9**, Move 90'/240' fly, Morale 10, Save F9\nBreath: fire cone 3d8 (save ½). Charm person 3/day."
+    }
+  }
+]

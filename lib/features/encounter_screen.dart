@@ -292,6 +292,13 @@ class EncounterScreen extends ConsumerWidget {
 
   Widget _addButtons(BuildContext context, WidgetRef ref) {
     final foes = ref.watch(foesProvider).valueOrNull ?? const <FoeCollection>[];
+    final systems =
+        ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            kAllSystems;
+    final cairnFoes =
+        systems.contains('cairn') ? (ref.watch(systemFoesProvider('cairn')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
+    final oseFoes =
+        systems.contains('ose') ? (ref.watch(systemFoesProvider('ose')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -345,6 +352,32 @@ class EncounterScreen extends ConsumerWidget {
                 icon: const Icon(Icons.book_outlined),
                 label: const Text('Ruleset foes'),
                 onPressed: () => _addFromFoes(context, ref, foes),
+              ),
+            ),
+          ],
+          if (cairnFoes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const Key('add-cairn-foes'),
+                icon: const Icon(Icons.terrain_outlined),
+                label: const Text('Cairn creatures'),
+                onPressed: () => _addFromSystemCreatures(
+                    context, ref, cairnFoes, 'Add Cairn creature'),
+              ),
+            ),
+          ],
+          if (oseFoes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const Key('add-ose-foes'),
+                icon: const Icon(Icons.castle_outlined),
+                label: const Text('OSE monsters'),
+                onPressed: () => _addFromSystemCreatures(
+                    context, ref, oseFoes, 'Add OSE monster'),
               ),
             ),
           ],
@@ -639,6 +672,28 @@ class EncounterScreen extends ConsumerWidget {
           statBlock: noteParts.isNotEmpty
               ? StatBlock(notes: noteParts.join('\n'))
               : null,
+        ));
+  }
+
+  Future<void> _addFromSystemCreatures(BuildContext context, WidgetRef ref,
+      List<Creature> creatures, String title) async {
+    final creature = await showDialog<Creature>(
+      context: context,
+      builder: (_) =>
+          _SystemCreaturePickerDialog(creatures: creatures, title: title),
+    );
+    if (creature == null) return;
+    await ref.read(encounterProvider.notifier).addCombatant(Combatant(
+          id: _newId(),
+          name: creature.name,
+          initiative: 0,
+          track: creature.maxHp > 0
+              ? CharTrack(
+                  label: 'HP',
+                  current: creature.maxHp,
+                  max: creature.maxHp)
+              : null,
+          statBlock: creature.statBlock,
         ));
   }
 }
@@ -1018,6 +1073,49 @@ class _BestiaryPickerDialog extends ConsumerWidget {
                     ),
                 ],
               ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Read-only creature picker for bundled system foe lists (Cairn, OSE, etc.).
+/// Pops the chosen [Creature], or null on cancel.
+class _SystemCreaturePickerDialog extends StatelessWidget {
+  const _SystemCreaturePickerDialog(
+      {required this.creatures, required this.title});
+  final List<Creature> creatures;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(title),
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      content: SizedBox(
+        width: 320,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: creatures.length,
+          itemBuilder: (ctx, i) {
+            final cr = creatures[i];
+            return ListTile(
+              key: Key('sys-foe-pick-${cr.id}'),
+              dense: true,
+              title: Text(cr.name),
+              subtitle: Text([
+                if (cr.statBlock.ac != 0) 'AC/Armor ${cr.statBlock.ac}',
+                if (cr.maxHp > 0) 'HP ${cr.maxHp}',
+              ].join(' · ')),
+              onTap: () => Navigator.pop(context, cr),
+            );
+          },
+        ),
       ),
       actions: [
         TextButton(
