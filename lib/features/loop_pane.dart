@@ -169,6 +169,7 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
   Future<void> _newScene() async {
     final id =
         await ref.read(journalProvider.notifier).addScene('New scene');
+    if (!mounted) return;
     await ref.read(playContextProvider.notifier).setActiveScene(id);
   }
 
