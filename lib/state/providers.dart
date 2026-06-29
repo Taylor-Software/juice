@@ -1880,11 +1880,13 @@ final contentMonstersProvider = FutureProvider<List<Creature>>((ref) async {
 /// All spells across enabled systems.
 final contentSpellsProvider = FutureProvider<List<SpellEntry>>((ref) async {
   final systems = ref.watch(enabledContentSystemsProvider);
-  final out = <SpellEntry>[];
+  final out = <String, SpellEntry>{};
   for (final sys in systems) {
-    out.addAll(await ref.watch(systemSpellsProvider(sys).future));
+    for (final s in await ref.watch(systemSpellsProvider(sys).future)) {
+      out.putIfAbsent(s.id, () => s);
+    }
   }
-  return out;
+  return out.values.toList();
 });
 
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.

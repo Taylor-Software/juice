@@ -115,10 +115,14 @@ class _ReferenceViewState extends ConsumerState<ReferenceView> {
           onSelectionChanged: (s) => setState(() => _type = s.first),
         ),
         Expanded(
-          child: ListView(
-            children: [
-              for (final s in results.spells)
-                ListTile(
+          // Spells first, then monsters. Lazy-built so off-screen tiles aren't
+          // constructed on every keystroke (the full list is ~400+ entries).
+          child: ListView.builder(
+            itemCount: results.spells.length + results.monsters.length,
+            itemBuilder: (context, i) {
+              if (i < results.spells.length) {
+                final s = results.spells[i];
+                return ListTile(
                   key: Key('reference-spell-${s.id}'),
                   dense: true,
                   leading: const Icon(Icons.auto_fix_high),
@@ -127,20 +131,21 @@ class _ReferenceViewState extends ConsumerState<ReferenceView> {
                       ? 'Cantrip · ${s.school}'
                       : 'Lvl ${s.level} · ${s.school}'),
                   onTap: () => _glance(context, spell: s),
-                ),
-              for (final m in results.monsters)
-                ListTile(
-                  key: Key('reference-monster-${m.id}'),
-                  dense: true,
-                  leading: const Icon(Icons.pets),
-                  title: Text(m.name),
-                  subtitle: Text([
-                    if (m.statBlock.cr != null) 'CR ${m.statBlock.cr}',
-                    if (m.maxHp > 0) 'HP ${m.maxHp}',
-                  ].join(' · ')),
-                  onTap: () => _glance(context, monster: m),
-                ),
-            ],
+                );
+              }
+              final m = results.monsters[i - results.spells.length];
+              return ListTile(
+                key: Key('reference-monster-${m.id}'),
+                dense: true,
+                leading: const Icon(Icons.pets),
+                title: Text(m.name),
+                subtitle: Text([
+                  if (m.statBlock.cr != null) 'CR ${m.statBlock.cr}',
+                  if (m.maxHp > 0) 'HP ${m.maxHp}',
+                ].join(' · ')),
+                onTap: () => _glance(context, monster: m),
+              );
+            },
           ),
         ),
         const _AttributionFooter(),

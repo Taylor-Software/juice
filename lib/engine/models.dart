@@ -2949,7 +2949,7 @@ class Creature {
       id: id,
       name: name,
       statBlock: StatBlock.maybeFromJson(j['statBlock']) ?? const StatBlock(),
-      maxHp: (j['maxHp'] as int?) ?? 0,
+      maxHp: (j['maxHp'] as num?)?.toInt() ?? 0,
       edition: j['edition'] as String?,
     );
   }
