@@ -15,6 +15,7 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(s.first.id, 'roll-oracle');
       expect(s.first.action, SuggestionAction.inline);
@@ -27,6 +28,7 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(ids(s), contains('start-scene'));
       expect(ids(s), isNot(contains('scene-event')));
@@ -39,6 +41,7 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(ids(s), contains('scene-event'));
       expect(ids(s), isNot(contains('start-scene')));
@@ -53,6 +56,7 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(ids(s), contains('advance-thread'));
     });
@@ -64,6 +68,7 @@ void main() {
         encounterActive: true,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(ids(s), contains('combat-turn'));
     });
@@ -75,6 +80,7 @@ void main() {
             encounterActive: false,
             ironswornFamily: fam,
             hasFocusCharacter: foc,
+            hasTally: false,
           ));
       expect(run(true, true), contains('make-move'));
       expect(run(true, false), isNot(contains('make-move')));
@@ -88,8 +94,45 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
+        hasTally: false,
       );
       expect(ids(s), containsAll(['develop-rumor', 'seed-npc']));
+    });
+
+    test('ask-yes-no is always present, inline, right after roll-oracle', () {
+      final s = suggestionsFor(
+        hasScenes: false,
+        hasOpenThreads: false,
+        encounterActive: false,
+        ironswornFamily: false,
+        hasFocusCharacter: false,
+        hasTally: false,
+      );
+      expect(ids(s).sublist(0, 2), ['roll-oracle', 'ask-yes-no']);
+      expect(s[1].action, SuggestionAction.inline);
+    });
+
+    test('roll-tally (navigate) only when hasTally', () {
+      List<String> run(bool hasTally) => ids(suggestionsFor(
+            hasScenes: true,
+            hasOpenThreads: false,
+            encounterActive: false,
+            ironswornFamily: false,
+            hasFocusCharacter: false,
+            hasTally: hasTally,
+          ));
+      expect(run(true), contains('roll-tally'));
+      expect(run(false), isNot(contains('roll-tally')));
+      final s = suggestionsFor(
+        hasScenes: true,
+        hasOpenThreads: false,
+        encounterActive: false,
+        ironswornFamily: false,
+        hasFocusCharacter: false,
+        hasTally: true,
+      );
+      expect(s.firstWhere((e) => e.id == 'roll-tally').action,
+          SuggestionAction.navigate);
     });
   });
 

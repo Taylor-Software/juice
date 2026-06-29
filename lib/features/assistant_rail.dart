@@ -101,6 +101,8 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
         route.goTo(Destination.track, subtab: 'scenes');
       case 'advance-thread':
         route.goTo(Destination.track, subtab: 'threads');
+      case 'roll-tally':
+        route.goTo(Destination.track, subtab: 'threads');
       case 'combat-turn':
         route.goTo(Destination.track, subtab: 'encounter');
       case 'make-move':

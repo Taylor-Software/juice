@@ -492,7 +492,13 @@ Working rules for this repo:
   journal/threads/encounter/rulesets, loading→empty). Inline chips (roll-oracle,
   scene-event) reuse the `oracle → journalProvider.addResult` pipeline
   (`fateCheckGenResult` shared with the Fate screen; guarded on
-  `oracleProvider.valueOrNull`); navigate chips `shellRouteProvider.goTo`. "Ask
+  `oracleProvider.valueOrNull`); navigate chips `shellRouteProvider.goTo`. Two
+  **loop-aware** chips ride this same machinery (`suggestionsFor`): `ask-yes-no`
+  (inline — a direct d10 solo yes/no at even odds via `soloYesNo`, logged as a
+  `solo-loop` entry; rendered as the `dock-ask-yes-no` InlineRollDock chip) and
+  `roll-tally` (navigate → Track/Threads, gated on `hasTally` = any thread having
+  a `Tally`). No Word-Oracle chip — reachable via the dock's existing Inspire chip.
+  See `docs/superpowers/specs/2026-06-29-loop-aware-suggestions-design.md`. "Ask
   the GM" uses `InterpreterService.askGm` (third on-device LLM seam beside
   `voiceLine`/`summarize`; `buildAskGmPrompt`/`parseAskGmResponse`, tiny context =
   latest scene title only, length-capped at `kAskGmMaxFieldChars` for the
