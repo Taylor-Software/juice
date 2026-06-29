@@ -44,6 +44,7 @@ class InlineRollDock extends ConsumerWidget {
 
     final rollOracle = byId('roll-oracle');
     final sceneEvent = byId('scene-event');
+    final askYesNo = byId('ask-yes-no');
 
     Widget chip({
       required Key key,
@@ -89,6 +90,15 @@ class InlineRollDock extends ConsumerWidget {
                 bg: tk.selected,
                 fg: tk.terracottaDeep,
                 onTap: () => _roll(ref, sceneEvent),
+              ),
+            // Ask yes/no — direct one-tap d10 solo oracle (even odds).
+            if (askYesNo != null)
+              chip(
+                key: const Key('dock-ask-yes-no'),
+                label: '? Yes/No',
+                bg: tk.selected,
+                fg: tk.terracottaDeep,
+                onTap: () => _roll(ref, askYesNo),
               ),
             // Inspire — always present; reuses the composer-inspire generator
             // sheet (no roll, no journal write here).
