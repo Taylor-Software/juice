@@ -4530,3 +4530,69 @@ class Track {
         note: (j['note'] as String?) ?? '',
       );
 }
+
+// -- Ironsworn-family foe entries (from ruleset npc_collections) --------------
+
+/// Rank label by 1-based index (Ironsworn 1=Troublesome … 5=Epic).
+const kRankNames = ['', 'Troublesome', 'Dangerous', 'Formidable', 'Extreme', 'Epic'];
+
+class FoeEntry {
+  const FoeEntry({
+    required this.id,
+    required this.name,
+    required this.rank,
+    required this.nature,
+    required this.features,
+    required this.drives,
+    required this.tactics,
+  });
+  final String id;
+  final String name;
+  final int rank;
+  final String nature;
+  final List<String> features;
+  final List<String> drives;
+  final List<String> tactics;
+
+  static FoeEntry? fromJson(dynamic j) {
+    if (j is! Map) return null;
+    final id = j['id'] as String?;
+    final name = j['name'] as String?;
+    if (id == null || name == null) return null;
+    return FoeEntry(
+      id: id,
+      name: name,
+      rank: (j['rank'] as num?)?.toInt() ?? 1,
+      nature: j['nature'] as String? ?? '',
+      features: (j['features'] as List?)?.cast<String>() ?? const [],
+      drives: (j['drives'] as List?)?.cast<String>() ?? const [],
+      tactics: (j['tactics'] as List?)?.cast<String>() ?? const [],
+    );
+  }
+}
+
+class FoeCollection {
+  const FoeCollection({
+    required this.name,
+    required this.ruleset,
+    required this.entries,
+  });
+  final String name;
+  final String ruleset;
+  final List<FoeEntry> entries;
+
+  static FoeCollection? fromJson(dynamic j) {
+    if (j is! Map) return null;
+    final name = j['name'] as String?;
+    if (name == null) return null;
+    return FoeCollection(
+      name: name,
+      ruleset: j['ruleset'] as String? ?? '',
+      entries: (j['entries'] as List?)
+              ?.map(FoeEntry.fromJson)
+              .whereType<FoeEntry>()
+              .toList() ??
+          const [],
+    );
+  }
+}

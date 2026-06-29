@@ -1780,6 +1780,34 @@ final rulesetDataProvider =
   return jsonDecode(raw) as Map<String, dynamic>;
 });
 
+/// Foe collections from all enabled Ironsworn-family rulesets.
+/// Empty when no ironsworn-family system is active or none have NPC data.
+const _kIronswornRulesets = [
+  'classic',
+  'starforged',
+  'delve',
+  'sundered_isles'
+];
+
+final foesProvider = FutureProvider<List<FoeCollection>>((ref) async {
+  final systems =
+      ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+          kAllSystems;
+  final enabled = _kIronswornRulesets.where(systems.contains).toList();
+  final results = <FoeCollection>[];
+  for (final id in enabled) {
+    final data = await ref.watch(rulesetDataProvider(id).future);
+    final colls = (data['npc_collections'] as List?)
+            ?.map(FoeCollection.fromJson)
+            .whereType<FoeCollection>()
+            .where((c) => c.entries.isNotEmpty)
+            .toList() ??
+        const <FoeCollection>[];
+    results.addAll(colls);
+  }
+  return results;
+});
+
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.
 final emulatorDataProvider =
     FutureProvider<EmulatorData>((ref) => EmulatorData.load());

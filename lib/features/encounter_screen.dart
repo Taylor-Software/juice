@@ -291,6 +291,7 @@ class EncounterScreen extends ConsumerWidget {
   }
 
   Widget _addButtons(BuildContext context, WidgetRef ref) {
+    final foes = ref.watch(foesProvider).valueOrNull ?? const <FoeCollection>[];
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -335,6 +336,18 @@ class EncounterScreen extends ConsumerWidget {
               ),
             ),
           ]),
+          if (foes.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const Key('add-foes'),
+                icon: const Icon(Icons.book_outlined),
+                label: const Text('Ruleset foes'),
+                onPressed: () => _addFromFoes(context, ref, foes),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -604,6 +617,29 @@ class EncounterScreen extends ConsumerWidget {
     if (result == null) return;
     await ref.read(encounterProvider.notifier).updateCombatant(
         c.copyWith(initiative: result.initiative, initMod: result.mod));
+  }
+
+  Future<void> _addFromFoes(BuildContext context, WidgetRef ref,
+      List<FoeCollection> collections) async {
+    final entry = await showDialog<FoeEntry>(
+      context: context,
+      builder: (_) => _FoePickerDialog(collections: collections),
+    );
+    if (entry == null) return;
+    final hp = entry.rank * 10;
+    final noteParts = [
+      if (entry.tactics.isNotEmpty) 'Tactics: ${entry.tactics.join(', ')}',
+      if (entry.features.isNotEmpty) 'Features: ${entry.features.join(', ')}',
+    ];
+    await ref.read(encounterProvider.notifier).addCombatant(Combatant(
+          id: _newId(),
+          name: entry.name,
+          initiative: 0,
+          track: CharTrack(label: 'HP', current: hp, max: hp),
+          statBlock: noteParts.isNotEmpty
+              ? StatBlock(notes: noteParts.join('\n'))
+              : null,
+        ));
   }
 }
 
@@ -875,7 +911,76 @@ class _InitDialogState extends State<_InitDialog> {
   }
 }
 
-/// Picks a saved creature to add to the encounter (or delete from the library).
+/// Pops the chosen [FoeEntry], or null on cancel.
+/// Groups entries by collection with section headers.
+class _FoePickerDialog extends StatelessWidget {
+  const _FoePickerDialog({required this.collections});
+  final List<FoeCollection> collections;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _buildItems();
+    return AlertDialog(
+      title: const Text('Add foe'),
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      content: SizedBox(
+        width: 320,
+        child: ListView.builder(
+          shrinkWrap: true,
+          itemCount: items.length,
+          itemBuilder: (ctx, i) {
+            final item = items[i];
+            if (item is String) {
+              return ListTile(
+                dense: true,
+                title: Text(
+                  item,
+                  style: Theme.of(ctx).textTheme.labelSmall!.copyWith(
+                        color: Theme.of(ctx).colorScheme.primary,
+                      ),
+                ),
+              );
+            }
+            final entry = item as FoeEntry;
+            final rankLabel = kRankNames[entry.rank.clamp(1, 5)];
+            return ListTile(
+              key: Key('foe-pick-${entry.id}'),
+              dense: true,
+              title: Text(entry.name),
+              subtitle: Text(entry.nature.isNotEmpty
+                  ? '$rankLabel · ${entry.nature}'
+                  : rankLabel),
+              onTap: () => Navigator.pop(context, entry),
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+
+  List<Object> _buildItems() {
+    final items = <Object>[];
+    String? lastSection;
+    for (final col in collections) {
+      final section = col.ruleset.isNotEmpty
+          ? '${col.ruleset} › ${col.name}'
+          : col.name;
+      if (section != lastSection) {
+        items.add(section);
+        lastSection = section;
+      }
+      items.addAll(col.entries);
+    }
+    return items;
+  }
+}
+
 /// Pops the chosen [Creature], or null on cancel.
 class _BestiaryPickerDialog extends ConsumerWidget {
   const _BestiaryPickerDialog();
