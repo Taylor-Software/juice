@@ -7,6 +7,7 @@ import '../state/providers.dart';
 import 'fate_screen.dart';
 import 'tables_screen.dart';
 import 'lonelog_reference_screen.dart';
+import 'reference_view.dart';
 
 class OraclesTab extends ConsumerWidget {
   const OraclesTab({super.key, required this.oracle, this.systems = const {}});
@@ -25,11 +26,13 @@ class OraclesTab extends ConsumerWidget {
     final tabs = <SubtabDef>[
       const SubtabDef('oracle', 'Oracle'),
       const SubtabDef('tables', 'Tables'),
+      const SubtabDef('reference', 'Reference'),
       if (lonelog) const SubtabDef('lonelog', 'Lonelog'),
     ];
     final children = <Widget>[
       FateScreen(oracle: oracle, initialSection: FateSection.fateCheck),
       TablesScreen(oracle: oracle),
+      const ReferenceView(),
       if (lonelog) const LonelogReferenceScreen(),
     ];
     // D&D / Shadowdark lean on dice tables, not the yes/no oracle — open Ask
