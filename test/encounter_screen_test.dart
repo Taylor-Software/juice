@@ -384,7 +384,12 @@ void main() {
               ]
             },
         ]));
-    await tester.tap(find.byKey(const Key('enc-save-bestiary-g')));
+    // Open the stat block dialog, then tap "Save to bestiary" from within it.
+    await tester.tap(find.byKey(const Key('enc-statblock-g')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('statblock-save-bestiary')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('statblock-save-bestiary')));
     await tester.pumpAndSettle();
     final saved = await c.read(bestiaryProvider.future);
     expect(saved.single.name, 'Goblin');

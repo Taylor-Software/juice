@@ -269,13 +269,6 @@ class EncounterScreen extends ConsumerWidget {
               tooltip: 'Stat block',
               onPressed: () => _editStatBlock(context, ref, c),
             ),
-            if (c.statBlock != null && !c.statBlock!.isEmpty)
-              IconButton(
-                key: Key('enc-save-bestiary-${c.id}'),
-                icon: const Icon(Icons.bookmark_add_outlined),
-                tooltip: 'Save to bestiary',
-                onPressed: () => _saveToBestiary(context, ref, c),
-              ),
             IconButton(
               key: Key('enc-defeat-$i'),
               icon: Icon(c.defeated
@@ -300,43 +293,48 @@ class EncounterScreen extends ConsumerWidget {
   Widget _addButtons(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              key: const Key('add-character'),
-              icon: const Icon(Icons.person_add_alt),
-              label: const Text('From characters'),
-              onPressed: () => _addFromCharacters(context, ref),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('add-character'),
+                icon: const Icon(Icons.person_add_alt),
+                label: const Text('From characters'),
+                onPressed: () => _addFromCharacters(context, ref),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              key: const Key('add-adhoc'),
-              icon: const Icon(Icons.add),
-              label: const Text('Ad-hoc'),
-              onPressed: () => _addAdHoc(context, ref),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('add-adhoc'),
+                icon: const Icon(Icons.add),
+                label: const Text('Ad-hoc'),
+                onPressed: () => _addAdHoc(context, ref),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              key: const Key('generate-monster'),
-              icon: const Icon(Icons.auto_awesome),
-              label: const Text('Generate'),
-              onPressed: () => _generateMonster(context, ref),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('generate-monster'),
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Generate'),
+                onPressed: () => _generateMonster(context, ref),
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: OutlinedButton.icon(
-              key: const Key('add-bestiary'),
-              icon: const Icon(Icons.pets_outlined),
-              label: const Text('Bestiary'),
-              onPressed: () => _addFromBestiary(context, ref),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('add-bestiary'),
+                icon: const Icon(Icons.pets_outlined),
+                label: const Text('Bestiary'),
+                onPressed: () => _addFromBestiary(context, ref),
+              ),
             ),
-          ),
+          ]),
         ],
       ),
     );
@@ -569,7 +567,10 @@ class EncounterScreen extends ConsumerWidget {
       BuildContext context, WidgetRef ref, Combatant c) async {
     final result = await showDialog<StatBlock>(
       context: context,
-      builder: (_) => _StatBlockDialog(initial: c.statBlock),
+      builder: (_) => _StatBlockDialog(
+        initial: c.statBlock,
+        onSaveTobestiary: (sb) => _saveToBestiary(context, ref, c, sb),
+      ),
     );
     if (result == null) return; // dialog cancelled
     final notifier = ref.read(encounterProvider.notifier);
@@ -581,9 +582,7 @@ class EncounterScreen extends ConsumerWidget {
   }
 
   Future<void> _saveToBestiary(
-      BuildContext context, WidgetRef ref, Combatant c) async {
-    final sb = c.statBlock;
-    if (sb == null || sb.isEmpty) return;
+      BuildContext context, WidgetRef ref, Combatant c, StatBlock sb) async {
     await ref.read(bestiaryProvider.notifier).add(Creature(
           id: _newId(),
           name: c.name,
@@ -662,8 +661,11 @@ class _EndEncounterDialogState extends State<_EndEncounterDialog> {
 }
 
 class _StatBlockDialog extends StatefulWidget {
-  const _StatBlockDialog({this.initial});
+  const _StatBlockDialog({this.initial, this.onSaveTobestiary});
   final StatBlock? initial;
+  /// Called with the current block when the user taps "Save to bestiary".
+  /// Null = no save button shown (e.g. called outside an encounter context).
+  final void Function(StatBlock)? onSaveTobestiary;
   @override
   State<_StatBlockDialog> createState() => _StatBlockDialogState();
 }
@@ -781,6 +783,22 @@ class _StatBlockDialogState extends State<_StatBlockDialog> {
             decoration: const InputDecoration(labelText: 'Notes'),
             maxLines: 3,
           ),
+          if (widget.onSaveTobestiary != null) ...[
+            const SizedBox(height: 8),
+            const Divider(),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                key: const Key('statblock-save-bestiary'),
+                icon: const Icon(Icons.bookmark_add_outlined),
+                label: const Text('Save to bestiary'),
+                onPressed: () {
+                  final sb = _build();
+                  if (!sb.isEmpty) widget.onSaveTobestiary!(sb);
+                },
+              ),
+            ),
+          ],
         ]),
       ),
       actions: [
