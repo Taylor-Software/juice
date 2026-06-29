@@ -110,10 +110,18 @@ void main() {
   });
 
   group('Table data integrity', () {
-    test('every d10 table has 10 entries; intensity has 6', () {
+    test('every d10 table has 10 entries; intensity has 6; word d66 have 36',
+        () {
       expect(data.intensity.length, 6);
+      // The Word Oracle columns are d66 (36 rows), not d10.
+      const d66 = {'word_action', 'word_descriptor', 'word_subject'};
       for (final key in data.allTableKeys) {
-        expect(data.table(key).length, 10, reason: '$key should have 10 rows');
+        if (d66.contains(key)) {
+          expect(data.table(key).length, 36, reason: '$key should have 36 rows');
+        } else {
+          expect(data.table(key).length, 10,
+              reason: '$key should have 10 rows');
+        }
       }
     });
 
