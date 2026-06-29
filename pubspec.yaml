@@ -54,6 +54,8 @@ flutter:
     - assets/ruleset_sundered_isles.json
     - assets/foes_cairn.json
     - assets/foes_ose.json
+    - assets/spells_dnd.json
+    - assets/foes_dnd.json
     - assets/abstract_icons/
     - assets/tarot/
     - assets/playing/
