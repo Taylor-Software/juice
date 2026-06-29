@@ -472,8 +472,15 @@ Working rules for this repo:
   superseded the prior strictly-facts-only rule (which had dropped the D&D spell
   picker). Shadowdark + Kal-Arath stay hard-blocked (no app license) and ship no
   content. New systems = drop a `foes_$sys.json`/`spells_$sys.json` + register +
-  add an attribution line (data-only, no UI). Follow-ups: SRD 5.2, plus
-  Argosa/Knave/Nimble/Draw Steel/DCC + deeper Cairn/OSE content. See
+  add an attribution line (data-only, no UI). Content shipped: D&D 5e SRD 5.1,
+  Cairn + OSE monsters, **Argosa + Knave bestiaries & Knave spells (#212)**,
+  **OSE spell list + DCC bestiary & spells (#213)**. Deferred with cause:
+  **Nimble + Draw Steel** (2024/25 games whose stat math doesn't fit the
+  d20-shaped `StatBlock` — Draw Steel has no AC, uses stamina/characteristics —
+  and can't be authored accurately without the books); **SRD 5.2** (not
+  content-only — needs edition-load wiring + a campaign edition preference +
+  a reference edition filter, so it's its own feature/spec); deeper Cairn spells
+  (Cairn has no traditional spell system — spells are relics/freeform). See
   `docs/superpowers/specs/2026-06-29-content-library-spells-monsters-design.md`
   and the plan `docs/superpowers/plans/2026-06-29-content-library-spells-monsters.md`.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
