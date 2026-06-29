@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/content_registry.dart';
 import '../engine/models.dart';
 import '../shared/help_nav.dart';
 import '../state/interpreter.dart';
@@ -93,6 +94,31 @@ class _SettingsSheet extends ConsumerWidget {
               icon: const Icon(Icons.pets_outlined),
               label: const Text('Manage bestiary'),
               onPressed: () => showBestiarySheet(context),
+            ),
+            const SizedBox(height: 16),
+            Text('Content', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            ListTile(
+              key: const Key('settings-sources'),
+              leading: const Icon(Icons.menu_book_outlined),
+              title: const Text('Sources & licenses'),
+              subtitle: const Text('Attribution for bundled game content'),
+              contentPadding: EdgeInsets.zero,
+              onTap: () => showDialog<void>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Sources & licenses'),
+                  content: SingleChildScrollView(
+                    child: Text(kContentAttributions.values.join('\n\n')),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

@@ -38,6 +38,8 @@ import 'generate_sheet.dart';
 import 'inline_roll_dock.dart';
 import 'journal_entry_tile.dart';
 import 'oracle_interpretation_sheet.dart';
+import 'reference_view.dart';
+import '../engine/content_registry.dart';
 import 'sketch_editor.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
@@ -106,6 +108,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinRoll = 'roll';
   static const _builtinInspire = 'inspire';
   static const _builtinThread = 'thread';
+  static const _builtinLookup = 'lookup';
+  static const _builtinSpell = 'spell';
+  static const _builtinMonster = 'monster';
 
   @override
   void initState() {
@@ -400,6 +405,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Tracking "$title"')));
     }
+  }
+
+  void _openReference(String query, ContentType type) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => Scaffold(
+        appBar: AppBar(title: const Text('Reference')),
+        body: ReferenceView(initialQuery: query, initialType: type),
+      ),
+    ));
   }
 
   /// One-shot contextual nudge to turn on the on-device AI: shown only while AI
@@ -1247,6 +1261,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showRoll = _builtinRoll.startsWith(tok);
     final showInspire = _builtinInspire.startsWith(tok);
     final showThread = _builtinThread.startsWith(tok);
+    final showLookup = _builtinLookup.startsWith(tok);
+    final showSpell = _builtinSpell.startsWith(tok);
+    final showMonster = _builtinMonster.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     final tk = context.juice;
@@ -1388,6 +1405,39 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   _drawSpreadCmd('');
                 },
               ),
+            if (showLookup)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-lookup'),
+                icon: Icons.menu_book_outlined,
+                command: '/lookup',
+                description: 'Look up any spell or monster',
+                onTap: () {
+                  _composer.clear();
+                  _openReference('', ContentType.all);
+                },
+              ),
+            if (showSpell)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-spell'),
+                icon: Icons.auto_fix_high_outlined,
+                command: '/spell',
+                description: 'Look up a spell',
+                onTap: () {
+                  _composer.clear();
+                  _openReference('', ContentType.spells);
+                },
+              ),
+            if (showMonster)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-monster'),
+                icon: Icons.pest_control_outlined,
+                command: '/monster',
+                description: 'Look up a monster',
+                onTap: () {
+                  _composer.clear();
+                  _openReference('', ContentType.monsters);
+                },
+              ),
             if (matches.isEmpty &&
                 !showScene &&
                 !showHelp &&
@@ -1398,7 +1448,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 !showSpread &&
                 !showRoll &&
                 !showInspire &&
-                !showThread)
+                !showThread &&
+                !showLookup &&
+                !showSpell &&
+                !showMonster)
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text('No matching command',
@@ -1818,6 +1871,21 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinThread == tok) {
         _composer.clear();
         await _threadCmd(parsed.rest);
+        return;
+      }
+      if (_builtinLookup == tok) {
+        _composer.clear();
+        _openReference(parsed.rest.trim(), ContentType.all);
+        return;
+      }
+      if (_builtinSpell == tok) {
+        _composer.clear();
+        _openReference(parsed.rest.trim(), ContentType.spells);
+        return;
+      }
+      if (_builtinMonster == tok) {
+        _composer.clear();
+        _openReference(parsed.rest.trim(), ContentType.monsters);
         return;
       }
       final systems =

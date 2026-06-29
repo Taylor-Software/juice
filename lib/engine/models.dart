@@ -1139,6 +1139,7 @@ class DndSheet {
     this.spellSlotsUsed = const [0, 0, 0, 0, 0, 0, 0, 0, 0],
     this.pactSlotsUsed = 0,
     this.preparedSpells = '',
+    this.spellIds = const [],
   });
 
   final Map<String, int> abilities; // keys = kDndAbilities, each 1..30
@@ -1156,6 +1157,7 @@ class DndSheet {
   final List<int> spellSlotsUsed; // length 9, expended per spell level
   final int pactSlotsUsed; // Warlock Pact Magic
   final String preparedSpells; // freeform
+  final List<String> spellIds; // structured spell picks (content registry ids)
 
   int score(String a) => abilities[a] ?? 10;
   int abilityMod(String a) => ((score(a) - 10) / 2).floor();
@@ -1258,6 +1260,7 @@ class DndSheet {
     List<int>? spellSlotsUsed,
     int? pactSlotsUsed,
     String? preparedSpells,
+    List<String>? spellIds,
   }) {
     final lvl = (level ?? this.level).clamp(1, 20);
     final ab = abilities ?? this.abilities;
@@ -1303,6 +1306,7 @@ class DndSheet {
       spellSlotsUsed: _normSlots(spellSlotsUsed ?? this.spellSlotsUsed),
       pactSlotsUsed: (pactSlotsUsed ?? this.pactSlotsUsed).clamp(0, 1 << 20),
       preparedSpells: preparedSpells ?? this.preparedSpells,
+      spellIds: spellIds ?? this.spellIds,
     );
   }
 
@@ -1337,6 +1341,7 @@ class DndSheet {
         if (spellSlotsUsed.any((x) => x != 0)) 'spellSlotsUsed': spellSlotsUsed,
         if (pactSlotsUsed != 0) 'pactSlotsUsed': pactSlotsUsed,
         if (preparedSpells.isNotEmpty) 'preparedSpells': preparedSpells,
+        if (spellIds.isNotEmpty) 'spellIds': spellIds,
       };
 
   static DndSheet? maybeFromJson(dynamic j) {
@@ -1384,6 +1389,7 @@ class DndSheet {
           : const []),
       pactSlotsUsed: _intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
       preparedSpells: _strOr(j['preparedSpells']),
+      spellIds: ((j['spellIds'] as List?) ?? const []).cast<String>(),
     );
   }
 }
@@ -2772,6 +2778,22 @@ class Attack {
       : const Attack(name: '');
 }
 
+/// One named trait/action on a stat block (D&D traits, actions, legendary acts).
+class StatTrait {
+  const StatTrait({required this.name, this.text = ''});
+  final String name;
+  final String text;
+
+  Map<String, dynamic> toJson() =>
+      {'name': name, if (text.isNotEmpty) 'text': text};
+
+  factory StatTrait.fromJson(dynamic j) => j is Map
+      ? StatTrait(
+          name: (j['name'] as String?) ?? '',
+          text: (j['text'] as String?) ?? '')
+      : const StatTrait(name: '');
+}
+
 /// A combatant's user-authored stat block. Facts-only; the GM types everything.
 /// HP is NOT here — it lives on the combatant's track / linked character.
 class StatBlock {
@@ -2781,17 +2803,32 @@ class StatBlock {
     this.saves = '',
     this.speed = '',
     this.notes = '',
+    this.cr,
+    this.creatureType,
+    this.size,
+    this.abilities,
+    this.traits,
   });
   final int ac;
   final List<Attack> attacks;
   final String saves, speed, notes;
+  final String? cr;
+  final String? creatureType;
+  final String? size;
+  final Map<String, int>? abilities;
+  final List<StatTrait>? traits;
 
   bool get isEmpty =>
       ac == 0 &&
       attacks.isEmpty &&
       saves.isEmpty &&
       speed.isEmpty &&
-      notes.isEmpty;
+      notes.isEmpty &&
+      cr == null &&
+      creatureType == null &&
+      size == null &&
+      (abilities == null || abilities!.isEmpty) &&
+      (traits == null || traits!.isEmpty);
 
   StatBlock copyWith({
     int? ac,
@@ -2799,6 +2836,11 @@ class StatBlock {
     String? saves,
     String? speed,
     String? notes,
+    String? cr,
+    String? creatureType,
+    String? size,
+    Map<String, int>? abilities,
+    List<StatTrait>? traits,
   }) =>
       StatBlock(
         ac: ac ?? this.ac,
@@ -2806,6 +2848,11 @@ class StatBlock {
         saves: saves ?? this.saves,
         speed: speed ?? this.speed,
         notes: notes ?? this.notes,
+        cr: cr ?? this.cr,
+        creatureType: creatureType ?? this.creatureType,
+        size: size ?? this.size,
+        abilities: abilities ?? this.abilities,
+        traits: traits ?? this.traits,
       );
 
   Map<String, dynamic> toJson() => {
@@ -2815,11 +2862,19 @@ class StatBlock {
         if (saves.isNotEmpty) 'saves': saves,
         if (speed.isNotEmpty) 'speed': speed,
         if (notes.isNotEmpty) 'notes': notes,
+        if (cr != null) 'cr': cr,
+        if (creatureType != null) 'creatureType': creatureType,
+        if (size != null) 'size': size,
+        if (abilities != null && abilities!.isNotEmpty) 'abilities': abilities,
+        if (traits != null && traits!.isNotEmpty)
+          'traits': traits!.map((t) => t.toJson()).toList(),
       };
 
   /// Tolerant: non-map -> null; attack entries without a name are dropped.
   static StatBlock? maybeFromJson(dynamic j) {
     if (j is! Map) return null;
+    final abil = j['abilities'];
+    final trts = j['traits'];
     return StatBlock(
       ac: (j['ac'] as num?)?.toInt() ?? 0,
       attacks: ((j['attacks'] as List?) ?? const [])
@@ -2829,6 +2884,19 @@ class StatBlock {
       saves: (j['saves'] as String?) ?? '',
       speed: (j['speed'] as String?) ?? '',
       notes: (j['notes'] as String?) ?? '',
+      cr: j['cr'] as String?,
+      creatureType: j['creatureType'] as String?,
+      size: j['size'] as String?,
+      abilities: abil is Map
+          ? abil.map((k, v) =>
+              MapEntry(k as String, (v as num?)?.toInt() ?? 0))
+          : null,
+      traits: trts is List
+          ? trts
+              .map(StatTrait.fromJson)
+              .where((t) => t.name.isNotEmpty)
+              .toList()
+          : null,
     );
   }
 }
@@ -2842,17 +2910,26 @@ class Creature {
     required this.name,
     this.statBlock = const StatBlock(),
     this.maxHp = 0,
+    this.edition,
   });
   final String id;
   final String name;
   final StatBlock statBlock;
   final int maxHp;
+  final String? edition;
 
-  Creature copyWith({String? name, StatBlock? statBlock, int? maxHp}) => Creature(
+  Creature copyWith({
+    String? name,
+    StatBlock? statBlock,
+    int? maxHp,
+    String? edition,
+  }) =>
+      Creature(
         id: id,
         name: name ?? this.name,
         statBlock: statBlock ?? this.statBlock,
         maxHp: maxHp ?? this.maxHp,
+        edition: edition ?? this.edition,
       );
 
   Map<String, dynamic> toJson() => {
@@ -2860,6 +2937,7 @@ class Creature {
         'name': name,
         if (!statBlock.isEmpty) 'statBlock': statBlock.toJson(),
         if (maxHp > 0) 'maxHp': maxHp,
+        if (edition != null) 'edition': edition,
       };
 
   static Creature? maybeFromJson(dynamic j) {
@@ -2871,7 +2949,8 @@ class Creature {
       id: id,
       name: name,
       statBlock: StatBlock.maybeFromJson(j['statBlock']) ?? const StatBlock(),
-      maxHp: (j['maxHp'] as int?) ?? 0,
+      maxHp: (j['maxHp'] as num?)?.toInt() ?? 0,
+      edition: j['edition'] as String?,
     );
   }
 }

@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_interpreter.dart';
 import 'oracle_interpretation_sheet.dart';
+import 'reference_view.dart';
 import 'sheet_widgets.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
@@ -57,6 +58,7 @@ class RunScreen extends ConsumerWidget {
         const threads = _ThreadsRumorsPanel();
         const dice = _DiceOraclePanel();
         const capture = _CapturePanel();
+        const reference = _ReferencePanel();
         if (wide) {
           return const SingleChildScrollView(
             padding: EdgeInsets.all(12),
@@ -82,6 +84,8 @@ class RunScreen extends ConsumerWidget {
                     dice,
                     SizedBox(height: 12),
                     capture,
+                    SizedBox(height: 12),
+                    reference,
                   ]),
                 ),
               ],
@@ -104,6 +108,8 @@ class RunScreen extends ConsumerWidget {
             dice,
             SizedBox(height: 12),
             capture,
+            SizedBox(height: 12),
+            reference,
           ],
         );
       },
@@ -727,6 +733,18 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _ReferencePanel extends StatelessWidget {
+  const _ReferencePanel();
+  @override
+  Widget build(BuildContext context) {
+    return const _Panel(
+      k: Key('run-panel-reference'),
+      title: 'Reference',
+      child: SizedBox(height: 320, child: ReferenceView()),
     );
   }
 }
