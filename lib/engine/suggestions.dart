@@ -20,7 +20,6 @@ List<Suggestion> suggestionsFor({
   required bool encounterActive,
   required bool ironswornFamily,
   required bool hasFocusCharacter,
-  required bool partyMode,
 }) {
   return [
     const Suggestion('roll-oracle', 'Roll the oracle', SuggestionAction.inline),
@@ -34,16 +33,11 @@ List<Suggestion> suggestionsFor({
           'advance-thread', 'Advance a thread', SuggestionAction.navigate),
     if (encounterActive)
       const Suggestion('combat-turn', 'Take a turn', SuggestionAction.navigate),
-    // Moves live on the Sheet's party-only Moves subtab — hidden in gm mode.
-    if (ironswornFamily && hasFocusCharacter && partyMode)
+    if (ironswornFamily && hasFocusCharacter)
       const Suggestion('make-move', 'Make a move', SuggestionAction.navigate),
-    // GM-mode prep moves (mirrors the party-only make-move): the Rumors subtab
-    // is gm-only, and NPC stocking is core GM prep.
-    if (!partyMode) ...[
-      const Suggestion(
-          'develop-rumor', 'Develop a rumor', SuggestionAction.navigate),
-      const Suggestion('seed-npc', 'Add an NPC', SuggestionAction.navigate),
-    ],
+    const Suggestion(
+        'develop-rumor', 'Develop a rumor', SuggestionAction.navigate),
+    const Suggestion('seed-npc', 'Add an NPC', SuggestionAction.navigate),
   ];
 }
 

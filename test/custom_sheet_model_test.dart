@@ -330,7 +330,7 @@ void main() {
   });
 
   test('custom lights up a Sheet surface', () {
-    final sheet = surfacesFor(CampaignMode.party, {'custom'})
+    final sheet = surfacesFor({'custom'})
         .firstWhere((v) => v.verb == 'Sheet');
     expect(sheet.rows.any((r) => r.on && r.requiresSystem == 'custom'), isTrue);
   });

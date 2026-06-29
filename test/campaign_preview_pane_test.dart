@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/campaign_preview_pane.dart';
 
 void main() {
@@ -14,7 +13,6 @@ void main() {
       home: Scaffold(
         body: SingleChildScrollView(
           child: CampaignPreviewPane(
-            mode: CampaignMode.party,
             systems: {'cairn', 'juice', 'party'},
           ),
         ),
@@ -36,7 +34,6 @@ void main() {
       home: Scaffold(
         body: SingleChildScrollView(
           child: CampaignPreviewPane(
-            mode: CampaignMode.party,
             systems: {},
           ),
         ),

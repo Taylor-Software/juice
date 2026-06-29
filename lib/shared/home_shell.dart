@@ -541,7 +541,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             icon: const Icon(Icons.search),
             tooltip: 'Find tools & rolls',
             onPressed: () => showToolSearchSheet(context,
-                buildToolRegistry(family: family, systems: systems, mode: mode),
+                buildToolRegistry(family: family, systems: systems),
                 oracle: widget.oracle),
           ),
           IconButton(
@@ -924,7 +924,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
             const Divider(),
             Builder(builder: (_) {
               final (mode, systems) = _resolved();
-              return CampaignPreviewPane(mode: mode, systems: systems);
+              return CampaignPreviewPane(systems: systems);
             }),
           ]),
         ),

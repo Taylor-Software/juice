@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
-import '../engine/role_tags.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
-import '../state/providers.dart';
 import 'battle_pane.dart';
 import 'behavior_tables_screen.dart';
 import 'encounter_screen.dart';
@@ -26,11 +24,8 @@ class TrackingTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lonelog = systems.contains('lonelog');
     final party = systems.contains('party');
-    final mode = ref.watch(modeProvider);
-    final rumors = visibleForMode('rumors', mode);
-    final partyTools = party &&
-        visibleForMode('emulator',
-            mode); // emulator/sidekick/behavior share the party role
+    const rumors = true;
+    final partyTools = party;
     return SubtabHost(
       destination: Destination.track,
       scrollable: true,

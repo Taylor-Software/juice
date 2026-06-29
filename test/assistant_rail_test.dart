@@ -121,11 +121,13 @@ void main() {
     expect(route.subtab, 'rumors');
   });
 
-  testWidgets('party-mode rail omits the gm-only suggestions', (tester) async {
+  testWidgets('party-mode rail shows develop-rumor and seed-npc (always on)',
+      (tester) async {
     await pumpRail(tester); // default session → party mode
     await expandRail(tester);
-    expect(find.text('Develop a rumor'), findsNothing);
-    expect(find.text('Add an NPC'), findsNothing);
+    // develop-rumor and seed-npc are now always present (no mode gate).
+    expect(find.text('Develop a rumor'), findsOneWidget);
+    expect(find.text('Add an NPC'), findsOneWidget);
   });
 
   testWidgets('ask-the-GM box opens the multi-turn GM chat', (tester) async {

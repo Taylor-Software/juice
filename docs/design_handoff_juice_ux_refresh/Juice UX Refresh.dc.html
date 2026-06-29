@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;font-family:'Hanken Grotesk',system-ui,sans-serif;color:#2B2018;-webkit-font-smoothing:antialiased;}
+  *{box-sizing:border-box;}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+  @keyframes sheen{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+</helmet>
+
+<div style="position:absolute;left:0px;top:0px;width:1240px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Juice · Solo Adventurer's Journal — UX Refresh</div>
+  <div style="background:#FBF1EB;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);overflow:hidden;border:1px solid #EFE0D6">
+    <div style="padding:44px 48px 38px;background:linear-gradient(135deg,#F7E3D7 0%,#FBF1EB 60%)">
+      <div style="font:600 13px 'Hanken Grotesk';color:#B0613A;letter-spacing:.18em;text-transform:uppercase">A redesign exploration</div>
+      <div style="font:500 52px/1.02 'Newsreader',serif;letter-spacing:-.02em;margin:14px 0 0;max-width:760px">Keep the player <span style="font-style:italic;color:#9A4A22">inside the story.</span></div>
+      <p style="font-size:16px;line-height:1.6;color:#6B5849;max-width:620px;margin:18px 0 0">The tools are all here — five verbs, dozens of oracles. But the solo loop (set scene → roll → interpret → record → advance) is scattered across them. This canvas proposes a faster, calmer, more guided experience: fewer trips, clearer state, one-tap everything — and a warmer, more literary skin.</p>
+    </div>
+    <div style="display:flex;gap:0;border-top:1px solid #EFE0D6">
+      <div style="flex:1.3;padding:30px 36px 34px;border-right:1px solid #EFE0D6">
+        <div style="font:700 12px;letter-spacing:.12em;text-transform:uppercase;color:#9A8576;margin-bottom:18px">Five principles</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;gap:14px;align-items:flex-start"><div style="font:500 22px 'Newsreader',serif;color:#C98A5E;flex:none;width:24px">01</div><div><div style="font-weight:700;font-size:15px">Stay in the journal</div><div style="font-size:13.5px;color:#6B5849;line-height:1.5">Roll, interpret and record without ever leaving the story surface.</div></div></div>
+          <div style="display:flex;gap:14px;align-items:flex-start"><div style="font:500 22px 'Newsreader',serif;color:#C98A5E;flex:none;width:24px">02</div><div><div style="font-weight:700;font-size:15px">Always answer "where am I?"</div><div style="font-size:13.5px;color:#6B5849;line-height:1.5">Scene, chaos, threads and progress summarized at a glance.</div></div></div>
+          <div style="display:flex;gap:14px;align-items:flex-start"><div style="font:500 22px 'Newsreader',serif;color:#C98A5E;flex:none;width:24px">03</div><div><div style="font-weight:700;font-size:15px">Speed over depth</div><div style="font-size:13.5px;color:#6B5849;line-height:1.5">Quick actions, a command palette, one-tap rolls and shortcuts.</div></div></div>
+          <div style="display:flex;gap:14px;align-items:flex-start"><div style="font:500 22px 'Newsreader',serif;color:#C98A5E;flex:none;width:24px">04</div><div><div style="font-weight:700;font-size:15px">Earn every pixel</div><div style="font-size:13.5px;color:#6B5849;line-height:1.5">Cut HUD noise; raise the signal of the entries that carry decisions.</div></div></div>
+          <div style="display:flex;gap:14px;align-items:flex-start"><div style="font:500 22px 'Newsreader',serif;color:#C98A5E;flex:none;width:24px">05</div><div><div style="font-weight:700;font-size:15px">A little delight</div><div style="font-size:13.5px;color:#6B5849;line-height:1.5">Literary type, tactile paper cards, gentle motion as reward.</div></div></div>
+        </div>
+      </div>
+      <div style="flex:1;padding:30px 36px 34px">
+        <div style="font:700 12px;letter-spacing:.12em;text-transform:uppercase;color:#9A8576;margin-bottom:18px">Refreshed system</div>
+        <div style="font:500 17px 'Newsreader',serif;color:#2B2018">Aa</div>
+        <div style="font:italic 500 30px/1.1 'Newsreader',serif;margin:2px 0 2px">The oracle answers, <span style="color:#9A4A22">Yes, and…</span></div>
+        <div style="font-size:12px;color:#9A8576;margin-bottom:18px">Newsreader — narrative, scenes, oracle answers</div>
+        <div style="font:700 15px 'Hanken Grotesk'">Hanken Grotesk</div>
+        <div style="font-size:12px;color:#9A8576;margin-bottom:22px">UI labels, controls, data</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#9A4A22;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Terracotta</div></div>
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#F6E2D7;box-shadow:inset 0 0 0 1px #E7CFC0"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Sand</div></div>
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#FBE9E0;box-shadow:inset 0 0 0 1px #EAD3C6"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Card</div></div>
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#5B7A52"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Sage</div></div>
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#B5762A"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Chaos</div></div>
+          <div style="text-align:center"><div style="width:46px;height:46px;border-radius:12px;background:#2B2018"></div><div style="font-size:10px;color:#9A8576;margin-top:5px">Ink</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:0px;top:660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Flow · Session Resume ritual</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:22px 22px 6px;background:linear-gradient(180deg,#F6E2D7,#FBF1EB)">
+        <div style="font:600 12px;letter-spacing:.16em;text-transform:uppercase;color:#B0613A">Welcome back</div>
+        <div style="font:italic 500 30px/1.1 'Newsreader',serif;margin-top:6px">The Ancient Tower</div>
+        <div style="font-size:13px;color:#7C6555;margin-top:4px">Campaign 1 · last played 2 days ago</div>
+      </div>
+      <div style="padding:16px 22px 0;display:flex;gap:10px">
+        <div style="flex:1;background:#FBE9E0;border-radius:14px;padding:12px 14px"><div style="font-size:11px;color:#9A8576">Scene</div><div style="font-weight:700;font-size:15px;margin-top:2px">Scene 3</div></div>
+        <div style="flex:1;background:#FBE9E0;border-radius:14px;padding:12px 14px"><div style="font-size:11px;color:#9A8576">Chaos</div><div style="font-weight:700;font-size:15px;margin-top:2px;color:#B5762A">5</div></div>
+        <div style="flex:1;background:#FBE9E0;border-radius:14px;padding:12px 14px"><div style="font-size:11px;color:#9A8576">Light</div><div style="font-weight:700;font-size:15px;margin-top:2px">out</div></div>
+      </div>
+      <div style="padding:18px 22px 4px"><div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">Open threads</div></div>
+      <div style="padding:0 22px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:12px;padding:10px 12px"><div style="width:8px;height:8px;border-radius:50%;background:#9A4A22"></div><div style="font-size:13.5px;font-weight:600;flex:1">Find the Tower's Secret</div><div style="font-size:11px;color:#9A8576">3/10</div></div>
+        <div style="display:flex;align-items:center;gap:10px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:12px;padding:10px 12px"><div style="width:8px;height:8px;border-radius:50%;background:#C98A5E"></div><div style="font-size:13.5px;font-weight:600;flex:1">The Missing Caravan</div><div style="font-size:11px;color:#9A8576">1/10</div></div>
+      </div>
+      <div style="padding:16px 22px 6px"><div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">Last entry</div>
+        <div style="font:italic 400 14.5px/1.5 'Newsreader',serif;color:#5A4A40;margin-top:6px">"…I draw my sword and step through the broken gate."</div>
+      </div>
+      <div style="padding:14px 22px 22px">
+        <div style="background:#9A4A22;color:#fff;border-radius:16px;padding:15px;text-align:center;font-weight:700;font-size:15px;box-shadow:0 6px 16px rgba(154,74,34,.32)">Continue the story →</div>
+        <div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;text-align:center;border:1px solid #E0C7B7;border-radius:14px;padding:11px;font-size:13px;font-weight:600;color:#9A4A22">Recap so far</div><div style="flex:1;text-align:center;border:1px solid #E0C7B7;border-radius:14px;padding:11px;font-size:13px;font-weight:600;color:#9A4A22">New scene</div></div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">A real "you left off here"</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">Today, <b>Continue</b> just reopens the last verb — players rebuild context from the HUD, journal scroll and Threads list. This resume card answers it in one screen and offers the three things you actually do next.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">No session-start orientation (Finding A2, D7)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Scene + chaos + threads + last line, then a single Continue CTA</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Cuts the "where was I?" tax every session</li><li>Recap uses AI when available; static otherwise</li><li>Turns launch from a menu into a momentum hand-off</li></ul>
+    </div>
+  </div>
+</div>
+
+
+<div style="position:absolute;left:880px;top:660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Flow · Inline Oracle Dock</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:12px 20px 10px;background:#F6E2D7;display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font:italic 500 17px 'Newsreader',serif">The Ancient Tower</div><div style="font-size:11px;color:#8A7466">Chaos 5 · Light: out</div></div>
+        <div style="display:flex;gap:8px"><div style="width:30px;height:30px;border-radius:9px;background:#FBE9E0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#9A4A22">⚲</div></div>
+      </div>
+      <div style="padding:16px 18px 6px;min-height:236px">
+        <div style="font:italic 400 14.5px/1.55 'Newsreader',serif;color:#3A2E26;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:12px;padding:12px 14px">The ancient tower looms ahead. I draw my sword and step through the broken gate.</div>
+        <div style="margin-top:10px;background:#FBE9E0;border-radius:14px;padding:13px 14px;border-left:3px solid #9A4A22">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font:700 11px;letter-spacing:.06em;text-transform:uppercase;color:#9A4A22">Fate Check · Normal</div><div style="font-size:10px;color:#9A8576">just now</div></div>
+          <div style="font:500 22px 'Newsreader',serif;margin-top:4px">No, but… <span style="color:#9A8576;font-size:14px">(major)</span></div>
+          <div style="display:flex;gap:8px;margin-top:10px"><div style="font-size:11.5px;font-weight:600;color:#9A4A22;background:#FBF1EB;border-radius:9px;padding:5px 10px">✦ Interpret</div><div style="font-size:11.5px;font-weight:600;color:#9A4A22;background:#FBF1EB;border-radius:9px;padding:5px 10px">Voice line</div></div>
+        </div>
+      </div>
+      <div style="padding:8px 14px 0">
+        <div style="display:flex;gap:7px;overflow:hidden;padding-bottom:8px">
+          <div style="flex:none;background:#9A4A22;color:#fff;border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:700">⚀ Roll oracle</div>
+          <div style="flex:none;background:#F3D7C6;color:#9A4A22;border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:600">Scene test</div>
+          <div style="flex:none;background:#F3D7C6;color:#9A4A22;border-radius:12px;padding:8px 13px;font-size:12.5px;font-weight:600">Pay the price</div>
+          <div style="flex:none;background:#F3D7C6;color:#9A4A22;border-radius:12px;padding:8px 12px;font-size:12.5px;font-weight:600">✦ Inspire</div>
+        </div>
+      </div>
+      <div style="padding:4px 14px 14px;display:flex;gap:8px;align-items:center">
+        <div style="flex:1;background:#FFFBF9;border:1px solid #E0C7B7;border-radius:16px;padding:12px 14px;font-size:13.5px;color:#9A8576">Write in your journal…</div>
+        <div style="width:42px;height:42px;border-radius:13px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px">↑</div>
+      </div>
+      <div style="display:flex;background:#F7E7DD;border-top:1px solid #EBD8CC;padding:8px 4px 12px">
+        <div style="flex:1;text-align:center"><div style="background:#F3D2BE;border-radius:14px;margin:0 14px;padding:5px 0;font-size:11px;font-weight:700;color:#9A4A22">Journal</div></div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Sheet</div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Ask</div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Map</div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">The oracle comes to you</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">A slim <b>action dock</b> sits between the last entry and the composer. Roll a Fate Check, Scene Test or Pay-the-Price right here — the result lands inline and you keep writing. No trip to the Ask verb, no losing your place.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Oracle rolls bounce you to a different verb (A1)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Most-used rolls become inline chips; results stay in stream</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Collapses the core loop into one surface</li><li>Dock chips adapt to enabled systems + context</li><li>Inspire & Scene tools reachable without the composer popup (C5)</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:1760px;top:660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Visibility · Entry hierarchy</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:12px 20px 12px;background:#F6E2D7;font:italic 500 17px 'Newsreader',serif">Journal</div>
+      <div style="padding:18px 18px 22px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;gap:10px;justify-content:center"><div style="height:1px;background:#E3CDBE;flex:1"></div><div style="font:600 11px;letter-spacing:.08em;text-transform:uppercase;color:#B5762A;background:#FBF1EB;padding:0 6px">Scene 3 · Chaos 5</div><div style="height:1px;background:#E3CDBE;flex:1"></div></div>
+        <div style="font:italic 400 14.5px/1.6 'Newsreader',serif;color:#5A4A40;padding:0 2px">I search the antechamber for any sign of the keeper who once tended this place.</div>
+        <div style="background:linear-gradient(180deg,#FCEDE3,#FBE4D7);border-radius:18px;padding:16px 16px 14px;box-shadow:0 4px 14px rgba(154,74,34,.12);border:1px solid #F0CDB8">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:7px"><div style="width:22px;height:22px;border-radius:7px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px">⚀</div><div style="font:700 11px;letter-spacing:.05em;text-transform:uppercase;color:#9A4A22">Fate Check</div></div><div style="font-size:10px;color:#B08A74">Normal</div></div>
+          <div style="font:500 28px/1.05 'Newsreader',serif;margin-top:8px">Yes, <span style="font-style:italic;color:#9A4A22">and…</span></div>
+          <div style="font-size:12.5px;color:#7C6555;margin-top:3px">Intensity: Major (d6 = 5)</div>
+          <div style="display:flex;gap:8px;margin-top:13px;border-top:1px solid #F0CDB8;padding-top:11px"><div style="font-size:12px;font-weight:700;color:#9A4A22">✦ Interpret</div><div style="font-size:12px;font-weight:600;color:#9A4A22">Voice line</div><div style="margin-left:auto;font-size:12px;color:#B08A74">⚑ Pin</div></div>
+        </div>
+        <div style="font:italic 400 14.5px/1.6 'Newsreader',serif;color:#5A4A40;padding:0 2px">The keeper's journal still rests on the lectern, its final page torn away.</div>
+        <div style="display:flex;align-items:center;gap:9px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:12px;padding:10px 12px"><div style="width:20px;height:20px;border-radius:6px;background:#EFE0D6;display:flex;align-items:center;justify-content:center;font-size:11px;color:#9A8576">⚂</div><div style="font-size:12.5px;color:#6B5849">Dice · d20 = 18</div></div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Decisions should look like decisions</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">Oracle results are the load-bearing moments of a session, but at scroll speed they blend with prose. The refreshed result card gets weight, a warm gradient, a big <b>serif answer</b>, and an inline action row — while plain notes stay quiet and dice stay compact.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Result cards & text read alike at a glance (D3)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Three weights: prose · result hero · compact dice</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Eye anchors to the choices when skimming</li><li>Per-entry actions live on the card, not a hidden tap (B6)</li><li>Scene dividers gain chaos context inline</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:0px;top:1660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Visibility · Grouped header HUD</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="background:#F6E2D7;padding:12px 18px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:9px"><div style="width:9px;height:9px;border-radius:50%;background:#9A4A22"></div><div style="font:italic 500 19px 'Newsreader',serif">The Ancient Tower</div></div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="background:#F4D9A8;color:#8A5A18;border-radius:11px;padding:4px 10px;font-size:12px;font-weight:700">Chaos 5</div><div style="width:38px;height:38px;border-radius:13px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 5px 12px rgba(154,74,34,.3)">⚀</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:11px;font-size:12px;color:#8A6A56">
+          <div style="background:#FBE9E0;border-radius:10px;padding:5px 10px;display:flex;align-items:center;gap:6px"><span>🜂</span> Light: out <span style="color:#C99">−</span> <span style="color:#9A4A22">+</span></div>
+          <div style="background:#FBE9E0;border-radius:10px;padding:5px 10px">Oracle: Juice ▾</div>
+          <div style="margin-left:auto;font-size:14px;color:#B08A74">▾</div>
+        </div>
+      </div>
+      <div style="padding:16px 18px;opacity:.45">
+        <div style="font:italic 400 14px/1.55 'Newsreader',serif;color:#5A4A40">The hall opens onto a vaulted chamber, dust thick on every surface…</div>
+        <div style="height:1px;background:#E3CDBE;margin:16px 0"></div>
+        <div style="font:italic 400 14px/1.55 'Newsreader',serif;color:#5A4A40">A cold draft tells me another passage waits beyond the far arch.</div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Two tiers, not seven items</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 14px">On a Mythic + Verdant + Ironsworn game the HUD packs seven controls into one row. The refresh splits it: <b>narrative state</b> (scene, chaos) up top with the one button you press most; <b>roll controls</b> (light, oracle, terrain) on a quieter second line that collapses with a ▾.</p>
+      <div style="background:#F3EDE9;border:1px solid #E7D8CE;border-radius:12px;padding:11px 12px;margin-bottom:12px">
+        <div style="font:700 10px;letter-spacing:.1em;text-transform:uppercase;color:#B08A74;margin-bottom:7px">Today — one cramped row</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;font-size:10px">
+          <span style="background:#EADFD7;border-radius:6px;padding:3px 6px">scene</span><span style="background:#EADFD7;border-radius:6px;padding:3px 6px">light −/+</span><span style="background:#EADFD7;border-radius:6px;padding:3px 6px">chaos −/+</span><span style="background:#EADFD7;border-radius:6px;padding:3px 6px">oracle</span><span style="background:#EADFD7;border-radius:6px;padding:3px 6px">terrain</span><span style="background:#EADFD7;border-radius:6px;padding:3px 6px">⚀</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">HUD density, no priority order (D5)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Group by meaning; demote + collapse timers</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:880px;top:1660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Visibility · "Where am I" dashboard</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:14px 20px 12px;background:#F6E2D7"><div style="font:italic 500 19px 'Newsreader',serif">Campaign at a glance</div><div style="font-size:11px;color:#8A7466;margin-top:2px">Scene 3 · Day 4 · Chaos 5</div></div>
+      <div style="padding:16px 16px 20px;display:flex;flex-direction:column;gap:12px">
+        <div style="background:#FBE9E0;border-radius:16px;padding:14px;display:flex;justify-content:space-between;align-items:center"><div><div style="font:700 10px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">Now</div><div style="font:italic 500 17px 'Newsreader',serif;margin-top:3px">The Ancient Tower</div></div><div style="font-size:12px;font-weight:700;color:#9A4A22;background:#FBF1EB;border-radius:10px;padding:7px 11px">Open ↗</div></div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:16px;padding:13px"><div style="font:700 10px;letter-spacing:.08em;text-transform:uppercase;color:#9A8576">Threads</div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:12.5px;font-weight:600">Tower's Secret<div style="height:5px;border-radius:3px;background:#EFE0D6;margin-top:4px"><div style="width:30%;height:5px;border-radius:3px;background:#9A4A22"></div></div></div>
+              <div style="font-size:12.5px;font-weight:600">Missing Caravan<div style="height:5px;border-radius:3px;background:#EFE0D6;margin-top:4px"><div style="width:10%;height:5px;border-radius:3px;background:#C98A5E"></div></div></div>
+            </div>
+          </div>
+          <div style="flex:1;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:16px;padding:13px"><div style="font:700 10px;letter-spacing:.08em;text-transform:uppercase;color:#9A8576">Tracks</div>
+            <div style="margin-top:8px;display:flex;flex-direction:column;gap:7px">
+              <div style="font-size:12.5px;font-weight:600">Explore Tower<div style="font-size:11px;color:#9A8576">4 / 10</div></div>
+              <div style="font-size:12.5px;font-weight:600">Provisions<div style="font-size:11px;color:#9A8576">2 / 10</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="flex:1;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:16px;padding:13px"><div style="font:700 10px;letter-spacing:.08em;text-transform:uppercase;color:#9A8576">Party</div><div style="font-size:13px;font-weight:700;margin-top:6px">Kestrel</div><div style="display:flex;gap:5px;margin-top:5px"><span style="font-size:10px;background:#F6D9C9;color:#9A4A22;border-radius:6px;padding:2px 6px">♥ 4/5</span><span style="font-size:10px;background:#F6D9C9;color:#9A4A22;border-radius:6px;padding:2px 6px">↯ +2</span></div></div>
+          <div style="flex:1;background:#FFF6F0;border:1px solid #F0CDB8;border-radius:16px;padding:13px"><div style="font:700 10px;letter-spacing:.08em;text-transform:uppercase;color:#B5762A">Encounter</div><div style="font-size:13px;font-weight:700;margin-top:6px;color:#B5762A">Idle</div><div style="font-size:11px;color:#9A8576;margin-top:2px">No active combat</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">One screen to get oriented</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">Scenes, Threads, Tracks and Encounter each live on their own Track subtab. This <b>overview</b> becomes the Track home: current scene, thread progress bars, track counts, party vitals and encounter state — each card a deep link to its tool.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">No aggregated "where am I" view (D7, A6)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Summary cards that double as navigation</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Kills the tab-hopping needed to take stock</li><li>Encounter card pulls focus when combat is live</li><li>Pairs with Session Resume for a clean re-entry</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:1760px;top:1660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Visibility · Roster row at a glance</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:13px 20px 12px;background:#F6E2D7;display:flex;justify-content:space-between;align-items:center"><div style="font:italic 500 18px 'Newsreader',serif">Roster</div><div style="font-size:12px;color:#9A4A22;font-weight:700">+ Add</div></div>
+      <div style="padding:14px 16px 4px"><div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">Party</div></div>
+      <div style="padding:6px 16px 0">
+        <div style="background:linear-gradient(180deg,#FFFBF9,#FCEFE6);border:1px solid #F0CDB8;border-radius:18px;padding:14px;box-shadow:0 4px 12px rgba(154,74,34,.08)">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="color:#D9A84E;font-size:16px">★</div>
+            <div style="font:600 17px 'Hanken Grotesk';flex:1">Kestrel</div>
+            <div style="font-size:10px;font-weight:700;color:#9A4A22;background:#F3D7C6;border-radius:7px;padding:3px 8px">PC</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <div style="flex:1"><div style="font-size:10px;color:#9A8576">Health</div><div style="display:flex;align-items:baseline;gap:3px"><span style="font-weight:800;font-size:15px;color:#9A4A22">4</span><span style="font-size:10px;color:#9A8576">/5</span></div><div style="height:5px;border-radius:3px;background:#EFE0D6;margin-top:3px"><div style="width:80%;height:5px;border-radius:3px;background:#9A4A22"></div></div></div>
+            <div style="flex:1"><div style="font-size:10px;color:#9A8576">Spirit</div><div style="display:flex;align-items:baseline;gap:3px"><span style="font-weight:800;font-size:15px;color:#9A4A22">3</span><span style="font-size:10px;color:#9A8576">/5</span></div><div style="height:5px;border-radius:3px;background:#EFE0D6;margin-top:3px"><div style="width:60%;height:5px;border-radius:3px;background:#9A4A22"></div></div></div>
+            <div style="flex:1"><div style="font-size:10px;color:#9A8576">Supply</div><div style="display:flex;align-items:baseline;gap:3px"><span style="font-weight:800;font-size:15px;color:#9A4A22">5</span><span style="font-size:10px;color:#9A8576">/5</span></div><div style="height:5px;border-radius:3px;background:#EFE0D6;margin-top:3px"><div style="width:100%;height:5px;border-radius:3px;background:#9A4A22"></div></div></div>
+            <div style="flex:.8"><div style="font-size:10px;color:#9A8576">Mom.</div><div style="font-weight:800;font-size:15px;color:#9A4A22">+2</div></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:11px"><span style="font-size:10.5px;background:#F6D9C9;color:#9A4A22;border-radius:7px;padding:3px 8px;font-weight:600">Shaken</span><span style="font-size:10.5px;background:#FBF1EB;border:1px dashed #E0C7B7;color:#A38E7E;border-radius:7px;padding:3px 8px">+ condition</span></div>
+          <div style="display:flex;gap:7px;margin-top:13px;border-top:1px solid #F0CDB8;padding-top:11px">
+            <div style="flex:1;text-align:center;background:#9A4A22;color:#fff;border-radius:11px;padding:8px 0;font-size:12px;font-weight:700">Roll a move</div>
+            <div style="width:38px;text-align:center;border:1px solid #E0C7B7;border-radius:11px;padding:8px 0;font-size:14px;color:#9A4A22">−</div>
+            <div style="width:38px;text-align:center;border:1px solid #E0C7B7;border-radius:11px;padding:8px 0;font-size:14px;color:#9A4A22">+</div>
+            <div style="width:38px;text-align:center;border:1px solid #E0C7B7;border-radius:11px;padding:8px 0;font-size:14px;color:#9A4A22">⋯</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 16px 4px"><div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">NPCs</div></div>
+      <div style="padding:6px 16px 18px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:13px;padding:11px 12px"><div style="width:26px;height:26px;border-radius:8px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:12px">🜍</div><div style="flex:1"><div style="font-size:13.5px;font-weight:600">The Keeper</div><div style="font-size:11px;color:#9A8576">NPC · Wary</div></div><div style="font-size:11px;color:#9A8576">♥ 3/3</div></div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Read vitals without opening the sheet</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">The current row shows only a name and condition chips — every check means opening the full sheet. The refreshed lead card surfaces <b>Health / Spirit / Supply / Momentum</b> as compact bars plus inline quick actions: roll a move, ±HP, add a condition — right from the roster.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Row hides the data you check constantly</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Summary + quick actions on the lead card</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Lead PC card expands; companions/NPCs stay compact</li><li>±HP & conditions without a sheet round-trip</li><li>Sheet-aware: D&D shows HP/AC, Shadowdark shows torch</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:0px;top:2660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Speed · Slash commands</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:12px 20px;background:#F6E2D7;font:italic 500 17px 'Newsreader',serif">The Ancient Tower</div>
+      <div style="padding:14px 18px 6px;opacity:.5;font:italic 400 14px/1.55 'Newsreader',serif;color:#5A4A40">The chamber falls silent as I raise my lantern…</div>
+      <div style="margin:10px 14px 0;background:#FFFBF9;border:1px solid #E0C7B7;border-radius:18px;box-shadow:0 8px 22px rgba(60,30,15,.12);overflow:hidden">
+        <div style="padding:11px 14px;border-bottom:1px solid #F0E2D8;font-size:12px;color:#9A8576">Type a command…</div>
+        <div style="padding:6px 6px">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;background:#F6E2D7"><div style="width:26px;height:26px;border-radius:8px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">⚀</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700">/fate <span style="color:#9A8576;font-weight:400">[odds]</span></div><div style="font-size:11px;color:#9A8576">Roll a Fate Check, log inline</div></div></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px"><div style="width:26px;height:26px;border-radius:8px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:12px">⚂</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700">/roll <span style="color:#9A8576;font-weight:400">2d6+1</span></div><div style="font-size:11px;color:#9A8576">Any dice expression</div></div></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px"><div style="width:26px;height:26px;border-radius:8px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:12px">🎬</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700">/scene <span style="color:#9A8576;font-weight:400">title</span></div><div style="font-size:11px;color:#9A8576">Start a scene + divider</div></div></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px"><div style="width:26px;height:26px;border-radius:8px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:12px">✦</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700">/inspire <span style="color:#9A8576;font-weight:400">npc · weather · room</span></div><div style="font-size:11px;color:#9A8576">Fire any of 24 generators</div></div></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px"><div style="width:26px;height:26px;border-radius:8px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:12px">⚑</div><div style="flex:1"><div style="font-size:13.5px;font-weight:700">/thread <span style="color:#9A8576;font-weight:400">+ /track</span></div><div style="font-size:11px;color:#9A8576">Create & advance, stay here</div></div></div>
+        </div>
+      </div>
+      <div style="padding:10px 14px 16px;display:flex;gap:8px;align-items:center">
+        <div style="flex:1;background:#FFFBF9;border:1px solid #9A4A22;border-radius:16px;padding:12px 14px;font-size:14px;color:#2B2018"><span style="color:#9A4A22;font-weight:700">/</span><span style="color:#9A8576">fate likely</span><span style="color:#9A4A22">|</span></div>
+        <div style="width:42px;height:42px;border-radius:13px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px">↑</div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Power users never leave the keyboard</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">A "<b>/</b>" in the composer opens a command palette over every tool — rolls, scenes, generators, threads, tracks. The journal becomes a single command surface; the most-used affordances are one keystroke away.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Generators & tools buried across verbs (C5)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">One palette reaches every action from the journal</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Reuses the existing Tool Search index</li><li>Args (odds, dice, generator) parsed inline</li><li>Discoverable: a "/" hint chip lives in the composer</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:880px;top:2660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Discoverability · Surfacing AI</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:12px 20px;background:#F6E2D7;font:italic 500 17px 'Newsreader',serif">Journal</div>
+      <div style="padding:16px 16px 6px">
+        <div style="position:relative;background:linear-gradient(115deg,#FCEDE3,#F7E0D2);border:1px solid #F0CDB8;border-radius:18px;padding:15px 15px 14px;overflow:hidden">
+          <div style="position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.55) 50%,transparent 70%);background-size:220% 100%;animation:sheen 4.5s linear infinite"></div>
+          <div style="position:relative"><div style="display:flex;align-items:center;gap:8px"><div style="font-size:17px">✦</div><div style="font:700 13px;color:#9A4A22">Bring the oracle to life</div></div>
+          <p style="font-size:12.5px;line-height:1.5;color:#6B5849;margin:7px 0 12px">Interpret rolls, voice NPCs and recap your session — running entirely on-device. One-time ~2.6 GB download.</p>
+          <div style="display:flex;gap:8px"><div style="background:#9A4A22;color:#fff;border-radius:12px;padding:9px 15px;font-size:12.5px;font-weight:700">Enable AI</div><div style="border:1px solid #D9B7A2;color:#9A4A22;border-radius:12px;padding:9px 14px;font-size:12.5px;font-weight:600">Later</div></div></div>
+        </div>
+      </div>
+      <div style="padding:14px 16px 4px;font:italic 400 14px/1.55 'Newsreader',serif;color:#5A4A40">I press deeper into the dark, and the oracle answers…</div>
+      <div style="padding:8px 16px 0">
+        <div style="background:#FBE9E0;border-radius:14px;padding:13px 14px;border-left:3px solid #9A4A22">
+          <div style="font:700 11px;letter-spacing:.05em;text-transform:uppercase;color:#9A4A22">Fate Check</div>
+          <div style="font:500 22px 'Newsreader',serif;margin-top:3px">Yes, and…</div>
+          <div style="display:flex;gap:8px;margin-top:11px">
+            <div style="display:flex;align-items:center;gap:6px;background:#9A4A22;color:#fff;border-radius:10px;padding:7px 11px;font-size:12px;font-weight:700">✦ Interpret</div>
+            <div style="display:flex;align-items:center;gap:6px;background:#FBF1EB;color:#9A4A22;border-radius:10px;padding:7px 11px;font-size:12px;font-weight:600">Voice line</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 16px 18px;font-size:11px;color:#A38E7E;text-align:center">✦ marks an AI-assisted action · all on-device</div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Let the AI introduce itself</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">On-device AI is a headline feature hidden in Settings. A <b>contextual nudge</b> appears the first time you'd benefit (e.g. after a juicy roll), the download is framed by value, and a consistent <b>✦ glyph</b> marks every AI action so the capability is legible everywhere.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">AI only discoverable via Settings (C2)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">In-context prompt + a shared ✦ AI marker</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Shown once, dismissible, never nags</li><li>Value-first framing beats a settings toggle</li><li>Off by default + on-device messaging preserved</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:1760px;top:2660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Onboarding · Play-fantasy presets</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:18px 20px 8px"><div style="font:500 24px 'Newsreader',serif">New campaign</div><div style="font-size:13px;color:#7C6555;margin-top:3px">What kind of story are you telling?</div></div>
+      <div style="padding:10px 16px 18px;display:flex;flex-direction:column;gap:9px">
+        <div style="display:flex;align-items:center;gap:12px;background:#F6E2D7;border:1.5px solid #9A4A22;border-radius:15px;padding:12px 14px"><div style="width:36px;height:36px;border-radius:11px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px">⚔</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Gritty solo fantasy</div><div style="font-size:11.5px;color:#8A6A56">Vows, perilous odds · Ironsworn</div></div><div style="color:#9A4A22;font-size:16px">✓</div></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;padding:12px 14px"><div style="width:36px;height:36px;border-radius:11px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:17px">🐉</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Heroic dungeon crawl</div><div style="font-size:11.5px;color:#8A6A56">Classes & spells · D&D 5e</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;padding:12px 14px"><div style="width:36px;height:36px;border-radius:11px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:17px">🕯</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Deadly torch-lit delve</div><div style="font-size:11.5px;color:#8A6A56">Light pressure · Shadowdark</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;padding:12px 14px"><div style="width:36px;height:36px;border-radius:11px;background:#F3E2D7;display:flex;align-items:center;justify-content:center;font-size:17px">🔮</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Pure oracle / journaling</div><div style="font-size:11.5px;color:#8A6A56">No rules, just ask · Juice + Mythic</div></div></div>
+        <div style="display:flex;align-items:center;gap:12px;border:1px dashed #E0C7B7;border-radius:15px;padding:11px 14px;justify-content:center"><div style="font-size:13.5px;font-weight:600;color:#9A4A22">⚙ Browse all systems · Custom</div></div>
+      </div>
+      <div style="padding:0 16px 20px"><div style="background:#9A4A22;color:#fff;border-radius:16px;padding:14px;text-align:center;font-weight:700;font-size:15px">Create</div></div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Pick a fantasy, not a system name</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 14px">Presets are labeled by system — meaningless to a newcomer. Leading with the <b>kind of play</b> (gritty fantasy, heroic crawl, pure journaling) and an icon lets anyone choose confidently; the system name rides along as a sub-label.</p>
+      <div style="background:#F3EDE9;border:1px solid #E7D8CE;border-radius:12px;padding:12px;margin-bottom:12px">
+        <div style="font:700 10px;letter-spacing:.1em;text-transform:uppercase;color:#B08A74;margin-bottom:8px">Directive empty states</div>
+        <div style="display:flex;gap:9px;align-items:flex-start"><div style="text-decoration:line-through;color:#B08A74;font-size:11.5px;flex:1">"No characters yet."</div><div style="font-size:14px;color:#5B7A52">→</div><div style="flex:1.1;font-size:11.5px;color:#42583B">"Every story needs a hero. <b>Create your first character.</b>"</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">System-first presets; passive empty states (D6, D1)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Fantasy-first labels + empty states that prompt the next act</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:0px;top:3660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Identity · Campaign list</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="padding:20px 20px 6px"><div style="font:500 30px 'Newsreader',serif">Juice</div><div style="font-size:13px;color:#7C6555">Solo TTRPG toolkit</div></div>
+      <div style="padding:14px 16px 6px"><div style="background:#9A4A22;color:#fff;border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px"><div style="font-size:16px">▶</div><div><div style="font-weight:700;font-size:15px">Continue · The Ancient Tower</div><div style="font-size:11.5px;color:#F3D7C6">Scene 3 · 2 days ago</div></div></div></div>
+      <div style="padding:14px 16px 4px"><div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576">Campaigns</div></div>
+      <div style="padding:6px 16px 20px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:stretch;gap:0;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;overflow:hidden"><div style="width:6px;background:#9A4A22"></div><div style="display:flex;align-items:center;gap:11px;padding:12px 14px;flex:1"><div style="width:34px;height:34px;border-radius:10px;background:#F3D7C6;display:flex;align-items:center;justify-content:center;font-size:16px">⚔</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">The Ancient Tower</div><div style="font-size:11.5px;color:#8A6A56">Gritty fantasy · Ironsworn</div></div><div style="display:flex;gap:3px"><span style="width:6px;height:6px;border-radius:50%;background:#9A4A22"></span><span style="width:6px;height:6px;border-radius:50%;background:#B5762A"></span></div></div></div>
+        <div style="display:flex;align-items:stretch;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;overflow:hidden"><div style="width:6px;background:#5B7A52"></div><div style="display:flex;align-items:center;gap:11px;padding:12px 14px;flex:1"><div style="width:34px;height:34px;border-radius:10px;background:#E4EDDF;display:flex;align-items:center;justify-content:center;font-size:16px">🌿</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Verdant Reaches</div><div style="font-size:11.5px;color:#8A6A56">Wilderness hexcrawl · Shadowdark</div></div></div></div>
+        <div style="display:flex;align-items:stretch;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:15px;overflow:hidden"><div style="width:6px;background:#4A5A8A"></div><div style="display:flex;align-items:center;gap:11px;padding:12px 14px;flex:1"><div style="width:34px;height:34px;border-radius:10px;background:#E1E5F0;display:flex;align-items:center;justify-content:center;font-size:16px">🔮</div><div style="flex:1"><div style="font-weight:700;font-size:14.5px">Oracle of Ash</div><div style="font-size:11.5px;color:#8A6A56">Pure journaling · Juice + Mythic</div></div></div></div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">Recognize a campaign in a glance</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">Today campaigns are told apart by reading raw system strings ("Ironsworn · Mythic · Juice · Party · Verdant"). Giving each a <b>color spine, icon and a genre/mood line</b> makes the list scannable — and lets the Continue card carry real momentum.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Text-only system tags don't differentiate (D2)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Color + icon + genre label per campaign</span></div>
+      </div>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:18px 0 7px">Why it helps</div>
+      <ul style="margin:0;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Genre/mood captured at creation feeds the label</li><li>Identity color carries into that campaign's HUD accent</li><li>System dots remain for the detail-minded</li></ul>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:880px;top:3660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Consistency · Iconography</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 14px 34px rgba(60,30,15,.16);background:#FBF1EB;border:1px solid #EFE0D6">
+      <div style="height:30px;background:#F6E2D7"></div>
+      <div style="background:#F6E2D7;padding:13px 16px 14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font:italic 500 18px 'Newsreader',serif">The Ancient Tower</div>
+          <div style="display:flex;gap:9px;align-items:center">
+            <div style="display:flex;background:#FBE9E0;border-radius:11px;padding:3px"><div style="background:#9A4A22;color:#fff;border-radius:8px;padding:4px 11px;font-size:11px;font-weight:700">Party</div><div style="color:#9A8576;padding:4px 11px;font-size:11px;font-weight:600">GM</div></div>
+            <div style="width:32px;height:32px;border-radius:10px;background:#FBE9E0;display:flex;align-items:center;justify-content:center;font-size:14px;color:#9A4A22">⌘</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:18px 16px 8px">
+        <div style="display:flex;gap:11px;align-items:flex-start;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:14px;padding:13px"><div style="width:30px;height:30px;border-radius:9px;background:#F3D7C6;display:flex;align-items:center;justify-content:center;font-size:14px;color:#9A4A22">⌘</div><div style="flex:1"><div style="font-weight:700;font-size:13.5px">Find tools & rolls</div><div style="font-size:11.5px;color:#8A6A56">Command palette — jump to any verb or oracle</div></div></div>
+        <div style="display:flex;gap:11px;align-items:flex-start;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:14px;padding:13px;margin-top:9px"><div style="width:30px;height:30px;border-radius:9px;background:#EFE0D6;display:flex;align-items:center;justify-content:center;font-size:14px;color:#7C6555">⌕</div><div style="flex:1"><div style="font-weight:700;font-size:13.5px">Filter this journal</div><div style="font-size:11.5px;color:#8A6A56">Search entries — lives inside the Assistant rail</div></div></div>
+        <div style="display:flex;gap:11px;align-items:flex-start;background:#FFFBF9;border:1px solid #EFE0D6;border-radius:14px;padding:13px;margin-top:9px"><div style="width:30px;height:30px;border-radius:9px;background:#F3D7C6;display:flex;align-items:center;justify-content:center;font-size:13px;color:#9A4A22">⇄</div><div style="flex:1"><div style="font-weight:700;font-size:13.5px">Party ⇄ GM mode</div><div style="font-size:11.5px;color:#8A6A56">A labeled switch — never an "add person"</div></div></div>
+      </div>
+      <div style="padding:14px 16px 18px;font-size:11.5px;color:#A38E7E;text-align:center;line-height:1.5">Distinct shapes for distinct jobs — no two affordances share a glyph.</div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">One glyph, one meaning</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 14px">Two magnifying glasses do different jobs, and a "person +" silently toggles GM mode. The refresh gives <b>tool search</b> a command mark, keeps <b>entry filter</b> in the rail, and turns the mode toggle into an explicit labeled switch.</p>
+      <div style="background:#F3EDE9;border:1px solid #E7D8CE;border-radius:12px;padding:11px 12px;margin-bottom:12px;display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px"><span style="color:#B08A74">🔍 + 🔍</span><span style="color:#5A4A40">two searches</span><span style="margin-left:auto;color:#5B7A52">→ ⌘ vs ⌕</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px"><span style="color:#B08A74">👤+ = mode?</span><span style="margin-left:auto;color:#5B7A52">→ Party | GM switch</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:#F6E0D6;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#B25B3A">PROBLEM</span> <span style="font-size:12.5px;color:#6B4A3A">Shared glyphs, ambiguous mode toggle (B1, B5)</span></div>
+        <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">FIX</span> <span style="font-size:12.5px;color:#42583B">Unique icons + an explicit labeled switch</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="position:absolute;left:1760px;top:3660px;width:800px">
+  <div data-drags-parent="1" style="font:700 12px 'Hanken Grotesk';color:#9A4A22;letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;cursor:grab">Treat · The refreshed skin</div>
+  <div style="background:#fff;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:28px;display:flex;gap:28px;align-items:flex-start">
+    <div style="width:392px;flex:none;border-radius:30px;overflow:hidden;box-shadow:0 18px 40px rgba(60,30,15,.2);border:1px solid #EAD7CA;background:radial-gradient(circle at 1px 1px, rgba(120,80,40,.05) 1px, transparent 0) 0 0/15px 15px, #FBF2EC">
+      <div style="height:30px;background:#F4DECF"></div>
+      <div style="padding:14px 20px 14px;background:linear-gradient(180deg,#F4DECF,rgba(244,222,207,0))">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:9px"><div style="width:9px;height:9px;border-radius:50%;background:#9A4A22;box-shadow:0 0 0 4px rgba(154,74,34,.14)"></div><div style="font:italic 500 20px 'Newsreader',serif">The Ancient Tower</div></div>
+          <div style="background:#F4D9A8;color:#8A5A18;border-radius:11px;padding:4px 10px;font-size:12px;font-weight:700">Chaos 5</div>
+        </div>
+      </div>
+      <div style="padding:18px 20px 8px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><div style="height:1px;background:linear-gradient(90deg,transparent,#D9BEAA);flex:1"></div><div style="font:600 10px;letter-spacing:.16em;text-transform:uppercase;color:#B5762A">✦ Scene Three ✦</div><div style="height:1px;background:linear-gradient(90deg,#D9BEAA,transparent);flex:1"></div></div>
+        <div style="font:italic 400 15px/1.62 'Newsreader',serif;color:#3A2E26"><span style="font:500 46px/0.8 'Newsreader',serif;color:#9A4A22;float:left;margin:4px 9px 0 0">T</span>he ancient tower looms ahead, its silhouette black against a bruised sky. I draw my sword, breathe once, and step through the broken gate.</div>
+        <div style="clear:both;height:14px"></div>
+        <div style="position:relative;background:linear-gradient(165deg,#FDEFE6,#F8E0D2);border:1px solid #EFC9B4;border-radius:20px;padding:17px 17px 15px;box-shadow:0 8px 22px rgba(154,74,34,.16)">
+          <div style="position:absolute;top:-9px;right:16px;font-size:18px;animation:floaty 3.6s ease-in-out infinite">✦</div>
+          <div style="display:flex;align-items:center;gap:7px"><div style="width:24px;height:24px;border-radius:8px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px">⚀</div><div style="font:700 11px;letter-spacing:.06em;text-transform:uppercase;color:#9A4A22">Fate Check · Normal</div></div>
+          <div style="font:500 32px/1.02 'Newsreader',serif;margin-top:9px">Yes, <span style="font-style:italic;color:#9A4A22">and the way is open.</span></div>
+          <div style="font-size:12.5px;color:#7C6555;margin-top:4px">Intensity: Major (d6 = 5)</div>
+          <div style="font:italic 400 13.5px/1.5 'Newsreader',serif;color:#6B5849;margin-top:11px;padding-top:11px;border-top:1px solid #EFC9B4">✦ <b style="font-style:normal;color:#9A4A22">Interpreted:</b> The gate swings inward of its own accord — something inside <em>wanted</em> you to enter.</div>
+        </div>
+      </div>
+      <div style="padding:10px 16px 0;display:flex;gap:7px">
+        <div style="flex:none;background:#9A4A22;color:#fff;border-radius:13px;padding:9px 14px;font-size:12.5px;font-weight:700">⚀ Roll oracle</div>
+        <div style="flex:none;background:#F3D7C6;color:#9A4A22;border-radius:13px;padding:9px 14px;font-size:12.5px;font-weight:600">✦ Inspire</div>
+        <div style="flex:none;background:#F3D7C6;color:#9A4A22;border-radius:13px;padding:9px 13px;font-size:12.5px;font-weight:600">Scene</div>
+      </div>
+      <div style="padding:11px 16px 16px;display:flex;gap:8px;align-items:center">
+        <div style="flex:1;background:#FFFBF9;border:1px solid #E0C7B7;border-radius:16px;padding:12px 14px;font-size:13.5px;color:#9A8576">Write in your journal…</div>
+        <div style="width:42px;height:42px;border-radius:14px;background:#9A4A22;color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 6px 14px rgba(154,74,34,.32)">↑</div>
+      </div>
+      <div style="display:flex;background:#F5E6DC;border-top:1px solid #EAD8CC;padding:9px 4px 13px">
+        <div style="flex:1;text-align:center"><div style="background:#9A4A22;color:#fff;border-radius:14px;margin:0 12px;padding:5px 0;font-size:11px;font-weight:700">Journal</div></div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Sheet</div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Ask</div>
+        <div style="flex:1;text-align:center;font-size:11px;color:#A38E7E;padding-top:5px">Map</div>
+      </div>
+    </div>
+    <div style="width:300px;flex:none;padding-top:4px">
+      <div style="font:700 16px 'Hanken Grotesk'">A journal that feels like a tome</div>
+      <p style="font-size:13.5px;line-height:1.6;color:#5A4A40;margin:8px 0 16px">The bold direction leans into the solo-journaling fantasy: subtle <b>paper-grain</b>, a literary <b>Newsreader</b> serif for narrative and oracle answers, an illuminated <b>drop cap</b> at each scene, warmer card gradients, and a single floating <b>✦</b> as the AI motif. The crisp Hanken Grotesk sans keeps controls and data honest.</p>
+      <div style="font:700 11px;letter-spacing:.1em;text-transform:uppercase;color:#9A8576;margin:4px 0 7px">The treats</div>
+      <ul style="margin:0 0 16px;padding-left:18px;font-size:13px;line-height:1.65;color:#5A4A40"><li>Paper-grain surface + soft sienna shadows</li><li>Serif headlines & oracle answers; sans for UI</li><li>Drop-cap scene openers; hairline dividers</li><li>Gentle motion only as reward (✦, roll settle)</li></ul>
+      <div style="background:#E7EFE2;border-radius:10px;padding:9px 12px"><span style="font:700 10px;letter-spacing:.08em;color:#5B7A52">PRINCIPLE</span> <span style="font-size:12.5px;color:#42583B">Delight that respects reduced-motion & keeps data legible</span></div>
+    </div>
+  </div>
+</div>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="22" fill="#9A4A22"/>
+    <text x="50" y="50" font-family="Georgia, 'Newsreader', serif" font-style="italic" font-size="46" font-weight="600" fill="#FBF1EB" text-anchor="middle" dominant-baseline="central">J</text>
+    <text x="72" y="32" font-size="20" fill="#F4D9A8" text-anchor="middle" dominant-baseline="central">✦</text>
+  </svg>
+</template></x-dc>
+</body>
+</html>

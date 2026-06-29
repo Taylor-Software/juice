@@ -148,13 +148,26 @@ void main() {
     expect(find.byKey(const Key('sheet-back')), findsNothing);
   });
 
-  testWidgets('Sheet shows Moves only in party mode', (tester) async {
+  testWidgets('Sheet shows Moves whenever family is non-empty (no mode gate)',
+      (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1","mode":"gm"}]}',
       'juice.characters.v1.default': '[]',
     });
-    final c = ProviderContainer();
+    final fixture = {
+      'meta': {
+        'title': 'Ironsworn',
+        'authors': ['Shawn Tomkin'],
+        'license': 'https://creativecommons.org/licenses/by/4.0',
+      },
+      'move_categories': <dynamic>[],
+      'oracle_collections': <dynamic>[],
+      'asset_collections': <dynamic>[],
+    };
+    final c = ProviderContainer(overrides: [
+      rulesetDataProvider('classic').overrideWith((ref) async => fixture),
+    ]);
     addTearDown(c.dispose);
     await c.read(sessionsProvider.future);
     await tester.pumpWidget(UncontrolledProviderScope(
@@ -163,9 +176,8 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: SheetTab(family: ['classic'])))));
     await tester.pumpAndSettle();
-    // GM mode + family non-empty: Moves hidden → bare roster (no Moves tab).
-    expect(find.text('Moves'), findsNothing);
-    expect(find.byType(CharactersPane), findsOneWidget);
+    // GM mode + family non-empty: Moves shown (mode no longer gates it).
+    expect(find.text('Moves'), findsOneWidget);
   });
 
   testWidgets('Sheet shows Moves in party mode (positive case)',

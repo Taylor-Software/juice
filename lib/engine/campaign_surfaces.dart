@@ -1,20 +1,13 @@
-import 'models.dart';
-import 'role_tags.dart';
-
-/// One surface row in the preview. `on` is computed; `requiresSystem` /
-/// `requiresModeKey` are the authored gates (kept as data so a test can
-/// validate every system gate against kKnownSystems — no drift).
+/// One surface row in the preview. `on` is computed; `requiresSystem` is the
+/// authored gate (kept as data so a test can validate every system gate against
+/// kKnownSystems — no drift).
 class SurfaceRow {
-  const SurfaceRow(this.name, {this.requiresSystem, this.requiresModeKey});
+  const SurfaceRow(this.name, {this.requiresSystem});
   final String name;
   final String? requiresSystem;
-  final String? requiresModeKey; // a visibleForMode key (role_tags)
 
-  bool on(CampaignMode mode, Set<String> systems) {
-    final sysOk = requiresSystem == null || systems.contains(requiresSystem);
-    final modeOk =
-        requiresModeKey == null || visibleForMode(requiresModeKey!, mode);
-    return sysOk && modeOk;
+  bool on(Set<String> systems) {
+    return requiresSystem == null || systems.contains(requiresSystem);
   }
 }
 
@@ -25,9 +18,8 @@ class VerbSurfaces {
   final List<({String name, bool on, String? requiresSystem})> rows;
 }
 
-/// Authored surface table — the single source the live preview reads. Mode
-/// gates call the real `visibleForMode`; system gates are validated against
-/// kKnownSystems by a test.
+/// Authored surface table — the single source the live preview reads. System
+/// gates are validated against kKnownSystems by a test.
 const _table = <String, List<SurfaceRow>>{
   'Journal': [
     SurfaceRow('Entries + composer'),
@@ -48,7 +40,7 @@ const _table = <String, List<SurfaceRow>>{
     SurfaceRow('Custom / Homebrew sheet', requiresSystem: 'custom'),
     SurfaceRow('Dungeon Crawl Classics sheet', requiresSystem: 'dcc'),
     SurfaceRow('0-Level Funnel', requiresSystem: 'funnel'),
-    SurfaceRow('Moves', requiresSystem: 'ironsworn', requiresModeKey: 'moves'),
+    SurfaceRow('Moves', requiresSystem: 'ironsworn'),
   ],
   'Ask': [
     SurfaceRow('Juice oracle', requiresSystem: 'juice'),
@@ -65,13 +57,10 @@ const _table = <String, List<SurfaceRow>>{
   'Track': [
     SurfaceRow('Scenes / threads / tracks'),
     SurfaceRow('Encounter'),
-    SurfaceRow('Rumors', requiresModeKey: 'rumors'),
-    SurfaceRow('Party emulator',
-        requiresSystem: 'party', requiresModeKey: 'emulator'),
-    SurfaceRow('Sidekick',
-        requiresSystem: 'party', requiresModeKey: 'sidekick'),
-    SurfaceRow('NPC behavior',
-        requiresSystem: 'party', requiresModeKey: 'behavior'),
+    SurfaceRow('Rumors'),
+    SurfaceRow('Party emulator', requiresSystem: 'party'),
+    SurfaceRow('Sidekick', requiresSystem: 'party'),
+    SurfaceRow('NPC behavior', requiresSystem: 'party'),
     SurfaceRow('Lonelog resources / battle', requiresSystem: 'lonelog'),
   ],
 };
@@ -79,15 +68,15 @@ const _table = <String, List<SurfaceRow>>{
 /// The 5 verbs in shell order.
 const _verbOrder = ['Journal', 'Sheet', 'Ask', 'Map', 'Track'];
 
-/// Resolves the surface visibility for a (mode, systems) pair.
-List<VerbSurfaces> surfacesFor(CampaignMode mode, Set<String> systems) {
+/// Resolves the surface visibility for a systems set.
+List<VerbSurfaces> surfacesFor(Set<String> systems) {
   return [
     for (final verb in _verbOrder)
       VerbSurfaces(verb, [
         for (final row in _table[verb]!)
           (
             name: row.name,
-            on: row.on(mode, systems),
+            on: row.on(systems),
             requiresSystem: row.requiresSystem,
           ),
       ]),

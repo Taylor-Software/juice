@@ -15,7 +15,6 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
-        partyMode: true,
       );
       expect(s.first.id, 'roll-oracle');
       expect(s.first.action, SuggestionAction.inline);
@@ -28,7 +27,6 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
-        partyMode: true,
       );
       expect(ids(s), contains('start-scene'));
       expect(ids(s), isNot(contains('scene-event')));
@@ -41,7 +39,6 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
-        partyMode: true,
       );
       expect(ids(s), contains('scene-event'));
       expect(ids(s), isNot(contains('start-scene')));
@@ -56,7 +53,6 @@ void main() {
         encounterActive: false,
         ironswornFamily: false,
         hasFocusCharacter: false,
-        partyMode: true,
       );
       expect(ids(s), contains('advance-thread'));
     });
@@ -68,40 +64,32 @@ void main() {
         encounterActive: true,
         ironswornFamily: false,
         hasFocusCharacter: false,
-        partyMode: true,
       );
       expect(ids(s), contains('combat-turn'));
     });
 
-    test('make-move only when ironsworn family AND focus character AND party',
-        () {
-      List<String> run(bool fam, bool foc, bool party) => ids(suggestionsFor(
+    test('make-move only when ironsworn family AND focus character', () {
+      List<String> run(bool fam, bool foc) => ids(suggestionsFor(
             hasScenes: true,
             hasOpenThreads: false,
             encounterActive: false,
             ironswornFamily: fam,
             hasFocusCharacter: foc,
-            partyMode: party,
           ));
-      expect(run(true, true, true), contains('make-move'));
-      expect(run(true, false, true), isNot(contains('make-move')));
-      expect(run(false, true, true), isNot(contains('make-move')));
-      // GM mode hides Moves → no make-move even with family + focus character.
-      expect(run(true, true, false), isNot(contains('make-move')));
+      expect(run(true, true), contains('make-move'));
+      expect(run(true, false), isNot(contains('make-move')));
+      expect(run(false, true), isNot(contains('make-move')));
     });
 
-    test('gm-only suggestions appear in gm mode, hidden in party', () {
-      List<String> run(bool party) => ids(suggestionsFor(
-            hasScenes: true,
-            hasOpenThreads: false,
-            encounterActive: false,
-            ironswornFamily: false,
-            hasFocusCharacter: false,
-            partyMode: party,
-          ));
-      expect(run(false), containsAll(['develop-rumor', 'seed-npc']));
-      expect(run(true), isNot(contains('develop-rumor')));
-      expect(run(true), isNot(contains('seed-npc')));
+    test('develop-rumor and seed-npc are always present', () {
+      final s = suggestionsFor(
+        hasScenes: true,
+        hasOpenThreads: false,
+        encounterActive: false,
+        ironswornFamily: false,
+        hasFocusCharacter: false,
+      );
+      expect(ids(s), containsAll(['develop-rumor', 'seed-npc']));
     });
   });
 

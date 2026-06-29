@@ -19,12 +19,11 @@ final _emulatorOverride =
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  // Adapted: seeds mode:"gm" so Rumors is visible (party mode hides Rumors).
-  testWidgets('Track shows the core subtabs and no longer hosts NPCs',
+  testWidgets('Track shows the core subtabs including Rumors always',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
-          '{"active":"default","sessions":[{"id":"default","name":"C1","mode":"gm"}]}',
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -50,26 +49,7 @@ void main() {
     expect(find.widgetWithText(Tab, 'Emulator'), findsNothing);
   });
 
-  testWidgets('GM mode shows Rumors, hides party tools', (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
-          '{"active":"default","sessions":[{"id":"default","name":"C1",'
-              '"systems":["party"],"mode":"gm"}]}',
-    });
-    final c = ProviderContainer(overrides: [_emulatorOverride]);
-    addTearDown(c.dispose);
-    await c.read(sessionsProvider.future);
-    await tester.pumpWidget(UncontrolledProviderScope(
-        container: c,
-        child: MaterialApp(
-            theme: AppTheme.light(),
-            home: const Scaffold(body: TrackingTab(systems: {'party'})))));
-    await tester.pumpAndSettle();
-    expect(find.text('Rumors'), findsOneWidget);
-    expect(find.text('Emulator'), findsNothing);
-  });
-
-  testWidgets('Party mode hides Rumors, shows party tools', (tester) async {
+  testWidgets('Rumors always shown regardless of mode', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
@@ -84,7 +64,29 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: TrackingTab(systems: {'party'})))));
     await tester.pumpAndSettle();
-    expect(find.text('Rumors'), findsNothing);
+    // Rumors always present (no mode gate).
+    expect(find.text('Rumors'), findsOneWidget);
+    // Party tools present when party system is enabled.
+    expect(find.text('Emulator'), findsOneWidget);
+  });
+
+  testWidgets('Party tools gated by system, not mode', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1",'
+              '"systems":["party"],"mode":"gm"}]}',
+    });
+    final c = ProviderContainer(overrides: [_emulatorOverride]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+        container: c,
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: TrackingTab(systems: {'party'})))));
+    await tester.pumpAndSettle();
+    // Party tools present because party system is enabled (mode doesn't gate).
+    expect(find.text('Rumors'), findsOneWidget);
     expect(find.text('Emulator'), findsOneWidget);
   });
 }
