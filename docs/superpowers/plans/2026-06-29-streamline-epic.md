@@ -26,7 +26,7 @@ The original critique reasoned from `CLAUDE.md`, not the full tree. Recon (3 age
 
 | # | Phase | Why | Size | Risk |
 |---|-------|-----|------|------|
-| 1 | Custom oracle/random tables | Zero runtime table authoring; #1 solo-player hack | M | Low |
+| 1 | Custom oracle/random tables ✅ **shipped** | Zero runtime table authoring; #1 solo-player hack | M | Low |
 | 2 | Cross-entity search | Search is journal-only; can't find an NPC/thread/rumor | M | Low |
 | 3 | Entity linking / backlinks | Entities are islands; no connective tissue | L | Med |
 | 4 | First-run onboarding | No onboarding for a 16-system app; sprawl undiscoverable | M | Low |

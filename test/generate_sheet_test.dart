@@ -144,4 +144,50 @@ void main() {
     final entries = await c.read(journalProvider.future);
     expect(entries, isEmpty);
   });
+
+  // --- My Tables (user-authored custom tables) ------------------------------
+
+  testWidgets('rolling a custom table logs a custom-table journal entry',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      ..._basePrefs,
+      'juice.custom_tables.v1':
+          '[{"id":"t1","name":"Weather","rows":["Rain","Sun"]}]',
+    });
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await c.read(sessionsProvider.future);
+    await c.read(customTablesProvider.future);
+    await _pumpSheet(tester, c);
+
+    await tester.tap(find.byKey(const Key('table-roll-t1')));
+    await tester.pumpAndSettle();
+
+    final entries = await c.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.sourceTool, 'custom-table');
+    expect(entries.first.title, 'Weather');
+  });
+
+  testWidgets('New table dialog creates a table chip', (tester) async {
+    final c = await _makeContainer();
+    await c.read(customTablesProvider.future);
+    await _pumpSheet(tester, c);
+
+    await tester.tap(find.byKey(const Key('table-new')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('table-name')), 'Loot');
+    await tester.enterText(
+        find.byKey(const Key('table-rows')), 'Gold\nGem\nScroll');
+    await tester.tap(find.byKey(const Key('table-save')));
+    await tester.pumpAndSettle();
+
+    final tables = await c.read(customTablesProvider.future);
+    expect(tables.single.name, 'Loot');
+    expect(tables.single.rows, ['Gold', 'Gem', 'Scroll']);
+    expect(find.widgetWithText(InputChip, 'Loot'), findsOneWidget);
+  });
 }
