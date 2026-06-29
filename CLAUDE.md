@@ -588,6 +588,32 @@ Working rules for this repo:
   surfacing, per-campaign/exported scope, import/export of table packs. See
   `docs/superpowers/plans/2026-06-29-custom-oracle-tables.md` + the epic roadmap
   `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
+- **Solo Loop + Success Tally** — a guided solo-play procedure surface plus a
+  bidirectional task tracker, mechanics-only adoption from *Cairn Solo*
+  (CC-BY-SA 4.0; NO content vendored, so ShareAlike doesn't bind — a goodwill
+  credit only, in the Settings Sources dialog, kept OUT of
+  `kContentAttributions`). Two pure engine files: `lib/engine/tally.dart`
+  (`Tally {start,current,target}` clamped 0..target, `failed`/`won`/`label`,
+  presets `kTallyPresets` = modest 2(4)/minor 3(6)/difficult 4(8)/long 5(10),
+  `classifyVsTally`/`rollVsTally`) and `lib/engine/solo_oracle.dart`
+  (`SoloLikelihood {unlikely,even,likely}` → d10 target 3/5/7,
+  `classifyYesNo`/`soloYesNo` → `SoloYesNo {yes,twist,roll}` with
+  `SoloTwist {none,boon,complication}` per the p.27 table: 1=yes+boon,
+  <target=yes, ==target=yes+complication, 10=no+complication, else no;
+  `toGenResult()` logs through the journal `addResult` pipeline). `Thread`
+  gains an **optional** `Tally? tally` (distinct from its one-way
+  `progress/progressMax` clock; tolerant JSON; persists in the existing
+  `juice.threads.v1` — NO new key); `ThreadNotifier` adds
+  `setTally`/`clearTally`/`adjustTally`. UI: a **Loop** Track subtab
+  (`lib/features/loop_pane.dart`, ungated, after Home) — a 5-step checklist
+  (scene / d10 ask / inspire→`showGenerateSheet` / tally tasks / capture),
+  widget-local state only, `solo-loop` sourceTool; and a tally row on thread
+  cards (`ThreadsPane`, `thread-tally-add/dec/inc/roll/remove-<id>`, Wrap +
+  compact buttons for narrow-width safety). See
+  `docs/superpowers/specs/2026-06-29-solo-loop-success-tally-design.md` +
+  `docs/superpowers/plans/2026-06-29-solo-loop-success-tally.md`. Deferred:
+  standalone Tasks pane, Word Oracle (SA-encumbered) as an authored table,
+  loop-aware assistant-rail prompts, AI auto-interpret of loop rolls.
 - **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
   `party`; legacy campaigns → party). `modeProvider` exposes the active
   campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
