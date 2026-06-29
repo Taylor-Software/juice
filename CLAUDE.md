@@ -520,6 +520,16 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+- **First-run onboarding** (Streamline epic Phase 4) — a `_WelcomeCard`
+  shown on the launcher (`lib/features/launcher_screen.dart`) when the user
+  has only 1 campaign and hasn't dismissed it before. Condition: `!welcomeSeen
+  && sessions.sessions.length == 1`. Describes the app in 2 lines + 3 bullet
+  icons (Journal / Ask / Track). Dismissed with "Got it" → sets an app-global
+  flag `juice.welcome_seen.v1` (`WelcomeSeenNotifier` / `welcomeSeenProvider`
+  in `lib/state/providers.dart`, same pattern as `aiNudgeSeenProvider`). Card
+  hides when user creates a second campaign. Covered by
+  `test/launcher_welcome_test.dart` (4 widget tests). See
+  `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **Thread backlinks** (Streamline epic Phase 3) — each thread card in
   `ThreadsPane` (`lib/features/tracker_screen.dart`) now shows a
   `thread-entries-<id>` `ActionChip` ("N entr[y/ies]") when journal entries

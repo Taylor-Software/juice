@@ -203,6 +203,10 @@ class LauncherScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final active = sessions.activeMeta;
+    final welcomeSeen =
+        ref.watch(welcomeSeenProvider).valueOrNull ?? false;
+    final showWelcome =
+        !welcomeSeen && sessions.sessions.length == 1;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -216,6 +220,11 @@ class LauncherScreen extends ConsumerWidget {
                 Text('Solo TTRPG toolkit',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                if (showWelcome) ...[
+                  const SizedBox(height: 16),
+                  _WelcomeCard(onDismiss: () =>
+                      ref.read(welcomeSeenProvider.notifier).markSeen()),
+                ],
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('launcher-continue'),
@@ -279,4 +288,79 @@ class LauncherScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// First-launch welcome card. Shown once until the user dismisses it.
+class _WelcomeCard extends StatelessWidget {
+  const _WelcomeCard({required this.onDismiss});
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Card(
+      key: const Key('welcome-card'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Welcome', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 6),
+            Text(
+              "Solo Adventurer's Journal is a solo-TTRPG toolkit: roll oracle "
+              'tables, journal your sessions, track characters and threads, and '
+              'manage maps and encounters.',
+              style:
+                  theme.textTheme.bodySmall?.copyWith(color: muted),
+            ),
+            const SizedBox(height: 8),
+            _Bullet(icon: Icons.auto_stories_outlined,
+                text: 'Journal — write prose, log oracle rolls, recap scenes',
+                color: muted),
+            _Bullet(icon: Icons.casino_outlined,
+                text: 'Ask — roll fate checks, generators, and custom tables',
+                color: muted),
+            _Bullet(icon: Icons.label_outline,
+                text: 'Track — threads, characters, encounters, and maps',
+                color: muted),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                key: const Key('welcome-dismiss'),
+                onPressed: onDismiss,
+                child: const Text('Got it'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Bullet extends StatelessWidget {
+  const _Bullet(
+      {required this.icon, required this.text, required this.color});
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: color)),
+          ),
+        ]),
+      );
 }
