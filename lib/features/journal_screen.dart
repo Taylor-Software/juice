@@ -573,8 +573,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (o != null) showDiceSheet(context, o.dice);
       return;
     }
-    final mode = ref.read(modeProvider);
-    if (!ref.read(shellRouteProvider.notifier).openTool(id, mode: mode)) {
+    if (!ref.read(shellRouteProvider.notifier).openTool(id)) {
       ScaffoldMessenger.of(context)
           .showSnackBar(const SnackBar(content: Text('Tool not available')));
     }

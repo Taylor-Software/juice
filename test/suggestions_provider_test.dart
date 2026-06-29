@@ -40,8 +40,7 @@ void main() {
     expect(ids, containsAll(['scene-event', 'advance-thread']));
   });
 
-  // Ironsworn family + focus character: make-move is party-only — present in
-  // party mode (Moves visible), absent in gm mode (Moves hidden).
+  // Ironsworn family + focus character: make-move is present regardless of mode.
   Map<String, Object> seedMove(String mode) => {
         'juice.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1",'
@@ -69,10 +68,10 @@ void main() {
     expect(await resolveIds(c), contains('make-move'));
   });
 
-  test('ironsworn focus character → make-move absent in gm mode', () async {
+  test('ironsworn focus character → make-move present in gm mode too', () async {
     SharedPreferences.setMockInitialValues(seedMove('gm'));
     final c = ProviderContainer();
     addTearDown(c.dispose);
-    expect(await resolveIds(c), isNot(contains('make-move')));
+    expect(await resolveIds(c), contains('make-move'));
   });
 }

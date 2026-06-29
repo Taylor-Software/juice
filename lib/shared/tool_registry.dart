@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../engine/models.dart';
-import '../engine/role_tags.dart';
-import 'destination.dart';
 
 /// Metadata for a tool in the tool-search sheet: identity, label, icon,
 /// group, and optional source badge. The sheet navigates by [id] via the
@@ -81,13 +79,11 @@ const toolHelpPage = <String, String>{
 
 /// Build the registry. [family] is the enabled Ironsworn family chain
 /// (e.g. ['classic','delve']); empty = no Moves tool. [systems] is the set
-/// of enabled optional systems; defaults to all (kAllSystems). [mode] drops
-/// tools whose target subtab is role-hidden in that campaign mode (party-only
-/// tools + Moves in gm); defaults to party (the app default).
+/// of enabled optional systems; defaults to all (kAllSystems). Tool visibility
+/// is governed by enabled systems only; mode no longer gates tools.
 List<ToolDef> buildToolRegistry({
   required List<String> family,
   Set<String> systems = kAllSystems,
-  CampaignMode mode = CampaignMode.party,
 }) {
   final all = <ToolDef>[
     const ToolDef(
@@ -218,10 +214,6 @@ List<ToolDef> buildToolRegistry({
   return all.where((t) {
     final systemOk = (toolSystem[t.id] ?? 'core') == 'core' ||
         systems.contains(toolSystem[t.id]);
-    // A tool's target subtab (if any) must be visible in the active mode; tools
-    // with no tab home (dice/help) carry no subtab and are always mode-neutral.
-    final subtab = toolLocation[t.id]?.$2;
-    final modeOk = subtab == null || visibleForMode(subtab, mode);
-    return systemOk && modeOk;
+    return systemOk;
   }).toList();
 }

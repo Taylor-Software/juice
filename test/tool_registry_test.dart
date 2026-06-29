@@ -215,43 +215,31 @@ void main() {
     expect(tool.label, 'Hexcrawl');
   });
 
-  // -- Mode gating (GM/Party) -------------------------------------------------
+  // -- System-only gating (mode no longer affects tool visibility) -----------
 
-  test('gm mode drops party-only tools and moves from the registry', () {
+  test('party tools present whenever the party system is enabled', () {
     final ids = buildToolRegistry(
       family: ['classic'],
       systems: {'party', 'ironsworn', 'juice'},
-      mode: CampaignMode.gm,
     ).map((t) => t.id).toSet();
-    expect(ids, isNot(contains('party-emulator')));
-    expect(ids, isNot(contains('sidekick-dialogue')));
-    expect(ids, isNot(contains('behavior-tables')));
-    expect(ids, isNot(contains('moves')));
-    // Mode-neutral tools survive.
+    expect(ids, containsAll(['party-emulator', 'sidekick-dialogue', 'behavior-tables']));
+    // Core tools also present.
     expect(ids, containsAll(['fate-check', 'encounter', 'help']));
   });
 
-  test('party mode keeps party-only tools and moves', () {
+  test('moves present whenever ironsworn system + family are enabled', () {
     final ids = buildToolRegistry(
       family: ['classic'],
       systems: {'party', 'ironsworn'},
-      mode: CampaignMode.party,
     ).map((t) => t.id).toSet();
-    expect(
-        ids,
-        containsAll([
-          'party-emulator',
-          'sidekick-dialogue',
-          'behavior-tables',
-          'moves',
-        ]));
+    expect(ids, containsAll(['party-emulator', 'sidekick-dialogue', 'behavior-tables', 'moves']));
   });
 
-  test('mode defaults to party (party tools present without an explicit mode)',
-      () {
-    final ids = buildToolRegistry(family: [], systems: {'party'})
+  test('party tools present without party system are absent', () {
+    final ids = buildToolRegistry(family: [], systems: {'juice'})
         .map((t) => t.id)
         .toSet();
-    expect(ids, contains('party-emulator'));
+    expect(ids, contains('fate-check'));
+    expect(ids, isNot(contains('party-emulator')));
   });
 }

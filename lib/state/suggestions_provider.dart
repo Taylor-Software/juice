@@ -20,7 +20,6 @@ final suggestionsProvider = Provider<List<Suggestion>>((ref) {
       ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
           kAllSystems;
   final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
-  final mode = ref.watch(modeProvider);
 
   final ironswornFamily = systems.contains('ironsworn') &&
       (rulesets.contains('classic') ||
@@ -33,7 +32,6 @@ final suggestionsProvider = Provider<List<Suggestion>>((ref) {
     encounterActive: (encounter?.combatants.isNotEmpty) ?? false,
     ironswornFamily: ironswornFamily,
     hasFocusCharacter: ctx?.activeCharacterId != null,
-    partyMode: mode == CampaignMode.party,
   );
 });
 

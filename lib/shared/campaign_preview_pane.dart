@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../engine/campaign_surfaces.dart';
-import '../engine/models.dart';
 
-/// Compact, read-only preview of which app surfaces a campaign's (mode,
-/// systems) decisions light up. Reads `surfacesFor` (the single source).
+/// Compact, read-only preview of which app surfaces a campaign's systems
+/// decisions light up. Reads `surfacesFor` (the single source).
 class CampaignPreviewPane extends StatelessWidget {
-  const CampaignPreviewPane(
-      {super.key, required this.mode, required this.systems});
-  final CampaignMode mode;
+  const CampaignPreviewPane({super.key, required this.systems});
   final Set<String> systems;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final verbs = surfacesFor(mode, systems);
+    final verbs = surfacesFor(systems);
     final activeCount = verbs.expand((v) => v.rows).where((r) => r.on).length;
     final muted = theme.textTheme.bodySmall
         ?.copyWith(color: theme.disabledColor, fontSize: 11);
