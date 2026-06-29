@@ -688,6 +688,40 @@ class StatBlockView extends StatelessWidget {
           if (curHp != null && maxHp != null) chip('$curHp/$maxHp'),
           if (block.speed.isNotEmpty) chip(block.speed),
         ]),
+        if (block.cr != null || block.creatureType != null || block.size != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              [
+                if (block.size != null) block.size!,
+                if (block.creatureType != null) block.creatureType!,
+                if (block.cr != null) 'CR ${block.cr}',
+              ].join(' · '),
+              style: theme.textTheme.labelMedium,
+            ),
+          ),
+        if (block.abilities != null && block.abilities!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              block.abilities!.entries.map((e) => '${e.key} ${e.value}').join('  '),
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
+        if (block.traits != null)
+          for (final tr in block.traits!)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text.rich(
+                TextSpan(
+                  style: theme.textTheme.bodySmall,
+                  children: [
+                    TextSpan(text: '${tr.name}. ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    TextSpan(text: tr.text),
+                  ],
+                ),
+              ),
+            ),
         if (block.attacks.isNotEmpty) ...[
           const SizedBox(height: 8),
           Text('ATTACKS',
