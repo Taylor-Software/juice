@@ -493,36 +493,44 @@ Working rules for this repo:
   Continue/New/switch/import + in-shell switch/New). `build()` stays `journal` —
   landing only applies on explicit entry, so toggling mode mid-session doesn't
   re-land. (2) **framing** — the mode-toggle chip in the app-bar. The mode is
-  chosen at campaign creation (`NewCampaignDialog` has a `new-campaign-mode`
-  Party|GM `SegmentedButton`; `SessionsNotifier.create` takes a `mode` param).
+  chosen at campaign creation (wizard step 0 stance cards set `_mode` → gm or
+  party; `SessionsNotifier.create` takes a `mode` param).
   See `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
-- **Campaign creation is presets-first** (`NewCampaignDialog` in
-  `lib/shared/home_shell.dart`). The 16 systems are categorized by
-  `kSystemCategory` (`SystemCategory {ruleset, oracle, exploration, tools}`,
-  models.dart) against the canonical `kKnownSystems`; **`kAllSystems` (5 ids) is
-  UNCHANGED** — it remains the legacy-null fallback (`SessionMeta.enabledSystems`
-  + ~17 widget defaults), NOT the creation seed. Creation offers `kCampaignPresets`
-  (`lib/engine/campaign_presets.dart`, pure: 9 ruleset presets `solo-*` + `oracle`
-  + `gm-toolkit`; `presetConfig` resolves a preset to `(mode, systems)`); a
-  `Custom` chip (`preset-custom`) reveals a grouped picker (ruleset =
-  single-select `ChoiceChip` incl. `ruleset-none`, others multi `FilterChip`
-  `cat-<id>`) with `preset-back` to return, a `new-campaign-mode` toggle + a
-  GM dead-combo hint. Genre/tone fields show in both modes. `_EditSystemsDialog`
-  is grouped by the same categories (`edit-sys-<id>`, multi-toggle, advanced).
-  The dialog's return record `(name, systems, mode, genre, tone)` is preserved
-  (callers + `SessionsNotifier.create` unchanged). **P2 (live preview)** added a
-  `CampaignPreviewPane` (`lib/shared/campaign_preview_pane.dart`) embedded in the
-  dialog (below genre/tone, live-updating via `_resolved()`): it shows which app
-  surfaces the current systems set lights up, reading the pure `surfacesFor(systems)`
-  (`lib/engine/campaign_surfaces.dart`) — an authored surface table whose system
-  gates a test validates against `kKnownSystems`, so the preview can't drift from
-  runtime. (The mode-gate `requiresModeKey` field and `visibleForMode` call were
-  removed — surfaces are now system-gated only.) A
-  full multi-step stepper was judged unnecessary (P1's grouped Custom picker +
-  the preview cover direction B). See
-  `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md` and the
-  plans `docs/superpowers/plans/2026-06-24-campaign-creation-redesign.md`
-  (P1) + `docs/superpowers/plans/2026-06-24-campaign-wizard.md` (P2).
+- **Campaign creation is a 3-step wizard** (`NewCampaignDialog` in
+  `lib/shared/home_shell.dart`, `_NewCampaignDialogState`). The 16 systems are
+  categorized by `kSystemCategory` (`SystemCategory {ruleset, oracle, exploration,
+  tools}`, models.dart) against the canonical `kKnownSystems`; **`kAllSystems`
+  (5 ids) is UNCHANGED** — it remains the legacy-null fallback
+  (`SessionMeta.enabledSystems` + ~17 widget defaults), NOT the creation seed.
+  The wizard uses `int _step` (0–2) with a 3-dot indicator + Back/Next/Create
+  navigation; Next is gated until a stance is chosen on step 0.
+  - **Step 0 — Stance:** campaign name field + 3 tappable stance cards
+    (`new-stance-gm` → `mode=gm`; `new-stance-solo-gm` + `new-stance-solo-member`
+    → `mode=party`). Default: solo-member. `soloLead` is framing only (not
+    persisted).
+  - **Step 1 — System + tools:** ruleset `ChoiceChip`s (incl. `ruleset-none`,
+    single-select) + addon `FilterChip`s grouped by category (`cat-<id>`) + live
+    `CampaignPreviewPane`. No mode toggle (stance set it). Default addons:
+    `{juice, party}`.
+  - **Step 2 — Start:** genre + tone optional fields; funnel-vs-roster choice
+    (`new-start-roster` always; `new-start-funnel` shown only when
+    `funnelProfileFor(_ruleset) != null`). Create button (enabled when name
+    non-blank).
+  The dialog returns `({name, systems, mode, genre, tone, start, seedSystem})`;
+  `start ∈ {'roster', 'funnel'}`. When `start=='funnel'`, `systems` auto-includes
+  `'funnel'` and `seedSystem` is the ruleset id (or `'dcc'` fallback). The
+  `_createSession` caller wires up: after `create(...)` + `landFor(mode)`, if
+  `start=='funnel'` → `addFunnel(seedSystem)` then `goTo(Destination.sheet)`.
+  The old preset grid (`_PresetRow`/`_BrowseAllRow`) was removed from the dialog;
+  `kCampaignPresets`/`presetConfig` data lives on in `campaign_presets.dart`
+  (still referenced by other code). `_EditSystemsDialog` is grouped by the same
+  categories (`edit-sys-<id>`, multi-toggle, advanced) and is unchanged.
+  `CampaignPreviewPane` (`lib/shared/campaign_preview_pane.dart`) reads the pure
+  `surfacesFor(systems)` (`lib/engine/campaign_surfaces.dart`) — system-gated
+  only, mode no longer gates tools (since #202). See
+  `docs/superpowers/specs/2026-06-28-creation-wizard-design.md`, plus the prior
+  redesign specs at `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md`
+  and `docs/superpowers/plans/2026-06-24-campaign-wizard.md`.
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs
   (empty groups hidden; the active PC `playContextProvider.activeCharacterId` is

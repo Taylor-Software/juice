@@ -196,7 +196,7 @@ void main() {
   });
 
   testWidgets(
-      'new campaign dialog Custom picker: excluding party and including verdant',
+      'new campaign wizard: excluding party and including verdant via step 1',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -211,21 +211,18 @@ void main() {
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
 
-    // Preset rows are shown; open Custom picker (it's the dashed row below the
-    // taller preset rows — scroll it into view first).
-    expect(find.byKey(const Key('preset-solo-ironsworn')), findsOneWidget);
-    await tester.ensureVisible(find.byKey(const Key('preset-custom')));
-    await tester.tap(find.byKey(const Key('preset-custom')));
+    // Step 0: wizard is shown; enter a name and proceed.
+    expect(find.byKey(const Key('new-stance-gm')), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'No Party');
+    // Default stance (solo-member) is already selected; tap Next.
+    await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
-    // Custom picker is now visible: ruleset + addon chips. (The scroll offset
-    // carried over from scrolling to the dashed row, so ensure visibility.)
-    // Pick ironsworn as ruleset.
+    // Step 1: ruleset + addon chips.
     await tester.ensureVisible(find.byKey(const Key('ruleset-ironsworn')));
     await tester.tap(find.byKey(const Key('ruleset-ironsworn')));
     await tester.pumpAndSettle();
-    // Add oracle defaults (juice is pre-selected in _addons).
-    // Add verdant exploration.
     await tester.ensureVisible(find.byKey(const Key('cat-verdant')));
     await tester.tap(find.byKey(const Key('cat-verdant')));
     await tester.pumpAndSettle();
@@ -238,13 +235,10 @@ void main() {
     await tester.tap(find.byKey(const Key('cat-mythic')));
     await tester.pumpAndSettle();
 
-    // Enter a name (keyed — the journal composer also has a TextField).
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'No Party');
-
-    // Tap Create.
-    final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.tap(create);
+    // Step 1 → 2 → Create.
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
     await tester.pumpAndSettle();
 
     // The new campaign is active, excludes party, and includes verdant.
@@ -306,7 +300,7 @@ void main() {
     expect(find.byKey(const Key('split-toggle')), findsNothing);
   });
 
-  testWidgets('new campaign dialog preset solo-dnd selects dnd system',
+  testWidgets('new campaign wizard: selecting dnd ruleset creates campaign with dnd',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -316,12 +310,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
+    // Step 0: enter name + advance
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Dungeon');
-    await tester.tap(find.byKey(const Key('preset-solo-dnd')));
+    await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
-    final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.tap(create);
+    // Step 1: pick dnd ruleset
+    await tester.ensureVisible(find.byKey(const Key('ruleset-dnd')));
+    await tester.tap(find.byKey(const Key('ruleset-dnd')));
+    await tester.pumpAndSettle();
+    // Step 1 → 2 → Create
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
@@ -330,7 +331,7 @@ void main() {
     expect(s.activeMeta.enabledSystems, contains('dnd'));
   });
 
-  testWidgets('new campaign dialog preset solo-shadowdark selects shadowdark',
+  testWidgets('new campaign wizard: selecting shadowdark ruleset creates campaign with shadowdark',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -340,12 +341,19 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
     await tester.pumpAndSettle();
+    // Step 0: enter name + advance
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Gloomhold');
-    await tester.tap(find.byKey(const Key('preset-solo-shadowdark')));
+    await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
-    final create = find.widgetWithText(FilledButton, 'Create');
-    await tester.tap(create);
+    // Step 1: pick shadowdark ruleset
+    await tester.ensureVisible(find.byKey(const Key('ruleset-shadowdark')));
+    await tester.tap(find.byKey(const Key('ruleset-shadowdark')));
+    await tester.pumpAndSettle();
+    // Step 1 → 2 → Create
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
     await tester.pumpAndSettle();
     final container =
         ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
@@ -396,5 +404,81 @@ void main() {
     await tester.tap(find.descendant(of: toggle, matching: find.text('GM')));
     await tester.pumpAndSettle();
     expect(container.read(modeProvider), CampaignMode.gm);
+  });
+
+  testWidgets(
+      'new campaign wizard with funnel start creates a funnel character and lands on Sheet',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Campaigns'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
+    await tester.pumpAndSettle();
+
+    // Step 0: name + solo-member (default)
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Funnel Camp');
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+
+    // Step 1: pick dcc (funnel-capable)
+    await tester.ensureVisible(find.byKey(const Key('ruleset-dcc')));
+    await tester.tap(find.byKey(const Key('ruleset-dcc')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+
+    // Step 2: pick funnel start
+    await tester.tap(find.byKey(const Key('new-start-funnel')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    // A funnel character was created in the roster.
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.any((c) => c.funnel != null), isTrue,
+        reason: 'A funnel Character should have been added');
+    // Funnel system is in the campaign
+    final s = await container.read(sessionsProvider.future);
+    expect(s.activeMeta.enabledSystems, contains('funnel'));
+    // Shell landed on Sheet verb
+    expect(
+        container.read(shellRouteProvider).destination, Destination.sheet);
+  });
+
+  testWidgets('new campaign wizard with roster start does not create a funnel character',
+      (tester) async {
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Campaigns'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'New campaign'));
+    await tester.pumpAndSettle();
+
+    // Step 0: name + next
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Roster Camp');
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    // Step 1 → 2 → Create (default roster)
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
+    await tester.pumpAndSettle();
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.any((c) => c.funnel != null), isFalse,
+        reason: 'No funnel Character should be created on roster start');
   });
 }
