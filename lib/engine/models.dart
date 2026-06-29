@@ -3,6 +3,7 @@
 library;
 
 import 'custom_sheet.dart';
+import 'tally.dart';
 
 // Tolerant JSON readers shared by the sheets' `maybeFromJson` factories.
 int _intOr(dynamic v, int d) => v is int ? v : d;
@@ -189,6 +190,7 @@ class Thread {
     this.pinned = false,
     int progress = 0,
     int progressMax = 10,
+    this.tally,
   })  : progressMax = progressMax < 1 ? 1 : progressMax,
         progress = progress.clamp(0, progressMax < 1 ? 1 : progressMax);
   final String id;
@@ -203,6 +205,10 @@ class Thread {
   /// Clock denominator (default 10); always >= 1.
   final int progressMax;
 
+  /// Optional bidirectional success/failure tally (Cairn-Solo style); null when
+  /// this thread is a plain storyline. Distinct from the [progress] clock.
+  final Tally? tally;
+
   Thread copyWith({
     String? title,
     String? note,
@@ -210,6 +216,8 @@ class Thread {
     bool? pinned,
     int? progress,
     int? progressMax,
+    Tally? tally,
+    bool clearTally = false,
   }) =>
       Thread(
         id: id,
@@ -219,6 +227,7 @@ class Thread {
         pinned: pinned ?? this.pinned,
         progress: progress ?? this.progress,
         progressMax: progressMax ?? this.progressMax,
+        tally: clearTally ? null : (tally ?? this.tally),
       );
 
   Map<String, dynamic> toJson() => {
@@ -229,6 +238,7 @@ class Thread {
         if (pinned) 'pinned': true,
         if (progress > 0) 'progress': progress,
         if (progressMax != 10) 'progressMax': progressMax,
+        if (tally != null) 'tally': tally!.toJson(),
       };
 
   factory Thread.fromJson(Map<String, dynamic> j) => Thread(
@@ -239,6 +249,7 @@ class Thread {
         pinned: (j['pinned'] as bool?) ?? false,
         progress: (j['progress'] as int?) ?? 0,
         progressMax: (j['progressMax'] as int?) ?? 10,
+        tally: Tally.maybeFromJson((j['tally'] as Map?)?.cast<String, dynamic>()),
       );
 }
 
