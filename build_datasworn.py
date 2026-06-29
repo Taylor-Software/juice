@@ -111,6 +111,31 @@ def transform_assets(assets):
     return colls
 
 
+def transform_npcs(npcs, ruleset_label):
+    """Flatten datasworn npc collections into [{name, ruleset, entries:[...]}]."""
+    out = []
+    for col in npcs.values():
+        entries = []
+        for npc in (col.get("contents") or {}).values():
+            entry = {
+                "id": npc["_id"],
+                "name": npc["name"],
+                "rank": npc.get("rank", 1),
+                "nature": npc.get("nature", ""),
+                "features": npc.get("features", []),
+                "drives": npc.get("drives", []),
+                "tactics": npc.get("tactics", []),
+            }
+            entries.append(entry)
+        if entries:
+            out.append({
+                "name": col["name"],
+                "ruleset": ruleset_label,
+                "entries": entries,
+            })
+    return out
+
+
 def verify(ruleset_id, data):
     failures = []
     if not data["move_categories"]:
@@ -148,6 +173,7 @@ def main():
     for rid, path in SRC.items():
         with open(path) as f:
             src = json.load(f)
+        ruleset_label = src.get("title", rid).removesuffix(" Rulebook")
         data = {
             "meta": {
                 "id": rid,
@@ -159,6 +185,7 @@ def main():
             "move_categories": transform_moves(src.get("moves") or {}),
             "oracle_collections": flatten_oracles(src.get("oracles") or {}),
             "asset_collections": transform_assets(src.get("assets") or {}),
+            "npc_collections": transform_npcs(src.get("npcs") or {}, ruleset_label),
         }
         all_failures += verify(rid, data)
         out = f"assets/ruleset_{rid}.json"
@@ -167,8 +194,9 @@ def main():
         n_moves = sum(len(c["moves"]) for c in data["move_categories"])
         n_tables = sum(len(c["tables"]) for c in data["oracle_collections"])
         n_assets = sum(len(c["assets"]) for c in data["asset_collections"])
+        n_npcs = sum(len(c["entries"]) for c in data["npc_collections"])
         print(f"{out}: {n_moves} moves, {n_tables} oracle tables, "
-              f"{n_assets} assets")
+              f"{n_assets} assets, {n_npcs} npcs")
     if all_failures:
         print("VERIFICATION FAILED:")
         for f_ in all_failures:
