@@ -1348,6 +1348,26 @@ class AiNudgeSeenNotifier extends AsyncNotifier<bool> {
 final aiNudgeSeenProvider =
     AsyncNotifierProvider<AiNudgeSeenNotifier, bool>(AiNudgeSeenNotifier.new);
 
+/// App-global last-export timestamp (milliseconds since epoch, or null).
+/// Stamped on every successful campaign export; per-device, NOT session-scoped.
+class LastExportNotifier extends AsyncNotifier<int?> {
+  static const _key = 'juice.last_export.v1';
+
+  @override
+  Future<int?> build() async =>
+      (await SharedPreferences.getInstance()).getInt(_key);
+
+  Future<void> stamp() async {
+    final p = await SharedPreferences.getInstance();
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await p.setInt(_key, now);
+    state = AsyncData(now);
+  }
+}
+
+final lastExportProvider =
+    AsyncNotifierProvider<LastExportNotifier, int?>(LastExportNotifier.new);
+
 /// App-global flag: the first-launch welcome card has been dismissed.
 /// Same posture as [aiNudgeSeenProvider] — per-device, NOT session-scoped.
 class WelcomeSeenNotifier extends AsyncNotifier<bool> {

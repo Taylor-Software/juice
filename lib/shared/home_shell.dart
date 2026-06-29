@@ -130,8 +130,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 onTap: () => _createSession(dialogContext),
               ),
               ListTile(
+                key: const Key('menu-export-campaign'),
                 leading: const Icon(Icons.file_upload_outlined),
                 title: const Text('Export campaign'),
+                subtitle: _LastExportSubtitle(
+                    ts: ref.watch(lastExportProvider).valueOrNull),
                 onTap: () => _exportCampaign(dialogContext),
               ),
               ListTile(
@@ -236,6 +239,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         allowedExtensions: [file.ext],
         bytes: Uint8List.fromList(file.bytes),
       );
+      await ref.read(lastExportProvider.notifier).stamp();
       if (dialogContext.mounted) {
         Navigator.of(dialogContext).pop();
       }
@@ -262,6 +266,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         allowedExtensions: ['md'],
         bytes: Uint8List.fromList(utf8.encode(content)),
       );
+      await ref.read(lastExportProvider.notifier).stamp();
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on PlatformException catch (e) {
       if (!mounted) return;
@@ -1470,5 +1475,34 @@ class _EditSystemsDialogState extends State<_EditSystemsDialog> {
       case SystemCategory.tools:
         return 'Tools';
     }
+  }
+}
+
+/// Subtitle widget showing last-export recency below the Export menu item.
+class _LastExportSubtitle extends StatelessWidget {
+  const _LastExportSubtitle({required this.ts});
+  final int? ts;
+
+  @override
+  Widget build(BuildContext context) {
+    if (ts == null) {
+      return Text('Never exported',
+          key: const Key('export-subtitle-never'),
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.error));
+    }
+    final days = DateTime.now()
+        .difference(DateTime.fromMillisecondsSinceEpoch(ts!))
+        .inDays;
+    final label = days == 0
+        ? 'Exported today'
+        : days == 1
+            ? 'Exported yesterday'
+            : 'Exported $days days ago';
+    return Text(label,
+        key: const Key('export-subtitle-date'),
+        style: Theme.of(context).textTheme.bodySmall);
   }
 }

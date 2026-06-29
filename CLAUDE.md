@@ -520,6 +520,17 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+- **Backup safety** (Streamline epic Phase 5) — export timestamp tracking +
+  a backup nudge on the launcher. `LastExportNotifier` / `lastExportProvider`
+  (`juice.last_export.v1`, app-global, non-session-scoped, same pattern as
+  `aiNudgeSeenProvider`) is stamped on every successful `_exportCampaign` /
+  `_exportLonelog` call in `home_shell.dart`. The "Export campaign" menu item
+  now shows a `_LastExportSubtitle` ("Never exported" / "Exported today" /
+  "Exported N days ago"). A `_BackupNudge` card on the launcher shows when
+  the active campaign has journal entries AND was never exported OR last exported
+  ≥7 days ago (hidden on the welcome-card screen and when freshly exported).
+  Covered by `test/backup_nudge_test.dart` (6 tests). See
+  `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **First-run onboarding** (Streamline epic Phase 4) — a `_WelcomeCard`
   shown on the launcher (`lib/features/launcher_screen.dart`) when the user
   has only 1 campaign and hasn't dismissed it before. Condition: `!welcomeSeen
