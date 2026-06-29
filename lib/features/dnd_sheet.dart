@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/spell.dart';
 import '../state/providers.dart';
+import 'reference_view.dart';
 import 'sheet_widgets.dart';
 
 /// Bespoke D&D 5e character sheet (P1). Renders for characters whose
@@ -204,12 +206,77 @@ class DndSheetView extends ConsumerWidget {
           else
             for (var lvl = 1; lvl <= 9; lvl++)
               if (s.slotMax(lvl) > 0) _slotRow(ref, s, lvl),
+          // Structured prepared spells (resolved from the content registry).
+          Builder(builder: (context) {
+            final all = ref.watch(contentSpellsProvider).valueOrNull ??
+                const <SpellEntry>[];
+            final byId = {for (final sp in all) sp.id: sp};
+            final attached = s.spellIds
+                .map((id) => byId[id])
+                .whereType<SpellEntry>()
+                .toList()
+              ..sort((a, b) => a.level.compareTo(b.level));
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text('Prepared / known',
+                      style: theme.textTheme.labelLarge),
+                  const Spacer(),
+                  TextButton.icon(
+                    key: const Key('dnd-spell-add'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add spell'),
+                    onPressed: () async {
+                      final picked = await showDialog<SpellEntry>(
+                        context: context,
+                        builder: (_) => _SpellPickerDialog(spells: all),
+                      );
+                      if (picked == null) return;
+                      if (s.spellIds.contains(picked.id)) return;
+                      _save(ref,
+                          s.copyWith(spellIds: [...s.spellIds, picked.id]));
+                    },
+                  ),
+                ]),
+                for (final sp in attached)
+                  ListTile(
+                    key: Key('dnd-spell-view-${sp.id}'),
+                    dense: true,
+                    title: Text(sp.name),
+                    subtitle: Text(sp.level == 0
+                        ? 'Cantrip · ${sp.school}'
+                        : 'Lvl ${sp.level} · ${sp.school}'),
+                    trailing: IconButton(
+                      key: Key('dnd-spell-del-${sp.id}'),
+                      icon: const Icon(Icons.close),
+                      onPressed: () => _save(
+                          ref,
+                          s.copyWith(
+                              spellIds: s.spellIds
+                                  .where((id) => id != sp.id)
+                                  .toList())),
+                    ),
+                    onTap: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => Dialog(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child:
+                              SizedBox(width: 360, child: SpellCard(spell: sp)),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
           TextFormField(
             key: const Key('dnd-prepared'),
             initialValue: s.preparedSpells,
             maxLines: null,
             decoration: const InputDecoration(
-                labelText: 'Prepared / known', hintText: 'Spell names…'),
+                labelText: 'Spell notes', hintText: 'Spell names…'),
             onChanged: (v) => _save(ref, s.copyWith(preparedSpells: v)),
           ),
         ],
@@ -322,5 +389,71 @@ class DndSheetView extends ConsumerWidget {
       ),
       Text('${(max - used).clamp(0, max)} / $max left'),
     ]);
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+/// A searchable dialog for picking a spell from the content registry.
+class _SpellPickerDialog extends StatefulWidget {
+  const _SpellPickerDialog({required this.spells});
+  final List<SpellEntry> spells;
+
+  @override
+  State<_SpellPickerDialog> createState() => _SpellPickerDialogState();
+}
+
+class _SpellPickerDialogState extends State<_SpellPickerDialog> {
+  String _query = '';
+
+  List<SpellEntry> get _filtered {
+    if (_query.isEmpty) return widget.spells;
+    final q = _query.toLowerCase();
+    return widget.spells.where((sp) => sp.name.toLowerCase().contains(q)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filtered;
+    return AlertDialog(
+      title: const Text('Add spell'),
+      content: SizedBox(
+        width: 320,
+        height: 420,
+        child: Column(
+          children: [
+            TextField(
+              key: const Key('dnd-spell-search'),
+              decoration: const InputDecoration(
+                  hintText: 'Search…', prefixIcon: Icon(Icons.search)),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                itemCount: filtered.length,
+                itemBuilder: (context, i) {
+                  final sp = filtered[i];
+                  return ListTile(
+                    key: Key('dnd-spell-pick-${sp.id}'),
+                    title: Text(sp.name),
+                    subtitle: Text(sp.level == 0
+                        ? 'Cantrip · ${sp.school}'
+                        : 'Lvl ${sp.level} · ${sp.school}'),
+                    onTap: () => Navigator.of(context).pop(sp),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+      ],
+    );
   }
 }

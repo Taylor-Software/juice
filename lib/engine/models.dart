@@ -1139,6 +1139,7 @@ class DndSheet {
     this.spellSlotsUsed = const [0, 0, 0, 0, 0, 0, 0, 0, 0],
     this.pactSlotsUsed = 0,
     this.preparedSpells = '',
+    this.spellIds = const [],
   });
 
   final Map<String, int> abilities; // keys = kDndAbilities, each 1..30
@@ -1156,6 +1157,7 @@ class DndSheet {
   final List<int> spellSlotsUsed; // length 9, expended per spell level
   final int pactSlotsUsed; // Warlock Pact Magic
   final String preparedSpells; // freeform
+  final List<String> spellIds; // structured spell picks (content registry ids)
 
   int score(String a) => abilities[a] ?? 10;
   int abilityMod(String a) => ((score(a) - 10) / 2).floor();
@@ -1258,6 +1260,7 @@ class DndSheet {
     List<int>? spellSlotsUsed,
     int? pactSlotsUsed,
     String? preparedSpells,
+    List<String>? spellIds,
   }) {
     final lvl = (level ?? this.level).clamp(1, 20);
     final ab = abilities ?? this.abilities;
@@ -1303,6 +1306,7 @@ class DndSheet {
       spellSlotsUsed: _normSlots(spellSlotsUsed ?? this.spellSlotsUsed),
       pactSlotsUsed: (pactSlotsUsed ?? this.pactSlotsUsed).clamp(0, 1 << 20),
       preparedSpells: preparedSpells ?? this.preparedSpells,
+      spellIds: spellIds ?? this.spellIds,
     );
   }
 
@@ -1337,6 +1341,7 @@ class DndSheet {
         if (spellSlotsUsed.any((x) => x != 0)) 'spellSlotsUsed': spellSlotsUsed,
         if (pactSlotsUsed != 0) 'pactSlotsUsed': pactSlotsUsed,
         if (preparedSpells.isNotEmpty) 'preparedSpells': preparedSpells,
+        if (spellIds.isNotEmpty) 'spellIds': spellIds,
       };
 
   static DndSheet? maybeFromJson(dynamic j) {
@@ -1384,6 +1389,7 @@ class DndSheet {
           : const []),
       pactSlotsUsed: _intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
       preparedSpells: _strOr(j['preparedSpells']),
+      spellIds: ((j['spellIds'] as List?) ?? const []).cast<String>(),
     );
   }
 }
