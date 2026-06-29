@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../engine/campaign_presets.dart';
+import '../engine/funnel.dart';
 import '../engine/journal_export.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -198,7 +198,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           Set<String> systems,
           CampaignMode mode,
           String genre,
-          String tone
+          String tone,
+          String start,
+          String seedSystem,
         })>(
       context: dialogContext,
       builder: (context) => const NewCampaignDialog(),
@@ -210,6 +212,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         genre: result.genre,
         tone: result.tone);
     ref.read(shellRouteProvider.notifier).landFor(result.mode);
+    if (result.start == 'funnel') {
+      await ref
+          .read(charactersProvider.notifier)
+          .addFunnel(result.seedSystem);
+      ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
+    }
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
@@ -748,24 +756,6 @@ const kSystemBlurbs = <String, String>{
           'survivors into full characters of any enabled system.',
 };
 
-const kPresetIcons = <String, IconData>{
-  'solo-ironsworn': Icons.bolt,
-  'solo-dnd': Icons.castle,
-  'solo-shadowdark': Icons.dark_mode,
-  'solo-nimble': Icons.flash_on,
-  'solo-draw-steel': Icons.shield,
-  'solo-argosa': Icons.fort,
-  'solo-cairn': Icons.terrain,
-  'solo-knave': Icons.content_cut,
-  'solo-ose': Icons.auto_stories,
-  'solo-kal-arath': Icons.whatshot,
-  'solo-custom': Icons.dashboard_customize,
-  'solo-dcc': Icons.sports_martial_arts,
-  'solo-funnel': Icons.groups,
-  'oracle': Icons.casino,
-  'gm-toolkit': Icons.book,
-};
-
 /// Resolves a [SessionMeta.identityIcon] key (see identityIconKeyFor) to an
 /// IconData. Keys mirror the per-ruleset preset icons; unknown → a default.
 const kIdentityIcons = <String, IconData>{
@@ -819,47 +809,209 @@ class NewCampaignDialog extends StatefulWidget {
 }
 
 class _NewCampaignDialogState extends State<NewCampaignDialog> {
-  final _controller = TextEditingController();
-  final _genre = TextEditingController();
-  final _tone = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _genreCtrl = TextEditingController();
+  final _toneCtrl = TextEditingController();
 
-  String? _presetId = 'solo-ironsworn'; // default selection
-  bool _custom = false;
-  // Custom-mode working set:
-  String? _ruleset; // single-select ruleset id, or null
-  final Set<String> _addons = {'juice', 'party'}; // non-ruleset picks
+  // Wizard state
+  int _step = 0;
+
+  // Step 0
+  // null = no stance chosen yet; default to solo-member on first build
+  String? _stance = 'new-stance-solo-member'; // key of selected stance card
   CampaignMode _mode = CampaignMode.party;
+
+  // Step 1 (system + tools)
+  String? _ruleset; // single-select ruleset id, or null for None
+  final Set<String> _addons = {'juice', 'party'}; // non-ruleset selections
+
+  // Step 2 (start)
+  String _start = 'roster'; // 'roster' | 'funnel'
 
   @override
   void dispose() {
-    _controller.dispose();
-    _genre.dispose();
-    _tone.dispose();
+    _nameCtrl.dispose();
+    _genreCtrl.dispose();
+    _toneCtrl.dispose();
     super.dispose();
   }
 
-  /// The (mode, systems) the Create button will submit.
-  (CampaignMode, Set<String>) _resolved() {
-    if (_custom) {
-      return (_mode, {if (_ruleset != null) _ruleset!, ..._addons});
-    }
-    final p = kCampaignPresets.firstWhere((p) => p.id == _presetId);
-    return presetConfig(p);
+  Set<String> get _systems => {
+        if (_ruleset != null) _ruleset!,
+        ..._addons,
+      };
+
+  // Whether a funnel is available for the chosen ruleset
+  bool get _funnelAvailable =>
+      _ruleset != null && funnelProfileFor(_ruleset!) != null;
+
+  // The seed system to pass to addFunnel (ruleset if funnel-capable, else dcc)
+  String get _seedSystem =>
+      (_ruleset != null && funnelProfileFor(_ruleset!) != null)
+          ? _ruleset!
+          : 'dcc';
+
+  bool get _nextEnabled {
+    if (_step == 0) return _stance != null;
+    return true; // step 1 is always satisfiable
+  }
+
+  void _selectStance(String key, CampaignMode mode) {
+    setState(() {
+      _stance = key;
+      _mode = mode;
+    });
   }
 
   void _submit() {
-    final (mode, systems) = _resolved();
+    final systemsForSubmit = {
+      ..._systems,
+      if (_start == 'funnel') 'funnel',
+    };
     Navigator.of(context).pop((
-      name: _controller.text,
-      systems: systems,
-      mode: mode,
-      genre: _genre.text.trim(),
-      tone: _tone.text.trim(),
+      name: _nameCtrl.text,
+      systems: systemsForSubmit,
+      mode: _mode,
+      genre: _genreCtrl.text.trim(),
+      tone: _toneCtrl.text.trim(),
+      start: _start,
+      seedSystem: _seedSystem,
     ));
+  }
+
+  void _goNext() {
+    if (_step < 2) {
+      setState(() {
+        // If moving from step 1 to step 2 and funnel is no longer available,
+        // reset the start choice back to roster.
+        if (_step == 1 && !_funnelAvailable) _start = 'roster';
+        _step++;
+      });
+    }
+  }
+
+  void _goBack() {
+    if (_step > 0) setState(() => _step--);
   }
 
   @override
   Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New campaign'),
+      content: SizedBox(
+        width: 460,
+        height: 420,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Step indicator: 3 dots
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (int i = 0; i < 3; i++)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: _StepDot(active: i == _step),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildStepContent(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        if (_step > 0)
+          TextButton(
+            key: const Key('wizard-back'),
+            onPressed: _goBack,
+            child: const Text('Back'),
+          ),
+        if (_step < 2)
+          FilledButton(
+            key: const Key('wizard-next'),
+            onPressed: _nextEnabled ? _goNext : null,
+            child: const Text('Next'),
+          )
+        else
+          FilledButton(
+            key: const Key('wizard-create'),
+            onPressed: _nameCtrl.text.trim().isNotEmpty ? _submit : null,
+            child: const Text('Create'),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildStepContent() {
+    switch (_step) {
+      case 0:
+        return _buildStep0();
+      case 1:
+        return _buildStep1();
+      case 2:
+        return _buildStep2();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildStep0() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          key: const Key('new-campaign-name'),
+          controller: _nameCtrl,
+          autofocus: false,
+          decoration: const InputDecoration(labelText: 'Campaign name'),
+          onChanged: (_) => setState(() {}), // refresh Create button state
+        ),
+        const SizedBox(height: 16),
+        const Text('Who are you at the table?',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        _StanceCard(
+          key: const Key('new-stance-gm'),
+          title: 'GM, live table',
+          subtitle: 'Running a game for others',
+          icon: Icons.table_bar,
+          selected: _stance == 'new-stance-gm',
+          onTap: () => _selectStance('new-stance-gm', CampaignMode.gm),
+        ),
+        const SizedBox(height: 6),
+        _StanceCard(
+          key: const Key('new-stance-solo-gm'),
+          title: 'Solo, as GM',
+          subtitle: 'You run the world and play characters',
+          icon: Icons.psychology,
+          selected: _stance == 'new-stance-solo-gm',
+          onTap: () => _selectStance('new-stance-solo-gm', CampaignMode.party),
+        ),
+        const SizedBox(height: 6),
+        _StanceCard(
+          key: const Key('new-stance-solo-member'),
+          title: 'Solo, as a member',
+          subtitle: 'You play a character in the story',
+          icon: Icons.person,
+          selected: _stance == 'new-stance-solo-member',
+          onTap: () =>
+              _selectStance('new-stance-solo-member', CampaignMode.party),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStep1() {
     final rulesetIds = kSystemCategory.entries
         .where((e) => e.value == SystemCategory.ruleset)
         .map((e) => e.key)
@@ -869,145 +1021,107 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         .map((e) => e.key)
         .toList();
 
-    return AlertDialog(
-      title: const Text('New campaign'),
-      content: SizedBox(
-        width: 460,
-        // Fixed height + internal scroll keeps all chips within the visible
-        // area of the dialog regardless of content mode. autofocus is false
-        // to prevent SingleChildScrollView jumping on field focus change.
-        height: 380,
-        child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(
-              key: const Key('new-campaign-name'),
-              controller: _controller,
-              autofocus: false,
-              decoration: const InputDecoration(labelText: 'Campaign name'),
-              onSubmitted: (_) => _submit(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text('Ruleset (pick one)',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          ChoiceChip(
+            key: const Key('ruleset-none'),
+            label: const Text('None'),
+            selected: _ruleset == null,
+            onSelected: (_) => setState(() => _ruleset = null),
+          ),
+          for (final id in rulesetIds)
+            ChoiceChip(
+              key: Key('ruleset-$id'),
+              label: Text(kSystemShortName[id] ?? id),
+              selected: _ruleset == id,
+              onSelected: (_) => setState(() => _ruleset = id),
             ),
-            const SizedBox(height: 8),
-            // Show preset rows OR custom picker — not both
-            if (!_custom) ...[
-              const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('What kind of story are you telling?')),
-              const SizedBox(height: 6),
-              for (final p in kCampaignPresets)
-                _PresetRow(
-                  preset: p,
-                  selected: _presetId == p.id,
-                  onTap: () => setState(() => _presetId = p.id),
-                ),
-              _BrowseAllRow(onTap: () => setState(() => _custom = true)),
-            ] else ...[
-              _customPicker(rulesetIds, addonIds),
-            ],
-            // Genre/tone are campaign metadata — always available, both modes.
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('new-campaign-genre'),
-              controller: _genre,
-              decoration: const InputDecoration(
-                  labelText: 'Genre (optional)',
-                  hintText: 'e.g. grimdark fantasy'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              key: const Key('new-campaign-tone'),
-              controller: _tone,
-              decoration: const InputDecoration(
-                  labelText: 'Tone (optional)',
-                  hintText: 'e.g. tense and dangerous'),
-            ),
-            const SizedBox(height: 12),
-            const Divider(),
-            Builder(builder: (_) {
-              final (mode, systems) = _resolved();
-              return CampaignPreviewPane(systems: systems);
-            }),
+        ]),
+        const SizedBox(height: 12),
+        for (final cat in const [
+          SystemCategory.oracle,
+          SystemCategory.exploration,
+          SystemCategory.tools,
+        ]) ...[
+          Text(_categoryLabel(cat),
+              style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final id in addonIds.where((i) => kSystemCategory[i] == cat))
+              FilterChip(
+                key: Key('cat-$id'),
+                label: Text(kSystemShortName[id] ?? id),
+                selected: _addons.contains(id),
+                onSelected: (v) => setState(() {
+                  if (v) {
+                    _addons.add(id);
+                  } else {
+                    _addons.remove(id);
+                  }
+                }),
+              ),
           ]),
-        ),
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel')),
-        FilledButton(onPressed: _submit, child: const Text('Create')),
+          const SizedBox(height: 10),
+        ],
+        const Divider(),
+        CampaignPreviewPane(systems: _systems),
       ],
     );
   }
 
-  Widget _customPicker(List<String> rulesetIds, List<String> addonIds) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton.icon(
-          key: const Key('preset-back'),
-          onPressed: () => setState(() => _custom = false),
-          icon: const Icon(Icons.arrow_back, size: 16),
-          label: const Text('Back to presets'),
-        ),
-      ),
-      const Text('Ruleset (pick one)'),
-      const SizedBox(height: 4),
-      Wrap(spacing: 6, runSpacing: 6, children: [
-        ChoiceChip(
-          key: const Key('ruleset-none'),
-          label: const Text('None'),
-          selected: _ruleset == null,
-          onSelected: (_) => setState(() => _ruleset = null),
-        ),
-        for (final id in rulesetIds)
-          ChoiceChip(
-            key: Key('ruleset-$id'),
-            label: Text(kSystemShortName[id] ?? id),
-            selected: _ruleset == id,
-            onSelected: (_) => setState(() => _ruleset = id),
+  Widget _buildStep2() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          key: const Key('new-campaign-genre'),
+          controller: _genreCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Genre (optional)',
+            hintText: 'e.g. grimdark fantasy',
           ),
-      ]),
-      const SizedBox(height: 8),
-      for (final cat in const [
-        SystemCategory.oracle,
-        SystemCategory.exploration,
-        SystemCategory.tools
-      ]) ...[
-        Text(_categoryLabel(cat)),
-        const SizedBox(height: 4),
-        Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final id in addonIds.where((i) => kSystemCategory[i] == cat))
-            FilterChip(
-              key: Key('cat-$id'),
-              label: Text(kSystemShortName[id] ?? id),
-              selected: _addons.contains(id),
-              onSelected: (v) => setState(() {
-                if (v) {
-                  _addons.add(id);
-                } else {
-                  _addons.remove(id);
-                }
-              }),
-            ),
-        ]),
-        const SizedBox(height: 6),
-      ],
-      const SizedBox(height: 4),
-      SegmentedButton<CampaignMode>(
-        key: const Key('new-campaign-mode'),
-        segments: const [
-          ButtonSegment(value: CampaignMode.party, label: Text('Party')),
-          ButtonSegment(value: CampaignMode.gm, label: Text('GM')),
-        ],
-        selected: {_mode},
-        onSelectionChanged: (s) => setState(() => _mode = s.first),
-      ),
-      if (_mode == CampaignMode.gm)
-        const Padding(
-          padding: EdgeInsets.only(top: 2),
-          child: Text('GM mode hides party tools & shows Rumors',
-              style: TextStyle(fontSize: 11)),
         ),
-    ]);
+        const SizedBox(height: 8),
+        TextField(
+          key: const Key('new-campaign-tone'),
+          controller: _toneCtrl,
+          decoration: const InputDecoration(
+            labelText: 'Tone (optional)',
+            hintText: 'e.g. tense and dangerous',
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Text('How do you start characters?',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        _StartCard(
+          key: const Key('new-start-roster'),
+          title: 'Start with a roster',
+          subtitle: 'Add characters after campaign creation',
+          icon: Icons.group,
+          selected: _start == 'roster',
+          onTap: () => setState(() => _start = 'roster'),
+        ),
+        if (_funnelAvailable) ...[
+          const SizedBox(height: 6),
+          _StartCard(
+            key: const Key('new-start-funnel'),
+            title: '0-level funnel',
+            subtitle: 'Start with a group of peasants',
+            icon: Icons.filter_list,
+            selected: _start == 'funnel',
+            onTap: () => setState(() => _start = 'funnel'),
+          ),
+        ],
+      ],
+    );
   }
 
   String _categoryLabel(SystemCategory c) {
@@ -1021,6 +1135,161 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       case SystemCategory.ruleset:
         return 'Ruleset';
     }
+  }
+}
+
+/// A small dot indicator for the wizard step bar.
+class _StepDot extends StatelessWidget {
+  const _StepDot({required this.active});
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.outlineVariant;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: active ? 12 : 8,
+      height: active ? 12 : 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+/// A tappable stance selection card for step 0.
+class _StanceCard extends StatelessWidget {
+  const _StanceCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? colorScheme.primaryContainer
+          : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Icon(icon,
+                size: 22,
+                color: selected ? colorScheme.primary : colorScheme.onSurface),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: selected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
+/// A tappable start-mode card for step 2.
+class _StartCard extends StatelessWidget {
+  const _StartCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: selected
+          ? colorScheme.primaryContainer
+          : colorScheme.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected
+                  ? colorScheme.primary
+                  : colorScheme.outlineVariant,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(children: [
+            Icon(icon,
+                size: 22,
+                color: selected ? colorScheme.primary : colorScheme.onSurface),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: selected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          fontSize: 12, color: colorScheme.onSurfaceVariant)),
+                ],
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 }
 
@@ -1096,166 +1365,6 @@ class CampaignIdentityLeading extends StatelessWidget {
       ]),
     );
   }
-}
-
-/// A rich, tappable campaign-preset row: a 36px icon tile + the kind-of-play
-/// headline + a `blurb · <ruleset>` sublabel. Styled with Phase-0 JuiceTokens.
-class _PresetRow extends StatelessWidget {
-  const _PresetRow({
-    required this.preset,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final CampaignPreset preset;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tk = context.juice;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Material(
-        color: selected ? tk.sand : tk.raised,
-        borderRadius: BorderRadius.circular(15),
-        child: InkWell(
-          key: Key('preset-${preset.id}'),
-          borderRadius: BorderRadius.circular(15),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: selected ? tk.terracotta : tk.borderInput,
-                width: selected ? 1.5 : 1,
-              ),
-            ),
-            child: Row(children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: tk.selected,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(kPresetIcons[preset.id],
-                    size: 20, color: tk.terracotta),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(preset.kind,
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: tk.ink)),
-                    Text('${preset.blurb} · ${preset.label}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: tk.inkMuted)),
-                  ],
-                ),
-              ),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The dashed "Browse all systems" entry rendered below the preset rows.
-class _BrowseAllRow extends StatelessWidget {
-  const _BrowseAllRow({required this.onTap});
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tk = context.juice;
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(15),
-      child: InkWell(
-        key: const Key('preset-custom'),
-        borderRadius: BorderRadius.circular(15),
-        onTap: onTap,
-        child: DottedBorderBox(
-          color: tk.borderInput,
-          radius: 15,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-            child: Row(children: [
-              Icon(Icons.tune, size: 20, color: tk.inkMuted),
-              const SizedBox(width: 10),
-              Text('Browse all systems',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: tk.inkBody)),
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A lightweight dashed-border container (no extra deps) for the "Browse all"
-/// affordance — distinguishes it from the solid preset rows.
-class DottedBorderBox extends StatelessWidget {
-  const DottedBorderBox({
-    super.key,
-    required this.child,
-    required this.color,
-    this.radius = 12,
-  });
-
-  final Widget child;
-  final Color color;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DashedBorderPainter(color: color, radius: radius),
-      child: child,
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({required this.color, required this.radius});
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final rrect =
-        RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius));
-    final path = Path()..addRRect(rrect);
-    const dash = 5.0, gap = 4.0;
-    for (final metric in path.computeMetrics()) {
-      var d = 0.0;
-      while (d < metric.length) {
-        canvas.drawPath(
-            metric.extractPath(d, (d + dash).clamp(0, metric.length)), paint);
-        d += dash + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DashedBorderPainter old) =>
-      old.color != color || old.radius != radius;
 }
 
 /// Dialog to toggle the optional systems of an existing campaign.

@@ -47,13 +47,13 @@ void main() {
     ));
     await t.pumpAndSettle();
 
-    // Open Campaigns -> New campaign -> Custom.
+    // Open Campaigns -> New campaign -> wizard step 1 (has the chips).
     await t.tap(find.byTooltip('Campaigns'));
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
-    await t.ensureVisible(find.byKey(const Key('preset-custom')));
-    await t.tap(find.byKey(const Key('preset-custom')));
+    // Step 0 has stance cards; advance to step 1 where addon chips live.
+    await t.tap(find.byKey(const Key('wizard-next')));
     await t.pumpAndSettle();
 
     // Lonelog chip present and not selected (opt-in: default off).
@@ -114,8 +114,8 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
-    await t.ensureVisible(find.byKey(const Key('preset-custom')));
-    await t.tap(find.byKey(const Key('preset-custom')));
+    // Step 0 has stance cards; advance to step 1 where addon chips live.
+    await t.tap(find.byKey(const Key('wizard-next')));
     await t.pumpAndSettle();
 
     final hex = find.byKey(const Key('cat-hexcrawl'));
