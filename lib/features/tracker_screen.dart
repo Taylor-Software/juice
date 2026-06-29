@@ -30,12 +30,48 @@ import 'sheet_widgets.dart';
 import 'starforged_sheet.dart';
 
 // -- Threads --------------------------------------------------------------
+/// Shows a bottom sheet listing the journal entries linked to a thread.
+Future<void> _showThreadEntries(
+    BuildContext context, Thread t, List<JournalEntry> entries) {
+  return showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          ListTile(
+            title: Text('${t.title} — ${entries.length} journal entr${entries.length == 1 ? 'y' : 'ies'}',
+                style: Theme.of(context).textTheme.titleMedium),
+          ),
+          for (final e in entries)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.notes_outlined),
+              title: Text(
+                e.title.isEmpty ? mentionsToPlain(e.body) : e.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: e.title.isEmpty
+                  ? null
+                  : Text(mentionsToPlain(e.body),
+                      maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
 class ThreadsPane extends ConsumerWidget {
   const ThreadsPane({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final journal =
+        ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
     final async = ref.watch(threadsProvider);
     return Scaffold(
       body: async.when(
@@ -122,6 +158,24 @@ class ThreadsPane extends ConsumerWidget {
                                   color: tk.inkMuted)),
                         ],
                       ),
+                      Builder(builder: (ctx) {
+                        final linked = journal
+                            .where((e) => e.threadId == t.id)
+                            .toList();
+                        if (linked.isEmpty) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: ActionChip(
+                            key: Key('thread-entries-${t.id}'),
+                            avatar: const Icon(Icons.link, size: 14),
+                            label: Text(
+                                '${linked.length} entr${linked.length == 1 ? 'y' : 'ies'}'),
+                            visualDensity: VisualDensity.compact,
+                            onPressed: () =>
+                                _showThreadEntries(ctx, t, linked),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                   trailing: Row(

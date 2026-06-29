@@ -520,6 +520,15 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+- **Thread backlinks** (Streamline epic Phase 3) — each thread card in
+  `ThreadsPane` (`lib/features/tracker_screen.dart`) now shows a
+  `thread-entries-<id>` `ActionChip` ("N entr[y/ies]") when journal entries
+  are linked to it via `JournalEntry.threadId`. Tapping opens a bottom sheet
+  listing those entries (mirrors the existing `mentions-<id>` chip on character
+  cards). Character backlinks (`mentions-<id>` chip + `_showMentions` + the
+  `@[Name](char:ID)` mention system) and thread mentions (`@[Title](thread:ID)`)
+  were already shipped — Phase 3 closed the one remaining gap (thread→journal
+  backlinks). See `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
