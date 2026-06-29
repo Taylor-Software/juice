@@ -1020,8 +1020,11 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         .where((e) => e.value == SystemCategory.ruleset)
         .map((e) => e.key)
         .toList();
+    // 'funnel' excluded: step 2 (start choice) manages it. Toggling it here
+    // and picking roster would silently enable the funnel verb with no character.
     final addonIds = kSystemCategory.entries
-        .where((e) => e.value != SystemCategory.ruleset)
+        .where(
+            (e) => e.value != SystemCategory.ruleset && e.key != 'funnel')
         .map((e) => e.key)
         .toList();
 
