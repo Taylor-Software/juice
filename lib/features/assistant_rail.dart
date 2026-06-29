@@ -24,9 +24,6 @@ class AssistantRail extends ConsumerStatefulWidget {
 
 class _AssistantRailState extends ConsumerState<AssistantRail> {
   final TextEditingController _controller = TextEditingController();
-  // Collapsed by default: a thin header keeps the journal primary; one tap
-  // reveals the suggestion chips + ask-the-GM box.
-  bool _expanded = false;
 
   // LLM ranking, cached by a play-state signature so we call the model only
   // when the state actually changes. Empty cached result = keep rule order.
@@ -127,8 +124,10 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
     final activeSceneId =
         ref.watch(playContextProvider).valueOrNull?.activeSceneId;
+    final expanded =
+        ref.watch(assistantRailExpandedProvider).valueOrNull ?? true;
     final sig = _signature(journal, suggestions, activeSceneId);
-    if (_expanded &&
+    if (expanded &&
         aiReady &&
         !_rankCache.containsKey(sig) &&
         _rankingSig != sig) {
@@ -145,10 +144,12 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
         // Thin always-present header: tap to expand/collapse the assistant.
         Semantics(
           button: true,
-          label: _expanded ? 'Collapse assistant' : 'Expand assistant',
+          label: expanded ? 'Collapse assistant' : 'Expand assistant',
           child: InkWell(
             key: const Key('assistant-expand'),
-            onTap: () => setState(() => _expanded = !_expanded),
+            onTap: () => ref
+                .read(assistantRailExpandedProvider.notifier)
+                .setExpanded(!expanded),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               child: Row(
@@ -158,14 +159,14 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                   const SizedBox(width: 6),
                   const Text('Assistant'),
                   const Spacer(),
-                  Icon(_expanded ? Icons.expand_less : Icons.expand_more,
+                  Icon(expanded ? Icons.expand_less : Icons.expand_more,
                       size: 18),
                 ],
               ),
             ),
           ),
         ),
-        if (_expanded)
+        if (expanded)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
             child: Column(

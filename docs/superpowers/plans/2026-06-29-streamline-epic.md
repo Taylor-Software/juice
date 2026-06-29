@@ -31,7 +31,7 @@ The original critique reasoned from `CLAUDE.md`, not the full tree. Recon (3 age
 | 3 | Entity linking / backlinks ✅ **shipped** | Entities are islands; no connective tissue | L | Med |
 | 4 | First-run onboarding ✅ **shipped** | No onboarding for a 16-system app; sprawl undiscoverable | M | Low |
 | 5 | Backup safety ✅ **shipped** | Export exists but no "last backed up" nudge / one-tap | S | Low |
-| 6 | Play-loop "Now" consolidation | Run/Track/Sheet overlap; the actual sprawl disease | L | High |
+| 6 | Play-loop "Now" consolidation ✅ **shipped** | Run/Track/Sheet overlap; the actual sprawl disease | L | High |
 
 ## Chosen order (rationale)
 

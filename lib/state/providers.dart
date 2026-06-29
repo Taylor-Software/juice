@@ -1387,6 +1387,26 @@ class WelcomeSeenNotifier extends AsyncNotifier<bool> {
 final welcomeSeenProvider =
     AsyncNotifierProvider<WelcomeSeenNotifier, bool>(WelcomeSeenNotifier.new);
 
+/// App-global sticky state for the assistant rail's open/collapsed position.
+/// Default true (open) so new users see suggestion chips immediately.
+class AssistantRailExpandedNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.assistant_rail_expanded.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? true;
+
+  Future<void> setExpanded(bool value) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, value);
+    state = AsyncData(value);
+  }
+}
+
+final assistantRailExpandedProvider =
+    AsyncNotifierProvider<AssistantRailExpandedNotifier, bool>(
+        AssistantRailExpandedNotifier.new);
+
 /// The interpreter's status as a reactive provider (the service exposes it as
 /// a ValueListenable). Lets AI affordances rebuild as the phase flips.
 final interpreterStatusProvider = StreamProvider<InterpreterStatus>((ref) {

@@ -26,6 +26,7 @@ Future<ProviderContainer> _pumpRankRail(
     'juice.threads.v1.default':
         '[{"id":"t1","title":"The missing heir","open":true}]',
     if (aiEnabled) 'juice.ai_enabled.v1': true,
+    'juice.assistant_rail_expanded.v1': false, // start collapsed for rank tests
   });
   final c = ProviderContainer(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)]);
@@ -45,6 +46,7 @@ Future<ProviderContainer> pumpRail(WidgetTester tester) async {
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     'juice.journal.v2.default': '[]',
     'juice.threads.v1.default': '[]',
+    'juice.assistant_rail_expanded.v1': false, // collapsed for expand tests
   });
   final c = ProviderContainer();
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -63,9 +65,9 @@ Future<void> expandRail(WidgetTester tester) async {
 }
 
 void main() {
-  testWidgets('collapsed by default; navigate chips hidden until expanded',
+  testWidgets('navigate chips hidden when collapsed; visible when expanded',
       (tester) async {
-    // Empty campaign → the 'Start a scene' navigate chip is present.
+    // Rail starts collapsed (pref=false); chips hidden until tapped open.
     await pumpRail(tester);
     expect(find.text('Start a scene'), findsNothing);
     await expandRail(tester);
@@ -103,6 +105,7 @@ void main() {
           '"name":"C1","mode":"gm"}]}',
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
+      'juice.assistant_rail_expanded.v1': false,
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -137,6 +140,7 @@ void main() {
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
       'juice.ai_enabled.v1': true,
+      'juice.assistant_rail_expanded.v1': false,
     });
     final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready),
@@ -173,6 +177,7 @@ void main() {
       'juice.journal.v2.default': '[]',
       'juice.threads.v1.default': '[]',
       'juice.ai_enabled.v1': true, // enabled, but model not downloaded
+      'juice.assistant_rail_expanded.v1': false,
     });
     final fake = FakeInterpreterService(); // default: needsDownload
     final c = ProviderContainer(overrides: [
