@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/custom_table.dart';
 import '../engine/dice.dart';
 import '../engine/generator_registry.dart';
 import '../engine/models.dart';
@@ -81,6 +82,8 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
       );
     }
     final theme = Theme.of(context);
+    final tables =
+        ref.watch(customTablesProvider).valueOrNull ?? const <CustomTable>[];
     final bySection = <GenSection, List<GeneratorDef>>{};
     for (final g in flavorGenerators) {
       bySection.putIfAbsent(g.section, () => []).add(g);
@@ -137,6 +140,38 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
               ),
               const SizedBox(height: 12),
             ],
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 6),
+              child: Text('My Tables', style: theme.textTheme.labelMedium),
+            ),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final t in tables)
+                  InputChip(
+                    key: Key('table-roll-${t.id}'),
+                    label: Text(t.name.isEmpty ? '(untitled)' : t.name),
+                    onPressed: () {
+                      final r = rollCustomTable(t, Dice());
+                      ref.read(journalProvider.notifier).addResult(
+                          r.title, r.asText,
+                          sourceTool: 'custom-table', payload: r.toPayload());
+                      Navigator.of(context).pop();
+                    },
+                    // The chip's trailing button opens the edit/delete dialog.
+                    onDeleted: () => _showTableDialog(context, ref, t),
+                    deleteIcon: const Icon(Icons.edit, size: 16),
+                    deleteButtonTooltipMessage: 'Edit table',
+                  ),
+                ActionChip(
+                  key: const Key('table-new'),
+                  avatar: const Icon(Icons.add, size: 16),
+                  label: const Text('New table'),
+                  onPressed: () => _showTableDialog(context, ref, null),
+                ),
+              ],
+            ),
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 6),
               child:
@@ -272,5 +307,74 @@ class _LocationCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// New/edit/delete editor for a user-authored [CustomTable]. Rows are one per
+/// line. Saving with an empty name and no rows is a no-op.
+Future<void> _showTableDialog(
+    BuildContext context, WidgetRef ref, CustomTable? existing) async {
+  final nameCtl = TextEditingController(text: existing?.name ?? '');
+  final rowsCtl =
+      TextEditingController(text: (existing?.rows ?? const []).join('\n'));
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text(existing == null ? 'New table' : 'Edit table'),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+              key: const Key('table-name'),
+              controller: nameCtl,
+              decoration: const InputDecoration(labelText: 'Name')),
+          const SizedBox(height: 8),
+          TextField(
+              key: const Key('table-rows'),
+              controller: rowsCtl,
+              minLines: 4,
+              maxLines: 12,
+              decoration: const InputDecoration(
+                  labelText: 'Rows (one per line)',
+                  alignLabelWithHint: true)),
+        ]),
+      ),
+      actions: [
+        if (existing != null)
+          TextButton(
+            key: const Key('table-delete'),
+            onPressed: () async {
+              await ref
+                  .read(customTablesProvider.notifier)
+                  .remove(existing.id);
+              if (ctx.mounted) Navigator.of(ctx).pop(false);
+            },
+            child: const Text('Delete'),
+          ),
+        TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel')),
+        FilledButton(
+            key: const Key('table-save'),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Save')),
+      ],
+    ),
+  );
+  if (result != true) return;
+  final rows = rowsCtl.text
+      .split('\n')
+      .map((s) => s.trim())
+      .where((s) => s.isNotEmpty)
+      .toList();
+  final name = nameCtl.text.trim();
+  if (name.isEmpty && rows.isEmpty) return;
+  final notifier = ref.read(customTablesProvider.notifier);
+  if (existing == null) {
+    await notifier.add(CustomTable(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        rows: rows));
+  } else {
+    await notifier.replace(existing.copyWith(name: name, rows: rows));
   }
 }

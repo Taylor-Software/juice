@@ -26,6 +26,7 @@ import '../engine/tarot_spreads.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/custom_sheet.dart';
+import '../engine/custom_table.dart';
 import '../engine/system_primer.dart';
 import '../engine/spell.dart';
 import '../engine/content_registry.dart';
@@ -1290,6 +1291,42 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
 final bestiaryProvider =
     AsyncNotifierProvider<BestiaryNotifier, List<Creature>>(
         BestiaryNotifier.new);
+
+/// App-global store of user-authored random tables. Like [bestiaryProvider],
+/// this is NOT session-scoped and NOT exported — tables are reusable across
+/// campaigns and live per-device.
+class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
+  static const _key = 'juice.custom_tables.v1';
+
+  @override
+  Future<List<CustomTable>> build() async {
+    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return (jsonDecode(raw) as List)
+        .map(CustomTable.maybeFromJson)
+        .whereType<CustomTable>()
+        .toList();
+  }
+
+  Future<List<CustomTable>> get _ready async =>
+      state.valueOrNull ?? await future;
+
+  Future<void> _save(List<CustomTable> list) async {
+    await (await SharedPreferences.getInstance())
+        .setString(_key, jsonEncode(list.map((t) => t.toJson()).toList()));
+    state = AsyncData(list);
+  }
+
+  Future<void> add(CustomTable t) async => _save([...await _ready, t]);
+  Future<void> remove(String id) async =>
+      _save((await _ready).where((t) => t.id != id).toList());
+  Future<void> replace(CustomTable t) async =>
+      _save((await _ready).map((e) => e.id == t.id ? t : e).toList());
+}
+
+final customTablesProvider =
+    AsyncNotifierProvider<CustomTablesNotifier, List<CustomTable>>(
+        CustomTablesNotifier.new);
 
 /// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
 /// App-global (NOT session-scoped, NOT exported) — same posture as

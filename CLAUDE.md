@@ -520,6 +520,22 @@ Working rules for this repo:
   `abstractIcon` inline image) — each renders its result inline and keeps the
   sheet open (covered by `generate_sheet_test.dart`). See
   `docs/superpowers/specs/2026-06-18-contextual-generators-design.md`.
+- **Custom random tables** (Streamline epic Phase 1) — user-authored oracle
+  tables. Pure model + roll in `lib/engine/custom_table.dart` (`CustomTable
+  {id,name,rows}` + `rollCustomTable(table, Dice) → GenResult`, a uniform `dN`
+  pick over the flat row list; empty table → placeholder roll). Persisted by an
+  **app-global** `customTablesProvider` (`juice.custom_tables.v1`, mirrors
+  `bestiaryProvider` — NOT session-scoped, NOT exported; reusable across
+  campaigns). Surfaced as a **"My Tables"** section in `GenerateSheet`: a roll
+  chip per table (`table-roll-<id>`, taps roll → journal `addResult` sourceTool
+  `'custom-table'`, non-tappable source chip like `gen-*`) + a `table-new` chip
+  and a per-chip edit button → `_showTableDialog` (name + one-row-per-line
+  textarea; `table-name`/`table-rows`/`table-save`/`table-delete`). **Facts-only:**
+  ships zero vendored content — the user authors every row. P1 = flat uniform
+  list; deferred: weighted/min-max-range rows, a dice-notation field, Ask-verb
+  surfacing, per-campaign/exported scope, import/export of table packs. See
+  `docs/superpowers/plans/2026-06-29-custom-oracle-tables.md` + the epic roadmap
+  `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
   `party`; legacy campaigns → party). `modeProvider` exposes the active
   campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
