@@ -27,6 +27,8 @@ import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/custom_sheet.dart';
 import '../engine/system_primer.dart';
+import '../engine/spell.dart';
+import '../engine/content_registry.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
 import 'campaign_io.dart';
@@ -1823,6 +1825,66 @@ final systemFoesProvider =
   } catch (_) {
     return const <Creature>[];
   }
+});
+
+/// Systems that ship bundled content files (foes_/spells_). Drives aggregation.
+const kContentSystemsWithFiles = ['dnd', 'cairn', 'ose'];
+
+/// Enabled systems that also have bundled content files.
+final enabledContentSystemsProvider = Provider<List<String>>((ref) {
+  final systems =
+      ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+          kAllSystems;
+  return kContentSystemsWithFiles.where(systems.contains).toList();
+});
+
+/// Loads a system-specific spell file (e.g. spells_dnd.json). Empty on absence.
+final systemSpellsProvider =
+    FutureProvider.family<List<SpellEntry>, String>((ref, system) async {
+  try {
+    final raw = await rootBundle.loadString('assets/spells_$system.json');
+    final list = jsonDecode(raw) as List?;
+    return list
+            ?.map(SpellEntry.maybeFromJson)
+            .whereType<SpellEntry>()
+            .toList() ??
+        const <SpellEntry>[];
+  } catch (_) {
+    return const <SpellEntry>[];
+  }
+});
+
+/// All monsters across enabled systems: bundled creature files + Ironsworn
+/// npc_collections (adapted) + the user bestiary. De-duped by id.
+final contentMonstersProvider = FutureProvider<List<Creature>>((ref) async {
+  final systems = ref.watch(enabledContentSystemsProvider);
+  final out = <String, Creature>{};
+  for (final sys in systems) {
+    for (final c in await ref.watch(systemFoesProvider(sys).future)) {
+      out.putIfAbsent(c.id, () => c);
+    }
+  }
+  for (final coll in await ref.watch(foesProvider.future)) {
+    for (final e in coll.entries) {
+      final c = foeEntryToCreature(e);
+      out.putIfAbsent(c.id, () => c);
+    }
+  }
+  for (final c
+      in ref.watch(bestiaryProvider).valueOrNull ?? const <Creature>[]) {
+    out.putIfAbsent(c.id, () => c);
+  }
+  return out.values.toList();
+});
+
+/// All spells across enabled systems.
+final contentSpellsProvider = FutureProvider<List<SpellEntry>>((ref) async {
+  final systems = ref.watch(enabledContentSystemsProvider);
+  final out = <SpellEntry>[];
+  for (final sys in systems) {
+    out.addAll(await ref.watch(systemSpellsProvider(sys).future));
+  }
+  return out;
 });
 
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.
