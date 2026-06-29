@@ -59,6 +59,9 @@ flutter:
     - assets/foes_argosa.json
     - assets/foes_knave.json
     - assets/spells_knave.json
+    - assets/spells_ose.json
+    - assets/foes_dcc.json
+    - assets/spells_dcc.json
     - assets/abstract_icons/
     - assets/tarot/
     - assets/playing/

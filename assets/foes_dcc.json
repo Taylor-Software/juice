@@ -1,0 +1,330 @@
+[
+  {
+    "id": "dcc-goblin",
+    "name": "Goblin",
+    "maxHp": 4,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Spear",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1d6, Init +0, Mor 8. Cowardly raiders in packs."
+    }
+  },
+  {
+    "id": "dcc-orc",
+    "name": "Orc",
+    "maxHp": 8,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Sword",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "HD 2d8, Init +0, Mor 9. Warband infantry."
+    }
+  },
+  {
+    "id": "dcc-skeleton",
+    "name": "Skeleton",
+    "maxHp": 5,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Claw or blade",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1d8, undead, immune to mind effects."
+    }
+  },
+  {
+    "id": "dcc-zombie",
+    "name": "Zombie",
+    "maxHp": 13,
+    "statBlock": {
+      "ac": 9,
+      "attacks": [
+        {
+          "name": "Slam",
+          "detail": "1d4"
+        }
+      ],
+      "notes": "HD 3d6, undead, always acts last."
+    }
+  },
+  {
+    "id": "dcc-wolf",
+    "name": "Wolf",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d4+1"
+        }
+      ],
+      "notes": "HD 2d6, Init +2. Pack hunters, fast."
+    }
+  },
+  {
+    "id": "dcc-giant-rat",
+    "name": "Giant Rat",
+    "maxHp": 2,
+    "statBlock": {
+      "ac": 11,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d3 + disease"
+        }
+      ],
+      "notes": "HD 1d4. Swarms in the dark."
+    }
+  },
+  {
+    "id": "dcc-giant-spider",
+    "name": "Giant Spider",
+    "maxHp": 11,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "1d6 + poison (DC 12 Fort or 1d6 Str)"
+        }
+      ],
+      "notes": "HD 3d8. Lairs in webs."
+    }
+  },
+  {
+    "id": "dcc-ogre",
+    "name": "Ogre",
+    "maxHp": 22,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Great club",
+          "detail": "1d10+4"
+        }
+      ],
+      "notes": "HD 4d8, Mor 10. Hurls boulders."
+    }
+  },
+  {
+    "id": "dcc-troll",
+    "name": "Troll",
+    "maxHp": 36,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d6+4"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d8+4"
+        }
+      ],
+      "notes": "HD 6d8. Regenerates 3/round unless fire or acid."
+    }
+  },
+  {
+    "id": "dcc-ghoul",
+    "name": "Ghoul",
+    "maxHp": 9,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Claw",
+          "detail": "1d4 + paralysis (DC 13 Will)"
+        }
+      ],
+      "notes": "HD 2d6, undead. Paralysing touch."
+    }
+  },
+  {
+    "id": "dcc-wraith",
+    "name": "Wraith",
+    "maxHp": 22,
+    "statBlock": {
+      "ac": 15,
+      "attacks": [
+        {
+          "name": "Touch",
+          "detail": "1d6 + 1 level drain"
+        }
+      ],
+      "notes": "HD 4d12, undead. Only magic weapons harm it."
+    }
+  },
+  {
+    "id": "dcc-mummy",
+    "name": "Mummy",
+    "maxHp": 30,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Fist",
+          "detail": "1d12 + rot"
+        }
+      ],
+      "notes": "HD 6d8, undead. Mummy rot; fears fire."
+    }
+  },
+  {
+    "id": "dcc-beastman",
+    "name": "Beastman",
+    "maxHp": 11,
+    "statBlock": {
+      "ac": 13,
+      "attacks": [
+        {
+          "name": "Axe",
+          "detail": "1d8+2"
+        },
+        {
+          "name": "Horns",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 3d8, Mor 9. Chaos-warped raiders."
+    }
+  },
+  {
+    "id": "dcc-mind-flayer",
+    "name": "Brain-Eater",
+    "maxHp": 36,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Tentacles",
+          "detail": "1d4 + grab"
+        },
+        {
+          "name": "Mind blast",
+          "detail": "stun (DC 16 Will)"
+        }
+      ],
+      "notes": "HD 8d8. Psionic horror; devours brains."
+    }
+  },
+  {
+    "id": "dcc-demon-minor",
+    "name": "Type I Demon",
+    "maxHp": 27,
+    "statBlock": {
+      "ac": 16,
+      "attacks": [
+        {
+          "name": "Claws",
+          "detail": "1d6+1d6"
+        },
+        {
+          "name": "Bite",
+          "detail": "1d8"
+        }
+      ],
+      "notes": "HD 6d12, chaotic. Resists non-magic weapons; minor magic."
+    }
+  },
+  {
+    "id": "dcc-dragon-wyrmling",
+    "name": "Dragon (Young)",
+    "maxHp": 45,
+    "statBlock": {
+      "ac": 18,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "2d6+5"
+        },
+        {
+          "name": "Breath",
+          "detail": "4d6 (DC 15 Reflex half)"
+        }
+      ],
+      "notes": "HD 8d12. Flight; innate spellcasting and greed."
+    }
+  },
+  {
+    "id": "dcc-purple-worm",
+    "name": "Purple Worm",
+    "maxHp": 70,
+    "statBlock": {
+      "ac": 15,
+      "attacks": [
+        {
+          "name": "Bite",
+          "detail": "2d8 + swallow"
+        },
+        {
+          "name": "Sting",
+          "detail": "1d8 + poison"
+        }
+      ],
+      "notes": "HD 12d8. Burrows; swallows whole on a strong hit."
+    }
+  },
+  {
+    "id": "dcc-gelatinous-cube",
+    "name": "Gelatinous Cube",
+    "maxHp": 27,
+    "statBlock": {
+      "ac": 8,
+      "attacks": [
+        {
+          "name": "Engulf",
+          "detail": "2d4 acid + paralysis"
+        }
+      ],
+      "notes": "HD 6d8. Near-invisible; fills corridors."
+    }
+  },
+  {
+    "id": "dcc-stirge",
+    "name": "Stirge",
+    "maxHp": 3,
+    "statBlock": {
+      "ac": 14,
+      "attacks": [
+        {
+          "name": "Proboscis",
+          "detail": "1d3 + blood drain"
+        }
+      ],
+      "notes": "HD 1d4, Init +4. Swarms and latches on."
+    }
+  },
+  {
+    "id": "dcc-bandit",
+    "name": "Bandit",
+    "maxHp": 5,
+    "statBlock": {
+      "ac": 12,
+      "attacks": [
+        {
+          "name": "Sword",
+          "detail": "1d8"
+        },
+        {
+          "name": "Crossbow",
+          "detail": "1d6"
+        }
+      ],
+      "notes": "HD 1d8, Mor 7. Ambush travellers."
+    }
+  }
+]

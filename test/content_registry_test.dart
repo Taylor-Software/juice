@@ -53,4 +53,8 @@ void main() {
     expect(kContentAttributions['argosa'], contains('Argosa'));
     expect(kContentAttributions['knave'], contains('Knave'));
   });
+
+  test('dcc attribution is registered', () {
+    expect(kContentAttributions['dcc'], contains('Open Game License'));
+  });
 }
