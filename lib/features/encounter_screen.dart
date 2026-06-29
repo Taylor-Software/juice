@@ -299,6 +299,8 @@ class EncounterScreen extends ConsumerWidget {
         systems.contains('cairn') ? (ref.watch(systemFoesProvider('cairn')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
     final oseFoes =
         systems.contains('ose') ? (ref.watch(systemFoesProvider('ose')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
+    final refMonsters =
+        ref.watch(contentMonstersProvider).valueOrNull ?? const <Creature>[];
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -378,6 +380,18 @@ class EncounterScreen extends ConsumerWidget {
                 label: const Text('OSE monsters'),
                 onPressed: () => _addFromSystemCreatures(
                     context, ref, oseFoes, 'Add OSE monster'),
+              ),
+            ),
+          ],
+          if (refMonsters.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const Key('add-from-reference'),
+                icon: const Icon(Icons.menu_book_outlined),
+                label: const Text('Add from reference'),
+                onPressed: () => _addFromReference(context, ref, refMonsters),
               ),
             ),
           ],
@@ -694,6 +708,25 @@ class EncounterScreen extends ConsumerWidget {
                   max: creature.maxHp)
               : null,
           statBlock: creature.statBlock,
+        ));
+  }
+
+  Future<void> _addFromReference(
+      BuildContext context, WidgetRef ref, List<Creature> creatures) async {
+    final creature = await showDialog<Creature>(
+      context: context,
+      builder: (_) => _ReferenceMonsterPicker(creatures: creatures),
+    );
+    if (creature == null) return;
+    await ref.read(encounterProvider.notifier).addCombatant(Combatant(
+          id: _newId(),
+          name: creature.name,
+          initiative: 0,
+          track: creature.maxHp > 0
+              ? CharTrack(
+                  label: 'HP', current: creature.maxHp, max: creature.maxHp)
+              : null,
+          statBlock: creature.statBlock.isEmpty ? null : creature.statBlock,
         ));
   }
 }
@@ -1115,6 +1148,83 @@ class _SystemCreaturePickerDialog extends StatelessWidget {
               onTap: () => Navigator.pop(context, cr),
             );
           },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Searchable monster picker for the unified reference list (~334+ entries).
+/// Pops the chosen [Creature], or null on cancel.
+class _ReferenceMonsterPicker extends StatefulWidget {
+  const _ReferenceMonsterPicker({required this.creatures});
+  final List<Creature> creatures;
+
+  @override
+  State<_ReferenceMonsterPicker> createState() =>
+      _ReferenceMonsterPickerState();
+}
+
+class _ReferenceMonsterPickerState extends State<_ReferenceMonsterPicker> {
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _ctrl.text.trim().toLowerCase();
+    final items = q.isEmpty
+        ? widget.creatures
+        : widget.creatures
+            .where((c) => c.name.toLowerCase().contains(q))
+            .toList();
+    return AlertDialog(
+      title: const Text('Add from reference'),
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      content: SizedBox(
+        width: 320,
+        height: 420,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: TextField(
+                key: const Key('ref-monster-search'),
+                controller: _ctrl,
+                decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.search), hintText: 'Search'),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: items.length,
+                itemBuilder: (ctx, i) {
+                  final cr = items[i];
+                  return ListTile(
+                    key: Key('ref-monster-pick-${cr.id}'),
+                    dense: true,
+                    title: Text(cr.name),
+                    subtitle: Text([
+                      if (cr.statBlock.cr != null) 'CR ${cr.statBlock.cr}',
+                      if (cr.maxHp > 0) 'HP ${cr.maxHp}',
+                    ].join(' · ')),
+                    onTap: () => Navigator.pop(context, cr),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       actions: [
