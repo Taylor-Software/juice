@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/solo_oracle.dart';
 import '../engine/suggestions.dart';
 import 'play_context.dart';
 import 'providers.dart';
@@ -32,6 +33,7 @@ final suggestionsProvider = Provider<List<Suggestion>>((ref) {
     encounterActive: (encounter?.combatants.isNotEmpty) ?? false,
     ironswornFamily: ironswornFamily,
     hasFocusCharacter: ctx?.activeCharacterId != null,
+    hasTally: threads.any((t) => t.tally != null),
   );
 });
 
@@ -47,6 +49,10 @@ Future<void> rollInlineSuggestion(WidgetRef ref, Oracle oracle, Suggestion s) {
       final g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
       return ref.read(journalProvider.notifier).addResult(g.title, g.asText,
           sourceTool: 'fate-check', payload: g.toPayload());
+    case 'ask-yes-no':
+      final g = soloYesNo(SoloLikelihood.even, oracle.dice).toGenResult();
+      return ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+          sourceTool: 'solo-loop', payload: g.toPayload());
     case 'scene-event':
       final g = oracle.randomEvent();
       return ref.read(journalProvider.notifier).addResult(g.title, g.asText,

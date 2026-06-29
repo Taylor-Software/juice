@@ -20,9 +20,11 @@ List<Suggestion> suggestionsFor({
   required bool encounterActive,
   required bool ironswornFamily,
   required bool hasFocusCharacter,
+  required bool hasTally,
 }) {
   return [
     const Suggestion('roll-oracle', 'Roll the oracle', SuggestionAction.inline),
+    const Suggestion('ask-yes-no', 'Ask yes/no', SuggestionAction.inline),
     if (hasScenes)
       const Suggestion('scene-event', 'Scene event', SuggestionAction.inline)
     else
@@ -31,6 +33,8 @@ List<Suggestion> suggestionsFor({
     if (hasOpenThreads)
       const Suggestion(
           'advance-thread', 'Advance a thread', SuggestionAction.navigate),
+    if (hasTally)
+      const Suggestion('roll-tally', 'Roll a task', SuggestionAction.navigate),
     if (encounterActive)
       const Suggestion('combat-turn', 'Take a turn', SuggestionAction.navigate),
     if (ironswornFamily && hasFocusCharacter)
