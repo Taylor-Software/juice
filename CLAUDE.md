@@ -516,13 +516,21 @@ Working rules for this repo:
   content. New systems = drop a `foes_$sys.json`/`spells_$sys.json` + register +
   add an attribution line (data-only, no UI). Content shipped: D&D 5e SRD 5.1,
   Cairn + OSE monsters, **Argosa + Knave bestiaries & Knave spells (#212)**,
-  **OSE spell list + DCC bestiary & spells (#213)**. Deferred with cause:
-  **Nimble + Draw Steel** (2024/25 games whose stat math doesn't fit the
-  d20-shaped `StatBlock` — Draw Steel has no AC, uses stamina/characteristics —
-  and can't be authored accurately without the books); **SRD 5.2** (not
-  content-only — needs edition-load wiring + a campaign edition preference +
-  a reference edition filter, so it's its own feature/spec); deeper Cairn spells
-  (Cairn has no traditional spell system — spells are relics/freeform). See
+  **OSE spell list + DCC bestiary & spells (#213)**, **D&D SRD 5.2 spells +
+  monsters (#233, data)** + the **edition feature**: both editions ship in the
+  same `spells_dnd.json`/`foes_dnd.json` (5.1 ids `dnd-*`, 5.2 ids `dnd-2024-*`,
+  each `edition`-tagged), built by `build_dnd52_content.py` from CC-BY markdown
+  vendored under `data/dnd_srd_52/`; a per-campaign `SessionMeta.dndEdition`
+  (`dndEditionProvider`, default `5.2`, set via `SessionsNotifier.setDndEdition`)
+  filters `contentSpellsProvider`/`contentMonstersProvider` so one edition shows
+  at a time (no duplicate Fireball), toggled by the `reference-edition`
+  SegmentedButton in `ReferenceView` (shown when `dnd` content is enabled).
+  Deferred with cause: **Nimble + Draw Steel** — their creator licenses are
+  *make-your-own-compatible-product* licenses that forbid wholesale copy of their
+  content (verified 2026-06-30, see [[licensing-constraint]]); NOT vendorable
+  (the earlier "stat math" reason was wrong — it's a licensing block like
+  Shadowdark/Kal-Arath). Deeper Cairn spells (Cairn has no traditional spell
+  system — spells are relics/freeform). See
   `docs/superpowers/specs/2026-06-29-content-library-spells-monsters-design.md`
   and the plan `docs/superpowers/plans/2026-06-29-content-library-spells-monsters.md`.
 - The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
