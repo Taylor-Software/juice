@@ -5,6 +5,15 @@ class QuickRefSection {
   const QuickRefSection(this.title, this.lines);
   final String title;
   final List<String> lines;
+
+  Map<String, dynamic> toJson() => {'title': title, 'lines': lines};
+
+  static QuickRefSection? maybeFromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final t = raw['title'], l = raw['lines'];
+    if (t is! String || l is! List) return null;
+    return QuickRefSection(t, l.whereType<String>().toList());
+  }
 }
 
 /// A per-system mechanics quick reference (facts-only: procedures + condition/
@@ -201,3 +210,63 @@ const Map<String, QuickRefCard> kSystemQuickRefs = {
 /// The active system's card, or null when the resolved system has none.
 QuickRefCard? resolveSystemQuickRef(Set<String> systems, Set<String> rulesets) =>
     kSystemQuickRefs[resolveSystem(systems, rulesets)];
+
+/// A user-authored ref card. Renders as a [QuickRefCard].
+class UserRefCard {
+  const UserRefCard(
+      {required this.id, required this.title, required this.sections});
+  final String id;
+  final String title;
+  final List<QuickRefSection> sections;
+
+  QuickRefCard toQuickRefCard() =>
+      QuickRefCard(system: 'custom', title: title, sections: sections);
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'sections': [for (final s in sections) s.toJson()],
+      };
+
+  static UserRefCard? maybeFromJson(Object? raw) {
+    if (raw is! Map) return null;
+    final id = raw['id'], title = raw['title'], secs = raw['sections'];
+    if (id is! String || title is! String || secs is! List) return null;
+    return UserRefCard(
+      id: id,
+      title: title,
+      sections: secs
+          .map(QuickRefSection.maybeFromJson)
+          .whereType<QuickRefSection>()
+          .toList(),
+    );
+  }
+}
+
+/// Parses an editor body into sections (pure). A line starting with '#' begins a
+/// new section with that heading; other non-empty lines are bullets of the
+/// current section; non-empty lines before the first heading go under a leading
+/// 'Notes' section; blank lines are ignored; headings with no bullets are dropped.
+List<QuickRefSection> parseRefSections(String text) {
+  final out = <QuickRefSection>[];
+  var title = 'Notes';
+  var lines = <String>[];
+  void flush() {
+    if (lines.isNotEmpty) out.add(QuickRefSection(title, List.of(lines)));
+    lines = [];
+  }
+
+  for (final raw in text.split('\n')) {
+    final t = raw.trim();
+    if (t.isEmpty) continue;
+    if (t.startsWith('#')) {
+      flush();
+      final h = t.replaceFirst(RegExp(r'^#+\s*'), '').trim();
+      title = h.isEmpty ? 'Notes' : h;
+    } else {
+      lines.add(t);
+    }
+  }
+  flush();
+  return out;
+}
