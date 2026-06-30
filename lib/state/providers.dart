@@ -1342,6 +1342,25 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
   }
 
   Future<void> add(CustomTable t) async => _save([...await _ready, t]);
+
+  /// Append [incoming] tables with fresh ids (import never clobbers existing).
+  /// copyWith preserves id, so a new [CustomTable] is constructed per entry.
+  Future<void> addAll(List<CustomTable> incoming) async {
+    if (incoming.isEmpty) return;
+    final base = DateTime.now().microsecondsSinceEpoch;
+    final fresh = [
+      for (var i = 0; i < incoming.length; i++)
+        CustomTable(
+          id: '${base + i}',
+          name: incoming[i].name,
+          mode: incoming[i].mode,
+          dice: incoming[i].dice,
+          rows: incoming[i].rows,
+        ),
+    ];
+    await _save([...await _ready, ...fresh]);
+  }
+
   Future<void> remove(String id) async =>
       _save((await _ready).where((t) => t.id != id).toList());
   Future<void> replace(CustomTable t) async =>

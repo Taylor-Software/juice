@@ -69,4 +69,63 @@ void main() {
     expect(c.read(customTablesProvider).value, isEmpty);
     c.dispose();
   });
+
+  test('addAll appends with ids distinct from existing', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    final n = c.read(customTablesProvider.notifier);
+    await c.read(customTablesProvider.future);
+    await n.add(const CustomTable(id: 'a', name: 'A', rows: [CustomRow('1')]));
+    await n.addAll(const [
+      CustomTable(id: 'a', name: 'Imported A', rows: [CustomRow('X')]),
+      CustomTable(id: 'b', name: 'Imported B', rows: [CustomRow('Y')]),
+    ]);
+    final all = c.read(customTablesProvider).value!;
+    expect(all, hasLength(3));
+    // Original untouched, first.
+    expect(all.first.id, 'a');
+    expect(all.first.name, 'A');
+    // Appended tables got fresh, distinct ids (not the incoming 'a'/'b').
+    final ids = all.map((t) => t.id).toList();
+    expect(ids.toSet(), hasLength(3));
+    expect(ids[1], isNot('a'));
+    expect(ids[2], isNot('b'));
+    c.dispose();
+  });
+
+  test('addAll([]) is a no-op', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    final n = c.read(customTablesProvider.notifier);
+    await c.read(customTablesProvider.future);
+    await n.add(const CustomTable(id: 'a', name: 'A', rows: [CustomRow('1')]));
+    await n.addAll(const []);
+    expect(c.read(customTablesProvider).value, hasLength(1));
+    c.dispose();
+  });
+
+  test('addAll preserves name/mode/dice/rows', () async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer();
+    final n = c.read(customTablesProvider.notifier);
+    await c.read(customTablesProvider.future);
+    await n.addAll(const [
+      CustomTable(
+        id: 'src',
+        name: 'Loot',
+        mode: TableRoll.ranges,
+        dice: 'd100',
+        rows: [CustomRow('Gold', min: 1, max: 100)],
+      ),
+    ]);
+    final t = c.read(customTablesProvider).value!.single;
+    expect(t.id, isNot('src')); // re-ided
+    expect(t.name, 'Loot');
+    expect(t.mode, TableRoll.ranges);
+    expect(t.dice, 'd100');
+    expect(t.rows.single.text, 'Gold');
+    expect(t.rows.single.min, 1);
+    expect(t.rows.single.max, 100);
+    c.dispose();
+  });
 }
