@@ -188,9 +188,10 @@ GenResult _rollWeighted(CustomTable table, Dice dice, String title) {
 }
 
 GenResult _rollRanges(CustomTable table, Dice dice, String title) {
-  final n = parseDiceNotation(table.dice) ?? const DiceNotation(1, 100);
-  final v = rollNotation(n, dice);
-  final label = parseDiceNotation(table.dice) == null
+  final n = parseDiceNotation(table.dice);
+  final notation = n ?? const DiceNotation(1, 100);
+  final v = rollNotation(notation, dice);
+  final label = n == null
       ? 'd100'
       : table.dice.toLowerCase().replaceAll(RegExp(r'\s+'), '');
   for (final r in table.rows) {
@@ -219,6 +220,8 @@ List<CustomRow> parseRows(String text, TableRoll mode) {
 }
 
 CustomRow _parseWeightedLine(String line) {
+  // The LAST `|` separates the weight, so text keeps everything before the final
+  // bar (e.g. `Heads | Tails` treats `Tails` as a non-numeric → 1 weight).
   final i = line.lastIndexOf('|');
   if (i < 0) return CustomRow(line);
   final text = line.substring(0, i).trim();
@@ -226,6 +229,8 @@ CustomRow _parseWeightedLine(String line) {
   return CustomRow(text.isEmpty ? line : text, weight: w < 1 ? 1 : w);
 }
 
+// Requires whitespace between the span and the text (e.g. `1-10 Goblin`, not
+// `1-10Goblin`); a missing space silently yields a span-less text row.
 final _rangeLineRe = RegExp(r'^(\d+)(?:\s*-\s*(\d+))?\s+(.*)$');
 
 CustomRow _parseRangeLine(String line) {
