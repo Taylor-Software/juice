@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
+import '../engine/models.dart';
+import '../engine/oracle_interpreter.dart';
 import '../engine/solo_oracle.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'generate_sheet.dart';
+import 'oracle_interpretation_sheet.dart';
 
 /// The "Solo Loop" Track subtab: a checklist that wires the active scene, a d10
 /// yes/no oracle, the inspire sheet, success-tally tasks, and journal logging.
@@ -33,6 +36,7 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
     final scene = activeSceneEntry(journal, ctx?.activeSceneId);
     final threads = ref.watch(threadsProvider).valueOrNull ?? const [];
     final tallied = threads.where((t) => t.tally != null).toList();
+    final aiReady = ref.watch(aiReadyProvider);
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -72,6 +76,12 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
                 key: const Key('loop-ask-result'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
+            ),
+          if (aiReady && _last != null)
+            OutlinedButton(
+              key: const Key('loop-interpret'),
+              onPressed: _interpret,
+              child: const Text('Interpret'),
             ),
         ]),
         _step(context, '3 · Inspire', 'Open the generators for a prompt.', [
@@ -182,6 +192,44 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
           g.asText,
           sourceTool: 'solo-loop',
           payload: g.toPayload(),
+        );
+  }
+
+  /// Interpret the last yes/no roll inline (on-device LLM): seed from the
+  /// result + the active scene + PC, run the shared interpretation sheet, log
+  /// the reading. Mirrors run_screen's `_interpret` (here `_last` is a
+  /// [SoloYesNo], so seed from its [SoloYesNo.toGenResult]).
+  Future<void> _interpret() async {
+    final last = _last;
+    if (last == null) return;
+    final g = last.toGenResult();
+    final journal =
+        ref.read(journalProvider).valueOrNull ?? const <JournalEntry>[];
+    final ctx = ref.read(playContextProvider).valueOrNull;
+    final scene = activeSceneEntry(journal, ctx?.activeSceneId);
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+    final seed = OracleSeed(
+      resultText: g.asText,
+      genre: settings.genre,
+      tone: settings.tone,
+      sceneContext: scene == null ? '' : '${scene.title}\n${scene.body}'.trim(),
+      activeCharacter: ref.read(activeCharacterLineProvider),
+      systemPrimer: ref.read(systemPrimerProvider),
+    );
+    final accepted = await showModalBottomSheet<OracleInterpretation>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetCtx) => OracleInterpretationSheet(
+        seed: seed,
+        onAccept: (card) => Navigator.pop(sheetCtx, card),
+      ),
+    );
+    if (accepted == null || !mounted) return;
+    await ref.read(journalProvider.notifier).addResult(
+          'Oracle reading',
+          '(${accepted.lens}): ${accepted.reading}',
+          sourceTool: 'interpret',
         );
   }
 
