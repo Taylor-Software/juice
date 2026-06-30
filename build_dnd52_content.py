@@ -53,6 +53,12 @@ def strip_md(text):
     spaces the SRD leaves after *Failure:*  labels."""
     if not text:
         return text
+    # Flattened wikilink artifacts. Bracketed form `[Area of Effect]|XPHB|Sphere`
+    # → keep the canonical `Sphere`. Bare form `Cover|XPHB|Total Cover` has an
+    # unrecoverable multi-word alias, so just drop the `|SRC|` link token (leaves
+    # both sides — slightly redundant but complete + readable).
+    text = re.sub(r'\[[^\]]*\]\|[A-Za-z]+\|', '', text)
+    text = re.sub(r'\s*\|[A-Z]{2,}\|\s*', ' ', text)
     text = re.sub(r'\*{1,3}([^*]+?)\*{1,3}', r'\1', text)
     text = text.replace('*', '')  # any stray unmatched marker
     text = re.sub(r'[ \t]{2,}', ' ', text)
@@ -64,6 +70,30 @@ def strip_md(text):
 # --------------------------------------------------------------------------- #
 ITALIC_RE = re.compile(r'^\*(.+)\*\s*$')
 FIELD_RE = re.compile(r'^\*\*([A-Za-z ]+):\*\*\s*(.*)$')
+# Every spell header field on a line, matched anywhere (tolerates a leading
+# typo like `kj**Duration:**`) and split when several are glued onto one line
+# (e.g. Forcecage). Restricted to the 4 known labels so description bold isn't
+# mistaken for a field.
+FIELD_SPLIT_RE = re.compile(
+    r'\*\*(Casting Time|Range|Components?|Duration):\*\*', re.I)
+
+
+def extract_fields_from_line(raw):
+    """[(label_lower, value), …] for every known **Label:** on the line, or None.
+    Splits each value as the text up to the next label. Normalizes the singular
+    `Component` to `components`."""
+    marks = list(FIELD_SPLIT_RE.finditer(raw))
+    if not marks:
+        return None
+    out = []
+    for idx, m in enumerate(marks):
+        start = m.end()
+        end = marks[idx + 1].start() if idx + 1 < len(marks) else len(raw)
+        label = m.group(1).strip().lower()
+        if label == 'component':
+            label = 'components'
+        out.append((label, raw[start:end].strip()))
+    return out
 
 # A canonical Duration value; some source lines glue the description right after
 # it (e.g. "Concentration, up to 10 minutes You touch ...") — split it back out.
@@ -152,9 +182,10 @@ def parse_spell(name, body):
     n = len(body)
     while i < n:
         raw = body[i]
-        m = FIELD_RE.match(raw)
-        if m:
-            fields[m.group(1).strip().lower()] = m.group(2).strip()
+        flds = extract_fields_from_line(raw)
+        if flds:
+            for k, v in flds:
+                fields[k] = v
             i += 1
             continue
         stripped = raw.strip()
