@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/custom_table.dart';
+import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/table_groups.dart';
 import '../state/providers.dart';
+import 'custom_table_editor.dart';
 
 /// Turn a snake_case table key into a readable title.
 String _titleize(String key) => key
@@ -37,6 +40,8 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final theme = Theme.of(context);
     final groups = groupTableKeys(widget.oracle.data.allTableKeys);
     final q = _query.trim().toLowerCase();
+    final customTables =
+        ref.watch(customTablesProvider).valueOrNull ?? const <CustomTable>[];
     return Column(
       children: [
         Padding(
@@ -91,6 +96,9 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
+              // User-authored tables sit above the built-in groups. Hidden while
+              // searching so they don't clutter built-in-table results.
+              if (q.isEmpty) _myTablesSection(customTables),
               for (final group in groups)
                 if (_matching(group, q) case final matches
                     when matches.isNotEmpty)
@@ -108,6 +116,62 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
                     children: [for (final key in matches) _tableTile(key)],
                   ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Roll [t] and log the result to the journal as a `custom-table` entry.
+  void _rollCustomTable(CustomTable t) {
+    final r = rollCustomTable(t, Dice());
+    ref.read(journalProvider.notifier).addResult(r.title, r.asText,
+        sourceTool: 'custom-table', payload: r.toPayload());
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Added to journal')),
+    );
+  }
+
+  /// The "My Tables" section: a roll/edit row per user-authored table plus a
+  /// "New table" affordance. Shown only when not searching.
+  Widget _myTablesSection(List<CustomTable> tables) {
+    final theme = Theme.of(context);
+    return ExpansionTile(
+      key: const Key('tables-my-tables'),
+      initiallyExpanded: true,
+      title: Text('My Tables', style: theme.textTheme.titleMedium),
+      childrenPadding: const EdgeInsets.only(bottom: 4),
+      children: [
+        for (final t in tables)
+          Card(
+            child: ListTile(
+              key: Key('my-table-${t.id}'),
+              title: Text(t.name.isEmpty ? '(untitled)' : t.name),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    key: Key('my-table-edit-${t.id}'),
+                    tooltip: 'Edit table',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => showCustomTableDialog(context, ref, t),
+                  ),
+                  IconButton(
+                    tooltip: 'Roll',
+                    icon: const Icon(Icons.casino_outlined),
+                    onPressed: () => _rollCustomTable(t),
+                  ),
+                ],
+              ),
+              onTap: () => _rollCustomTable(t),
+            ),
+          ),
+        Card(
+          child: ListTile(
+            key: const Key('tables-my-new'),
+            leading: const Icon(Icons.add),
+            title: const Text('New table'),
+            onTap: () => showCustomTableDialog(context, ref, null),
           ),
         ),
       ],
