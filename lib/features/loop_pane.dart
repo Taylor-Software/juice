@@ -5,10 +5,20 @@ import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/solo_oracle.dart';
+import '../engine/tally.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'generate_sheet.dart';
 import 'oracle_interpretation_sheet.dart';
+
+/// Ephemeral loop-UI state that survives Track-tab navigation (the [LoopPane]
+/// State is disposed when the subtab is switched away). These are file-private,
+/// NOT autoDispose, NOT persisted — app-global lifetime, reset on app restart.
+final _loopOddsProvider =
+    StateProvider<SoloLikelihood>((_) => SoloLikelihood.even);
+final _loopLastProvider = StateProvider<SoloYesNo?>((_) => null);
+final _loopCaptureProvider = StateProvider<String>((_) => '');
+final _loopTallyRollProvider = StateProvider<String?>((_) => null);
 
 /// The "Solo Loop" Track subtab: a checklist that wires the active scene, a d10
 /// yes/no oracle, the inspire sheet, success-tally tasks, and journal logging.
@@ -19,13 +29,22 @@ class LoopPane extends ConsumerStatefulWidget {
 }
 
 class _LoopPaneState extends ConsumerState<LoopPane> {
-  SoloLikelihood _odds = SoloLikelihood.even;
-  SoloYesNo? _last;
   final _capture = TextEditingController();
+  final _taskName = TextEditingController();
+  (String, int, int) _preset = kTallyPresets[1]; // Minor challenge 3(6)
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-seed the controller from the nav-surviving provider (the State is
+    // disposed/recreated on tab switch, the provider persists the text).
+    _capture.text = ref.read(_loopCaptureProvider);
+  }
 
   @override
   void dispose() {
     _capture.dispose();
+    _taskName.dispose();
     super.dispose();
   }
 
@@ -37,6 +56,9 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
     final threads = ref.watch(threadsProvider).valueOrNull ?? const [];
     final tallied = threads.where((t) => t.tally != null).toList();
     final aiReady = ref.watch(aiReadyProvider);
+    final odds = ref.watch(_loopOddsProvider);
+    final last = ref.watch(_loopLastProvider);
+    final tallyRoll = ref.watch(_loopTallyRollProvider);
 
     return ListView(
       padding: const EdgeInsets.all(12),
@@ -60,24 +82,25 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
               ButtonSegment(
                   value: SoloLikelihood.likely, label: Text('Likely')),
             ],
-            selected: {_odds},
-            onSelectionChanged: (s) => setState(() => _odds = s.first),
+            selected: {odds},
+            onSelectionChanged: (s) =>
+                ref.read(_loopOddsProvider.notifier).state = s.first,
           ),
           FilledButton(
             key: const Key('loop-ask'),
             onPressed: _ask,
             child: const Text('Ask'),
           ),
-          if (_last != null)
+          if (last != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '${_last!.phrase} (d10=${_last!.roll})',
+                '${last.phrase} (d10=${last.roll})',
                 key: const Key('loop-ask-result'),
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-          if (aiReady && _last != null)
+          if (aiReady && last != null)
             OutlinedButton(
               key: const Key('loop-interpret'),
               onPressed: _interpret,
@@ -95,9 +118,7 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
         _step(
           context,
           '4 · Tasks',
-          tallied.isEmpty
-              ? 'No tallied tasks. Add one on a thread (Track → Threads).'
-              : null,
+          tallied.isEmpty ? 'No tasks yet — name one below.' : null,
           [
             for (final t in tallied)
               ListTile(
@@ -110,7 +131,7 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
                     : t.tally!.failed
                         ? 'Failed'
                         : t.tally!.label),
-                trailing: Wrap(children: [
+                trailing: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
                   IconButton(
                     key: Key('loop-task-dec-${t.id}'),
                     icon: const Icon(Icons.remove),
@@ -123,8 +144,73 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
                     onPressed: () =>
                         ref.read(threadsProvider.notifier).adjustTally(t.id, 1),
                   ),
+                  IconButton(
+                    key: Key('loop-task-roll-${t.id}'),
+                    icon: const Icon(Icons.casino_outlined),
+                    tooltip: 'Tally roll',
+                    onPressed: () => _tallyRoll(t),
+                  ),
                 ]),
               ),
+            if (tallyRoll != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  tallyRoll,
+                  key: const Key('loop-tally-roll-result'),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('loop-task-name'),
+                      controller: _taskName,
+                      decoration: const InputDecoration(
+                        hintText: 'New task name…',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _newTask(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 150,
+                    child: DropdownButton<(String, int, int)>(
+                      key: const Key('loop-task-preset'),
+                      value: _preset,
+                      isExpanded: true,
+                      items: [
+                        for (final p in kTallyPresets)
+                          DropdownMenuItem(
+                            value: p,
+                            child: Text('${p.$1} ${p.$2}(${p.$3})',
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (p) =>
+                          setState(() => _preset = p ?? _preset),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: FilledButton.tonalIcon(
+                  key: const Key('loop-task-new'),
+                  icon: const Icon(Icons.add_task),
+                  label: const Text('Track it'),
+                  onPressed: _newTask,
+                ),
+              ),
+            ),
           ],
         ),
         _step(context, '5 · Capture', null, [
@@ -133,10 +219,18 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
             child: TextField(
               key: const Key('loop-capture-field'),
               controller: _capture,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Quick note to the journal…',
-                border: OutlineInputBorder(),
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  key: const Key('loop-capture-send'),
+                  icon: const Icon(Icons.send),
+                  tooltip: 'Log',
+                  onPressed: _captureNote,
+                ),
               ),
+              onChanged: (v) =>
+                  ref.read(_loopCaptureProvider.notifier).state = v,
               onSubmitted: (_) => _captureNote(),
             ),
           ),
@@ -177,15 +271,64 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
       );
 
   Future<void> _newScene() async {
-    final id =
-        await ref.read(journalProvider.notifier).addScene('New scene');
+    final controller = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('New scene'),
+        content: TextField(
+          key: const Key('loop-scene-name'),
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Scene title…'),
+          onSubmitted: (v) => Navigator.pop(dialogCtx, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, controller.text),
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+    if (title == null) return; // cancelled — no scene created
+    final name = title.trim().isEmpty ? 'New scene' : title.trim();
+    final id = await ref.read(journalProvider.notifier).addScene(name);
     if (!mounted) return;
     await ref.read(playContextProvider.notifier).setActiveScene(id);
   }
 
+  Future<void> _newTask() async {
+    final name = _taskName.text.trim();
+    if (name.isEmpty) return;
+    final p = _preset;
+    final id = await ref.read(threadsProvider.notifier).addReturningId(name);
+    await ref.read(threadsProvider.notifier).setTally(
+          id,
+          Tally(start: p.$2, current: p.$2, target: p.$3),
+        );
+    _taskName.clear();
+  }
+
+  Future<void> _tallyRoll(Thread t) async {
+    final outcome = rollVsTally(t.tally!, Dice());
+    final text =
+        '${t.title}: ${outcome == TallyRollOutcome.clean ? 'clean' : 'complication'}';
+    ref.read(_loopTallyRollProvider.notifier).state = text;
+    await ref.read(journalProvider.notifier).addResult(
+          'Tally roll',
+          text,
+          sourceTool: 'solo-loop',
+        );
+  }
+
   Future<void> _ask() async {
-    final result = soloYesNo(_odds, Dice());
-    setState(() => _last = result);
+    final result = soloYesNo(ref.read(_loopOddsProvider), Dice());
+    ref.read(_loopLastProvider.notifier).state = result;
     final g = result.toGenResult();
     await ref.read(journalProvider.notifier).addResult(
           g.title,
@@ -200,7 +343,7 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
   /// the reading. Mirrors run_screen's `_interpret` (here `_last` is a
   /// [SoloYesNo], so seed from its [SoloYesNo.toGenResult]).
   Future<void> _interpret() async {
-    final last = _last;
+    final last = ref.read(_loopLastProvider);
     if (last == null) return;
     final g = last.toGenResult();
     final journal =
@@ -238,5 +381,6 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
     if (text.isEmpty) return;
     await ref.read(journalProvider.notifier).addText(text);
     _capture.clear();
+    ref.read(_loopCaptureProvider.notifier).state = '';
   }
 }
