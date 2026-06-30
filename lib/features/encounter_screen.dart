@@ -428,7 +428,7 @@ class EncounterScreen extends ConsumerWidget {
   String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
 
   Future<void> _endEncounter(BuildContext context, WidgetRef ref) async {
-    final result = await showDialog<({String note})>(
+    final result = await showDialog<_EndEncounterResult>(
       context: context,
       builder: (context) => const _EndEncounterDialog(),
     );
@@ -454,6 +454,17 @@ class EncounterScreen extends ConsumerWidget {
     final note = result.note.trim();
     final fullBody = note.isEmpty ? body : '$body\n$note';
     await ref.read(journalProvider.notifier).add('Encounter ended', fullBody);
+    // Optionally advance a linked thread's progress clock in the same gesture.
+    if (result.threadId != null && result.progressDelta != 0) {
+      final threads =
+          ref.read(threadsProvider).valueOrNull ?? const <Thread>[];
+      final t = threads.where((e) => e.id == result.threadId).firstOrNull;
+      if (t != null) {
+        await ref
+            .read(threadsProvider.notifier)
+            .setProgress(t.id, t.progress + result.progressDelta);
+      }
+    }
     await ref.read(encounterProvider.notifier).reset();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -741,15 +752,24 @@ class EncounterScreen extends ConsumerWidget {
 /// End-encounter confirmation that also captures an optional outcome note
 /// (folded into the journal summary). Owns its controller so it disposes after
 /// the dialog is fully gone. Pops `({note})` on End, null on Cancel.
-class _EndEncounterDialog extends StatefulWidget {
+typedef _EndEncounterResult = ({
+  String note,
+  String? threadId,
+  int progressDelta,
+});
+
+class _EndEncounterDialog extends ConsumerStatefulWidget {
   const _EndEncounterDialog();
 
   @override
-  State<_EndEncounterDialog> createState() => _EndEncounterDialogState();
+  ConsumerState<_EndEncounterDialog> createState() =>
+      _EndEncounterDialogState();
 }
 
-class _EndEncounterDialogState extends State<_EndEncounterDialog> {
+class _EndEncounterDialogState extends ConsumerState<_EndEncounterDialog> {
   final _ctrl = TextEditingController();
+  String? _threadId; // null = no thread
+  int _delta = 0;
 
   @override
   void dispose() {
@@ -757,8 +777,16 @@ class _EndEncounterDialogState extends State<_EndEncounterDialog> {
     super.dispose();
   }
 
+  _EndEncounterResult get _result =>
+      (note: _ctrl.text, threadId: _threadId, progressDelta: _delta);
+
   @override
   Widget build(BuildContext context) {
+    final openThreads = [
+      for (final t
+          in ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
+        if (t.open) t,
+    ];
     return AlertDialog(
       title: const Text('End encounter?'),
       content: Column(
@@ -772,8 +800,44 @@ class _EndEncounterDialogState extends State<_EndEncounterDialog> {
             key: const Key('end-encounter-note'),
             controller: _ctrl,
             decoration: const InputDecoration(labelText: 'Outcome (optional)'),
-            onSubmitted: (_) => Navigator.pop(context, (note: _ctrl.text)),
+            onSubmitted: (_) => Navigator.pop(context, _result),
           ),
+          if (openThreads.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            DropdownButton<String?>(
+              key: const Key('end-encounter-thread'),
+              isExpanded: true,
+              value: _threadId,
+              hint: const Text('Advance a thread (optional)'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('No thread')),
+                for (final t in openThreads)
+                  DropdownMenuItem(value: t.id, child: Text(t.title)),
+              ],
+              onChanged: (v) => setState(() {
+                _threadId = v;
+                if (v == null) _delta = 0;
+              }),
+            ),
+            if (_threadId != null)
+              Row(
+                key: const Key('end-encounter-progress'),
+                children: [
+                  const Text('Progress'),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove),
+                    onPressed:
+                        _delta > 0 ? () => setState(() => _delta--) : null,
+                  ),
+                  Text('+$_delta'),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    onPressed: () => setState(() => _delta++),
+                  ),
+                ],
+              ),
+          ],
         ],
       ),
       actions: [
@@ -783,7 +847,7 @@ class _EndEncounterDialogState extends State<_EndEncounterDialog> {
         ),
         FilledButton(
           key: const Key('end-encounter-confirm'),
-          onPressed: () => Navigator.pop(context, (note: _ctrl.text)),
+          onPressed: () => Navigator.pop(context, _result),
           child: const Text('End'),
         ),
       ],

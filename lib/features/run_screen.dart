@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/dice_notation.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_interpreter.dart';
@@ -640,6 +641,43 @@ class _DiceOraclePanel extends ConsumerStatefulWidget {
 
 class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
   GenResult? _last;
+  Likelihood _likelihood = Likelihood.normal;
+  final _diceCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _diceCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Ad-hoc dice notation roll (d20, 2d6+1, …) — mirrors the journal's inline
+  /// dice path, logged as a rerollable `dice` entry.
+  void _rollDice() {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final text = _diceCtrl.text.trim();
+    if (text.isEmpty) return;
+    final DiceRollResult r;
+    try {
+      r = parseDice(text).roll(oracle.dice);
+    } on FormatException {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid dice notation')),
+      );
+      return;
+    }
+    final g = diceRollGenResult(r);
+    ref.read(journalProvider.notifier).addResult(
+      g.title,
+      g.asText,
+      sourceTool: 'dice',
+      payload: {...g.toPayload(), 'expression': r.expression},
+    );
+    setState(() => _last = g);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${r.expression} = ${r.total}')),
+    );
+  }
 
   void _roll() {
     final oracle = ref.read(oracleProvider).valueOrNull;
@@ -657,7 +695,7 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
         g = oracle.rollHigh('d100', 3);
         tool = 'roll-high';
       default:
-        g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
+        g = fateCheckGenResult(oracle.fateCheck(_likelihood));
         tool = 'fate-check';
     }
     ref.read(journalProvider.notifier).addResult(g.title, g.asText,
@@ -718,25 +756,71 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
     return _Panel(
       k: const Key('run-panel-dice'),
       title: 'Dice & oracle',
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Flexible(
-            child: OutlinedButton(
-              key: const Key('run-dice-roll'),
-              onPressed: oracle == null ? null : _roll,
-              child: Text('Roll ${_oracleLabel(defaultOracle)}'),
-            ),
+          // Likelihood for the fate-check default oracle (mythic/roll-high
+          // ignore it — they have no odds input).
+          SegmentedButton<Likelihood>(
+            key: const Key('run-dice-likelihood'),
+            segments: const [
+              ButtonSegment(
+                  value: Likelihood.unlikely, label: Text('Unlikely')),
+              ButtonSegment(value: Likelihood.normal, label: Text('Even')),
+              ButtonSegment(value: Likelihood.likely, label: Text('Likely')),
+            ],
+            selected: {_likelihood},
+            showSelectedIcon: false,
+            onSelectionChanged: (s) => setState(() => _likelihood = s.first),
           ),
-          if (aiReady && _last != null) ...[
-            const SizedBox(width: 8),
-            Flexible(
-              child: OutlinedButton(
-                key: const Key('run-dice-interpret'),
-                onPressed: _interpret,
-                child: const Text('Interpret'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Flexible(
+                child: OutlinedButton(
+                  key: const Key('run-dice-roll'),
+                  onPressed: oracle == null ? null : _roll,
+                  child: Text('Roll ${_oracleLabel(defaultOracle)}'),
+                ),
               ),
-            ),
-          ],
+              if (aiReady && _last != null) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: OutlinedButton(
+                    key: const Key('run-dice-interpret'),
+                    onPressed: _interpret,
+                    child: const Text('Interpret'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Ad-hoc dice notation, so the GM never leaves the dashboard for a
+          // quick d20/2d6.
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const Key('run-dice-notation'),
+                  controller: _diceCtrl,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'd20, 2d6+1',
+                    border: OutlineInputBorder(),
+                  ),
+                  onSubmitted: (_) => _rollDice(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                key: const Key('run-dice-custom-roll'),
+                icon: const Icon(Icons.casino_outlined),
+                tooltip: 'Roll dice',
+                onPressed: oracle == null ? null : _rollDice,
+              ),
+            ],
+          ),
         ],
       ),
     );
