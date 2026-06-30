@@ -459,6 +459,17 @@ Working rules for this repo:
   card well-formedness. See
   `docs/superpowers/specs/2026-06-29-rules-quickref-design.md` + the plan
   `docs/superpowers/plans/2026-06-29-rules-quickref.md`.
+  **User-authored ref cards** extend this: `UserRefCard` + the pure
+  `parseRefSections` (a `#`-heading body → `QuickRefSection`s) in `quick_ref.dart`;
+  an **app-global** `userRefCardsProvider` (`juice.userrefcards.v1`, NOT
+  session-scoped, NOT exported — mirrors `customTablesProvider`/`bestiaryProvider`).
+  The `QuickRefView(useProvider:true)` path is now a composite: the authored system
+  card (if any) + each user card (with `quickref-edit-<id>`/`quickref-delete-<id>`)
+  + a `quickref-add` button → `showRefCardEditor` (title + `#`-heading body dialog).
+  Cards render via `UserRefCard.toQuickRefCard()` through the same section renderer,
+  so they appear on all four QuickRef surfaces with zero per-surface change; the
+  explicit-`card:` mode stays pure read-only. See
+  `docs/superpowers/specs/2026-06-29-user-ref-cards-design.md`.
 - The **Content library** (spells + monsters) is a unified, edition-aware
   reference layer. `SpellEntry` (`lib/engine/spell.dart`, pure) models a spell;
   monsters **reuse** `Creature`/`StatBlock`, where `StatBlock` gained optional
