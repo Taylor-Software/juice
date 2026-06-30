@@ -152,6 +152,7 @@ A shared opener `showQuickRef(BuildContext, WidgetRef)` → `showModalBottomShee
 
 ## Non-goals / deferred
 
-- Remaining system cards (shadowdark/nimble/draw-steel/dcc) — drop-in consts later.
+- ~~Remaining system cards (shadowdark/nimble/draw-steel/dcc) — drop-in consts later.~~
+  **DONE** — 4 cards added, now 11 total (every `resolveSystem` key has one).
 - User-authored / house-rules ref cards — the next feature (#3).
 - Editing, search-within-rules, per-variant Ironsworn cards, a `custom` card.

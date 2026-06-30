@@ -14,7 +14,7 @@ void main() {
     });
 
     test('null when the resolved system has no card', () {
-      expect(resolveSystemQuickRef({'shadowdark'}, {}), isNull); // not in P1
+      expect(resolveSystemQuickRef({'lonelog'}, {}), isNull); // no card
       expect(resolveSystemQuickRef({}, {}), isNull);
     });
   });
@@ -34,10 +34,11 @@ void main() {
       });
     });
 
-    test('the 7 P1 systems are present (ironsworn under 3 keys)', () {
+    test('all covered systems are present (ironsworn under 3 keys)', () {
       for (final k in [
         'argosa', 'cairn', 'knave', 'ose', 'kal-arath', 'dnd', 'ironsworn',
-        'starforged', 'sundered_isles',
+        'starforged', 'sundered_isles', 'shadowdark', 'nimble', 'draw-steel',
+        'dcc',
       ]) {
         expect(kSystemQuickRefs.containsKey(k), isTrue, reason: k);
       }

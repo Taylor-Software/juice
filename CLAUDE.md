@@ -441,10 +441,11 @@ Working rules for this repo:
   per-campaign/hybrid scope, management screen, library import/export, categories.
 - The **Rules QuickRef** is an authored facts-only per-system mechanics quick
   reference (DM-screen style). `QuickRefCard`/`QuickRefSection` + `kSystemQuickRefs`
-  in `lib/engine/quick_ref.dart` (pure) — 7 cards (dnd / ironsworn — shared under
+  in `lib/engine/quick_ref.dart` (pure) — 11 cards (dnd / ironsworn — shared under
   `ironsworn`+`starforged`+`sundered_isles` keys / cairn / knave / ose / argosa /
-  kal-arath); each ~5 sections (resolution / combat / damage-death / conditions /
-  rest) of **procedures + condition/save names + one-line generic effects** — NO
+  kal-arath / shadowdark / nimble / draw-steel / dcc); each ~5 sections (resolution /
+  combat / damage-death / conditions / rest) of **procedures + condition/save names +
+  one-line generic effects** — NO
   rulebook prose, NO attribution, NO license gate (procedures are non-copyrightable
   facts, same basis as `system_primer.dart`). `resolveSystemQuickRef(systems,
   rulesets)` REUSES `resolveSystem` (no duplicated priority ladder);
@@ -453,9 +454,9 @@ Working rules for this repo:
   bottom-sheet, surfaced on four entry points: Encounter header (`enc-rules`), Run
   dashboard (`run-panel-quickref`), the `/rules` slash command (→ a new
   `ContentType.rules` opening `ReferenceView`), and a **Rules** segment on
-  `ReferenceView` (shows the active card instead of search). Remaining systems
-  (shadowdark/nimble/draw-steel/dcc) are drop-in consts; `custom` has none (the
-  user-authored ref-cards follow-up covers it). A structural self-check test guards
+  `ReferenceView` (shows the active card instead of search). All sheet systems with
+  a `resolveSystem` key now have a card; `custom` has none (the user-authored
+  ref-cards follow-up covers it). A structural self-check test guards
   card well-formedness. See
   `docs/superpowers/specs/2026-06-29-rules-quickref-design.md` + the plan
   `docs/superpowers/plans/2026-06-29-rules-quickref.md`.

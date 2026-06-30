@@ -193,15 +193,119 @@ const _kalArath = QuickRefCard(
   ]),
 ]);
 
+const _shadowdark = QuickRefCard(
+    system: 'shadowdark', title: 'Shadowdark — Quick Reference', sections: [
+  QuickRefSection('Resolution', [
+    'd20 + ability modifier vs a Difficulty Class (easy 9, normal 12, hard 15, extreme 18).',
+    'Advantage / disadvantage: roll 2d20, take the higher / lower.',
+    'A natural 20 is a critical success; a natural 1 is a critical failure.',
+  ]),
+  QuickRefSection('Combat round', [
+    'Roll initiative (d20 + DEX); act highest to lowest.',
+    'Your turn: move a near distance + one action.',
+    'Attack: d20 + attack bonus vs the target\'s AC; on a hit, roll weapon damage.',
+  ]),
+  QuickRefSection('Light', [
+    'Light sources burn in REAL time — a torch lasts about one hour at the table.',
+    'In full darkness you cannot see to act; manage your light or be caught in the dark.',
+  ]),
+  QuickRefSection('Spellcasting', [
+    'Cast: d20 + spellcasting modifier vs DC 10 + the spell\'s tier.',
+    'Fail and you lose that spell until your next rest; a natural 1 can carry a worse mishap.',
+  ]),
+  QuickRefSection('Damage & death', [
+    '0 HP = unconscious and dying; allies have a short window to stabilize you or you die.',
+    'Monsters reduced to 0 HP are slain.',
+  ]),
+  QuickRefSection('Rest', [
+    'A rest restores HP; a safe night\'s rest recovers more and resets daily abilities.',
+  ]),
+]);
+
+const _nimble = QuickRefCard(
+    system: 'nimble', title: 'Nimble — Quick Reference', sections: [
+  QuickRefSection('Resolution', [
+    'Roll d20 + the relevant stat modifier (STR / DEX / INT / WIS) vs a target.',
+    'Advantage / disadvantage shifts the roll up or down.',
+  ]),
+  QuickRefSection('Combat round', [
+    'Take your turn: move and act. Attacks roll damage dice directly.',
+    'Rolling the maximum on a damage die can explode (roll it again and add).',
+    'Armor reduces the damage you take.',
+  ]),
+  QuickRefSection('Saves', [
+    'Roll a save with advantage or disadvantage as the situation dictates.',
+  ]),
+  QuickRefSection('Wounds & death', [
+    'At 0 HP you begin taking Wounds (the dying track).',
+    'Accumulate too many Wounds and your hero dies.',
+  ]),
+  QuickRefSection('Rest', [
+    'Rest to recover HP; Wounds mend more slowly.',
+  ]),
+]);
+
+const _drawSteel = QuickRefCard(
+    system: 'draw-steel', title: 'Draw Steel — Quick Reference', sections: [
+  QuickRefSection('Power roll', [
+    'Roll 2d10 + a characteristic and read the tier: tier 1 (≤11), tier 2 (12–16), tier 3 (17+).',
+    'Higher tiers give better outcomes. Edges and banes nudge the result up or down a tier.',
+  ]),
+  QuickRefSection('Characteristics', [
+    'Might, Agility, Reason, Intuition, Presence — used as the bonus on power rolls.',
+    'There is no AC; defenses come from the characteristics and abilities.',
+  ]),
+  QuickRefSection('Heroic resource', [
+    'Each class builds a heroic resource during a fight (e.g. Focus, Discipline, Ferocity).',
+    'Spend it to fuel signature and heroic abilities.',
+  ]),
+  QuickRefSection('Combat round', [
+    'Sides alternate taking hero / enemy turns. On your turn: a move + a main action.',
+    'Forced movement, conditions, and positioning matter heavily.',
+  ]),
+  QuickRefSection('Damage & death', [
+    'Lose Stamina when hit; Winded at half Stamina. At 0 Stamina you are dying.',
+  ]),
+]);
+
+const _dcc = QuickRefCard(system: 'dcc', title: 'DCC — Quick Reference', sections: [
+  QuickRefSection('Resolution', [
+    'd20 + modifier vs a DC. The dice chain (d3-d5-d7-d14-d16-d24-d30) scales bonuses/penalties.',
+  ]),
+  QuickRefSection('Combat round', [
+    'Roll initiative (d20 + AGI); act highest to lowest.',
+    'Attack: d20 + mods vs AC; on a hit, roll weapon damage.',
+    'Warriors & Dwarves add a Deed Die to attack and damage — 3+ lands a Mighty Deed.',
+  ]),
+  QuickRefSection('Saving throws', [
+    'Three saves: Fortitude, Reflex, Will. Roll d20 + the save bonus vs the DC.',
+  ]),
+  QuickRefSection('Spellcasting', [
+    'Spell check: d20 + caster level + ability mod vs the spell\'s DC; the total sets the effect.',
+    'Wizards/Elves may spellburn (burn STR/AGI/STA for a bonus); Clerics risk disapproval.',
+    'A natural 1 can misfire or corrupt the caster.',
+  ]),
+  QuickRefSection('Luck', [
+    'Spend Luck to add to a roll (burned permanently). Thieves & Halflings recover Luck.',
+  ]),
+  QuickRefSection('Damage & death', [
+    '0 HP = dying; you may recover the body (a Luck roll) rather than die outright.',
+  ]),
+]);
+
 /// Authored facts-only cards, keyed by canonical system id (see resolveSystem).
 /// Ironsworn shares one card across classic/starforged/sundered_isles.
 const Map<String, QuickRefCard> kSystemQuickRefs = {
   'dnd': _dnd,
+  'shadowdark': _shadowdark,
+  'nimble': _nimble,
+  'draw-steel': _drawSteel,
   'cairn': _cairn,
   'knave': _knave,
   'ose': _ose,
   'argosa': _argosa,
   'kal-arath': _kalArath,
+  'dcc': _dcc,
   'ironsworn': _ironsworn,
   'starforged': _ironsworn,
   'sundered_isles': _ironsworn,
