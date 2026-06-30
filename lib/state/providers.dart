@@ -1352,6 +1352,41 @@ final customTablesProvider =
     AsyncNotifierProvider<CustomTablesNotifier, List<CustomTable>>(
         CustomTablesNotifier.new);
 
+/// App-global user-authored ref cards (reusable across campaigns; NOT
+/// session-scoped, NOT in campaign export — mirrors [customTablesProvider]).
+class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
+  static const _key = 'juice.userrefcards.v1';
+
+  @override
+  Future<List<UserRefCard>> build() async {
+    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return (jsonDecode(raw) as List)
+        .map(UserRefCard.maybeFromJson)
+        .whereType<UserRefCard>()
+        .toList();
+  }
+
+  Future<List<UserRefCard>> get _ready async =>
+      state.valueOrNull ?? await future;
+
+  Future<void> _save(List<UserRefCard> list) async {
+    await (await SharedPreferences.getInstance())
+        .setString(_key, jsonEncode(list.map((c) => c.toJson()).toList()));
+    state = AsyncData(list);
+  }
+
+  Future<void> add(UserRefCard c) async => _save([...await _ready, c]);
+  Future<void> remove(String id) async =>
+      _save((await _ready).where((c) => c.id != id).toList());
+  Future<void> replace(UserRefCard c) async =>
+      _save((await _ready).map((e) => e.id == c.id ? c : e).toList());
+}
+
+final userRefCardsProvider =
+    AsyncNotifierProvider<UserRefCardsNotifier, List<UserRefCard>>(
+        UserRefCardsNotifier.new);
+
 /// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
 /// App-global (NOT session-scoped, NOT exported) — same posture as
 /// [aiEnabledProvider]: the nudge is a per-device first-run affordance.
