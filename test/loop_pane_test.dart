@@ -8,9 +8,11 @@ import 'package:juice_oracle/state/providers.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  Future<void> pump(WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(
-      child: MaterialApp(home: Scaffold(body: LoopPane())),
+  Future<void> pump(WidgetTester tester,
+      {List<Override> overrides = const []}) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: overrides,
+      child: const MaterialApp(home: Scaffold(body: LoopPane())),
     ));
     await tester.pumpAndSettle();
   }
@@ -37,5 +39,22 @@ void main() {
         tester.element(find.byKey(const Key('loop-ask'))));
     final journal = container.read(journalProvider).valueOrNull ?? const [];
     expect(journal.where((e) => e.sourceTool == 'solo-loop'), hasLength(1));
+  });
+
+  testWidgets('no Interpret button when AI is not ready', (tester) async {
+    await pump(tester); // default: aiReady false
+    await tester.tap(find.byKey(const Key('loop-ask')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
+    expect(find.byKey(const Key('loop-interpret')), findsNothing);
+  });
+
+  testWidgets('Interpret button shows after a roll when AI is ready',
+      (tester) async {
+    await pump(tester, overrides: [aiReadyProvider.overrideWithValue(true)]);
+    expect(find.byKey(const Key('loop-interpret')), findsNothing);
+    await tester.tap(find.byKey(const Key('loop-ask')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret')), findsOneWidget);
   });
 }
