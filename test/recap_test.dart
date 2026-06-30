@@ -137,6 +137,23 @@ void main() {
     expect(find.byKey(const Key('recap-banner')), findsNothing);
   });
 
+  testWidgets('Never permanently suppresses the banner (gone after repump)',
+      (tester) async {
+    await pumpRecap(tester, data, queued: 'x');
+    expect(find.byKey(const Key('recap-banner')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('recap-never')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('recap-banner')), findsNothing);
+
+    // Re-pump with the same unseen history: the suppress flag keeps it hidden.
+    await pumpRecap(tester, data, prefs: {
+      ..._history,
+      'juice.recap_suppressed.v1': true,
+    });
+    expect(find.byKey(const Key('recap-banner')), findsNothing);
+  });
+
   testWidgets('dismiss stays dismissed when a new entry is added',
       (tester) async {
     await pumpRecap(tester, data, queued: 'x');

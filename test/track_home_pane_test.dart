@@ -42,6 +42,9 @@ Future<ProviderContainer> _pump(
 void main() {
   testWidgets('renders summary cards from seeded state', (tester) async {
     final c = await _pump(tester, prefs: {
+      // Dismiss the orientation card so the summary cards aren't pushed
+      // off-screen by the extra leading card.
+      'juice.track_help_seen.v1': true,
       'juice.journal.v2.default': '[$_sceneJson]',
       'juice.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","open":true,"progress":3},'
@@ -136,7 +139,8 @@ void main() {
 
   testWidgets('empty state is defensive (no scene / threads / party)',
       (tester) async {
-    await _pump(tester, prefs: const {});
+    // Dismiss the orientation card so all summary cards fit the viewport.
+    await _pump(tester, prefs: const {'juice.track_help_seen.v1': true});
     expect(find.text('No scene yet'), findsOneWidget);
     // Every card still renders.
     expect(find.byKey(const Key('track-home-now')), findsOneWidget);
@@ -144,5 +148,26 @@ void main() {
     expect(find.byKey(const Key('track-home-tracks')), findsOneWidget);
     expect(find.byKey(const Key('track-home-party')), findsOneWidget);
     expect(find.byKey(const Key('track-home-encounter')), findsOneWidget);
+  });
+
+  testWidgets('orientation card shows by default and dismiss persists',
+      (tester) async {
+    final c = await _pump(tester, prefs: const {});
+    expect(find.byKey(const Key('track-help-card')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('track-help-dismiss')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('track-help-card')), findsNothing);
+    expect(c.read(trackHelpSeenProvider).valueOrNull, isTrue);
+
+    c.dispose();
+  });
+
+  testWidgets('orientation card hidden once seen', (tester) async {
+    final c = await _pump(tester, prefs: const {
+      'juice.track_help_seen.v1': true,
+    });
+    expect(find.byKey(const Key('track-help-card')), findsNothing);
+    c.dispose();
   });
 }
