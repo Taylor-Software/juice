@@ -214,6 +214,25 @@ void main() {
     expect(find.byKey(const Key('run-dice-interpret')), findsOneWidget);
   });
 
+  testWidgets('dice: ad-hoc notation logs a dice entry', (tester) async {
+    final c = await _pump(tester, data, _prefs());
+    await tester.enterText(find.byKey(const Key('run-dice-notation')), '1d6');
+    await tester.tap(find.byKey(const Key('run-dice-custom-roll')));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'dice'), hasLength(1));
+  });
+
+  testWidgets('dice: likelihood selection + fate roll logs', (tester) async {
+    final c = await _pump(tester, data, _prefs(crawlJson: '{"chaosFactor":5}'));
+    await tester.tap(find.text('Likely'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('run-dice-roll')));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'fate-check'), hasLength(1));
+  });
+
   testWidgets('capture: logs a text note and clears', (tester) async {
     final c = await _pump(tester, data, _prefs());
     await tester.enterText(

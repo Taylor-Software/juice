@@ -43,12 +43,14 @@ void main() {
     WidgetTester tester, {
     String? encounterJson,
     String? charactersJson,
+    String? threadsJson,
   }) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       if (charactersJson != null) 'juice.characters.v1.default': charactersJson,
       if (encounterJson != null) 'juice.encounter.v1.default': encounterJson,
+      if (threadsJson != null) 'juice.threads.v1.default': threadsJson,
     });
     await tester.pumpWidget(const ProviderScope(
         child: MaterialApp(home: Scaffold(body: EncounterScreen()))));
@@ -74,6 +76,47 @@ void main() {
         lessThan(tester.getTopLeft(find.text('Goblin')).dy));
     expect(tileOf(tester, 'w').selected, isTrue);
     expect(tileOf(tester, 'g').selected, isFalse);
+  });
+
+  testWidgets('end encounter advances a selected thread clock',
+      (tester) async {
+    final c = await pump(tester,
+        encounterJson: _enc([_c('a', 'A', 20)]),
+        threadsJson:
+            '[{"id":"t1","title":"Bandits","open":true,"progress":2,"progressMax":10}]');
+    await tester.tap(find.byKey(const Key('end-encounter')));
+    await tester.pumpAndSettle();
+    // Pick the thread, then bump progress by 2.
+    await tester.tap(find.byKey(const Key('end-encounter-thread')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bandits').last);
+    await tester.pumpAndSettle();
+    final plus = find.descendant(
+        of: find.byKey(const Key('end-encounter-progress')),
+        matching: find.byIcon(Icons.add));
+    await tester.tap(plus);
+    await tester.tap(plus);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('end-encounter-confirm')));
+    await tester.pumpAndSettle();
+    final threads = await c.read(threadsProvider.future);
+    expect(threads.single.progress, 4); // 2 + 2
+  });
+
+  testWidgets('end encounter with no thread leaves threads untouched',
+      (tester) async {
+    final c = await pump(tester,
+        encounterJson: _enc([_c('a', 'A', 20)]),
+        threadsJson:
+            '[{"id":"t1","title":"Bandits","open":true,"progress":2,"progressMax":10}]');
+    await tester.tap(find.byKey(const Key('end-encounter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('end-encounter-confirm')));
+    await tester.pumpAndSettle();
+    final threads = await c.read(threadsProvider.future);
+    expect(threads.single.progress, 2); // unchanged
+    final entries = await c.read(journalProvider.future);
+    expect(entries.where((e) => e.title == 'Encounter ended'), hasLength(1));
   });
 
   testWidgets('Next turn skips defeated and wraps with round increment',

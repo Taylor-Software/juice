@@ -407,8 +407,18 @@ Working rules for this repo:
   reading entry (see
   `docs/superpowers/specs/2026-06-28-run-dice-inline-interpret-design.md`). A minimal inline
   effect dialog (not the tracker's private one; DRY cleanup deferred). See
-  `docs/superpowers/specs/2026-06-28-run-screen-polish-design.md`. Deferred:
-  inline AI interpret on the dice panel (own follow-up).
+  `docs/superpowers/specs/2026-06-28-run-screen-polish-design.md`. The dice panel
+  also has **ad-hoc dice + likelihood** (audit follow-up): a `run-dice-notation`
+  field + `run-dice-custom-roll` (mirrors the journal's `parseDice→diceRollGenResult`
+  inline path, logs a rerollable `dice` entry) and a `run-dice-likelihood`
+  SegmentedButton feeding the fate-check default-oracle roll — so a GM rolls a
+  quick d20/2d6 or shifts odds without leaving the dashboard. The same follow-up
+  made **End-Encounter advance a thread clock**: `_EndEncounterDialog` (now a
+  `ConsumerStatefulWidget`) offers an optional open-thread dropdown
+  (`end-encounter-thread`) + progress stepper (`end-encounter-progress`); on
+  confirm `_endEncounter` ticks that thread via `ThreadNotifier.setProgress`,
+  closing the fight→goal→log arc in one gesture. See
+  `docs/superpowers/plans/2026-06-30-gm-live-table-depth.md`.
 - **Combatant stat blocks** (`StatBlock`/`Attack` in `models.dart`, a nullable
   `Combatant.statBlock`): user-authored AC + attacks (name + freeform detail) +
   saves/speed/notes (all freeform, facts-only, NO parser — attacks are display
