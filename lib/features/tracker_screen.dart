@@ -160,7 +160,7 @@ class ThreadsPane extends ConsumerWidget {
                                   color: tk.inkMuted)),
                         ],
                       ),
-                      _ThreadTallyRow(t),
+                      ThreadTallyRow(t),
                       Builder(builder: (ctx) {
                         final linked = journal
                             .where((e) => e.threadId == t.id)
@@ -1911,8 +1911,8 @@ class _Empty extends StatelessWidget {
 }
 
 // -- Thread tally row -----------------------------------------------------
-class _ThreadTallyRow extends ConsumerWidget {
-  const _ThreadTallyRow(this.thread);
+class ThreadTallyRow extends ConsumerWidget {
+  const ThreadTallyRow(this.thread, {super.key});
   final Thread thread;
 
   @override

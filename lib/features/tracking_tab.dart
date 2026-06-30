@@ -13,6 +13,7 @@ import 'resources_pane.dart';
 import 'rumors_pane.dart';
 import 'scenes_pane.dart';
 import 'sidekick_screen.dart';
+import 'tasks_pane.dart';
 import 'track_home_pane.dart';
 import 'tracker_screen.dart';
 import 'tracks_pane.dart';
@@ -33,6 +34,7 @@ class TrackingTab extends ConsumerWidget {
       tabs: [
         const SubtabDef('home', 'Home'),
         const SubtabDef('loop', 'Loop'),
+        const SubtabDef('tasks', 'Tasks'),
         const SubtabDef('scenes', 'Scenes'),
         const SubtabDef('threads', 'Threads'),
         const SubtabDef('encounter', 'Encounter'),
@@ -47,6 +49,7 @@ class TrackingTab extends ConsumerWidget {
       children: [
         const TrackHomePane(),
         const LoopPane(),
+        const TasksPane(),
         const ScenesPane(),
         const ThreadsPane(),
         const EncounterScreen(),
