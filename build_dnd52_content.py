@@ -46,6 +46,19 @@ def clean_name(raw):
     return raw.strip().strip('*').strip()
 
 
+def strip_md(text):
+    """Remove markdown emphasis markers (*** ** *) from body text — the app
+    renders descriptions/details as plain Text, so SRD inline labels like
+    *Melee Attack Roll:* must not show literal asterisks. Collapses the doubled
+    spaces the SRD leaves after *Failure:*  labels."""
+    if not text:
+        return text
+    text = re.sub(r'\*{1,3}([^*]+?)\*{1,3}', r'\1', text)
+    text = text.replace('*', '')  # any stray unmatched marker
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    return text.strip()
+
+
 # --------------------------------------------------------------------------- #
 # Spells
 # --------------------------------------------------------------------------- #
@@ -180,10 +193,10 @@ def parse_spell(name, body):
         'concentration': 'Concentration' in duration,
         'ritual': 'Ritual' in casting,
         'classes': classes,
-        'description': description,
+        'description': strip_md(description),
     }
     if higher:
-        out['higherLevels'] = higher
+        out['higherLevels'] = strip_md(higher)
     return out
 
 
@@ -266,6 +279,9 @@ def collect_sections(body, start_idx):
         i += 1
     if cur:
         items.append(cur)
+    for it in items:
+        it['name'] = strip_md(it['name'])
+        it['text'] = strip_md(it['text'])
     return items, i
 
 
