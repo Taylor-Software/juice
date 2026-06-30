@@ -38,7 +38,14 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
 
   String _signature(List<JournalEntry> journal, List<Suggestion> candidates,
       String? activeSceneId) {
-    final top = journal.isEmpty ? '' : journal.first.id;
+    // Coarsen rank-invalidation: only the newest semantically-meaningful entry
+    // (a scene or an oracle result) re-queues the LLM, not every capture note.
+    final top = journal
+            .where((e) =>
+                e.kind == JournalKind.scene || e.kind == JournalKind.result)
+            .firstOrNull
+            ?.id ??
+        '';
     final scene = activeSceneEntry(journal, activeSceneId)?.id ?? '';
     return '$top|$scene|${candidates.map((s) => s.id).join(',')}';
   }
