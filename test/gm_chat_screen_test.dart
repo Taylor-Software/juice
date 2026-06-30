@@ -111,13 +111,36 @@ void main() {
     expect(find.textContaining('did not answer'), findsOneWidget);
   });
 
-  testWidgets('clear empties the thread', (tester) async {
+  testWidgets('clear confirms then empties the thread', (tester) async {
     final container = await pumpChat(tester);
     await tester.enterText(find.byKey(const Key('gm-chat-input')), 'Hi');
     await tester.tap(find.byKey(const Key('gm-chat-send')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('gm-chat-clear')));
     await tester.pumpAndSettle();
+    // Confirm dialog is up; the thread is untouched until "Clear".
+    expect(find.text('Clear this GM conversation?'), findsOneWidget);
+    expect(container.read(gmChatProvider).valueOrNull!.turns, isNotEmpty);
+    await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
+    await tester.pumpAndSettle();
     expect(container.read(gmChatProvider).valueOrNull!.turns, isEmpty);
+    expect(find.text('Chat cleared'), findsOneWidget);
+  });
+
+  testWidgets('clear can be cancelled', (tester) async {
+    final container = await pumpChat(tester);
+    await tester.enterText(find.byKey(const Key('gm-chat-input')), 'Hi');
+    await tester.tap(find.byKey(const Key('gm-chat-send')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('gm-chat-clear')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(container.read(gmChatProvider).valueOrNull!.turns, isNotEmpty);
+  });
+
+  testWidgets('clear button hidden when chat is empty', (tester) async {
+    await pumpChat(tester);
+    expect(find.byKey(const Key('gm-chat-clear')), findsNothing);
   });
 }

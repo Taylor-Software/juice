@@ -45,15 +45,96 @@ class TrackHomePane extends ConsumerWidget {
     final cards =
         live ? [encounterCard, ...otherCards] : [...otherCards, encounterCard];
 
+    final helpSeen = ref.watch(trackHelpSeenProvider).valueOrNull ?? true;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
       children: [
+        if (!helpSeen)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _helpCard(context, ref),
+          ),
         for (final c in cards)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: c,
           ),
       ],
+    );
+  }
+
+  // -- Orientation card ----------------------------------------------------
+
+  /// A dismissible "what each Track subtab is for" card, shown once per device
+  /// until dismissed (persisted via [trackHelpSeenProvider]).
+  Widget _helpCard(BuildContext context, WidgetRef ref) {
+    final tk = context.juice;
+    const radius = BorderRadius.all(Radius.circular(14));
+    const lines = <(String, String)>[
+      ('Loop', 'guided solo play'),
+      ('Tasks', 'tally-tracked goals'),
+      ('Scenes', 'story beats'),
+      ('Threads', 'open storylines'),
+      ('Encounter', 'combat'),
+      ('Rumors', 'leads'),
+      ('Tracks', 'clocks'),
+    ];
+    return Material(
+      key: const Key('track-help-card'),
+      color: tk.raised,
+      borderRadius: radius,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 8, 14),
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: Border.all(color: tk.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  "WHAT'S HERE",
+                  style: tk.uiLabel.copyWith(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    color: tk.inkMuted,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  key: const Key('track-help-dismiss'),
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.close, size: 18),
+                  tooltip: 'Dismiss',
+                  onPressed: () =>
+                      ref.read(trackHelpSeenProvider.notifier).markSeen(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final (label, desc) in lines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3, right: 8),
+                child: RichText(
+                  text: TextSpan(
+                    style: TextStyle(color: tk.inkBody, height: 1.4),
+                    children: [
+                      TextSpan(
+                        text: '$label ',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      TextSpan(text: '— $desc', style: TextStyle(color: tk.inkMuted)),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 

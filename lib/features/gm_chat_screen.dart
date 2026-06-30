@@ -82,6 +82,32 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     }
   }
 
+  Future<void> _confirmClear() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear chat'),
+        content: const Text('Clear this GM conversation?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await ref.read(gmChatProvider.notifier).clear();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Chat cleared')),
+    );
+  }
+
   void _saveToJournal(List<ChatTurn> turns, int i) {
     final gm = turns[i];
     final prior = i > 0 ? turns[i - 1] : null;
@@ -105,14 +131,13 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
       appBar: AppBar(
         title: const Text('GM chat'),
         actions: [
-          IconButton(
-            key: const Key('gm-chat-clear'),
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Clear chat',
-            onPressed: turns.isEmpty
-                ? null
-                : () => ref.read(gmChatProvider.notifier).clear(),
-          ),
+          if (turns.isNotEmpty)
+            IconButton(
+              key: const Key('gm-chat-clear'),
+              icon: const Icon(Icons.delete_sweep_outlined),
+              tooltip: 'Clear chat',
+              onPressed: _confirmClear,
+            ),
         ],
       ),
       body: Column(

@@ -439,6 +439,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   /// recapped since last visit (and the model is available to do it).
   Widget _recapBanner(List<JournalEntry> entries) {
     if (!_canVoice) return const SizedBox.shrink();
+    // Permanently opted out via the banner's "Never" action.
+    if (ref.watch(recapSuppressedProvider).valueOrNull ?? false) {
+      return const SizedBox.shrink();
+    }
     // Decide once per visit (first time the journal resolves): offer a recap
     // only when you ARRIVED with real history and haven't already seen the
     // newest entry. Captured so later entries don't re-trigger the banner.
@@ -475,6 +479,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             key: const Key('recap-action'),
             onPressed: _recap,
             child: const Text('Recap'),
+          ),
+          TextButton(
+            key: const Key('recap-never'),
+            onPressed: () {
+              setState(() => _recapDismissed = true);
+              ref.read(recapSuppressedProvider.notifier).markSeen();
+            },
+            child: const Text('Never'),
           ),
           IconButton(
             key: const Key('recap-dismiss'),

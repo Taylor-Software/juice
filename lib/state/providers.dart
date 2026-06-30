@@ -1465,6 +1465,46 @@ class WelcomeSeenNotifier extends AsyncNotifier<bool> {
 final welcomeSeenProvider =
     AsyncNotifierProvider<WelcomeSeenNotifier, bool>(WelcomeSeenNotifier.new);
 
+/// App-global flag: the Track-home orientation card has been dismissed.
+/// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
+class TrackHelpSeenNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.track_help_seen.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> markSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, true);
+    state = const AsyncData(true);
+  }
+}
+
+final trackHelpSeenProvider =
+    AsyncNotifierProvider<TrackHelpSeenNotifier, bool>(
+        TrackHelpSeenNotifier.new);
+
+/// App-global flag: the recap banner has been permanently suppressed ("Never").
+/// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
+class RecapSuppressedNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.recap_suppressed.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> markSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, true);
+    state = const AsyncData(true);
+  }
+}
+
+final recapSuppressedProvider =
+    AsyncNotifierProvider<RecapSuppressedNotifier, bool>(
+        RecapSuppressedNotifier.new);
+
 /// App-global sticky state for the assistant rail's open/collapsed position.
 /// Default true (open) so new users see suggestion chips immediately.
 class AssistantRailExpandedNotifier extends AsyncNotifier<bool> {
