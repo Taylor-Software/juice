@@ -632,10 +632,16 @@ Working rules for this repo:
   `'custom-table'`, non-tappable source chip like `gen-*`) + a `table-new` chip
   and a per-chip edit button → `_showTableDialog` (name + one-row-per-line
   textarea; `table-name`/`table-rows`/`table-save`/`table-delete`). **Facts-only:**
-  ships zero vendored content — the user authors every row. P1 = flat uniform
-  list; deferred: weighted/min-max-range rows, a dice-notation field, Ask-verb
-  surfacing, per-campaign/exported scope, import/export of table packs. See
-  `docs/superpowers/plans/2026-06-29-custom-oracle-tables.md` + the epic roadmap
+  ships zero vendored content — the user authors every row. P2 added `TableRoll`
+  modes (uniform / **weighted** / **ranges**): each `CustomRow` carries a `weight`
+  + optional `min`/`max` span, and `CustomTable` carries a `mode` + `dice` notation
+  (`parseDiceNotation`/`rollNotation`); the editor exposes a `table-mode`
+  `SegmentedButton` + a conditional `table-dice` field, with pure
+  `parseRows`/`rowsToText` driving the textarea micro-syntax (`text | weight`,
+  `min-max text`). Legacy `rows:[String]` JSON still loads (uniform). Deferred:
+  Ask-verb surfacing, per-campaign/exported scope, import/export of table packs. See
+  `docs/superpowers/plans/2026-06-29-custom-oracle-tables.md`,
+  `docs/superpowers/plans/2026-06-30-custom-tables-p2.md` + the epic roadmap
   `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **Solo Loop + Success Tally** — a guided solo-play procedure surface plus a
   bidirectional task tracker, mechanics-only adoption from *Cairn Solo*
