@@ -8,16 +8,18 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/tables_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _oracle = Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
         as Map<String, dynamic>));
 
-Future<void> pump(WidgetTester tester) async {
+Future<void> pump(WidgetTester tester, {String? customTablesJson}) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    if (customTablesJson != null) 'juice.custom_tables.v1': customTablesJson,
   });
   tester.view.physicalSize = const Size(900, 3000);
   tester.view.devicePixelRatio = 1.0;
@@ -30,6 +32,34 @@ Future<void> pump(WidgetTester tester) async {
     ),
   ));
   await tester.pumpAndSettle();
+}
+
+/// Pump under an [UncontrolledProviderScope] so the test can read
+/// [journalProvider] to assert what a roll logged.
+Future<ProviderContainer> pumpWithContainer(WidgetTester tester,
+    {String? customTablesJson}) async {
+  SharedPreferences.setMockInitialValues({
+    'juice.sessions.v1':
+        '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    'juice.journal.v2.default': '[]',
+    if (customTablesJson != null) 'juice.custom_tables.v1': customTablesJson,
+  });
+  tester.view.physicalSize = const Size(900, 3000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+  final c = ProviderContainer();
+  addTearDown(c.dispose);
+  await c.read(sessionsProvider.future);
+  await tester.pumpWidget(UncontrolledProviderScope(
+    container: c,
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(body: TablesScreen(oracle: _oracle)),
+    ),
+  ));
+  await tester.pumpAndSettle();
+  return c;
 }
 
 void main() {
@@ -88,5 +118,37 @@ void main() {
     await tester.tap(find.text('Quest Objective'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Add to journal'), findsOneWidget);
+  });
+
+  testWidgets('My Tables renders a seeded table and rolling it logs an entry',
+      (tester) async {
+    const seed = '[{"id":"t1","name":"My Loot","rows":["Gold","Gem"]}]';
+    final c = await pumpWithContainer(tester, customTablesJson: seed);
+    expect(find.byKey(const Key('tables-my-tables')), findsOneWidget);
+    final row = find.byKey(const Key('my-table-t1'));
+    expect(row, findsOneWidget);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.sourceTool, 'custom-table');
+  });
+
+  testWidgets('tables-my-new opens the editor', (tester) async {
+    await pumpWithContainer(tester);
+    await tester.tap(find.byKey(const Key('tables-my-new')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('table-name')), findsOneWidget);
+  });
+
+  testWidgets('My Tables is hidden when a search query is active',
+      (tester) async {
+    const seed = '[{"id":"t1","name":"My Loot","rows":["Gold"]}]';
+    await pumpWithContainer(tester, customTablesJson: seed);
+    expect(find.byKey(const Key('tables-my-tables')), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('tables-search')), 'settlement');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('tables-my-tables')), findsNothing);
   });
 }

@@ -627,21 +627,31 @@ Working rules for this repo:
   pick over the flat row list; empty table → placeholder roll). Persisted by an
   **app-global** `customTablesProvider` (`juice.custom_tables.v1`, mirrors
   `bestiaryProvider` — NOT session-scoped, NOT exported; reusable across
-  campaigns). Surfaced as a **"My Tables"** section in `GenerateSheet`: a roll
-  chip per table (`table-roll-<id>`, taps roll → journal `addResult` sourceTool
-  `'custom-table'`, non-tappable source chip like `gen-*`) + a `table-new` chip
-  and a per-chip edit button → `_showTableDialog` (name + one-row-per-line
-  textarea; `table-name`/`table-rows`/`table-save`/`table-delete`). **Facts-only:**
-  ships zero vendored content — the user authors every row. P2 added `TableRoll`
-  modes (uniform / **weighted** / **ranges**): each `CustomRow` carries a `weight`
-  + optional `min`/`max` span, and `CustomTable` carries a `mode` + `dice` notation
+  campaigns). Surfaced two places — a **"My Tables"** section in `GenerateSheet`
+  (a roll chip per table `table-roll-<id>`, taps roll → journal `addResult`
+  sourceTool `'custom-table'`, non-tappable source chip like `gen-*`; `table-new`
+  chip) AND a **"My Tables"** `ExpansionTile` atop the **Ask → Tables** tab
+  (`TablesScreen`, keys `tables-my-tables`/`my-table-<id>`/`my-table-edit-<id>`/
+  `tables-my-new`, hidden while searching). Both open the shared public editor
+  `showCustomTableDialog` (`lib/features/custom_table_editor.dart`, extracted from
+  the old private `_showTableDialog`; `table-name`/`table-mode`/`table-dice`/
+  `table-rows`/`table-save`/`table-delete`). **Facts-only:** ships zero vendored
+  content — the user authors every row. P2 added `TableRoll` modes (uniform /
+  **weighted** / **ranges**): each `CustomRow` carries a `weight` + optional
+  `min`/`max` span, and `CustomTable` carries a `mode` + `dice` notation
   (`parseDiceNotation`/`rollNotation`); the editor exposes a `table-mode`
   `SegmentedButton` + a conditional `table-dice` field, with pure
   `parseRows`/`rowsToText` driving the textarea micro-syntax (`text | weight`,
-  `min-max text`). Legacy `rows:[String]` JSON still loads (uniform). Deferred:
-  Ask-verb surfacing, per-campaign/exported scope, import/export of table packs. See
+  `min-max text`). Legacy `rows:[String]` JSON still loads (uniform).
+  **Table packs:** export/import a portable `.tables.json` (pure
+  `encodeTablePack`/`decodeTablePack` over a `{kind:'juice-table-pack',v,tables}`
+  wrapper; tolerant decode) via the campaigns drawer menu
+  (`menu-export-tables`/`menu-import-tables`); import APPENDS with fresh ids
+  (`CustomTablesNotifier.addAll`, never clobbers). Deferred: per-campaign/exported
+  (with-campaign) scope; community pack registry. See
   `docs/superpowers/plans/2026-06-29-custom-oracle-tables.md`,
-  `docs/superpowers/plans/2026-06-30-custom-tables-p2.md` + the epic roadmap
+  `docs/superpowers/plans/2026-06-30-custom-tables-p2.md`,
+  `docs/superpowers/plans/2026-06-30-custom-tables-followups.md` + the epic roadmap
   `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
 - **Solo Loop + Success Tally** — a guided solo-play procedure surface plus a
   bidirectional task tracker, mechanics-only adoption from *Cairn Solo*

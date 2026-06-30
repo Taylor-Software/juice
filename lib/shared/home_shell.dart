@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/custom_table.dart';
 import '../engine/funnel.dart';
 import '../engine/journal_export.dart';
 import '../engine/models.dart';
@@ -151,6 +152,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 leading: const Icon(Icons.download_outlined),
                 title: const Text('Import Lonelog (.md)'),
                 onTap: () => _importLonelog(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-export-tables'),
+                leading: const Icon(Icons.table_chart_outlined),
+                title: const Text('Export table pack'),
+                onTap: () => _exportTablePack(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-import-tables'),
+                leading: const Icon(Icons.table_view_outlined),
+                title: const Text('Import table pack'),
+                onTap: () => _importTablePack(dialogContext),
               ),
               if (ref.read(blobStoreAvailableProvider))
                 ListTile(
@@ -354,6 +367,87 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         );
         Navigator.of(dialogContext).pop();
       }
+    }
+  }
+
+  Future<void> _exportTablePack(BuildContext dialogContext) async {
+    final tables =
+        ref.read(customTablesProvider).valueOrNull ?? const <CustomTable>[];
+    if (tables.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No custom tables to export.')),
+        );
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final json = encodeTablePack(tables);
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export table pack',
+        fileName: 'tables.tables.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(json)),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _importTablePack(BuildContext dialogContext) async {
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import table pack',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
+    if (bytes == null) return; // user cancelled
+    try {
+      final decoded = decodeTablePack(utf8.decode(bytes));
+      if (decoded.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No tables found in file.')),
+          );
+        }
+      } else {
+        await ref.read(customTablesProvider.notifier).addAll(decoded);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  'Imported ${decoded.length} table${decoded.length == 1 ? '' : 's'}.'),
+            ),
+          );
+        }
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not a valid table pack.')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     }
   }
 

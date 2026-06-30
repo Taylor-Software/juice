@@ -2,6 +2,8 @@
 /// No Flutter imports — unit-tested without a widget harness.
 library;
 
+import 'dart:convert';
+
 import 'dice.dart';
 import 'models.dart';
 
@@ -132,6 +134,31 @@ class CustomTable {
     if (map['id'] is! String) return null;
     return CustomTable.fromJson(map);
   }
+}
+
+/// Stable marker for an exported table pack file.
+const kTablePackKind = 'juice-table-pack';
+
+/// Serialize [tables] to a portable pack JSON string.
+String encodeTablePack(List<CustomTable> tables) => jsonEncode({
+      'kind': kTablePackKind,
+      'v': 1,
+      'tables': tables.map((t) => t.toJson()).toList(),
+    });
+
+/// Decode a pack JSON string into tables. Tolerant: returns an empty list when
+/// the payload is not a recognizable pack; drops individual malformed tables.
+/// Throws [FormatException] only when the top-level JSON itself is unparseable.
+List<CustomTable> decodeTablePack(String raw) {
+  final dynamic root = jsonDecode(raw); // may throw FormatException — caller handles
+  if (root is! Map) return const [];
+  if (root['kind'] != kTablePackKind) return const [];
+  final list = root['tables'];
+  if (list is! List) return const [];
+  return list
+      .map(CustomTable.maybeFromJson)
+      .whereType<CustomTable>()
+      .toList();
 }
 
 /// Roll [table] per its [CustomTable.mode]. An empty table yields a placeholder

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -188,6 +189,78 @@ void main() {
       final rows = parseRows('Plain line', TableRoll.ranges);
       expect(rows.single.text, 'Plain line');
       expect(rows.single.min, isNull);
+    });
+  });
+
+  group('table pack', () {
+    test('round-trips a multi-table pack (uniform + weighted + ranges)', () {
+      const tables = [
+        CustomTable(
+            id: 'u',
+            name: 'Weather',
+            rows: [CustomRow('Rain'), CustomRow('Sun')]),
+        CustomTable(
+            id: 'w',
+            name: 'Storms',
+            mode: TableRoll.weighted,
+            rows: [CustomRow('Calm', weight: 1), CustomRow('Gale', weight: 4)]),
+        CustomTable(
+          id: 'r',
+          name: 'Loot',
+          mode: TableRoll.ranges,
+          dice: 'd100',
+          rows: [
+            CustomRow('Copper', min: 1, max: 50),
+            CustomRow('Gold', min: 51, max: 100),
+          ],
+        ),
+      ];
+      final back = decodeTablePack(encodeTablePack(tables));
+      expect(back, hasLength(3));
+
+      expect(back[0].name, 'Weather');
+      expect(back[0].mode, TableRoll.uniform);
+      expect(back[0].rows.map((r) => r.text).toList(), ['Rain', 'Sun']);
+
+      expect(back[1].name, 'Storms');
+      expect(back[1].mode, TableRoll.weighted);
+      expect(back[1].rows[1].weight, 4);
+
+      expect(back[2].name, 'Loot');
+      expect(back[2].mode, TableRoll.ranges);
+      expect(back[2].dice, 'd100');
+      expect(back[2].rows.first.min, 1);
+      expect(back[2].rows.first.max, 50);
+      expect(back[2].rows[1].min, 51);
+      expect(back[2].rows[1].max, 100);
+    });
+
+    test('a bare non-pack list decodes to []', () {
+      expect(decodeTablePack('[]'), isEmpty);
+      expect(
+          decodeTablePack('[{"id":"a","name":"n","rows":["X"]}]'), isEmpty);
+    });
+
+    test('wrong kind decodes to []', () {
+      expect(
+          decodeTablePack('{"kind":"something-else","v":1,"tables":[]}'),
+          isEmpty);
+    });
+
+    test('a junk table entry is dropped, valid ones kept', () {
+      const valid = CustomTable(id: 'a', name: 'A', rows: [CustomRow('X')]);
+      final raw = jsonEncode({
+        'kind': kTablePackKind,
+        'v': 1,
+        'tables': [42, valid.toJson()],
+      });
+      final back = decodeTablePack(raw);
+      expect(back, hasLength(1));
+      expect(back.single.name, 'A');
+    });
+
+    test('unparseable top-level JSON throws FormatException', () {
+      expect(() => decodeTablePack('not json'), throwsFormatException);
     });
   });
 }
