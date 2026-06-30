@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/custom_table.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/generate_sheet.dart';
@@ -187,7 +188,44 @@ void main() {
 
     final tables = await c.read(customTablesProvider.future);
     expect(tables.single.name, 'Loot');
-    expect(tables.single.rows, ['Gold', 'Gem', 'Scroll']);
+    expect(tables.single.rows.map((r) => r.text).toList(), ['Gold', 'Gem', 'Scroll']);
     expect(find.widgetWithText(InputChip, 'Loot'), findsOneWidget);
+  });
+
+  testWidgets('creates a ranges table and rolls it to a journal entry',
+      (tester) async {
+    final c = await _makeContainer();
+    await _pumpSheet(tester, c);
+
+    // Open the new-table dialog.
+    await tester.tap(find.byKey(const Key('table-new')));
+    await tester.pumpAndSettle();
+
+    // Name it.
+    await tester.enterText(find.byKey(const Key('table-name')), 'Loot');
+
+    // Switch to Ranges mode -> dice field appears.
+    await tester.tap(find.text('Ranges'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('table-dice')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('table-dice')), 'd100');
+    await tester.enterText(find.byKey(const Key('table-rows')),
+        '1-50 Copper\n51-100 Gold');
+    await tester.tap(find.byKey(const Key('table-save')));
+    await tester.pumpAndSettle();
+
+    // The table persisted with ranges mode.
+    final tables = await c.read(customTablesProvider.future);
+    expect(tables.single.name, 'Loot');
+    expect(tables.single.mode, TableRoll.ranges);
+    expect(tables.single.dice, 'd100');
+    expect(tables.single.rows, hasLength(2));
+
+    // Roll it -> a journal entry with the custom-table source tool.
+    await tester.tap(find.byKey(Key('table-roll-${tables.single.id}')));
+    await tester.pumpAndSettle();
+    final entries = await c.read(journalProvider.future);
+    expect(entries.single.sourceTool, 'custom-table');
   });
 }
