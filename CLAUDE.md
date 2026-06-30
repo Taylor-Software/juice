@@ -672,7 +672,19 @@ Working rules for this repo:
   `setTally`/`clearTally`/`adjustTally`. UI: a **Loop** Track subtab
   (`lib/features/loop_pane.dart`, ungated, after Home) — a 5-step checklist
   (scene / d10 ask / inspire→`showGenerateSheet` / tally tasks / capture),
-  widget-local state only, `solo-loop` sourceTool; and a tally row on thread
+  `solo-loop` sourceTool. **Polish pack (2026-06-30 play-loop audit):** New-scene
+  opens a title dialog (`loop-scene-name`, Cancel aborts); step-4 has an inline
+  task creator (`loop-task-name` field + `loop-task-preset` `kTallyPresets`
+  dropdown + `loop-task-new` → `addReturningId`+`setTally`) so tasks are made
+  without leaving the pane, plus a per-task tally-roll button
+  (`loop-task-roll-<id>`, `rollVsTally` clean/complication — logs + shows inline
+  at `loop-tally-roll-result`, does NOT auto-adjust progress); step-5 capture
+  gained a `loop-capture-send` send button. Loop UI state survives tab nav via
+  file-private NON-autoDispose `StateProvider`s (`_loopOddsProvider`/
+  `_loopLastProvider`/`_loopCaptureProvider`/`_loopTallyRollProvider`; the
+  `TextEditingController` re-seeds from `_loopCaptureProvider` in `initState`
+  since the State is disposed on subtab switch). See
+  `docs/superpowers/plans/2026-06-30-solo-loop-polish.md`. And a tally row on thread
   cards (`ThreadsPane`, `thread-tally-add/dec/inc/roll/remove-<id>`, Wrap +
   compact buttons for narrow-width safety). See
   `docs/superpowers/specs/2026-06-29-solo-loop-success-tally-design.md` +
