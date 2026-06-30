@@ -4,6 +4,7 @@ import '../engine/content_registry.dart';
 import '../engine/models.dart';
 import '../engine/spell.dart';
 import '../state/providers.dart';
+import 'quick_ref_view.dart';
 import 'sheet_widgets.dart';
 
 /// Read-only glance card for a spell. Pure display; no state.
@@ -80,74 +81,84 @@ class _ReferenceViewState extends ConsumerState<ReferenceView> {
 
   @override
   Widget build(BuildContext context) {
-    final monsters =
-        ref.watch(contentMonstersProvider).valueOrNull ?? const <Creature>[];
-    final spells =
-        ref.watch(contentSpellsProvider).valueOrNull ?? const <SpellEntry>[];
-    final results = searchContent(
-      query: _ctrl.text,
-      filter: _type,
-      system: _system,
-      monsters: monsters,
-      spells: spells,
-    );
+    final isRules = _type == ContentType.rules;
+    final monsters = isRules
+        ? const <Creature>[]
+        : ref.watch(contentMonstersProvider).valueOrNull ?? const <Creature>[];
+    final spells = isRules
+        ? const <SpellEntry>[]
+        : ref.watch(contentSpellsProvider).valueOrNull ?? const <SpellEntry>[];
+    final results = isRules
+        ? const ContentResults(monsters: [], spells: [])
+        : searchContent(
+            query: _ctrl.text,
+            filter: _type,
+            system: _system,
+            monsters: monsters,
+            spells: spells,
+          );
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: TextField(
-            key: const Key('reference-search'),
-            controller: _ctrl,
-            decoration: const InputDecoration(
-              prefixIcon: Icon(Icons.search),
-              hintText: 'Search spells & monsters',
+        if (!isRules)
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: TextField(
+              key: const Key('reference-search'),
+              controller: _ctrl,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search spells & monsters',
+              ),
+              onChanged: (_) => setState(() {}),
             ),
-            onChanged: (_) => setState(() {}),
           ),
-        ),
         SegmentedButton<ContentType>(
           segments: const [
             ButtonSegment(value: ContentType.all, label: Text('All')),
             ButtonSegment(value: ContentType.monsters, label: Text('Monsters')),
             ButtonSegment(value: ContentType.spells, label: Text('Spells')),
+            ButtonSegment(value: ContentType.rules, label: Text('Rules')),
           ],
           selected: {_type},
           onSelectionChanged: (s) => setState(() => _type = s.first),
         ),
-        Expanded(
-          // Spells first, then monsters. Lazy-built so off-screen tiles aren't
-          // constructed on every keystroke (the full list is ~400+ entries).
-          child: ListView.builder(
-            itemCount: results.spells.length + results.monsters.length,
-            itemBuilder: (context, i) {
-              if (i < results.spells.length) {
-                final s = results.spells[i];
+        if (isRules)
+          const Expanded(child: QuickRefView(useProvider: true))
+        else
+          Expanded(
+            // Spells first, then monsters. Lazy-built so off-screen tiles aren't
+            // constructed on every keystroke (the full list is ~400+ entries).
+            child: ListView.builder(
+              itemCount: results.spells.length + results.monsters.length,
+              itemBuilder: (context, i) {
+                if (i < results.spells.length) {
+                  final s = results.spells[i];
+                  return ListTile(
+                    key: Key('reference-spell-${s.id}'),
+                    dense: true,
+                    leading: const Icon(Icons.auto_fix_high),
+                    title: Text(s.name),
+                    subtitle: Text(s.level == 0
+                        ? 'Cantrip · ${s.school}'
+                        : 'Lvl ${s.level} · ${s.school}'),
+                    onTap: () => _glance(context, spell: s),
+                  );
+                }
+                final m = results.monsters[i - results.spells.length];
                 return ListTile(
-                  key: Key('reference-spell-${s.id}'),
+                  key: Key('reference-monster-${m.id}'),
                   dense: true,
-                  leading: const Icon(Icons.auto_fix_high),
-                  title: Text(s.name),
-                  subtitle: Text(s.level == 0
-                      ? 'Cantrip · ${s.school}'
-                      : 'Lvl ${s.level} · ${s.school}'),
-                  onTap: () => _glance(context, spell: s),
+                  leading: const Icon(Icons.pets),
+                  title: Text(m.name),
+                  subtitle: Text([
+                    if (m.statBlock.cr != null) 'CR ${m.statBlock.cr}',
+                    if (m.maxHp > 0) 'HP ${m.maxHp}',
+                  ].join(' · ')),
+                  onTap: () => _glance(context, monster: m),
                 );
-              }
-              final m = results.monsters[i - results.spells.length];
-              return ListTile(
-                key: Key('reference-monster-${m.id}'),
-                dense: true,
-                leading: const Icon(Icons.pets),
-                title: Text(m.name),
-                subtitle: Text([
-                  if (m.statBlock.cr != null) 'CR ${m.statBlock.cr}',
-                  if (m.maxHp > 0) 'HP ${m.maxHp}',
-                ].join(' · ')),
-                onTap: () => _glance(context, monster: m),
-              );
-            },
+              },
+            ),
           ),
-        ),
         const _AttributionFooter(),
       ],
     );

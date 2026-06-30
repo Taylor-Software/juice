@@ -28,6 +28,7 @@ import '../engine/oracle_data.dart';
 import '../engine/custom_sheet.dart';
 import '../engine/custom_table.dart';
 import '../engine/system_primer.dart';
+import '../engine/quick_ref.dart';
 import '../engine/spell.dart';
 import '../engine/content_registry.dart';
 import '../engine/tally.dart';
@@ -1840,6 +1841,9 @@ final resolvedSystemProvider = Provider<String>((ref) {
   final rulesets = ref.watch(rulesetsProvider).valueOrNull ?? const <String>{};
   return resolveSystem(systems, rulesets);
 });
+
+final systemQuickRefProvider = Provider<QuickRefCard?>(
+    (ref) => kSystemQuickRefs[ref.watch(resolvedSystemProvider)]);
 
 // -- Split view (global layout preference, not session-scoped) ---------------
 class SplitViewNotifier extends AsyncNotifier<bool> {

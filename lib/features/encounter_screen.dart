@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
+import 'quick_ref_view.dart';
 
 /// Initiative tracker: combatants from character sheets (live first-track
 /// link) or ad-hoc, turn pointer + round counter, statuses/defeated, and an
@@ -53,6 +54,12 @@ class EncounterScreen extends ConsumerWidget {
               onPressed: () => ref.read(encounterProvider.notifier).nextTurn(),
               child: const Text('Next turn'),
             ),
+          ),
+          IconButton(
+            key: const Key('enc-rules'),
+            icon: const Icon(Icons.menu_book_outlined),
+            tooltip: 'Rules quick reference',
+            onPressed: () => showQuickRef(context),
           ),
           IconButton(
             key: const Key('end-encounter'),

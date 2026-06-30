@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_interpreter.dart';
 import 'oracle_interpretation_sheet.dart';
+import 'quick_ref_view.dart';
 import 'reference_view.dart';
 import 'sheet_widgets.dart';
 import '../shared/destination.dart';
@@ -53,6 +54,7 @@ class RunScreen extends ConsumerWidget {
         final wide = c.maxWidth >= kRunWideBreakpoint;
         const timers = _TimersPanel();
         const initiative = _InitiativePanel();
+        const quickref = _QuickRefPanel();
         const party = _PartyPanel();
         const scene = _ScenePanel();
         const threads = _ThreadsRumorsPanel();
@@ -70,6 +72,8 @@ class RunScreen extends ConsumerWidget {
                     timers,
                     SizedBox(height: 12),
                     initiative,
+                    SizedBox(height: 12),
+                    quickref,
                     SizedBox(height: 12),
                     party,
                   ]),
@@ -98,6 +102,8 @@ class RunScreen extends ConsumerWidget {
             timers,
             SizedBox(height: 12),
             initiative,
+            SizedBox(height: 12),
+            quickref,
             SizedBox(height: 12),
             party,
             SizedBox(height: 12),
@@ -733,6 +739,18 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _QuickRefPanel extends StatelessWidget {
+  const _QuickRefPanel();
+  @override
+  Widget build(BuildContext context) {
+    return const _Panel(
+      k: Key('run-panel-quickref'),
+      title: 'Rules',
+      child: SizedBox(height: 320, child: QuickRefView(useProvider: true)),
     );
   }
 }

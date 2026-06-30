@@ -1,7 +1,7 @@
 import 'models.dart';
 import 'spell.dart';
 
-enum ContentType { all, monsters, spells }
+enum ContentType { all, monsters, spells, rules }
 
 class ContentResults {
   const ContentResults({required this.monsters, required this.spells});

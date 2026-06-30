@@ -111,6 +111,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinLookup = 'lookup';
   static const _builtinSpell = 'spell';
   static const _builtinMonster = 'monster';
+  static const _builtinRules = 'rules';
 
   @override
   void initState() {
@@ -1264,6 +1265,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showLookup = _builtinLookup.startsWith(tok);
     final showSpell = _builtinSpell.startsWith(tok);
     final showMonster = _builtinMonster.startsWith(tok);
+    final showRules = _builtinRules.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
     final tk = context.juice;
@@ -1438,6 +1440,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   _openReference('', ContentType.monsters);
                 },
               ),
+            if (showRules)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-rules'),
+                icon: Icons.menu_book,
+                command: '/rules',
+                description: 'Rules quick reference for this system',
+                onTap: () {
+                  _composer.clear();
+                  _openReference('', ContentType.rules);
+                },
+              ),
             if (matches.isEmpty &&
                 !showScene &&
                 !showHelp &&
@@ -1451,7 +1464,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 !showThread &&
                 !showLookup &&
                 !showSpell &&
-                !showMonster)
+                !showMonster &&
+                !showRules)
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: Text('No matching command',
@@ -1886,6 +1900,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       if (_builtinMonster == tok) {
         _composer.clear();
         _openReference(parsed.rest.trim(), ContentType.monsters);
+        return;
+      }
+      if (_builtinRules == tok) {
+        _composer.clear();
+        _openReference('', ContentType.rules);
         return;
       }
       final systems =
