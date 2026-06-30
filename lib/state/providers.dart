@@ -1676,6 +1676,17 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     await _save(SessionsState(active: s.active, sessions: updated));
   }
 
+  /// Set the per-campaign D&D SRD edition ("5.1" | "5.2") for session [id].
+  Future<void> setDndEdition(String id, String edition) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id) m.copyWith(dndEdition: edition) else m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
+  }
+
   Future<void> remove(String id) async {
     final s = state.valueOrNull;
     if (s == null || s.sessions.length <= 1) return; // keep at least one
@@ -2078,10 +2089,16 @@ final systemSpellsProvider =
   }
 });
 
+/// Active campaign's D&D SRD edition preference ("5.1" | "5.2"); null → latest.
+final dndEditionProvider = Provider<String>((ref) =>
+    ref.watch(sessionsProvider).valueOrNull?.activeMeta.dndEdition ?? '5.2');
+
 /// All monsters across enabled systems: bundled creature files + Ironsworn
-/// npc_collections (adapted) + the user bestiary. De-duped by id.
+/// npc_collections (adapted) + the user bestiary. De-duped by id. Edition-tagged
+/// entries (D&D 5.1/5.2) are filtered to the active campaign edition.
 final contentMonstersProvider = FutureProvider<List<Creature>>((ref) async {
   final systems = ref.watch(enabledContentSystemsProvider);
+  final ed = ref.watch(dndEditionProvider);
   final out = <String, Creature>{};
   for (final sys in systems) {
     for (final c in await ref.watch(systemFoesProvider(sys).future)) {
@@ -2098,19 +2115,27 @@ final contentMonstersProvider = FutureProvider<List<Creature>>((ref) async {
       in ref.watch(bestiaryProvider).valueOrNull ?? const <Creature>[]) {
     out.putIfAbsent(c.id, () => c);
   }
-  return out.values.toList();
+  return [
+    for (final c in out.values)
+      if (c.edition == null || c.edition == ed) c,
+  ];
 });
 
-/// All spells across enabled systems.
+/// All spells across enabled systems. Edition-tagged entries (D&D 5.1/5.2) are
+/// filtered to the active campaign edition.
 final contentSpellsProvider = FutureProvider<List<SpellEntry>>((ref) async {
   final systems = ref.watch(enabledContentSystemsProvider);
+  final ed = ref.watch(dndEditionProvider);
   final out = <String, SpellEntry>{};
   for (final sys in systems) {
     for (final s in await ref.watch(systemSpellsProvider(sys).future)) {
       out.putIfAbsent(s.id, () => s);
     }
   }
-  return out.values.toList();
+  return [
+    for (final s in out.values)
+      if (s.edition == null || s.edition == ed) s,
+  ];
 });
 
 /// Loads the party-emulator asset (Triple-O + Pettish tables) once.

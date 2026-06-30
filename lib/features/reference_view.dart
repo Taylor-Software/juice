@@ -122,6 +122,29 @@ class _ReferenceViewState extends ConsumerState<ReferenceView> {
           selected: {_type},
           onSelectionChanged: (s) => setState(() => _type = s.first),
         ),
+        if (!isRules &&
+            ref.watch(enabledContentSystemsProvider).contains('dnd'))
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: SegmentedButton<String>(
+              key: const Key('reference-edition'),
+              segments: const [
+                ButtonSegment(value: '5.1', label: Text('SRD 5.1')),
+                ButtonSegment(value: '5.2', label: Text('SRD 5.2')),
+              ],
+              selected: {ref.watch(dndEditionProvider)},
+              showSelectedIcon: false,
+              onSelectionChanged: (s) {
+                final id =
+                    ref.read(sessionsProvider).valueOrNull?.activeMeta.id;
+                if (id != null) {
+                  ref
+                      .read(sessionsProvider.notifier)
+                      .setDndEdition(id, s.first);
+                }
+              },
+            ),
+          ),
         if (isRules)
           const Expanded(child: QuickRefView(useProvider: true))
         else
