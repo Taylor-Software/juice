@@ -683,7 +683,15 @@ Working rules for this repo:
   aiReady-gated `loop-interpret` button — seeds an `OracleSeed` from the yes/no
   roll + scene + PC + primer, runs the shared `OracleInterpretationSheet`, logs
   an `'interpret'` entry (port of the Run screen's `run-dice-interpret`;
-  `2026-06-29-loop-interpret-design.md`). Deferred: standalone Tasks pane.
+  `2026-06-29-loop-interpret-design.md`), and a standalone **Tasks** pane
+  (`lib/features/tasks_pane.dart`, `TasksPane`) — a Track subtab right after Loop
+  that lists every tally thread (a "task" = a `Thread` with `tally != null`) as a
+  card reusing the public `ThreadTallyRow` (renamed from the private
+  `_ThreadTallyRow` in `tracker_screen.dart`); New-task picks a `kTallyPresets`
+  size, each card taps through to the Threads subtab to edit the underlying
+  thread. No new model/persistence (rides on `threadsProvider` + `Tally`);
+  complementary to the Loop pane's read-only task step
+  (`docs/superpowers/plans/2026-06-30-standalone-tasks-pane.md`).
 - **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
   `party`; legacy campaigns → party). `modeProvider` exposes the active
   campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
