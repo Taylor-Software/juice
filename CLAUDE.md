@@ -628,9 +628,14 @@ Working rules for this repo:
   cards (`ThreadsPane`, `thread-tally-add/dec/inc/roll/remove-<id>`, Wrap +
   compact buttons for narrow-width safety). See
   `docs/superpowers/specs/2026-06-29-solo-loop-success-tally-design.md` +
-  `docs/superpowers/plans/2026-06-29-solo-loop-success-tally.md`. Deferred:
-  standalone Tasks pane, Word Oracle (SA-encumbered) as an authored table,
-  loop-aware assistant-rail prompts, AI auto-interpret of loop rolls.
+  `docs/superpowers/plans/2026-06-29-solo-loop-success-tally.md`. Follow-ups
+  shipped: Word Oracle generator (`2026-06-29-word-oracle-design.md`),
+  loop-aware rail chips `ask-yes-no`/`roll-tally`
+  (`2026-06-29-loop-aware-suggestions-design.md`), and a Loop Ask-step
+  aiReady-gated `loop-interpret` button — seeds an `OracleSeed` from the yes/no
+  roll + scene + PC + primer, runs the shared `OracleInterpretationSheet`, logs
+  an `'interpret'` entry (port of the Run screen's `run-dice-interpret`;
+  `2026-06-29-loop-interpret-design.md`). Deferred: standalone Tasks pane.
 - **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
   `party`; legacy campaigns → party). `modeProvider` exposes the active
   campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
