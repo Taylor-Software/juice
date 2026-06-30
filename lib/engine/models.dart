@@ -4298,7 +4298,8 @@ class SessionMeta {
       this.mode = CampaignMode.party,
       this.identityColor,
       this.identityIcon,
-      this.genre});
+      this.genre,
+      this.dndEdition});
   final String id;
   final String name;
 
@@ -4319,6 +4320,10 @@ class SessionMeta {
   /// CampaignSettings.genre remains the interpreter's source of truth.
   final String? genre;
 
+  /// Per-campaign D&D SRD edition preference ("5.1" | "5.2"); null → latest
+  /// ('5.2'). Filters edition-tagged content so one edition shows at a time.
+  final String? dndEdition;
+
   /// Resolved set: the declared systems, or every system when unset.
   Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
 
@@ -4330,6 +4335,7 @@ class SessionMeta {
         if (identityColor != null) 'identityColor': identityColor,
         if (identityIcon != null) 'identityIcon': identityIcon,
         if (genre != null) 'genre': genre,
+        if (dndEdition != null) 'dndEdition': dndEdition,
       };
 
   // id is immutable — not overridable via copyWith.
@@ -4340,6 +4346,7 @@ class SessionMeta {
     int? identityColor,
     String? identityIcon,
     String? genre,
+    String? dndEdition,
   }) =>
       SessionMeta(
         id: id,
@@ -4349,6 +4356,7 @@ class SessionMeta {
         identityColor: identityColor ?? this.identityColor,
         identityIcon: identityIcon ?? this.identityIcon,
         genre: genre ?? this.genre,
+        dndEdition: dndEdition ?? this.dndEdition,
       );
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
@@ -4359,6 +4367,7 @@ class SessionMeta {
         identityColor: (j['identityColor'] as num?)?.toInt(),
         identityIcon: j['identityIcon'] as String?,
         genre: j['genre'] as String?,
+        dndEdition: j['dndEdition'] as String?,
       );
 }
 
