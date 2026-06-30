@@ -70,9 +70,10 @@ Creature foeEntryToCreature(FoeEntry e) {
 /// Only systems with bundled content appear.
 const kContentAttributions = <String, String>{
   'dnd':
-      'Includes content from the System Reference Document 5.1, © Wizards of '
-          'the Coast LLC, available under the Creative Commons Attribution 4.0 '
-          'International License (CC-BY-4.0).',
+      'Includes material from the System Reference Documents 5.1 and 5.2 '
+          '("SRD 5.1", "SRD 5.2") by Wizards of the Coast LLC, available under '
+          'the Creative Commons Attribution 4.0 International License '
+          '(CC-BY-4.0).',
   'cairn': 'Cairn © Yochai Gal, licensed under CC-BY-SA-4.0.',
   'ose':
       'Compatible with Old-School Essentials (Necrotic Gnome). B/X mechanics; '
