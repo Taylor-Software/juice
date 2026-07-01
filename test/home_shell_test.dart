@@ -346,7 +346,9 @@ void main() {
         find.byKey(const Key('new-campaign-name')), 'Gloomhold');
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
-    // Step 1: pick shadowdark ruleset
+    // Step 1: pick shadowdark ruleset — inside the Experimental drawer
+    await tester.tap(find.byKey(const Key('ruleset-experimental')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('ruleset-shadowdark')));
     await tester.tap(find.byKey(const Key('ruleset-shadowdark')));
     await tester.pumpAndSettle();
@@ -425,7 +427,9 @@ void main() {
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
-    // Step 1: pick dcc (funnel-capable)
+    // Step 1: pick dcc (funnel-capable) — inside the Experimental drawer
+    await tester.tap(find.byKey(const Key('ruleset-experimental')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('ruleset-dcc')));
     await tester.tap(find.byKey(const Key('ruleset-dcc')));
     await tester.pumpAndSettle();

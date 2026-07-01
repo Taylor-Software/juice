@@ -1,5 +1,8 @@
 # Solo Adventurer's Journal
 
+**The guided loop for solo tabletop RPGs.** Set a scene, ask the oracle, read
+the answer in-fiction, and let your campaign write itself — one beat at a time.
+
 **Play it now:** https://taylor-software.github.io/juice/ — free, no account,
 your campaigns stay on your device.
 
