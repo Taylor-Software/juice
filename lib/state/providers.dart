@@ -38,7 +38,6 @@ import 'campaign_bundle.dart';
 import 'campaign_io.dart';
 import 'cloud_key_store.dart';
 import 'interpreter.dart';
-import 'play_context.dart';
 
 /// Loads the data asset and builds the engine once.
 final oracleProvider = FutureProvider<Oracle>((ref) async {
@@ -1427,36 +1426,6 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
 final userRefCardsProvider =
     AsyncNotifierProvider<UserRefCardsNotifier, List<UserRefCard>>(
         UserRefCardsNotifier.new);
-
-/// Applies a decoded [LoopKit]: appends its tables/refCards to the app-global
-/// stores, and — if it carries starter-scene text — creates a new scene
-/// journal entry and points the PlayContext spine at it. This is the single
-/// orchestration point both the creation-wizard picker and the drawer's
-/// import dialog call.
-Future<void> applyLoopKit(WidgetRef ref, LoopKit kit) async {
-  if (kit.tables.isNotEmpty) {
-    await ref.read(customTablesProvider.notifier).addAll(kit.tables);
-  }
-  if (kit.refCards.isNotEmpty) {
-    await ref.read(userRefCardsProvider.notifier).addAll(kit.refCards);
-  }
-  // Ensure both providers are built (so `.value` is non-null for callers)
-  // even when this kit has no scene text to apply.
-  await ref.read(journalProvider.future);
-  await ref.read(playContextProvider.future);
-  if (kit.sceneTitle.trim().isEmpty && kit.sceneBody.trim().isEmpty) return;
-  final id = await ref.read(journalProvider.notifier).addScene(kit.sceneTitle);
-  if (kit.sceneBody.isNotEmpty) {
-    // _persist (inside addScene) sets journalProvider's state synchronously
-    // before addScene returns, so .value is already the fresh list here.
-    final entry =
-        ref.read(journalProvider).value!.firstWhere((e) => e.id == id);
-    await ref
-        .read(journalProvider.notifier)
-        .replace(entry.copyWith(body: kit.sceneBody));
-  }
-  await ref.read(playContextProvider.notifier).setActiveScene(id);
-}
 
 /// The bundled asset filenames for the seed loop kits (populated in a later
 /// task). Adding a new seed kit means adding its filename here AND to
