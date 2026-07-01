@@ -541,22 +541,30 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       raw = await _fetchLoopKitFromLink(dialogContext);
     }
     if (raw == null) return;
-    final kit = decodeLoopKit(raw);
-    if (kit == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Not a loop kit.')),
-        );
+    try {
+      final kit = decodeLoopKit(raw);
+      if (kit == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Not a loop kit.')),
+          );
+        }
+      } else {
+        await applyLoopKit(ref, kit);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Imported "${kit.name}".')),
+          );
+        }
       }
-      return;
-    }
-    await applyLoopKit(ref, kit);
-    if (mounted) {
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Imported "${kit.name}".')),
+        const SnackBar(content: Text('Not a loop kit.')),
       );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     }
-    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
 
   Future<String?> _pickLoopKitFile() async {
@@ -625,7 +633,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         return null;
       }
       return response.body;
-    } catch (_) {
+    } on Exception {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not fetch that link.')),
