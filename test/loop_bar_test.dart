@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/loop_bar.dart';
+import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
+
+import 'fake_interpreter.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -52,23 +55,105 @@ void main() {
     expect(journal.where((e) => e.sourceTool == 'solo-loop'), hasLength(1));
   });
 
-  testWidgets('no Interpret button when AI is not ready', (tester) async {
+  testWidgets('no inline interpret card before any ask', (tester) async {
     await pump(tester); // default: aiReady false
     await expandSteps(tester);
-    await tester.tap(find.byKey(const Key('loop-ask')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
-    expect(find.byKey(const Key('loop-interpret')), findsNothing);
+    expect(find.byKey(const Key('loop-interpret-card')), findsNothing);
   });
 
-  testWidgets('Interpret button shows after a roll when AI is ready',
+  testWidgets('beat-interpret action appears after ask when AI is ready',
       (tester) async {
-    await pump(tester, overrides: [aiReadyProvider.overrideWithValue(true)]);
+    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    await pump(tester, overrides: [
+      aiReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
     await expandSteps(tester);
-    expect(find.byKey(const Key('loop-interpret')), findsNothing);
+    // create a scene so hasScene is true
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('loop-scene-name')), 'The crypt');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    // ask the oracle
     await tester.tap(find.byKey(const Key('loop-ask')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('loop-interpret')), findsOneWidget);
+    // open the next-beat panel
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('beat-interpret')), findsOneWidget);
+  });
+
+  testWidgets('interpret renders inline; Keep logs one entry', (tester) async {
+    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    late ProviderContainer container;
+    await pump(tester, overrides: [
+      aiReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    await expandSteps(tester);
+    // create a scene
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('loop-scene-name')), 'The crypt');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    // ask to seed _loopLastProvider
+    await tester.tap(find.byKey(const Key('loop-ask')));
+    await tester.pumpAndSettle();
+    // open next-beat and tap Interpret
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('beat-interpret')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret-card')), findsOneWidget);
+    container = ProviderScope.containerOf(
+        tester.element(find.byKey(const Key('loop-interpret-card'))));
+    await tester.tap(find.byKey(const Key('loop-interpret-keep')));
+    await tester.pumpAndSettle();
+    final journal = container.read(journalProvider).valueOrNull ?? const [];
+    expect(journal.where((e) => e.sourceTool == 'interpret').length, 1);
+  });
+
+  testWidgets('interpret Discard hides card and logs nothing', (tester) async {
+    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    late ProviderContainer container;
+    await pump(tester, overrides: [
+      aiReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    await expandSteps(tester);
+    // create a scene
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('loop-scene-name')), 'The crypt');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    // ask to seed _loopLastProvider
+    await tester.tap(find.byKey(const Key('loop-ask')));
+    await tester.pumpAndSettle();
+    // open next-beat and tap Interpret
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('beat-interpret')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret-card')), findsOneWidget);
+    container = ProviderScope.containerOf(
+        tester.element(find.byKey(const Key('loop-interpret-card'))));
+    await tester.tap(find.byKey(const Key('loop-interpret-discard')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret-card')), findsNothing);
+    final journal = container.read(journalProvider).valueOrNull ?? const [];
+    expect(journal.where((e) => e.sourceTool == 'interpret').length, 0);
   });
 
   testWidgets('new-scene dialog sets a custom title', (tester) async {

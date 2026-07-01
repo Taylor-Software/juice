@@ -7,11 +7,11 @@ import '../engine/next_beat.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/solo_oracle.dart';
 import '../engine/tally.dart';
+import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'generate_sheet.dart';
 import 'journal_screen.dart';
-import 'oracle_interpretation_sheet.dart';
 
 /// Ephemeral loop-UI state that survives Track-tab navigation (the [LoopBar]
 /// State is disposed when the subtab is switched away). These are file-private,
@@ -23,6 +23,7 @@ final _loopCaptureProvider = StateProvider<String>((_) => '');
 final _loopTallyRollProvider = StateProvider<String?>((_) => null);
 final _loopBeatOpenProvider = StateProvider<bool>((_) => false);
 final _loopInterpretedProvider = StateProvider<bool>((_) => false);
+final _loopInterpretSeedProvider = StateProvider<OracleSeed?>((_) => null);
 
 /// The "Solo Loop" controls bar: a checklist that wires the active scene, a d10
 /// yes/no oracle, the inspire sheet, success-tally tasks, and journal logging.
@@ -103,6 +104,18 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                 ),
             ]),
           ),
+        if (ref.watch(_loopInterpretSeedProvider) case final seed?)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            child: _InterpretCard(
+              key: const Key('loop-interpret-card'),
+              seed: seed,
+              onDone: () {
+                ref.read(_loopInterpretSeedProvider.notifier).state = null;
+                ref.read(_loopInterpretedProvider.notifier).state = true;
+              },
+            ),
+          ),
         ExpansionTile(
           key: const Key('loop-steps'),
           title: const Text('Steps'),
@@ -145,12 +158,6 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                     key: const Key('loop-ask-result'),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                ),
-              if (aiReady && last != null)
-                OutlinedButton(
-                  key: const Key('loop-interpret'),
-                  onPressed: _interpret,
-                  child: const Text('Interpret'),
                 ),
             ]),
             _step(context, '3 · Inspire', 'Open the generators for a prompt.', [
@@ -390,11 +397,9 @@ class _LoopBarState extends ConsumerState<LoopBar> {
         );
   }
 
-  /// Interpret the last yes/no roll inline (on-device LLM): seed from the
-  /// result + the active scene + PC, run the shared interpretation sheet, log
-  /// the reading. Mirrors run_screen's `_interpret` (here `_last` is a
-  /// [SoloYesNo], so seed from its [SoloYesNo.toGenResult]).
-  Future<void> _interpret() async {
+  /// Seed the inline interpret card from the last yes/no roll.
+  /// The card handles the LLM call + Keep/Discard in-place.
+  void _interpret() {
     final last = ref.read(_loopLastProvider);
     if (last == null) return;
     final g = last.toGenResult();
@@ -404,7 +409,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
     final scene = activeSceneEntry(journal, ctx?.activeSceneId);
     final settings =
         ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
-    final seed = OracleSeed(
+    ref.read(_loopInterpretSeedProvider.notifier).state = OracleSeed(
       resultText: g.asText,
       genre: settings.genre,
       tone: settings.tone,
@@ -412,20 +417,6 @@ class _LoopBarState extends ConsumerState<LoopBar> {
       activeCharacter: ref.read(activeCharacterLineProvider),
       systemPrimer: ref.read(systemPrimerProvider),
     );
-    final accepted = await showModalBottomSheet<OracleInterpretation>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetCtx) => OracleInterpretationSheet(
-        seed: seed,
-        onAccept: (card) => Navigator.pop(sheetCtx, card),
-      ),
-    );
-    if (accepted == null || !mounted) return;
-    await ref.read(journalProvider.notifier).addResult(
-          'Oracle reading',
-          '(${accepted.lens}): ${accepted.reading}',
-          sourceTool: 'interpret',
-        );
   }
 
   IconData _beatIcon(BeatAction a) => switch (a) {
@@ -454,7 +445,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
         ref.read(_loopInterpretedProvider.notifier).state = false;
         await _ask();
       case BeatAction.interpret:
-        await _interpret();
+        _interpret();
       case BeatAction.inspire:
         showGenerateSheet(context);
       case BeatAction.capture:
@@ -469,6 +460,87 @@ class _LoopBarState extends ConsumerState<LoopBar> {
     _capture.clear();
     ref.read(_loopCaptureProvider.notifier).state = '';
   }
+}
+
+// ---------------------------------------------------------------------------
+// Inline interpretation card
+// ---------------------------------------------------------------------------
+
+class _InterpretCard extends ConsumerStatefulWidget {
+  const _InterpretCard({super.key, required this.seed, required this.onDone});
+  final OracleSeed seed;
+  final VoidCallback onDone;
+  @override
+  ConsumerState<_InterpretCard> createState() => _InterpretCardState();
+}
+
+class _InterpretCardState extends ConsumerState<_InterpretCard> {
+  late Future<List<OracleInterpretation>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ref.read(interpreterServiceProvider).interpret(widget.seed);
+  }
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: FutureBuilder<List<OracleInterpretation>>(
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const SizedBox(
+                    height: 48,
+                    child: Center(child: CircularProgressIndicator()));
+              }
+              if (snap.hasError || (snap.data?.isEmpty ?? true)) {
+                return Row(children: [
+                  const Expanded(child: Text('Reading failed.')),
+                  TextButton(
+                    key: const Key('loop-interpret-retry'),
+                    onPressed: () => setState(() => _future = ref
+                        .read(interpreterServiceProvider)
+                        .interpret(widget.seed)),
+                    child: const Text('Retry'),
+                  ),
+                  TextButton(
+                      onPressed: widget.onDone, child: const Text('Dismiss')),
+                ]);
+              }
+              final card = snap.data!.first;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('(${card.lens}): ${card.reading}'),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                    TextButton(
+                      key: const Key('loop-interpret-discard'),
+                      onPressed: widget.onDone,
+                      child: const Text('Discard'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      key: const Key('loop-interpret-keep'),
+                      onPressed: () async {
+                        await ref.read(journalProvider.notifier).addResult(
+                              'Oracle reading',
+                              '(${card.lens}): ${card.reading}',
+                              sourceTool: 'interpret',
+                            );
+                        widget.onDone();
+                      },
+                      child: const Text('Keep'),
+                    ),
+                  ]),
+                ],
+              );
+            },
+          ),
+        ),
+      );
 }
 
 /// The "Play" destination body: the loop controls above the live journal feed.
