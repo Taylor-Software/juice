@@ -65,6 +65,12 @@ flutter:
     - assets/spells_ose.json
     - assets/foes_dcc.json
     - assets/spells_dcc.json
+    - assets/kits/ironsworn-ash-and-embers.json
+    - assets/kits/ironsworn-salt-and-storm.json
+    - assets/kits/dnd-sunken-crypt.json
+    - assets/kits/dnd-market-of-masks.json
+    - assets/kits/cairn-lonely-road.json
+    - assets/kits/cairn-black-bramble.json
     - assets/abstract_icons/
     - assets/tarot/
     - assets/playing/

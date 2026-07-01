@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "The Lonely Road",
+  "system": "cairn",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Road Signs",
+      "rows": [
+        "A milestone with the distance scratched out",
+        "Wagon ruts that suddenly just stop",
+        "A shrine, recently tended, to no god you recognize",
+        "Birds circling a spot with nothing visibly wrong",
+        "A signpost pointing to a place not on your map",
+        "Fresh footprints walking backward"
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Road Company",
+      "rows": [
+        "A peddler who trades only in stories",
+        "A pilgrim walking the wrong direction",
+        "A family fleeing something they won't name",
+        "A hermit who insists the road wasn't here last year",
+        "A courier with a message addressed to no one",
+        "A lone rider who never seems to get closer or farther"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Road Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The road connects two places nobody agrees are still standing.",
+            "Nightfall on the road is when travelers stop talking to strangers.",
+            "The last inn was three days back; the next one is a rumor."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "The Milestone Is Wrong",
+    "body": "The milestone at the crossroads gives a distance that doesn't match anything you've walked. You're not sure which direction is the mistake."
+  }
+}

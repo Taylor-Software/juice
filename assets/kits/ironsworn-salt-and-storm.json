@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "Salt and Storm",
+  "system": "ironsworn",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Sea Omens",
+      "rows": [
+        "The gulls go silent all at once",
+        "A rope frays with no weight on it",
+        "The compass needle drifts, then settles wrong",
+        "A wave breaks against the current",
+        "Fog rolls in under a clear sky",
+        "A bell tolls from somewhere below the waterline"
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Isle Folk",
+      "rows": [
+        "A lighthouse keeper who won't say what the light is for",
+        "A castaway who claims to remember a sunken isle",
+        "A fisher who only nets things that shouldn't float",
+        "A cartographer redrawing a coastline that keeps moving",
+        "A diver selling salvage no one asks the source of",
+        "A captain who refuses to sail past a certain latitude"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Isles Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The charts disagree with each other more every year.",
+            "An isle that was here last season may not be this season.",
+            "Storms arrive faster than any ship can outrun."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "The Chart Doesn't Match",
+    "body": "Landfall on an isle that isn't on any chart you carry. The crew is already arguing about whether to stay the night."
+  }
+}

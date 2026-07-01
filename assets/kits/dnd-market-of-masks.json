@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "The Market of Masks",
+  "system": "dnd",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Market Whispers",
+      "rows": [
+        "\"The mask-sellers know your face before you buy one\"",
+        "\"Half the stalls here weren't here yesterday\"",
+        "\"Nobody pays in coin on the third night of the moon\"",
+        "\"The guild that runs this market has no name and no face\"",
+        "\"Ask about the empty stall at your own risk\"",
+        "\"Every mask here was worn by someone who didn't come back for it\""
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Market Encounters",
+      "rows": [
+        "A merchant who insists you've met before",
+        "A masked figure paying triple price for information about you",
+        "A city guard quietly buying a disguise",
+        "A child selling a mask far too fine for the stall it's on",
+        "A rival adventuring party, half-recognizable under masks",
+        "Someone wearing your own face, badly copied"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Market Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The market only opens after dark, and only in certain alleys.",
+            "Buying a mask is a transaction; wearing it in the market is a promise.",
+            "The city watch pretends the market doesn't exist."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "A Face for Sale",
+    "body": "A mask-seller holds up a mask that looks unsettlingly like your own face and names a price far too low."
+  }
+}

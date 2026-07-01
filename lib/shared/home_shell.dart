@@ -5,12 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../engine/custom_table.dart';
 import '../engine/funnel.dart';
 import '../engine/journal_export.dart';
+import '../engine/loop_kit.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/quick_ref.dart';
 import '../features/campaign_search_sheet.dart';
 import '../features/enter_campaign.dart';
 import '../features/journal_screen.dart';
@@ -23,6 +26,7 @@ import '../features/run_screen.dart';
 import '../features/tracking_tab.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'campaign_preview_pane.dart';
 import 'design_tokens.dart';
@@ -166,6 +170,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 title: const Text('Import table pack'),
                 onTap: () => _importTablePack(dialogContext),
               ),
+              ListTile(
+                key: const Key('menu-export-loopkit'),
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: const Text('Export loop kit'),
+                onTap: () => _exportLoopKit(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-import-loopkit'),
+                leading: const Icon(Icons.inventory_outlined),
+                title: const Text('Import loop kit'),
+                onTap: () => _importLoopKit(dialogContext),
+              ),
               if (ref.read(blobStoreAvailableProvider))
                 ListTile(
                   key: const Key('gc-blobs'),
@@ -210,9 +226,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _createSession(BuildContext dialogContext) async {
+    final kits = ref.read(kitsProvider).valueOrNull ?? const <LoopKit>[];
     final result = await showDialog<NewCampaignResult>(
       context: dialogContext,
-      builder: (context) => const NewCampaignDialog(),
+      builder: (context) => NewCampaignDialog(kits: kits),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
@@ -224,6 +241,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (result.start == 'funnel') {
       await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
       ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
+    } else if (result.start == 'kit' && result.kit != null) {
+      await applyLoopKit(ref, result.kit!);
     }
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
   }
@@ -450,6 +469,180 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
+  Future<void> _exportLoopKit(BuildContext dialogContext) async {
+    final tables =
+        ref.read(customTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final refCards =
+        ref.read(userRefCardsProvider).valueOrNull ?? const <UserRefCard>[];
+    final scene = activeSceneEntry(
+        ref.read(journalProvider).valueOrNull ?? const [],
+        ref.read(playContextProvider).valueOrNull?.activeSceneId);
+    if (tables.isEmpty && refCards.isEmpty && scene == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Nothing to export yet — add tables, ref cards, or a scene first.')));
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final activeName =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'Loop Kit';
+    final kit = LoopKit(
+      name: activeName,
+      tables: tables,
+      refCards: refCards,
+      sceneTitle: scene?.title ?? '',
+      sceneBody: scene?.body ?? '',
+    );
+    final json = encodeLoopKit(kit);
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export loop kit',
+        fileName: 'kit.loopkit.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(json)),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _importLoopKit(BuildContext dialogContext) async {
+    final mode = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => SimpleDialog(
+        title: const Text('Import loop kit'),
+        children: [
+          SimpleDialogOption(
+            key: const Key('import-loopkit-file'),
+            onPressed: () => Navigator.pop(context, 'file'),
+            child: const Text('Pick a file'),
+          ),
+          SimpleDialogOption(
+            key: const Key('import-loopkit-link'),
+            onPressed: () => Navigator.pop(context, 'link'),
+            child: const Text('Paste a link'),
+          ),
+        ],
+      ),
+    );
+    if (mode == null) return;
+    String? raw;
+    if (mode == 'file') {
+      raw = await _pickLoopKitFile();
+    } else if (mode == 'link' && dialogContext.mounted) {
+      raw = await _fetchLoopKitFromLink(dialogContext);
+    }
+    if (raw == null) return;
+    try {
+      final kit = decodeLoopKit(raw);
+      if (kit == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Not a loop kit.')),
+          );
+        }
+      } else {
+        await applyLoopKit(ref, kit);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Imported "${kit.name}".')),
+          );
+        }
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not a loop kit.')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<String?> _pickLoopKitFile() async {
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import loop kit',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not access files: ${e.message}')),
+        );
+      }
+      return null;
+    }
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
+    return bytes == null ? null : utf8.decode(bytes);
+  }
+
+  Future<String?> _fetchLoopKitFromLink(BuildContext dialogContext) async {
+    final ctrl = TextEditingController();
+    final url = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Paste a link'),
+        content: TextField(
+          key: const Key('import-loopkit-url'),
+          controller: ctrl,
+          decoration: const InputDecoration(hintText: 'https://...'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('import-loopkit-fetch'),
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              child: const Text('Fetch')),
+        ],
+      ),
+    );
+    if (url == null || url.isEmpty) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Not a valid URL.')),
+        );
+      }
+      return null;
+    }
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+                  Text('Could not fetch that link (${response.statusCode}).')));
+        }
+        return null;
+      }
+      return response.body;
+    } on Exception {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not fetch that link.')),
+        );
+      }
+      return null;
+    }
+  }
+
   Future<void> _confirmDelete(
       BuildContext dialogContext, SessionMeta session) async {
     final ok = await showDialog<bool>(
@@ -616,6 +809,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    // Pre-warm the bundled loop kits so they're ready by the time the user
+    // opens the New-campaign wizard (avoids a first-tap race where the
+    // "Import a kit" step would show no kits yet).
+    ref.watch(kitsProvider);
     final split = ref.watch(splitViewProvider).valueOrNull ?? false;
     final wideEnough = MediaQuery.sizeOf(context).width >= 1000;
     final sessionName =
@@ -918,10 +1115,12 @@ typedef NewCampaignResult = ({
   String tone,
   String start,
   String seedSystem,
+  LoopKit? kit,
 });
 
 class NewCampaignDialog extends StatefulWidget {
-  const NewCampaignDialog({super.key});
+  const NewCampaignDialog({super.key, this.kits = const []});
+  final List<LoopKit> kits;
 
   @override
   State<NewCampaignDialog> createState() => _NewCampaignDialogState();
@@ -945,7 +1144,8 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   final Set<String> _addons = {'juice', 'party'}; // non-ruleset selections
 
   // Step 2 (start)
-  String _start = 'roster'; // 'roster' | 'funnel'
+  String _start = 'roster'; // 'roster' | 'funnel' | 'kit'
+  LoopKit? _selectedKit;
 
   @override
   void dispose() {
@@ -969,6 +1169,15 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       (_ruleset != null && funnelProfileFor(_ruleset!) != null)
           ? _ruleset!
           : 'dcc';
+
+  // Kits matching the chosen ruleset (by `system` tag) come first-class; when
+  // no ruleset is chosen (or none match — e.g. 'ruleset-none'), show every
+  // bundled kit rather than an empty grid.
+  List<LoopKit> get _availableKits {
+    if (_ruleset == null) return widget.kits;
+    final matching = widget.kits.where((k) => k.system == _ruleset).toList();
+    return matching.isEmpty ? widget.kits : matching;
+  }
 
   bool get _nextEnabled {
     if (_step == 0) return _stance != null;
@@ -995,6 +1204,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       tone: _toneCtrl.text.trim(),
       start: _start,
       seedSystem: _seedSystem,
+      kit: _start == 'kit' ? _selectedKit : null,
     ));
   }
 
@@ -1275,6 +1485,43 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
             selected: _start == 'funnel',
             onTap: () => setState(() => _start = 'funnel'),
           ),
+        ],
+        if (widget.kits.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          _StartCard(
+            key: const Key('new-start-kit'),
+            title: 'Import a kit',
+            subtitle: 'Seed tables, ref cards, and a starter scene',
+            icon: Icons.inventory_2_outlined,
+            selected: _start == 'kit',
+            onTap: () => setState(() {
+              _start = 'kit';
+              _selectedKit ??= _availableKits.first;
+            }),
+          ),
+          if (_start == 'kit') ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (var i = 0; i < _availableKits.length; i++)
+                  ChoiceChip(
+                    key: Key('kit-pick-$i'),
+                    label: Text(_availableKits[i].name,
+                        style: const TextStyle(fontSize: 12)),
+                    selected: identical(_selectedKit, _availableKits[i]),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                    onSelected: (_) =>
+                        setState(() => _selectedKit = _availableKits[i]),
+                  ),
+              ],
+            ),
+          ],
         ],
       ],
     );
