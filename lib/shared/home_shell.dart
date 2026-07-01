@@ -14,6 +14,7 @@ import '../engine/oracle.dart';
 import '../features/campaign_search_sheet.dart';
 import '../features/enter_campaign.dart';
 import '../features/journal_screen.dart';
+import '../features/loop_bar.dart';
 import '../features/maps_tab.dart';
 import '../features/settings_sheet.dart';
 import '../features/oracles_tab.dart';
@@ -488,7 +489,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   Widget _root(Destination d, Set<String> systems, List<String> family) {
     switch (d) {
       case Destination.journal:
-        return const JournalScreen();
+        return const PlayScreen();
       case Destination.sheet:
         return SheetTab(family: family);
       case Destination.ask:

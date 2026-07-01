@@ -11,14 +11,14 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
-  test('landFor lands on the mode home verb (gm→run, party→sheet)', () {
+  test('landFor lands on the mode home verb (gm→run, party→journal)', () {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     c.read(shellRouteProvider.notifier).landFor(CampaignMode.gm);
     expect(c.read(shellRouteProvider).destination, Destination.run);
     expect(c.read(shellRouteProvider).subtab, '');
     c.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
-    expect(c.read(shellRouteProvider).destination, Destination.sheet);
+    expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
   test('landFor with an in-progress encounter lands on Track→Encounter', () {

@@ -6,9 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
+import 'package:juice_oracle/engine/emulator_data.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/verdant_data.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/shared/ai_nudge_card.dart';
 import 'package:juice_oracle/shared/card_image.dart';
@@ -58,6 +60,14 @@ OracleData _loadData() {
   return OracleData(jsonDecode(raw) as Map<String, dynamic>);
 }
 
+VerdantData _loadVerdant() => VerdantData(
+    jsonDecode(File('assets/verdant_data.json').readAsStringSync())
+        as Map<String, dynamic>);
+
+EmulatorData _loadEmulator() => EmulatorData(
+    jsonDecode(File('assets/emulator_data.json').readAsStringSync())
+        as Map<String, dynamic>);
+
 /// Pump JournalScreen directly (no shell — for non-navigation tests).
 Future<void> pumpJournal(WidgetTester tester, Map<String, Object> prefs) async {
   SharedPreferences.setMockInitialValues(prefs);
@@ -71,7 +81,8 @@ Future<void> pumpJournal(WidgetTester tester, Map<String, Object> prefs) async {
 }
 
 /// Pump HomeShell with a real Oracle (gives us the tabbed shell + search sheet
-/// with the full registry).
+/// with the full registry). Overrides verdant + emulator providers so the
+/// default all-systems session doesn't hang on rootBundle in headless tests.
 Future<void> pumpShell(
     WidgetTester tester, Map<String, Object> prefs, OracleData data) async {
   SharedPreferences.setMockInitialValues(prefs);
@@ -80,9 +91,13 @@ Future<void> pumpShell(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   final fake = FakeInterpreterService();
+  final verdant = _loadVerdant();
+  final emu = _loadEmulator();
   await tester.pumpWidget(ProviderScope(
     overrides: [
       interpreterServiceProvider.overrideWithValue(fake),
+      verdantDataProvider.overrideWith((ref) async => verdant),
+      emulatorDataProvider.overrideWith((ref) async => emu),
     ],
     child: MaterialApp(
       theme: AppTheme.light(),

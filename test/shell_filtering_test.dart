@@ -54,7 +54,7 @@ void main() {
     await t.tap(find.text('Track').first);
     await t.pumpAndSettle();
     expect(find.widgetWithText(Tab, 'Emulator'), findsNothing);
-    expect(find.text('Journal'), findsWidgets);
+    expect(find.text('Play'), findsWidgets);
   });
 
   testWidgets('Map Journey subtab hidden when verdant disabled', (t) async {
