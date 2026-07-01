@@ -20,6 +20,7 @@ dependencies:
   flutter_svg: ^2.3.0
   anthropic_sdk_dart: ^5.0.0
   flutter_secure_storage: ^10.3.1
+  http: ^1.0.3
 
 dev_dependencies:
   flutter_test:
