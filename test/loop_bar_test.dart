@@ -19,8 +19,15 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Expand the collapsible Steps tile so step-card widgets enter the tree.
+  Future<void> expandSteps(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('loop-steps')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('renders the five steps', (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     expect(find.byKey(const Key('loop-new-scene')), findsOneWidget);
     expect(find.byKey(const Key('loop-ask')), findsOneWidget);
     expect(find.byKey(const Key('loop-inspire')), findsOneWidget);
@@ -34,6 +41,7 @@ void main() {
   testWidgets('Ask rolls, shows a result, and logs one journal entry',
       (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     await tester.tap(find.byKey(const Key('loop-ask')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
@@ -46,6 +54,7 @@ void main() {
 
   testWidgets('no Interpret button when AI is not ready', (tester) async {
     await pump(tester); // default: aiReady false
+    await expandSteps(tester);
     await tester.tap(find.byKey(const Key('loop-ask')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
@@ -55,6 +64,7 @@ void main() {
   testWidgets('Interpret button shows after a roll when AI is ready',
       (tester) async {
     await pump(tester, overrides: [aiReadyProvider.overrideWithValue(true)]);
+    await expandSteps(tester);
     expect(find.byKey(const Key('loop-interpret')), findsNothing);
     await tester.tap(find.byKey(const Key('loop-ask')));
     await tester.pumpAndSettle();
@@ -63,6 +73,7 @@ void main() {
 
   testWidgets('new-scene dialog sets a custom title', (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     await tester.tap(find.byKey(const Key('loop-new-scene')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('loop-scene-name')), findsOneWidget);
@@ -83,6 +94,7 @@ void main() {
 
   testWidgets('step-4 inline create makes a tallied thread', (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     // Scroll the task creator into view.
     await tester.drag(
         find.byType(SingleChildScrollView), const Offset(0, -400));
@@ -105,6 +117,7 @@ void main() {
 
   testWidgets('capture send button logs a journal entry', (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     await tester.drag(
         find.byType(SingleChildScrollView), const Offset(0, -800));
     await tester.pumpAndSettle();
@@ -134,6 +147,10 @@ void main() {
         app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
+    // Expand the steps tile so step-card widgets are in the tree.
+    await tester.tap(find.byKey(const Key('loop-steps')));
+    await tester.pumpAndSettle();
+
     // Pick Likely, then Ask.
     await tester.tap(find.text('Likely'));
     await tester.pumpAndSettle();
@@ -148,14 +165,44 @@ void main() {
         app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
+    // Re-expand the steps tile after the State was recreated.
+    await tester.tap(find.byKey(const Key('loop-steps')));
+    await tester.pumpAndSettle();
+
     // The result text persists because _last lives in the ephemeral provider
     // (it would be gone if state were widget-local and reset on dispose).
     expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
   });
 
+  testWidgets('next-beat shows Name-the-scene when no scene', (tester) async {
+    await pump(tester); // no active scene seeded by default
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('beat-nameScene')), findsOneWidget);
+    expect(find.byKey(const Key('beat-ask')), findsNothing);
+  });
+
+  testWidgets('next-beat shows Ask when scene exists', (tester) async {
+    await pump(tester);
+    await expandSteps(tester);
+    // Create a scene via the new-scene dialog.
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('loop-scene-name')), 'The chapel');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    // Now tap Next beat — hasScene is true.
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('beat-ask')), findsOneWidget);
+    expect(find.byKey(const Key('beat-nameScene')), findsNothing);
+  });
+
   testWidgets('tally roll logs an entry and shows the inline result',
       (tester) async {
     await pump(tester);
+    await expandSteps(tester);
     // Create a task first.
     await tester.drag(
         find.byType(SingleChildScrollView), const Offset(0, -400));
