@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../engine/custom_table.dart';
 import '../engine/funnel.dart';
@@ -12,6 +13,7 @@ import '../engine/journal_export.dart';
 import '../engine/loop_kit.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../engine/quick_ref.dart';
 import '../features/campaign_search_sheet.dart';
 import '../features/enter_campaign.dart';
 import '../features/journal_screen.dart';
@@ -167,6 +169,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 leading: const Icon(Icons.table_view_outlined),
                 title: const Text('Import table pack'),
                 onTap: () => _importTablePack(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-export-loopkit'),
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: const Text('Export loop kit'),
+                onTap: () => _exportLoopKit(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-import-loopkit'),
+                leading: const Icon(Icons.inventory_outlined),
+                title: const Text('Import loop kit'),
+                onTap: () => _importLoopKit(dialogContext),
               ),
               if (ref.read(blobStoreAvailableProvider))
                 ListTile(
@@ -452,6 +466,172 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         const SnackBar(content: Text('Not a valid table pack.')),
       );
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _exportLoopKit(BuildContext dialogContext) async {
+    final tables =
+        ref.read(customTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final refCards =
+        ref.read(userRefCardsProvider).valueOrNull ?? const <UserRefCard>[];
+    final scene = activeSceneEntry(
+        ref.read(journalProvider).valueOrNull ?? const [],
+        ref.read(playContextProvider).valueOrNull?.activeSceneId);
+    if (tables.isEmpty && refCards.isEmpty && scene == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text(
+                'Nothing to export yet — add tables, ref cards, or a scene first.')));
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final activeName =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'Loop Kit';
+    final kit = LoopKit(
+      name: activeName,
+      tables: tables,
+      refCards: refCards,
+      sceneTitle: scene?.title ?? '',
+      sceneBody: scene?.body ?? '',
+    );
+    final json = encodeLoopKit(kit);
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export loop kit',
+        fileName: 'kit.loopkit.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(json)),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _importLoopKit(BuildContext dialogContext) async {
+    final mode = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => SimpleDialog(
+        title: const Text('Import loop kit'),
+        children: [
+          SimpleDialogOption(
+            key: const Key('import-loopkit-file'),
+            onPressed: () => Navigator.pop(context, 'file'),
+            child: const Text('Pick a file'),
+          ),
+          SimpleDialogOption(
+            key: const Key('import-loopkit-link'),
+            onPressed: () => Navigator.pop(context, 'link'),
+            child: const Text('Paste a link'),
+          ),
+        ],
+      ),
+    );
+    if (mode == null) return;
+    String? raw;
+    if (mode == 'file') {
+      raw = await _pickLoopKitFile();
+    } else if (mode == 'link' && dialogContext.mounted) {
+      raw = await _fetchLoopKitFromLink(dialogContext);
+    }
+    if (raw == null) return;
+    final kit = decodeLoopKit(raw);
+    if (kit == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Not a loop kit.')),
+        );
+      }
+      return;
+    }
+    await applyLoopKit(ref, kit);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Imported "${kit.name}".')),
+      );
+    }
+    if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+  }
+
+  Future<String?> _pickLoopKitFile() async {
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import loop kit',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not access files: ${e.message}')),
+        );
+      }
+      return null;
+    }
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
+    return bytes == null ? null : utf8.decode(bytes);
+  }
+
+  Future<String?> _fetchLoopKitFromLink(BuildContext dialogContext) async {
+    final ctrl = TextEditingController();
+    final url = await showDialog<String>(
+      context: dialogContext,
+      builder: (context) => AlertDialog(
+        title: const Text('Paste a link'),
+        content: TextField(
+          key: const Key('import-loopkit-url'),
+          controller: ctrl,
+          decoration: const InputDecoration(hintText: 'https://...'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          FilledButton(
+              key: const Key('import-loopkit-fetch'),
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              child: const Text('Fetch')),
+        ],
+      ),
+    );
+    if (url == null || url.isEmpty) return null;
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Not a valid URL.')),
+        );
+      }
+      return null;
+    }
+    try {
+      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+                  Text('Could not fetch that link (${response.statusCode}).')));
+        }
+        return null;
+      }
+      return response.body;
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not fetch that link.')),
+        );
+      }
+      return null;
     }
   }
 
