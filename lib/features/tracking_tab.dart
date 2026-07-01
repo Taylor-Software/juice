@@ -6,7 +6,6 @@ import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
 import 'battle_pane.dart';
 import 'behavior_tables_screen.dart';
-import 'loop_pane.dart';
 import 'encounter_screen.dart';
 import 'party_emulator_screen.dart';
 import 'resources_pane.dart';
@@ -33,7 +32,6 @@ class TrackingTab extends ConsumerWidget {
       scrollable: true,
       tabs: [
         const SubtabDef('home', 'Home'),
-        const SubtabDef('loop', 'Loop'),
         const SubtabDef('tasks', 'Tasks'),
         const SubtabDef('scenes', 'Scenes'),
         const SubtabDef('threads', 'Threads'),
@@ -48,7 +46,6 @@ class TrackingTab extends ConsumerWidget {
       ],
       children: [
         const TrackHomePane(),
-        const LoopPane(),
         const TasksPane(),
         const ScenesPane(),
         const ThreadsPane(),

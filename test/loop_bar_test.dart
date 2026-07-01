@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/loop_pane.dart';
+import 'package:juice_oracle/features/loop_bar.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 void main() {
@@ -13,7 +13,8 @@ void main() {
       {List<Override> overrides = const []}) async {
     await tester.pumpWidget(ProviderScope(
       overrides: overrides,
-      child: const MaterialApp(home: Scaffold(body: LoopPane())),
+      child: const MaterialApp(
+          home: Scaffold(body: SingleChildScrollView(child: LoopBar()))),
     ));
     await tester.pumpAndSettle();
   }
@@ -23,8 +24,9 @@ void main() {
     expect(find.byKey(const Key('loop-new-scene')), findsOneWidget);
     expect(find.byKey(const Key('loop-ask')), findsOneWidget);
     expect(find.byKey(const Key('loop-inspire')), findsOneWidget);
-    // Capture field is further down the ListView; scroll to it.
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    // Capture field is further down; scroll to it.
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -800));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('loop-capture-field')), findsOneWidget);
   });
@@ -82,7 +84,8 @@ void main() {
   testWidgets('step-4 inline create makes a tallied thread', (tester) async {
     await pump(tester);
     // Scroll the task creator into view.
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -400));
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('loop-task-name')), 'Escape the dungeon');
@@ -102,7 +105,8 @@ void main() {
 
   testWidgets('capture send button logs a journal entry', (tester) async {
     await pump(tester);
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -800));
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('loop-capture-field')), 'A scrap of lore');
@@ -126,7 +130,8 @@ void main() {
           child: MaterialApp(home: Scaffold(body: child)),
         );
 
-    await tester.pumpWidget(app(const LoopPane()));
+    await tester.pumpWidget(
+        app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
     // Pick Likely, then Ask.
@@ -136,10 +141,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('loop-ask-result')), findsOneWidget);
 
-    // Tear down the pane (dispose the State) then re-pump in the same container.
+    // Tear down the bar (dispose the State) then re-pump in the same container.
     await tester.pumpWidget(app(const SizedBox.shrink()));
     await tester.pumpAndSettle();
-    await tester.pumpWidget(app(const LoopPane()));
+    await tester.pumpWidget(
+        app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
     // The result text persists because _last lives in the ephemeral provider
@@ -151,7 +157,8 @@ void main() {
       (tester) async {
     await pump(tester);
     // Create a task first.
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.drag(
+        find.byType(SingleChildScrollView), const Offset(0, -400));
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('loop-task-name')), 'Pick the lock');

@@ -9,9 +9,10 @@ import '../engine/tally.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'generate_sheet.dart';
+import 'journal_screen.dart';
 import 'oracle_interpretation_sheet.dart';
 
-/// Ephemeral loop-UI state that survives Track-tab navigation (the [LoopPane]
+/// Ephemeral loop-UI state that survives Track-tab navigation (the [LoopBar]
 /// State is disposed when the subtab is switched away). These are file-private,
 /// NOT autoDispose, NOT persisted — app-global lifetime, reset on app restart.
 final _loopOddsProvider =
@@ -20,15 +21,15 @@ final _loopLastProvider = StateProvider<SoloYesNo?>((_) => null);
 final _loopCaptureProvider = StateProvider<String>((_) => '');
 final _loopTallyRollProvider = StateProvider<String?>((_) => null);
 
-/// The "Solo Loop" Track subtab: a checklist that wires the active scene, a d10
+/// The "Solo Loop" controls bar: a checklist that wires the active scene, a d10
 /// yes/no oracle, the inspire sheet, success-tally tasks, and journal logging.
-class LoopPane extends ConsumerStatefulWidget {
-  const LoopPane({super.key});
+class LoopBar extends ConsumerStatefulWidget {
+  const LoopBar({super.key});
   @override
-  ConsumerState<LoopPane> createState() => _LoopPaneState();
+  ConsumerState<LoopBar> createState() => _LoopBarState();
 }
 
-class _LoopPaneState extends ConsumerState<LoopPane> {
+class _LoopBarState extends ConsumerState<LoopBar> {
   final _capture = TextEditingController();
   final _taskName = TextEditingController();
   (String, int, int) _preset = kTallyPresets[1]; // Minor challenge 3(6)
@@ -60,8 +61,9 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
     final last = ref.watch(_loopLastProvider);
     final tallyRoll = ref.watch(_loopTallyRollProvider);
 
-    return ListView(
-      padding: const EdgeInsets.all(12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         _step(context, '1 · Scene',
             scene == null ? 'No scene yet.' : scene.title, [
@@ -382,5 +384,27 @@ class _LoopPaneState extends ConsumerState<LoopPane> {
     await ref.read(journalProvider.notifier).addText(text);
     _capture.clear();
     ref.read(_loopCaptureProvider.notifier).state = '';
+  }
+}
+
+/// The "Play" destination body: the loop controls above the live journal feed.
+///
+/// Layout: [LoopBar] scrolls within its natural min-height (but can shrink if
+/// needed), then [JournalScreen] fills the remaining space.
+class PlayScreen extends StatelessWidget {
+  const PlayScreen({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        Flexible(
+          fit: FlexFit.loose,
+          child: SingleChildScrollView(
+            child: LoopBar(),
+          ),
+        ),
+        Expanded(child: JournalScreen()),
+      ],
+    );
   }
 }

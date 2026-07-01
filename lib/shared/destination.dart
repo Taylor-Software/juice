@@ -6,10 +6,11 @@ import '../engine/models.dart';
 enum Destination { journal, sheet, ask, map, track, run }
 
 /// The verb a campaign lands on when entered, by player-focus mode: GM runs the
-/// world (Track = scenes/threads/encounter), Party directs characters (Sheet =
-/// roster + Moves). Applied at campaign entry via `ShellRouteNotifier.landFor`.
+/// world (Run = live table dashboard), Party starts the solo play loop (Play =
+/// LoopBar + journal feed). Applied at campaign entry via
+/// `ShellRouteNotifier.landFor`.
 Destination landingDestination(CampaignMode mode) =>
-    mode == CampaignMode.gm ? Destination.run : Destination.sheet;
+    mode == CampaignMode.gm ? Destination.run : Destination.journal;
 
 class DestinationMeta {
   const DestinationMeta(this.label, this.icon);
@@ -18,7 +19,7 @@ class DestinationMeta {
 }
 
 const destinationMeta = <Destination, DestinationMeta>{
-  Destination.journal: DestinationMeta('Journal', Icons.book_outlined),
+  Destination.journal: DestinationMeta('Play', Icons.auto_stories_outlined),
   Destination.sheet: DestinationMeta('Sheet', Icons.person_outline),
   Destination.ask: DestinationMeta('Ask', Icons.casino_outlined),
   Destination.map: DestinationMeta('Map', Icons.map_outlined),

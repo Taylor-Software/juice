@@ -72,7 +72,6 @@ class TrackHomePane extends ConsumerWidget {
     final tk = context.juice;
     const radius = BorderRadius.all(Radius.circular(14));
     const lines = <(String, String)>[
-      ('Loop', 'guided solo play'),
       ('Tasks', 'tally-tracked goals'),
       ('Scenes', 'story beats'),
       ('Threads', 'open storylines'),
