@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/loop_kit.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 
@@ -11,6 +12,7 @@ typedef NewCampaignResult = ({
   String tone,
   String start,
   String seedSystem,
+  LoopKit? kit,
 });
 
 // Helper: open the dialog and return a reference to the future result.
@@ -77,7 +79,8 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byKey(const Key('new-campaign-name')), 'GM Run');
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'GM Run');
     await tester.tap(find.byKey(const Key('new-stance-gm')));
     await tester.pumpAndSettle();
     await _walkToCreate(tester);
@@ -113,7 +116,8 @@ void main() {
     expect(result!.mode, CampaignMode.party);
   });
 
-  testWidgets('default stance is solo-member; walking straight to Create yields mode=party',
+  testWidgets(
+      'default stance is solo-member; walking straight to Create yields mode=party',
       (tester) async {
     NewCampaignResult? result;
     await tester.pumpWidget(MaterialApp(
@@ -163,8 +167,8 @@ void main() {
     // The dialog starts with the default stance selected, so un-select by
     // tapping to verify the enabled/disabled logic.  Since the default
     // is already solo-member, test that the Next button IS enabled initially.
-    final nextBtn = tester.widget<FilledButton>(
-        find.byKey(const Key('wizard-next')));
+    final nextBtn =
+        tester.widget<FilledButton>(find.byKey(const Key('wizard-next')));
     expect(nextBtn.onPressed, isNotNull,
         reason: 'Next should be enabled (default solo-member selected)');
   });
@@ -228,7 +232,8 @@ void main() {
 
   // ── Step 1: ruleset + addon chips ─────────────────────────────────────────
 
-  testWidgets('step 1 shows ruleset chips and addon chips; preview pane present',
+  testWidgets(
+      'step 1 shows ruleset chips and addon chips; preview pane present',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
@@ -337,8 +342,7 @@ void main() {
     expect(find.byKey(const Key('new-start-roster')), findsOneWidget);
   });
 
-  testWidgets(
-      'new-start-funnel shown for ironsworn (it has a funnel profile)',
+  testWidgets('new-start-funnel shown for ironsworn (it has a funnel profile)',
       (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
@@ -400,7 +404,8 @@ void main() {
     expect(find.byKey(const Key('new-start-funnel')), findsNothing);
   });
 
-  testWidgets('choosing funnel puts funnel in systems + start==funnel + seedSystem',
+  testWidgets(
+      'choosing funnel puts funnel in systems + start==funnel + seedSystem',
       (tester) async {
     NewCampaignResult? result;
     await tester.pumpWidget(MaterialApp(
@@ -507,8 +512,7 @@ void main() {
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-genre')), 'grimdark');
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-tone')), 'tense');
+    await tester.enterText(find.byKey(const Key('new-campaign-tone')), 'tense');
 
     await tester.tap(find.byKey(const Key('wizard-create')));
     await tester.pumpAndSettle();
@@ -568,6 +572,66 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result!.systems, isNot(contains('party')));
-    expect(result!.systems, containsAll(['juice', 'mythic', 'ironsworn', 'verdant']));
+    expect(result!.systems,
+        containsAll(['juice', 'mythic', 'ironsworn', 'verdant']));
+  });
+
+  // ── Step 2: import-a-kit ──────────────────────────────────────────────────
+
+  testWidgets('Step 2 "Import a kit" lists provided kits and returns the pick',
+      (tester) async {
+    const kits = [
+      LoopKit(name: 'Ash and Embers', system: 'ironsworn'),
+      LoopKit(name: 'Sunken Crypt', system: 'dnd'),
+    ];
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(kits: kits),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Kit Test');
+    await tester.tap(find.byKey(const Key('new-stance-solo-member')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-next'))); // step 0 -> 1
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-next'))); // step 1 -> 2
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('new-start-kit')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('kit-pick-0')), findsOneWidget);
+    expect(find.byKey(const Key('kit-pick-1')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('kit-pick-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
+    await tester.pumpAndSettle();
+
+    expect(result, isNotNull);
+    expect(result!.start, 'kit');
+    expect(result!.kit?.name, 'Sunken Crypt');
+  });
+
+  testWidgets('Step 2 has no kit card when no kits are provided',
+      (tester) async {
+    await _open(tester);
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('new-start-kit')), findsNothing);
   });
 }

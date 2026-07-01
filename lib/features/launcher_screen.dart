@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/loop_kit.dart';
 import '../engine/models.dart';
 import '../shared/destination.dart';
 import '../shared/home_shell.dart'
@@ -14,6 +15,7 @@ import '../shared/home_shell.dart'
         NewCampaignResult,
         campaignSubtitle;
 import '../shared/shell_route.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'enter_campaign.dart';
 
@@ -85,9 +87,10 @@ class LauncherScreen extends ConsumerWidget {
   }
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
+    final kits = ref.read(kitsProvider).valueOrNull ?? const <LoopKit>[];
     final result = await showDialog<NewCampaignResult>(
       context: context,
-      builder: (context) => const NewCampaignDialog(),
+      builder: (context) => NewCampaignDialog(kits: kits),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
@@ -102,6 +105,9 @@ class LauncherScreen extends ConsumerWidget {
       ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
       ref.read(launcherGateProvider.notifier).dismiss();
     } else {
+      if (result.start == 'kit' && result.kit != null) {
+        await applyLoopKit(ref, result.kit!);
+      }
       _enter(ref, result.mode);
     }
   }
@@ -197,16 +203,18 @@ class LauncherScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Pre-warm the bundled loop kits so they're ready by the time the user
+    // opens the New-campaign wizard (avoids a first-tap race where the
+    // "Import a kit" step would show no kits yet).
+    ref.watch(kitsProvider);
     final theme = Theme.of(context);
     final sessions = ref.watch(sessionsProvider).valueOrNull;
     if (sessions == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final active = sessions.activeMeta;
-    final welcomeSeen =
-        ref.watch(welcomeSeenProvider).valueOrNull ?? false;
-    final showWelcome =
-        !welcomeSeen && sessions.sessions.length == 1;
+    final welcomeSeen = ref.watch(welcomeSeenProvider).valueOrNull ?? false;
+    final showWelcome = !welcomeSeen && sessions.sessions.length == 1;
     final lastExport = ref.watch(lastExportProvider).valueOrNull;
     final journalEntries =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
@@ -214,8 +222,7 @@ class LauncherScreen extends ConsumerWidget {
     final staleDays = lastExport == null
         ? null
         : DateTime.now()
-            .difference(
-                DateTime.fromMillisecondsSinceEpoch(lastExport))
+            .difference(DateTime.fromMillisecondsSinceEpoch(lastExport))
             .inDays;
     final showBackupNudge = !showWelcome &&
         hasJournal &&
@@ -235,8 +242,9 @@ class LauncherScreen extends ConsumerWidget {
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                 if (showWelcome) ...[
                   const SizedBox(height: 16),
-                  _WelcomeCard(onDismiss: () =>
-                      ref.read(welcomeSeenProvider.notifier).markSeen()),
+                  _WelcomeCard(
+                      onDismiss: () =>
+                          ref.read(welcomeSeenProvider.notifier).markSeen()),
                 ],
                 if (showBackupNudge) ...[
                   const SizedBox(height: 16),
@@ -329,17 +337,19 @@ class _WelcomeCard extends StatelessWidget {
               "Solo Adventurer's Journal is a solo-TTRPG toolkit: roll oracle "
               'tables, journal your sessions, track characters and threads, and '
               'manage maps and encounters.',
-              style:
-                  theme.textTheme.bodySmall?.copyWith(color: muted),
+              style: theme.textTheme.bodySmall?.copyWith(color: muted),
             ),
             const SizedBox(height: 8),
-            _Bullet(icon: Icons.auto_stories_outlined,
+            _Bullet(
+                icon: Icons.auto_stories_outlined,
                 text: 'Journal — write prose, log oracle rolls, recap scenes',
                 color: muted),
-            _Bullet(icon: Icons.casino_outlined,
+            _Bullet(
+                icon: Icons.casino_outlined,
                 text: 'Ask — roll fate checks, generators, and custom tables',
                 color: muted),
-            _Bullet(icon: Icons.label_outline,
+            _Bullet(
+                icon: Icons.label_outline,
                 text: 'Track — threads, characters, encounters, and maps',
                 color: muted),
             const SizedBox(height: 8),
@@ -359,8 +369,7 @@ class _WelcomeCard extends StatelessWidget {
 }
 
 class _Bullet extends StatelessWidget {
-  const _Bullet(
-      {required this.icon, required this.text, required this.color});
+  const _Bullet({required this.icon, required this.text, required this.color});
   final IconData icon;
   final String text;
   final Color color;
@@ -411,15 +420,13 @@ class _BackupNudge extends StatelessWidget {
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(fontWeight: FontWeight.w600)),
                   Text(subtitle,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: muted)),
+                      style: theme.textTheme.bodySmall?.copyWith(color: muted)),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             Text('Campaigns menu → Export',
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: muted)),
+                style: theme.textTheme.labelSmall?.copyWith(color: muted)),
           ],
         ),
       ),

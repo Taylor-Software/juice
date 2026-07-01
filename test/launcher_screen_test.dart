@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:juice_oracle/engine/custom_table.dart';
+import 'package:juice_oracle/engine/loop_kit.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/launcher_screen.dart';
 import 'package:juice_oracle/shared/destination.dart';
@@ -195,5 +197,57 @@ void main() {
     expect(created.enabledSystems.contains('funnel'), isTrue);
     final chars = await c.read(charactersProvider.future);
     expect(chars.any((ch) => ch.funnel != null), isTrue);
+  });
+
+  testWidgets('New campaign wizard (kit) applies the kit after creation',
+      (t) async {
+    // Two sessions (not one) so the launcher's first-run WelcomeCard branch
+    // — an unrelated pre-existing layout quirk, not something this test is
+    // about — doesn't engage; mirrors _container()'s default session set.
+    final c = ProviderContainer(overrides: [
+      sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
+            active: 'a',
+            sessions: [
+              SessionMeta(id: 'a', name: 'Alpha'),
+              SessionMeta(id: 'b', name: 'Beta'),
+            ],
+          ))),
+      kitsProvider.overrideWith((ref) async => const [
+            LoopKit(
+              name: 'Test Kit',
+              system: 'ironsworn',
+              tables: [
+                CustomTable(id: 't1', name: 'Omens', rows: [CustomRow('X')]),
+              ],
+              sceneTitle: 'Opening Scene',
+              sceneBody: 'Body text',
+            ),
+          ]),
+    ]);
+    addTearDown(c.dispose);
+    SharedPreferences.setMockInitialValues({});
+    await _pump(t, c);
+
+    await t.tap(find.byKey(const Key('launcher-new')));
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('new-campaign-name')), 'Wizard Kit');
+    await t.tap(find.byKey(const Key('new-stance-solo-gm')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> start
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('new-start-kit')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('kit-pick-0')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-create')));
+    await t.pumpAndSettle();
+
+    expect(t.takeException(), isNull);
+    final tables = await c.read(customTablesProvider.future);
+    expect(tables.any((tb) => tb.name == 'Omens'), isTrue);
+    final journal = await c.read(journalProvider.future);
+    expect(journal.any((e) => e.title == 'Opening Scene'), isTrue);
   });
 }
