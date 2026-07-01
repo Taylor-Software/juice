@@ -1399,6 +1399,23 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
   }
 
   Future<void> add(UserRefCard c) async => _save([...await _ready, c]);
+
+  /// Append [incoming] cards with fresh ids (import never clobbers existing).
+  /// Mirrors CustomTablesNotifier.addAll.
+  Future<void> addAll(List<UserRefCard> incoming) async {
+    if (incoming.isEmpty) return;
+    final base = DateTime.now().microsecondsSinceEpoch;
+    final fresh = [
+      for (var i = 0; i < incoming.length; i++)
+        UserRefCard(
+          id: '${base + i}',
+          title: incoming[i].title,
+          sections: incoming[i].sections,
+        ),
+    ];
+    await _save([...await _ready, ...fresh]);
+  }
+
   Future<void> remove(String id) async =>
       _save((await _ready).where((c) => c.id != id).toList());
   Future<void> replace(UserRefCard c) async =>
