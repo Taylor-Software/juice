@@ -53,3 +53,4 @@ ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 # Brainstorm companion sessions
 .superpowers/
 .worktrees/
+graphify-out/
