@@ -982,6 +982,15 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
           ? _ruleset!
           : 'dcc';
 
+  // Kits matching the chosen ruleset (by `system` tag) come first-class; when
+  // no ruleset is chosen (or none match — e.g. 'ruleset-none'), show every
+  // bundled kit rather than an empty grid.
+  List<LoopKit> get _availableKits {
+    if (_ruleset == null) return widget.kits;
+    final matching = widget.kits.where((k) => k.system == _ruleset).toList();
+    return matching.isEmpty ? widget.kits : matching;
+  }
+
   bool get _nextEnabled {
     if (_step == 0) return _stance != null;
     return true; // step 1 is always satisfiable
@@ -1328,15 +1337,6 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         ],
       ],
     );
-  }
-
-  // Kits matching the chosen ruleset (by `system` tag) come first-class; when
-  // no ruleset is chosen (or none match — e.g. 'ruleset-none'), show every
-  // bundled kit rather than an empty grid.
-  List<LoopKit> get _availableKits {
-    if (_ruleset == null) return widget.kits;
-    final matching = widget.kits.where((k) => k.system == _ruleset).toList();
-    return matching.isEmpty ? widget.kits : matching;
   }
 
   String _categoryLabel(SystemCategory c) {
