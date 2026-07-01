@@ -322,7 +322,9 @@ void main() {
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
-    // Select dcc ruleset (funnel-capable)
+    // Select dcc ruleset (funnel-capable) — inside the Experimental drawer
+    await tester.tap(find.byKey(const Key('ruleset-experimental')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('ruleset-dcc')));
     await tester.tap(find.byKey(const Key('ruleset-dcc')));
     await tester.pumpAndSettle();
@@ -423,7 +425,9 @@ void main() {
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
-    // Select dcc ruleset
+    // Select dcc ruleset — inside the Experimental drawer
+    await tester.tap(find.byKey(const Key('ruleset-experimental')));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('ruleset-dcc')));
     await tester.tap(find.byKey(const Key('ruleset-dcc')));
     await tester.pumpAndSettle();

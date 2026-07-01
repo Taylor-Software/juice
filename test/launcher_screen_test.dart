@@ -171,6 +171,9 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
     await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('ruleset-experimental'))); // expand drawer
+    await t.pumpAndSettle();
+    await t.ensureVisible(find.byKey(const Key('ruleset-dcc')));
     await t.tap(find.byKey(const Key('ruleset-dcc')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> start

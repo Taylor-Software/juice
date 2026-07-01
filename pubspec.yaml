@@ -1,5 +1,5 @@
 name: juice_oracle
-description: "Solo Adventurer's Journal — a solo-RPG oracle & campaign journal implementing the Juice oracle (jrruethe/juice)."
+description: "Solo Adventurer's Journal — the guided loop for solo tabletop RPGs: set a scene, ask the oracle, read it in-fiction, journal the beat. Implements the Juice oracle (jrruethe/juice)."
 publish_to: "none"
 version: 0.1.0+1
 

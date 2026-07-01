@@ -1139,6 +1139,14 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         .where((e) => e.value == SystemCategory.ruleset)
         .map((e) => e.key)
         .toList();
+    // The wedge: three rulesets front-and-centre (Ironsworn family, D&D 5e,
+    // Cairn). The rest are facts-only sheets that ship no rulebook content, so
+    // they live behind an "Experimental" drawer to keep the first choice small.
+    // Nothing about registration changes — these still fully work when picked.
+    const coreRulesets = {'ironsworn', 'dnd', 'cairn'};
+    final coreIds = rulesetIds.where(coreRulesets.contains).toList();
+    final experimentalIds =
+        rulesetIds.where((id) => !coreRulesets.contains(id)).toList();
     // 'funnel' excluded: step 2 (start choice) manages it. Toggling it here
     // and picking roster would silently enable the funnel verb with no character.
     final addonIds = kSystemCategory.entries
@@ -1161,7 +1169,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
             selected: _ruleset == null,
             onSelected: (_) => setState(() => _ruleset = null),
           ),
-          for (final id in rulesetIds)
+          for (final id in coreIds)
             ChoiceChip(
               key: Key('ruleset-$id'),
               label: Text(kSystemShortName[id] ?? id),
@@ -1169,6 +1177,32 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
               onSelected: (_) => setState(() => _ruleset = id),
             ),
         ]),
+        const SizedBox(height: 4),
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: const Key('ruleset-experimental'),
+            initiallyExpanded: experimentalIds.contains(_ruleset),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(bottom: 4),
+            title: const Text('Experimental systems',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+            subtitle: const Text(
+                'Facts-only sheets — no rulebook content bundled',
+                style: TextStyle(fontSize: 11)),
+            children: [
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                for (final id in experimentalIds)
+                  ChoiceChip(
+                    key: Key('ruleset-$id'),
+                    label: Text(kSystemShortName[id] ?? id),
+                    selected: _ruleset == id,
+                    onSelected: (_) => setState(() => _ruleset = id),
+                  ),
+              ]),
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
         for (final cat in const [
           SystemCategory.oracle,
