@@ -41,10 +41,13 @@ class _OracleInterpretationSheetState
   void initState() {
     super.initState();
     _service = ref.read(interpreterServiceProvider);
-    // The sheet opens only when ready (Interpret is gated on aiReady), so
-    // _onStatus() auto-starts generation on the first frame. Settings owns
-    // download/refresh — no refresh() here.
+    // The sheet opens only when ready (Interpret is gated on
+    // interpretReadyProvider), so _onStatus() auto-starts generation on the
+    // first frame. Settings owns on-device download/refresh — no refresh()
+    // here. Listen to both the on-device status AND interpretReadyProvider,
+    // since a cloud-only readiness change never touches _service.status.
     _service.status.addListener(_onStatus);
+    ref.listenManual(interpretReadyProvider, (prev, next) => _onStatus());
     _onStatus();
   }
 
@@ -57,9 +60,7 @@ class _OracleInterpretationSheetState
   void _onStatus() {
     if (!mounted) return;
     setState(() {});
-    if (_service.status.value.phase == InterpreterPhase.ready &&
-        _cards == null &&
-        !_generating) {
+    if (ref.read(interpretReadyProvider) && _cards == null && !_generating) {
       _generate();
     }
   }
@@ -173,10 +174,11 @@ class _OracleInterpretationSheetState
   }
 
   Widget _body(BuildContext context) {
-    // This sheet only opens when AI is ready (the Interpret affordance is
-    // gated on aiReadyProvider, and Settings owns download/consent). The
-    // non-ready note is a defensive fallback, e.g. if the model is evicted.
-    if (_service.status.value.phase != InterpreterPhase.ready) {
+    // This sheet opens once AI is ready for interpretation — either on-device
+    // or cloud (see interpretReadyProvider). The non-ready note is a
+    // defensive fallback, e.g. if the on-device model is evicted mid-session
+    // or the cloud key/toggle is cleared while this sheet is still open.
+    if (!ref.watch(interpretReadyProvider)) {
       return const _Note(
           icon: Icons.auto_awesome_outlined,
           title: 'Assistant not ready',

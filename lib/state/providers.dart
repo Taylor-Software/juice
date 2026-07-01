@@ -35,6 +35,7 @@ import '../engine/tally.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
 import 'campaign_io.dart';
+import 'cloud_key_store.dart';
 import 'interpreter.dart';
 
 /// Loads the data asset and builds the engine once.
@@ -393,7 +394,9 @@ class CharacterNotifier extends _PersistedList<Character> {
   Future<String> addCustom(List<CustomBlock> blocks) async {
     final id = _newId();
     final c = Character(
-        id: id, name: 'New custom character', custom: CustomSheet(blocks: blocks));
+        id: id,
+        name: 'New custom character',
+        custom: CustomSheet(blocks: blocks));
     await _persist([c, ...await _ready]);
     return id;
   }
@@ -1558,6 +1561,47 @@ final aiReadyProvider = Provider<bool>((ref) {
 final aiSupportedProvider =
     Provider<bool>((ref) => _phase(ref) != InterpreterPhase.unsupported);
 
+// -- Cloud interpretation (BYO Claude key; interpret() seam ONLY) -----------
+// The API key is a real, billable secret -> secure storage, NOT the plaintext
+// SharedPreferences every other setting uses. The toggle itself is a plain UI
+// preference (not sensitive), so it DOES use SharedPreferences, matching
+// aiEnabledProvider's pattern.
+final cloudKeyStoreProvider =
+    Provider<CloudKeyStore>((ref) => SecureCloudKeyStore());
+
+final cloudApiKeyProvider =
+    FutureProvider<String?>((ref) => ref.watch(cloudKeyStoreProvider).read());
+
+class CloudInterpretEnabledNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.cloud_interpret_enabled.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> setEnabled(bool value) async {
+    await (await SharedPreferences.getInstance()).setBool(_key, value);
+    state = AsyncData(value);
+  }
+}
+
+final cloudInterpretEnabledProvider =
+    AsyncNotifierProvider<CloudInterpretEnabledNotifier, bool>(
+        CloudInterpretEnabledNotifier.new);
+
+/// Scoped readiness for the interpret() seam ONLY — true when EITHER the
+/// on-device model is ready OR the cloud toggle is on with a saved key.
+/// Deliberately narrower than [aiReadyProvider]: every other AI seam
+/// (voiceLine/summarize/gmChat/narrate/fleshOut/rankSuggestions) keeps
+/// gating on [aiReadyProvider] unchanged, so enabling cloud does NOT unlock
+/// their UI (which would fail — those seams still require on-device).
+final interpretReadyProvider = Provider<bool>((ref) {
+  if (ref.watch(aiReadyProvider)) return true;
+  final cloudOn = ref.watch(cloudInterpretEnabledProvider).valueOrNull ?? false;
+  final key = ref.watch(cloudApiKeyProvider).valueOrNull;
+  return cloudOn && key != null && key.isNotEmpty;
+});
+
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
@@ -2045,10 +2089,7 @@ final systemFoesProvider =
   try {
     final raw = await rootBundle.loadString('assets/foes_$system.json');
     final list = jsonDecode(raw) as List?;
-    return list
-            ?.map(Creature.maybeFromJson)
-            .whereType<Creature>()
-            .toList() ??
+    return list?.map(Creature.maybeFromJson).whereType<Creature>().toList() ??
         const <Creature>[];
   } catch (_) {
     return const <Creature>[];

@@ -242,7 +242,8 @@ class _InitiativePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final enc = ref.watch(encounterProvider).valueOrNull ?? const EncounterState();
+    final enc =
+        ref.watch(encounterProvider).valueOrNull ?? const EncounterState();
     final notifier = ref.read(encounterProvider.notifier);
     final rows = <Widget>[];
     for (var i = 0; i < enc.combatants.length; i++) {
@@ -261,8 +262,8 @@ class _InitiativePanel extends ConsumerWidget {
               backgroundColor: current
                   ? theme.colorScheme.primaryContainer
                   : theme.colorScheme.surfaceContainerHighest,
-              child: Text('${c.initiative}',
-                  style: theme.textTheme.labelMedium),
+              child:
+                  Text('${c.initiative}', style: theme.textTheme.labelMedium),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -347,7 +348,8 @@ class _PartyPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final all = ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
+    final all =
+        ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
     final notifier = ref.read(charactersProvider.notifier);
     final party = all
         .where((c) =>
@@ -412,8 +414,8 @@ class _PartyPanel extends ConsumerWidget {
 
   Future<void> _bulkEffect(
       BuildContext context, WidgetRef ref, List<Character> party) async {
-    final result =
-        await showDialog<({Set<String> ids, int hpDelta, List<String> conditions})>(
+    final result = await showDialog<
+        ({Set<String> ids, int hpDelta, List<String> conditions})>(
       context: context,
       builder: (_) => _RunEffectDialog(party: party),
     );
@@ -477,8 +479,8 @@ class _RunEffectDialogState extends State<_RunEffectDialog> {
           TextField(
             key: const Key('run-effect-conditions'),
             controller: _cond,
-            decoration:
-                const InputDecoration(labelText: 'Conditions (comma-separated)'),
+            decoration: const InputDecoration(
+                labelText: 'Conditions (comma-separated)'),
           ),
         ]),
       ),
@@ -600,8 +602,7 @@ class _ThreadsRumorsPanel extends ConsumerWidget {
           for (final t in threads.take(5))
             InkWell(
               key: Key('run-thread-${t.id}'),
-              onTap: () =>
-                  nav.goTo(Destination.track, subtab: 'threads'),
+              onTap: () => nav.goTo(Destination.track, subtab: 'threads'),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(children: [
@@ -698,8 +699,9 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
         g = fateCheckGenResult(oracle.fateCheck(_likelihood));
         tool = 'fate-check';
     }
-    ref.read(journalProvider.notifier).addResult(g.title, g.asText,
-        sourceTool: tool, payload: g.toPayload());
+    ref
+        .read(journalProvider.notifier)
+        .addResult(g.title, g.asText, sourceTool: tool, payload: g.toPayload());
     setState(() => _last = g);
   }
 
@@ -718,9 +720,7 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
       resultText: g.asText,
       genre: settings.genre,
       tone: settings.tone,
-      sceneContext: scene == null
-          ? ''
-          : '${scene.title}\n${scene.body}'.trim(),
+      sceneContext: scene == null ? '' : '${scene.title}\n${scene.body}'.trim(),
       activeCharacter: ref.read(activeCharacterLineProvider),
       systemPrimer: ref.read(systemPrimerProvider),
     );
@@ -746,7 +746,7 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
     // AsyncLoading on first read, so _roll would early-return. Watching keeps it
     // warm + gates the button until it resolves.
     final oracle = ref.watch(oracleProvider).valueOrNull;
-    final aiReady = ref.watch(aiReadyProvider);
+    final aiReady = ref.watch(interpretReadyProvider);
     final defaultOracle =
         ref.watch(settingsProvider).valueOrNull?.defaultOracle ?? 'juice';
     // A Row (not Wrap): Wrap measures children with unbounded width, and a
