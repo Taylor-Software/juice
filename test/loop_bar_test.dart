@@ -186,6 +186,34 @@ void main() {
     expect(journal.where((e) => e.sourceTool == 'interpret').length, 0);
   });
 
+  testWidgets('Ask again clears a visible interpret card', (tester) async {
+    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    await pump(tester, overrides: [
+      aiReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    await expandSteps(tester);
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('loop-scene-name')), 'The crypt');
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('loop-ask')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('beat-interpret')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret-card')), findsOneWidget);
+    // Rolling again must drop the stale card (it read the previous roll).
+    await tester.tap(find.byKey(const Key('beat-askAgain')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('loop-interpret-card')), findsNothing);
+  });
+
   testWidgets('new-scene dialog sets a custom title', (tester) async {
     await pump(tester);
     await expandSteps(tester);

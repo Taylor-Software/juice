@@ -445,6 +445,9 @@ class _LoopBarState extends ConsumerState<LoopBar> {
         await _newScene();
       case BeatAction.ask:
       case BeatAction.askAgain:
+        // Starting a fresh roll: drop any visible interpret card (it read the
+        // PREVIOUS roll) and reset the interpreted flag.
+        ref.read(_loopInterpretSeedProvider.notifier).state = null;
         ref.read(_loopInterpretedProvider.notifier).state = false;
         await _ask();
       case BeatAction.interpret:
@@ -484,6 +487,17 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
   void initState() {
     super.initState();
     _future = ref.read(interpreterServiceProvider).interpret(widget.seed);
+  }
+
+  @override
+  void didUpdateWidget(_InterpretCard old) {
+    super.didUpdateWidget(old);
+    // Re-kick the reading if the card is reused with a new seed (defensive:
+    // the parent currently clears the card before re-seeding, but this keeps
+    // the displayed reading in sync with the seed either way).
+    if (widget.seed != old.seed) {
+      _future = ref.read(interpreterServiceProvider).interpret(widget.seed);
+    }
   }
 
   @override
@@ -531,7 +545,7 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
                       // minimumSize so this button can sit natural-width beside
                       // Discard in a Row without forcing an infinite width.
                       style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 40)),
+                          minimumSize: const Size(64, 40)),
                       onPressed: () async {
                         await ref.read(journalProvider.notifier).addResult(
                               'Oracle reading',
