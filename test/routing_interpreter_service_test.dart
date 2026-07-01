@@ -61,7 +61,7 @@ void main() {
       cloudApiKey: () async => 'sk-ant-present',
       cloudInterpreter: cloud,
     );
-    final seed = const OracleSeed(resultText: 'x');
+    const seed = OracleSeed(resultText: 'x');
     final result = await routing.interpret(seed);
     expect(onDevice.interpretCalls, 0);
     expect(cloud.lastSeed, same(seed));
