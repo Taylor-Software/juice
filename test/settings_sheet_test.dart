@@ -3,16 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/features/settings_sheet.dart';
 import 'package:juice_oracle/state/interpreter.dart';
+import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'fake_cloud_key_store.dart';
 import 'fake_interpreter.dart';
 
 Future<FakeInterpreterService> pump(WidgetTester tester,
-    {required InterpreterStatus status, bool enabled = false}) async {
+    {required InterpreterStatus status,
+    bool enabled = false,
+    FakeCloudKeyStore? cloudStore}) async {
   SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': enabled});
   final fake = FakeInterpreterService(initial: status);
   await tester.pumpWidget(ProviderScope(
-    overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+    overrides: [
+      interpreterServiceProvider.overrideWithValue(fake),
+      cloudKeyStoreProvider
+          .overrideWithValue(cloudStore ?? FakeCloudKeyStore()),
+    ],
     child: MaterialApp(
       home: Scaffold(
         body: Builder(
@@ -77,5 +85,35 @@ void main() {
     await pump(tester,
         status: const InterpreterStatus(InterpreterPhase.ready), enabled: true);
     expect(find.textContaining('Ready'), findsOneWidget);
+  });
+
+  testWidgets(
+      'cloud interpretation block shows even when on-device is unsupported',
+      (tester) async {
+    await pump(tester,
+        status: const InterpreterStatus(InterpreterPhase.unsupported));
+    expect(find.textContaining("isn't available"), findsOneWidget);
+    expect(find.text('Cloud interpretation'), findsOneWidget);
+    expect(find.byKey(const Key('settings-cloud-key-field')), findsOneWidget);
+  });
+
+  testWidgets('saving a key enables the cloud toggle', (tester) async {
+    final cloudStore = FakeCloudKeyStore();
+    await pump(tester,
+        status: const InterpreterStatus(InterpreterPhase.needsDownload),
+        cloudStore: cloudStore);
+    final toggleBefore = tester
+        .widget<SwitchListTile>(find.byKey(const Key('settings-cloud-toggle')));
+    expect(toggleBefore.onChanged, isNull);
+
+    await tester.enterText(
+        find.byKey(const Key('settings-cloud-key-field')), 'sk-ant-test');
+    await tester.tap(find.byKey(const Key('settings-cloud-key-save')));
+    await tester.pumpAndSettle();
+
+    expect(cloudStore.writeCalls, 1);
+    final toggleAfter = tester
+        .widget<SwitchListTile>(find.byKey(const Key('settings-cloud-toggle')));
+    expect(toggleAfter.onChanged, isNotNull);
   });
 }

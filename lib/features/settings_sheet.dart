@@ -24,15 +24,31 @@ Future<void> showSettingsSheet(BuildContext context) =>
       builder: (_) => const _SettingsSheet(),
     );
 
-class _SettingsSheet extends ConsumerWidget {
+class _SettingsSheet extends ConsumerStatefulWidget {
   const _SettingsSheet();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SettingsSheet> createState() => _SettingsSheetState();
+}
+
+class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
+  final _keyCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _keyCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final supported = ref.watch(aiSupportedProvider);
     final enabled = ref.watch(aiEnabledProvider).valueOrNull ?? false;
     final status = ref.watch(interpreterStatusProvider).valueOrNull;
+    final cloudKey = ref.watch(cloudApiKeyProvider).valueOrNull;
+    final cloudEnabled =
+        ref.watch(cloudInterpretEnabledProvider).valueOrNull ?? false;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -63,6 +79,66 @@ class _SettingsSheet extends ConsumerWidget {
               ),
               if (enabled) _statusBlock(context, ref, status),
             ],
+            const SizedBox(height: 16),
+            Text('Cloud interpretation', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            const Text(
+              'Optional. Sent to Anthropic\'s API. Requires your own key — '
+              'billed by Anthropic, not this app.',
+              style: TextStyle(fontSize: 12),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('settings-cloud-key-field'),
+              controller: _keyCtrl,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Claude API key',
+                isDense: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(children: [
+              FilledButton(
+                key: const Key('settings-cloud-key-save'),
+                onPressed: () async {
+                  final v = _keyCtrl.text.trim();
+                  if (v.isEmpty) return;
+                  await ref.read(cloudKeyStoreProvider).write(v);
+                  ref.invalidate(cloudApiKeyProvider);
+                  _keyCtrl.clear();
+                },
+                child: const Text('Save'),
+              ),
+              const SizedBox(width: 8),
+              if (cloudKey != null && cloudKey.isNotEmpty)
+                OutlinedButton(
+                  key: const Key('settings-cloud-key-clear'),
+                  onPressed: () async {
+                    await ref.read(cloudKeyStoreProvider).clear();
+                    ref.invalidate(cloudApiKeyProvider);
+                    await ref
+                        .read(cloudInterpretEnabledProvider.notifier)
+                        .setEnabled(false);
+                  },
+                  child: const Text('Clear'),
+                ),
+            ]),
+            SwitchListTile(
+              key: const Key('settings-cloud-toggle'),
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Use cloud for interpretation'),
+              subtitle: cloudKey == null || cloudKey.isEmpty
+                  ? const Text('Save a key above to enable.')
+                  : const Text('Falls back to on-device when off.'),
+              value: cloudEnabled,
+              onChanged: (cloudKey == null || cloudKey.isEmpty)
+                  ? null
+                  : (v) => ref
+                      .read(cloudInterpretEnabledProvider.notifier)
+                      .setEnabled(v),
+            ),
             const SizedBox(height: 16),
             Text('Third-party content', style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
@@ -234,8 +310,7 @@ class _BestiaryManageSheet extends ConsumerWidget {
               child: Text(
                 'No saved creatures. Save one from the Encounter stat block dialog.',
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color:
-                          Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
             )
@@ -251,8 +326,7 @@ class _BestiaryManageSheet extends ConsumerWidget {
                   final cr = creatures[i];
                   return ListTile(
                     title: Text(cr.name),
-                    subtitle:
-                        cr.maxHp > 0 ? Text('HP ${cr.maxHp}') : null,
+                    subtitle: cr.maxHp > 0 ? Text('HP ${cr.maxHp}') : null,
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -266,9 +340,8 @@ class _BestiaryManageSheet extends ConsumerWidget {
                           key: Key('bestiary-del-${cr.id}'),
                           icon: const Icon(Icons.delete_outline),
                           tooltip: 'Delete',
-                          onPressed: () => ref
-                              .read(bestiaryProvider.notifier)
-                              .remove(cr.id),
+                          onPressed: () =>
+                              ref.read(bestiaryProvider.notifier).remove(cr.id),
                         ),
                       ],
                     ),
@@ -340,9 +413,7 @@ class _CreatureEditDialogState extends State<_CreatureEditDialog> {
               IconButton(
                 key: const Key('bestiary-edit-hp-dec'),
                 icon: const Icon(Icons.remove_circle_outline),
-                onPressed: _maxHp > 0
-                    ? () => setState(() => _maxHp--)
-                    : null,
+                onPressed: _maxHp > 0 ? () => setState(() => _maxHp--) : null,
               ),
               SizedBox(
                 width: 40,
