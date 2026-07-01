@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "The Sunken Crypt",
+  "system": "dnd",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Crypt Sounds",
+      "rows": [
+        "Water dripping in a slow, deliberate rhythm",
+        "Stone grinding against stone, far off",
+        "A voice reciting names, none of them yours",
+        "Chittering that stops the moment you listen for it",
+        "Your own footsteps, half a second delayed",
+        "Nothing at all, which is somehow worse"
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Crypt Debris",
+      "rows": [
+        "A broken sword, hilt still warm",
+        "Coins fused together in a small heap",
+        "A journal, pages swollen shut with damp",
+        "A statue's hand, snapped off at the wrist",
+        "A door with no visible hinges or handle",
+        "Bones arranged too neatly to be an accident"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Crypt Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The crypt flooded a generation ago; the lower levels are still wet.",
+            "Nobody who mapped this place agrees on how many levels there are.",
+            "Something down here is still being fed — by whom is the question."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "The Door Was Sealed From Inside",
+    "body": "The entrance to the crypt was bricked up from the inside, not the outside. You're standing in front of the gap someone else already made."
+  }
+}

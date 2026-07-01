@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "Black Bramble",
+  "system": "cairn",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Bramble Signs",
+      "rows": [
+        "Thorns growing in a perfect circle",
+        "A rag caught on a branch, still damp",
+        "Silence where there should be birdsong",
+        "A path through the thicket that wasn't there this morning",
+        "Berries that are definitely not the color they should be",
+        "A cold patch of air with no source"
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Bramble Dwellers",
+      "rows": [
+        "A woodcutter who won't go past a certain tree",
+        "A trapper checking snares that are always empty",
+        "A child who says the bramble talks to her",
+        "An old hunting dog that refuses to enter, no matter what",
+        "A charcoal-burner who works only at the bramble's edge",
+        "Someone singing, just out of sight, just out of tune"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Bramble Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The bramble has grown a little every year for as long as anyone remembers.",
+            "Nothing that goes in deep comes back out the way it went in.",
+            "Locals leave small offerings at the treeline out of habit, not belief."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "The Path That Wasn't There",
+    "body": "A gap in the bramble opens onto a path you're certain wasn't there yesterday. It's already getting dark."
+  }
+}

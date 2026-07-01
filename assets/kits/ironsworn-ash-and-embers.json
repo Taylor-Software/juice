@@ -1,0 +1,52 @@
+{
+  "kind": "juice-loop-kit",
+  "v": 1,
+  "name": "Ash and Embers",
+  "system": "ironsworn",
+  "tables": [
+    {
+      "id": "t1",
+      "name": "Ashland Omens",
+      "rows": [
+        "A crow refuses to fly",
+        "The ash falls upward for a moment",
+        "A bell rings with no tower",
+        "Footprints end at bare stone",
+        "The wind carries a name you don't know",
+        "Embers spell a shape, then scatter"
+      ]
+    },
+    {
+      "id": "t2",
+      "name": "Wandering Folk",
+      "rows": [
+        "A soot-streaked child selling warmth",
+        "An ashwalker mapping the dead ground",
+        "A pair of duelists who won't say why",
+        "A trader with nothing left to sell",
+        "A singer who only sings warnings",
+        "A soldier still fighting a war that ended"
+      ]
+    }
+  ],
+  "refCards": [
+    {
+      "id": "c1",
+      "title": "Ashland Facts",
+      "sections": [
+        {
+          "title": "Setting",
+          "lines": [
+            "The war ended a season ago. The ash did not.",
+            "Green things are rumor, not memory, for the young.",
+            "Old roads are the only ground the ash hasn't claimed."
+          ]
+        }
+      ]
+    }
+  ],
+  "scene": {
+    "title": "Cinders on the Wind",
+    "body": "You wake in a burned grove, throat full of ash. Something out past the treeline is still burning — and it wasn't, an hour ago."
+  }
+}
