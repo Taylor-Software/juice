@@ -33,12 +33,21 @@ Future<NewCampaignResult?> _open(WidgetTester tester) async {
   ));
   await tester.tap(find.text('open'));
   await tester.pumpAndSettle();
+  // Step-0 Next is gated on a non-blank campaign name; provide one so callers
+  // that navigate onward aren't stranded. Tests asserting a specific name
+  // re-enter it before reading the result.
+  await tester.enterText(
+      find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+  await tester.pump();
   return result; // will still be null; caller must update after dialog closes
 }
 
 // Walk the wizard to the Create button and tap it.
 // Assumes the dialog is already open and step 0 has a stance pre-selected.
 Future<void> _walkToCreate(WidgetTester tester) async {
+  // Flush any pending name-entry rebuild so step-0 Next is enabled (Next is
+  // gated on a non-blank campaign name).
+  await tester.pump();
   // Step 0 → Next
   await tester.tap(find.byKey(const Key('wizard-next')));
   await tester.pumpAndSettle();
@@ -78,6 +87,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'GM Run');
@@ -106,6 +120,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Solo GM');
@@ -135,6 +154,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Solo Member');
@@ -146,8 +170,9 @@ void main() {
 
   // ── Navigation gating ─────────────────────────────────────────────────────
 
-  testWidgets('Next is enabled on step 0 with the default stance selected',
-      (tester) async {
+  testWidgets(
+      'step 0 Next requires a name: disabled while blank (even with a stance), '
+      'enabled once named', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
         return ElevatedButton(
@@ -162,15 +187,21 @@ void main() {
       })),
     ));
     await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(); // step 0, name still blank
 
-    // The dialog starts with the default stance selected, so un-select by
-    // tapping to verify the enabled/disabled logic.  Since the default
-    // is already solo-member, test that the Next button IS enabled initially.
-    final nextBtn =
+    // Default stance (solo-member) is selected but the name is empty, so Next
+    // stays disabled — this is the fix for the "Create never becomes clickable"
+    // dead-end (the required field lived a step away from the disabled button).
+    FilledButton nextBtn() =>
         tester.widget<FilledButton>(find.byKey(const Key('wizard-next')));
-    expect(nextBtn.onPressed, isNotNull,
-        reason: 'Next should be enabled (default solo-member selected)');
+    expect(nextBtn().onPressed, isNull,
+        reason: 'Next should be disabled while the name is blank');
+
+    // Naming the campaign enables Next.
+    await tester.enterText(find.byKey(const Key('new-campaign-name')), 'Named');
+    await tester.pump();
+    expect(nextBtn().onPressed, isNotNull,
+        reason: 'Next should be enabled once a name is entered');
   });
 
   testWidgets('Back button returns to previous step', (tester) async {
@@ -189,6 +220,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     // Step 0 → 1
     await tester.tap(find.byKey(const Key('wizard-next')));
@@ -217,6 +253,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     // Step 0: no Create
     expect(find.byKey(const Key('wizard-create')), findsNothing);
@@ -250,6 +291,10 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Name it so step-0 Next is enabled, then advance to step 1.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
@@ -277,6 +322,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Custom');
@@ -322,6 +372,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     // Step 0 → 1
     await tester.tap(find.byKey(const Key('wizard-next')));
@@ -359,6 +414,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     // Step 0 → 1
     await tester.tap(find.byKey(const Key('wizard-next')));
@@ -394,6 +454,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
@@ -423,6 +488,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'DCC Funnel');
@@ -472,6 +542,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'My Campaign');
@@ -501,6 +576,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Genre Test');
@@ -544,6 +624,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'No Party');
+    await tester.pump(); // flush so step-0 Next enables
 
     // Step 0 → 1
     await tester.tap(find.byKey(const Key('wizard-next')));
@@ -600,6 +681,11 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
+    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
+    // onward isn't blocked. Tests that assert a specific name re-enter it below.
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
+    await tester.pump();
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Kit Test');

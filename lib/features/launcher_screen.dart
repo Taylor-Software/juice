@@ -17,6 +17,7 @@ import '../shared/home_shell.dart'
 import '../shared/shell_route.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'ai_offer_dialog.dart';
 import 'enter_campaign.dart';
 
 /// Startup campaign menu: Continue / switch / New / Import. Shown while
@@ -240,6 +241,9 @@ class LauncherScreen extends ConsumerWidget {
                 Text('Solo TTRPG toolkit',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                // Invisible: fires the one-time first-run AI-enhancements offer
+                // once the welcome card is out of the way (see _AiOfferGate).
+                _AiOfferGate(welcomeShowing: showWelcome),
                 if (showWelcome) ...[
                   const SizedBox(height: 16),
                   _WelcomeCard(
@@ -312,6 +316,44 @@ class LauncherScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// Invisible gate that shows the first-run AI-enhancements offer exactly once.
+///
+/// Fires (post-frame, guarded so it only fires once per mount) when: the
+/// platform supports on-device AI, AI isn't already enabled, the offer hasn't
+/// been shown before, and the welcome card isn't currently on screen — so a
+/// true first-run user reads the welcome first, then gets the AI offer after
+/// dismissing it; an existing user who never enabled AI is offered once on
+/// their next launch (welcome already seen → offer fires immediately).
+class _AiOfferGate extends ConsumerStatefulWidget {
+  const _AiOfferGate({required this.welcomeShowing});
+  final bool welcomeShowing;
+
+  @override
+  ConsumerState<_AiOfferGate> createState() => _AiOfferGateState();
+}
+
+class _AiOfferGateState extends ConsumerState<_AiOfferGate> {
+  bool _fired = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_fired && !widget.welcomeShowing) {
+      final supported = ref.watch(aiSupportedProvider);
+      final enabled = ref.watch(aiEnabledProvider).valueOrNull;
+      final offerSeen = ref.watch(aiOfferSeenProvider).valueOrNull;
+      // All three gates must be resolved (non-loading) before we act, so a
+      // still-loading flag never suppresses the offer or fires it prematurely.
+      if (supported && enabled == false && offerSeen == false) {
+        _fired = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) showAiFirstRunOffer(context, ref);
+        });
+      }
+    }
+    return const SizedBox.shrink();
   }
 }
 

@@ -1,9 +1,14 @@
 /// flutter_gemma-backed interpreter. Never constructed in tests.
 ///
-/// Mobile/desktop: Gemma 4 E2B int4 `.litertlm` (`ModelType.gemma4`) from the
-/// ungated litert-community repo, downloaded on demand (~2.6 GB) — never
+/// Mobile/desktop: Gemma 4 E4B int4 `.litertlm` (`ModelType.gemma4`) from the
+/// ungated litert-community repo, downloaded on demand (~3.7 GB) — never
 /// bundled. The on-device LLM is DISABLED on web (no model): web reports
 /// `unsupported` and the UI hides every AI affordance.
+///
+/// E4B replaced the original E2B pin (2026-07-01): same tokenizer/prompt
+/// template (`ModelType.gemma4` unchanged) so no reprompting was needed, just
+/// a stronger model at ~1GB more download. Quality was the reason to move —
+/// E2B's output was judged too weak for narration/interpretation.
 library;
 
 import 'package:flutter/foundation.dart';
@@ -29,11 +34,11 @@ class _ModelSpec {
 
 const _gemma4Spec = _ModelSpec(
   url:
-      'https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm',
-  filename: 'gemma-4-E2B-it.litertlm',
+      'https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm',
+  filename: 'gemma-4-E4B-it.litertlm',
   modelType: ModelType.gemma4,
   fileType: ModelFileType.litertlm,
-  approxMb: 2588,
+  approxMb: 3660,
 );
 
 class GemmaInterpreterService implements InterpreterService {

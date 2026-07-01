@@ -52,7 +52,10 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
-    // Step 0 has stance cards; advance to step 1 where addon chips live.
+    // Step 0 has stance cards + a required name; name it, then advance to
+    // step 1 where the addon chips live.
+    await t.enterText(find.byKey(const Key('new-campaign-name')), 'Camp');
+    await t.pump();
     await t.tap(find.byKey(const Key('wizard-next')));
     await t.pumpAndSettle();
 
@@ -114,7 +117,10 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('New campaign'));
     await t.pumpAndSettle();
-    // Step 0 has stance cards; advance to step 1 where addon chips live.
+    // Step 0 has stance cards + a required name; name it, then advance to
+    // step 1 where the addon chips live.
+    await t.enterText(find.byKey(const Key('new-campaign-name')), 'Camp');
+    await t.pump();
     await t.tap(find.byKey(const Key('wizard-next')));
     await t.pumpAndSettle();
 

@@ -264,7 +264,7 @@ Working rules for this repo:
   from voiceLine's spoken-NPC `character:` line). `askGm` was brought to parity
   (was question + scene title only). Recall caps were loosened from the retired
   web budget (`kRecallMaxEntries` 2→6, `kRecallMaxChars` 100→280) since AI is
-  desktop/mobile-only (Gemma 4 E2B). See
+  desktop/mobile-only (Gemma 4 E4B). See
   `docs/superpowers/specs/2026-06-24-ai-richer-context-design.md`. This is
   foundation #1 of the AI-expansion epic; multi-turn GM chat (#2) + new
   affordances (#3) ride on it.
@@ -753,7 +753,13 @@ Working rules for this repo:
   - **Step 0 — Stance:** campaign name field + 3 tappable stance cards
     (`new-stance-gm` → `mode=gm`; `new-stance-solo-gm` + `new-stance-solo-member`
     → `mode=party`). Default: solo-member. `soloLead` is framing only (not
-    persisted).
+    persisted). **`wizard-next` is gated on a non-blank name** (`_nextEnabled`),
+    with a "Required to continue" helper on the field — the name is required to
+    create (both create callers already refuse a blank name), and gating at
+    step 0 puts the block AT the field instead of stranding the out-of-view
+    step-2 `wizard-create` disabled with no feedback (the "Create never becomes
+    clickable" bug). Tests must `enterText` a name + `pump()` before the first
+    `wizard-next`.
   - **Step 1 — System + tools:** ruleset `ChoiceChip`s (incl. `ruleset-none`,
     single-select) + addon `FilterChip`s grouped by category (`cat-<id>`) + live
     `CampaignPreviewPane`. No mode toggle (stance set it). Default addons:
@@ -963,11 +969,14 @@ Working rules for this repo:
   export). Capture primitive unit-tested; the editor route is device-verified.
   See `docs/superpowers/specs/2026-06-23-map-snapshot-annotate-design.md`.
 - The on-device interpreter model is pinned in
-  `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E2B** int4
+  `lib/state/interpreter_gemma.dart`: mobile/desktop run **Gemma 4 E4B** int4
   `.litertlm` (`ModelType.gemma4`) from the ungated `litert-community/
-  gemma-4-E2B-it-litert-lm` repo (~2.6 GB), downloaded on demand with a consent
-  card — never bundled (a multi-GB binary is infeasible for app stores). The
-  **on-device LLM is disabled on web** (`GemmaInterpreterService` forces the
+  gemma-4-E4B-it-litert-lm` repo (~3.7 GB), downloaded on demand with a consent
+  card — never bundled (a multi-GB binary is infeasible for app stores). E4B
+  replaced the original E2B pin (2026-07-01) once E2B's output quality proved
+  too weak for narration/interpretation; same `ModelType.gemma4`
+  tokenizer/template, so no prompt rework was needed — just a bigger download.
+  The **on-device LLM is disabled on web** (`GemmaInterpreterService` forces the
   `unsupported` phase in its constructor; every AI affordance already gates on
   phase, so web hides them and falls back to deterministic oracle rolls). This
   retired the old per-platform split (web Gemma3 1B `.task` via a third-party
@@ -995,6 +1004,21 @@ Working rules for this repo:
   AI via `SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true})`.
   See `docs/superpowers/specs/2026-06-22-ai-enable-settings-gating-design.md`.
   Deferred: per-campaign AI override, unloading the model on disable.
+  **First-run AI offer:** a one-time launcher dialog (`showAiFirstRunOffer` in
+  `lib/features/ai_offer_dialog.dart`) invites the user to enable the on-device
+  AI + start the model download. Fired by the invisible `_AiOfferGate` in
+  `launcher_screen.dart` (post-frame, once per mount) when `aiSupported &&
+  aiEnabled==false && aiOfferSeen==false && !welcomeShowing` — so a true
+  first-run user reads the welcome card first, then gets the offer on dismiss;
+  an existing user who never enabled AI is offered once on next launch. The
+  one-time flag is app-global `aiOfferSeenProvider` (`juice.ai_offer_seen.v1`,
+  same posture as `welcomeSeenProvider` — NOT session-scoped, NOT exported),
+  marked seen the moment the dialog is shown. "Enable & download" flips
+  `aiEnabledProvider` on + fires the shared `interpreterServiceProvider.warmUp()`
+  (same download path as Settings) + a background-download SnackBar; "Not now"
+  just marks seen. Because the launcher now watches `aiSupportedProvider`, every
+  launcher-pumping test MUST override `interpreterServiceProvider` with the fake
+  and set `juice.ai_offer_seen.v1: true` (unless testing the offer itself).
 
 ## Workflow system
 
