@@ -59,8 +59,7 @@ final _rulesetOverrides = [
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('shell shows six nav destinations and opens on Play',
-      (t) async {
+  testWidgets('shell shows six nav destinations and opens on Play', (t) async {
     await t.pumpWidget(ProviderScope(
       overrides: [_verdantOverride, _emulatorOverride],
       child: MaterialApp(home: HomeShell(oracle: _oracle())),
@@ -215,6 +214,7 @@ void main() {
     expect(find.byKey(const Key('new-stance-gm')), findsOneWidget);
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'No Party');
+    await tester.pump(); // flush onChanged before checking Next's enabled state
     // Default stance (solo-member) is already selected; tap Next.
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
@@ -300,7 +300,8 @@ void main() {
     expect(find.byKey(const Key('split-toggle')), findsNothing);
   });
 
-  testWidgets('new campaign wizard: selecting dnd ruleset creates campaign with dnd',
+  testWidgets(
+      'new campaign wizard: selecting dnd ruleset creates campaign with dnd',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -313,6 +314,7 @@ void main() {
     // Step 0: enter name + advance
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Dungeon');
+    await tester.pump(); // flush onChanged before checking Next's enabled state
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
     // Step 1: pick dnd ruleset
@@ -331,7 +333,8 @@ void main() {
     expect(s.activeMeta.enabledSystems, contains('dnd'));
   });
 
-  testWidgets('new campaign wizard: selecting shadowdark ruleset creates campaign with shadowdark',
+  testWidgets(
+      'new campaign wizard: selecting shadowdark ruleset creates campaign with shadowdark',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -344,6 +347,7 @@ void main() {
     // Step 0: enter name + advance
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Gloomhold');
+    await tester.pump(); // flush onChanged before checking Next's enabled state
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
     // Step 1: pick shadowdark ruleset — inside the Experimental drawer
@@ -424,6 +428,7 @@ void main() {
     // Step 0: name + solo-member (default)
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Funnel Camp');
+    await tester.pump(); // flush onChanged before checking Next's enabled state
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
@@ -452,11 +457,11 @@ void main() {
     final s = await container.read(sessionsProvider.future);
     expect(s.activeMeta.enabledSystems, contains('funnel'));
     // Shell landed on Sheet verb
-    expect(
-        container.read(shellRouteProvider).destination, Destination.sheet);
+    expect(container.read(shellRouteProvider).destination, Destination.sheet);
   });
 
-  testWidgets('new campaign wizard with roster start does not create a funnel character',
+  testWidgets(
+      'new campaign wizard with roster start does not create a funnel character',
       (tester) async {
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
@@ -471,6 +476,7 @@ void main() {
     // Step 0: name + next
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Roster Camp');
+    await tester.pump(); // flush onChanged before checking Next's enabled state
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
     // Step 1 → 2 → Create (default roster)

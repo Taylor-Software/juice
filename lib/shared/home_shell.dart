@@ -1180,7 +1180,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   }
 
   bool get _nextEnabled {
-    if (_step == 0) return _stance != null;
+    if (_step == 0) return _stance != null && _nameCtrl.text.trim().isNotEmpty;
     return true; // step 1 is always satisfiable
   }
 
@@ -1301,9 +1301,15 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         TextField(
           key: const Key('new-campaign-name'),
           controller: _nameCtrl,
-          autofocus: false,
-          decoration: const InputDecoration(labelText: 'Campaign name'),
-          onChanged: (_) => setState(() {}), // refresh Create button state
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: 'Campaign name',
+            // Explains why Next is disabled while blank — the requirement lives
+            // right here on step 0, not on the (out-of-view) step-2 Create.
+            helperText:
+                _nameCtrl.text.trim().isEmpty ? 'Required to continue' : null,
+          ),
+          onChanged: (_) => setState(() {}), // refresh Next button state
         ),
         const SizedBox(height: 16),
         const Text('Who are you at the table?',

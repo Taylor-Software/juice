@@ -8,7 +8,10 @@ import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/launcher_screen.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
+import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
+
+import 'fake_interpreter.dart';
 
 class _FixedSessions extends SessionsNotifier {
   _FixedSessions(this.state0);
@@ -18,8 +21,13 @@ class _FixedSessions extends SessionsNotifier {
 }
 
 ProviderContainer _container() {
-  SharedPreferences.setMockInitialValues({});
+  // The launcher is AI-aware (its _AiOfferGate watches aiSupportedProvider), so
+  // every launcher test must supply the fake interpreter — never the real Gemma
+  // service. Mark the first-run AI offer already-seen so it doesn't pop over
+  // tests that aren't about it.
+  SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
   return ProviderContainer(overrides: [
+    interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
     sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
           active: 'a',
           sessions: [
@@ -81,8 +89,9 @@ void main() {
   });
 
   ProviderContainer modedContainer() {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
     return ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
       sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
             active: 'a',
             sessions: [
@@ -205,6 +214,7 @@ void main() {
     // — an unrelated pre-existing layout quirk, not something this test is
     // about — doesn't engage; mirrors _container()'s default session set.
     final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
       sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
             active: 'a',
             sessions: [
@@ -225,7 +235,7 @@ void main() {
           ]),
     ]);
     addTearDown(c.dispose);
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
     await _pump(t, c);
 
     await t.tap(find.byKey(const Key('launcher-new')));
@@ -249,5 +259,106 @@ void main() {
     expect(tables.any((tb) => tb.name == 'Omens'), isTrue);
     final journal = await c.read(journalProvider.future);
     expect(journal.any((e) => e.title == 'Opening Scene'), isTrue);
+  });
+
+  testWidgets(
+      'wizard-next on step 0 stays disabled without a campaign name '
+      '(regression: Create used to strand disabled with no feedback)',
+      (t) async {
+    final c = _container();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+
+    await t.tap(find.byKey(const Key('launcher-new')));
+    await t.pumpAndSettle();
+    // No name entered — only a stance pick.
+    await t.tap(find.byKey(const Key('new-stance-solo-member')));
+    await t.pumpAndSettle();
+
+    expect(
+        t.widget<FilledButton>(find.byKey(const Key('wizard-next'))).onPressed,
+        isNull);
+
+    await t.enterText(find.byKey(const Key('new-campaign-name')), 'Named');
+    await t.pumpAndSettle();
+    expect(
+        t.widget<FilledButton>(find.byKey(const Key('wizard-next'))).onPressed,
+        isNotNull);
+  });
+
+  testWidgets('New campaign wizard (roster) creates without a type error',
+      (t) async {
+    // Real (unfixtured) kitsProvider — same as production — so step 2 renders
+    // the real "Import a kit" card alongside "Start with a roster".
+    final c = _container();
+    addTearDown(c.dispose);
+    await _pump(t, c);
+
+    await t.tap(find.byKey(const Key('launcher-new')));
+    await t.pumpAndSettle();
+    await t.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Wizard Roster');
+    await t.tap(find.byKey(const Key('new-stance-solo-member')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> start
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('new-start-roster')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-create')));
+    await t.pumpAndSettle();
+
+    expect(t.takeException(), isNull);
+    expect(c.read(launcherGateProvider), isFalse);
+    final created = c
+        .read(sessionsProvider)
+        .valueOrNull!
+        .sessions
+        .firstWhere((m) => m.name == 'Wizard Roster');
+    expect(created.enabledSystems.contains('funnel'), isFalse);
+  });
+
+  testWidgets(
+      'New campaign wizard (roster) works on a true first run (WelcomeCard showing)',
+      (t) async {
+    SharedPreferences.setMockInitialValues({});
+    final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
+      sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
+            active: 'a',
+            sessions: [SessionMeta(id: 'a', name: 'Campaign 1')],
+          ))),
+    ]);
+    addTearDown(c.dispose);
+    await _pump(t, c);
+
+    // Sanity: this really is the first-run state the bug report describes.
+    // (The AI offer is gated behind the welcome card, so it stays put here.)
+    expect(find.text('Welcome'), findsOneWidget);
+
+    await t.scrollUntilVisible(find.byKey(const Key('launcher-new')), 200,
+        scrollable: find.byType(Scrollable));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('launcher-new')));
+    await t.pumpAndSettle();
+    await t.enterText(
+        find.byKey(const Key('new-campaign-name')), 'First Run Roster');
+    await t.tap(find.byKey(const Key('new-stance-solo-member')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-next'))); // -> start
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('new-start-roster')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('wizard-create')));
+    await t.pumpAndSettle();
+
+    expect(t.takeException(), isNull);
+    expect(c.read(launcherGateProvider), isFalse);
+    final sessions = c.read(sessionsProvider).valueOrNull!.sessions;
+    expect(sessions.any((m) => m.name == 'First Run Roster'), isTrue,
+        reason: 'Campaign should exist after Create: $sessions');
   });
 }

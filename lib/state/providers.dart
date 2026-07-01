@@ -1511,6 +1511,27 @@ class WelcomeSeenNotifier extends AsyncNotifier<bool> {
 final welcomeSeenProvider =
     AsyncNotifierProvider<WelcomeSeenNotifier, bool>(WelcomeSeenNotifier.new);
 
+/// App-global flag: the first-run "turn on AI enhancements" offer dialog has
+/// been shown once (accepted or dismissed). Same posture as
+/// [welcomeSeenProvider] — per-device, NOT session-scoped, NOT exported. Keeps
+/// the offer to a single appearance so it never nags.
+class AiOfferSeenNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.ai_offer_seen.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> markSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, true);
+    state = const AsyncData(true);
+  }
+}
+
+final aiOfferSeenProvider =
+    AsyncNotifierProvider<AiOfferSeenNotifier, bool>(AiOfferSeenNotifier.new);
+
 /// App-global flag: the Track-home orientation card has been dismissed.
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class TrackHelpSeenNotifier extends AsyncNotifier<bool> {

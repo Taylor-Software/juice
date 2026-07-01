@@ -15,7 +15,7 @@ import 'journal_search.dart';
 import 'models.dart';
 
 /// Hard caps on the prompt's `recall:` block. AI is desktop/mobile-only now
-/// (Gemma 4 E2B, ample context window) — these were tiny holdovers from the
+/// (Gemma 4 E4B, ample context window) — these were tiny holdovers from the
 /// retired ~1280-token web model and have been loosened to feed real grounding.
 const int kRecallMaxEntries = 6;
 const int kRecallMaxChars = 280;
@@ -106,7 +106,7 @@ const List<String> kLenses = <String>[
 
 /// Role + rules + JSON shape + two compact few-shot examples. Examples move
 /// small-model quality more than rules do. Kept reasonably tight for the
-/// on-device Gemma 4 E2B model (desktop/mobile only; web ships no AI).
+/// on-device Gemma 4 E4B model (desktop/mobile only; web ships no AI).
 const String oracleSystemInstruction = '''
 You interpret oracle results for a solo tabletop RPG player journaling their
 own story. You offer possibilities; the player decides what is true. Never
