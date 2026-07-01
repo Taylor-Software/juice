@@ -62,7 +62,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
     final scene = activeSceneEntry(journal, ctx?.activeSceneId);
     final threads = ref.watch(threadsProvider).valueOrNull ?? const [];
     final tallied = threads.where((t) => t.tally != null).toList();
-    final aiReady = ref.watch(aiReadyProvider);
+    final aiReady = ref.watch(interpretReadyProvider);
     final odds = ref.watch(_loopOddsProvider);
     final last = ref.watch(_loopLastProvider);
     final tallyRoll = ref.watch(_loopTallyRollProvider);
@@ -187,26 +187,30 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                         : t.tally!.failed
                             ? 'Failed'
                             : t.tally!.label),
-                    trailing: Wrap(crossAxisAlignment: WrapCrossAlignment.center, children: [
-                      IconButton(
-                        key: Key('loop-task-dec-${t.id}'),
-                        icon: const Icon(Icons.remove),
-                        onPressed: () =>
-                            ref.read(threadsProvider.notifier).adjustTally(t.id, -1),
-                      ),
-                      IconButton(
-                        key: Key('loop-task-inc-${t.id}'),
-                        icon: const Icon(Icons.add),
-                        onPressed: () =>
-                            ref.read(threadsProvider.notifier).adjustTally(t.id, 1),
-                      ),
-                      IconButton(
-                        key: Key('loop-task-roll-${t.id}'),
-                        icon: const Icon(Icons.casino_outlined),
-                        tooltip: 'Tally roll',
-                        onPressed: () => _tallyRoll(t),
-                      ),
-                    ]),
+                    trailing: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          IconButton(
+                            key: Key('loop-task-dec-${t.id}'),
+                            icon: const Icon(Icons.remove),
+                            onPressed: () => ref
+                                .read(threadsProvider.notifier)
+                                .adjustTally(t.id, -1),
+                          ),
+                          IconButton(
+                            key: Key('loop-task-inc-${t.id}'),
+                            icon: const Icon(Icons.add),
+                            onPressed: () => ref
+                                .read(threadsProvider.notifier)
+                                .adjustTally(t.id, 1),
+                          ),
+                          IconButton(
+                            key: Key('loop-task-roll-${t.id}'),
+                            icon: const Icon(Icons.casino_outlined),
+                            tooltip: 'Tally roll',
+                            onPressed: () => _tallyRoll(t),
+                          ),
+                        ]),
                   ),
                 if (tallyRoll != null)
                   Padding(

@@ -610,9 +610,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Widget build(BuildContext context) {
     final async = ref.watch(journalProvider);
     // Re-render AI affordances (Interpret / Voice / recap) as the AI-ready
-    // state flips (download completes, toggle changes). _canVoice/canInterpret
-    // read aiReadyProvider; this watch is what triggers the rebuild.
+    // state flips (download completes, toggle changes). _canVoice reads
+    // aiReadyProvider; canInterpret reads interpretReadyProvider — both
+    // watched here so either flip triggers a rebuild.
     ref.watch(aiReadyProvider);
+    ref.watch(interpretReadyProvider);
     // Switching campaigns is a fresh "visit": re-decide the recap offer.
     ref.listen(sessionsProvider.select((s) => s.valueOrNull?.active),
         (prev, next) {
@@ -934,7 +936,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   PopupMenuButton<String> _entryMenu(JournalEntry e, List<Thread> threads,
       {bool onCard = false}) {
     final canInterpret =
-        e.kind == JournalKind.result && ref.read(aiReadyProvider);
+        e.kind == JournalKind.result && ref.read(interpretReadyProvider);
     final saveAs = _saveAsKind(e);
     return PopupMenuButton<String>(
       onSelected: (action) => _onAction(action, e, threads),
@@ -1097,7 +1099,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           );
         }
         if (p != null && p['v'] == 1 && p['rolls'] is List) {
-          final canInterpret = ref.read(aiReadyProvider);
+          final canInterpret = ref.read(interpretReadyProvider);
           return PayloadCard(
             entry: e,
             extras: extras,
