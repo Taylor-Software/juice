@@ -31,6 +31,7 @@ import '../engine/system_primer.dart';
 import '../engine/quick_ref.dart';
 import '../engine/spell.dart';
 import '../engine/content_registry.dart';
+import '../engine/loop_kit.dart';
 import '../engine/tally.dart';
 import 'blob_store.dart';
 import 'campaign_bundle.dart';
@@ -1399,6 +1400,23 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
   }
 
   Future<void> add(UserRefCard c) async => _save([...await _ready, c]);
+
+  /// Append [incoming] cards with fresh ids (import never clobbers existing).
+  /// Mirrors CustomTablesNotifier.addAll.
+  Future<void> addAll(List<UserRefCard> incoming) async {
+    if (incoming.isEmpty) return;
+    final base = DateTime.now().microsecondsSinceEpoch;
+    final fresh = [
+      for (var i = 0; i < incoming.length; i++)
+        UserRefCard(
+          id: '${base + i}',
+          title: incoming[i].title,
+          sections: incoming[i].sections,
+        ),
+    ];
+    await _save([...await _ready, ...fresh]);
+  }
+
   Future<void> remove(String id) async =>
       _save((await _ready).where((c) => c.id != id).toList());
   Future<void> replace(UserRefCard c) async =>
@@ -1408,6 +1426,31 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
 final userRefCardsProvider =
     AsyncNotifierProvider<UserRefCardsNotifier, List<UserRefCard>>(
         UserRefCardsNotifier.new);
+
+/// The bundled asset filenames for the seed loop kits (populated in a later
+/// task). Adding a new seed kit means adding its filename here AND to
+/// pubspec.yaml's assets list.
+const kKitAssetPaths = <String>[
+  'assets/kits/ironsworn-ash-and-embers.json',
+  'assets/kits/ironsworn-salt-and-storm.json',
+  'assets/kits/dnd-sunken-crypt.json',
+  'assets/kits/dnd-market-of-masks.json',
+  'assets/kits/cairn-lonely-road.json',
+  'assets/kits/cairn-black-bramble.json',
+];
+
+/// Loads the bundled seed loop kits. Asset-loading glue (like
+/// systemFoesProvider/systemSpellsProvider) — not unit-tested directly;
+/// decodeLoopKit's tolerant-decode logic is what's actually under test.
+final kitsProvider = FutureProvider<List<LoopKit>>((ref) async {
+  final kits = <LoopKit>[];
+  for (final path in kKitAssetPaths) {
+    final raw = await rootBundle.loadString(path);
+    final kit = decodeLoopKit(raw);
+    if (kit != null) kits.add(kit);
+  }
+  return kits;
+});
 
 /// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
 /// App-global (NOT session-scoped, NOT exported) — same posture as

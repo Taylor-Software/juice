@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/journal_search.dart';
+import '../engine/loop_kit.dart';
 import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import 'providers.dart';
@@ -61,6 +62,37 @@ class PlayContextNotifier extends AsyncNotifier<PlayContext> {
 final playContextProvider =
     AsyncNotifierProvider<PlayContextNotifier, PlayContext>(
         PlayContextNotifier.new);
+
+/// Applies a decoded [LoopKit]: appends its tables/refCards to the app-global
+/// stores, and — if it carries starter-scene text — creates a new scene
+/// journal entry and points the PlayContext spine at it. This is the single
+/// orchestration point both the creation-wizard picker and the drawer's
+/// import dialog call. Lives here (not providers.dart) for the same reason as
+/// [activeCharacterLineProvider] above — it needs [playContextProvider].
+Future<void> applyLoopKit(WidgetRef ref, LoopKit kit) async {
+  if (kit.tables.isNotEmpty) {
+    await ref.read(customTablesProvider.notifier).addAll(kit.tables);
+  }
+  if (kit.refCards.isNotEmpty) {
+    await ref.read(userRefCardsProvider.notifier).addAll(kit.refCards);
+  }
+  // Ensure both providers are built (so `.value` is non-null for callers)
+  // even when this kit has no scene text to apply.
+  await ref.read(journalProvider.future);
+  await ref.read(playContextProvider.future);
+  if (kit.sceneTitle.trim().isEmpty && kit.sceneBody.trim().isEmpty) return;
+  final id = await ref.read(journalProvider.notifier).addScene(kit.sceneTitle);
+  if (kit.sceneBody.isNotEmpty) {
+    // _persist (inside addScene) sets journalProvider's state synchronously
+    // before addScene returns, so .value is already the fresh list here.
+    final entry =
+        ref.read(journalProvider).value!.firstWhere((e) => e.id == id);
+    await ref
+        .read(journalProvider.notifier)
+        .replace(entry.copyWith(body: kit.sceneBody));
+  }
+  await ref.read(playContextProvider.notifier).setActiveScene(id);
+}
 
 /// The active campaign's PC line for AI context: resolves
 /// [PlayContext.activeCharacterId] against the roster, '' when unset/missing.

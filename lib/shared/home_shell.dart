@@ -222,9 +222,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         tone: result.tone);
     ref.read(shellRouteProvider.notifier).landFor(result.mode);
     if (result.start == 'funnel') {
-      await ref
-          .read(charactersProvider.notifier)
-          .addFunnel(result.seedSystem);
+      await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
       ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
     }
     if (dialogContext.mounted) Navigator.of(dialogContext).pop();
@@ -659,8 +657,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Find tools & rolls',
-            onPressed: () => showToolSearchSheet(context,
-                buildToolRegistry(family: family, systems: systems),
+            onPressed: () => showToolSearchSheet(
+                context, buildToolRegistry(family: family, systems: systems),
                 oracle: widget.oracle),
           ),
           IconButton(
@@ -854,17 +852,14 @@ const kSystemBlurbs = <String, String>{
       'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
   'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
       'demonic pacts, Fate Points. Facts-only mechanics.',
-  'dcc':
-      'Dungeon Crawl Classics: 0-level funnel, dice chain, mighty deeds, '
-          'spellburn, disapproval. Facts-only mechanics. '
-          'Not affiliated with Goodman Games.',
+  'dcc': 'Dungeon Crawl Classics: 0-level funnel, dice chain, mighty deeds, '
+      'spellburn, disapproval. Facts-only mechanics. '
+      'Not affiliated with Goodman Games.',
   'cards': 'Card oracles: draw from a 52-card deck or a 78-card tarot.',
-  'custom':
-      'Custom / Homebrew sheet: build your own from configurable blocks — '
-          'stats, HP, rolls, luck, timers, conditions. Facts-only; you author all content.',
-  'funnel':
-      '0-Level Funnel: run a pack of doomed peasants, then graduate '
-          'survivors into full characters of any enabled system.',
+  'custom': 'Custom / Homebrew sheet: build your own from configurable blocks — '
+      'stats, HP, rolls, luck, timers, conditions. Facts-only; you author all content.',
+  'funnel': '0-Level Funnel: run a pack of doomed peasants, then graduate '
+      'survivors into full characters of any enabled system.',
 };
 
 /// Resolves a [SessionMeta.identityIcon] key (see identityIconKeyFor) to an
@@ -1140,19 +1135,19 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         .where((e) => e.value == SystemCategory.ruleset)
         .map((e) => e.key)
         .toList();
-    // The wedge: three rulesets front-and-centre (Ironsworn family, D&D 5e,
-    // Cairn). The rest are facts-only sheets that ship no rulebook content, so
-    // they live behind an "Experimental" drawer to keep the first choice small.
-    // Nothing about registration changes — these still fully work when picked.
-    const coreRulesets = {'ironsworn', 'dnd', 'cairn'};
+    // The wedge: rulesets front-and-centre (Ironsworn family, D&D 5e, Cairn,
+    // OSE/B-X — kept alongside D&D 5e per user request). The rest are
+    // facts-only sheets that ship no rulebook content, so they live behind an
+    // "Experimental" drawer to keep the first choice small. Nothing about
+    // registration changes — these still fully work when picked.
+    const coreRulesets = {'ironsworn', 'dnd', 'cairn', 'ose'};
     final coreIds = rulesetIds.where(coreRulesets.contains).toList();
     final experimentalIds =
         rulesetIds.where((id) => !coreRulesets.contains(id)).toList();
     // 'funnel' excluded: step 2 (start choice) manages it. Toggling it here
     // and picking roster would silently enable the funnel verb with no character.
     final addonIds = kSystemCategory.entries
-        .where(
-            (e) => e.value != SystemCategory.ruleset && e.key != 'funnel')
+        .where((e) => e.value != SystemCategory.ruleset && e.key != 'funnel')
         .map((e) => e.key)
         .toList();
 
@@ -1351,9 +1346,8 @@ class _StanceCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
+              color:
+                  selected ? colorScheme.primary : colorScheme.outlineVariant,
               width: selected ? 1.5 : 1,
             ),
           ),
@@ -1419,9 +1413,8 @@ class _StartCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
+              color:
+                  selected ? colorScheme.primary : colorScheme.outlineVariant,
               width: selected ? 1.5 : 1,
             ),
           ),
