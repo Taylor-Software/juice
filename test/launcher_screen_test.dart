@@ -103,14 +103,14 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.run);
   });
 
-  testWidgets('switching to a party campaign lands on Sheet', (t) async {
+  testWidgets('switching to a party campaign lands on Play', (t) async {
     final c = modedContainer();
     addTearDown(c.dispose);
     await _pump(t, c);
     await t.tap(find.byKey(const Key('launcher-campaign-b')));
     await t.pumpAndSettle();
     expect(c.read(sessionsProvider).valueOrNull?.active, 'b');
-    expect(c.read(shellRouteProvider).destination, Destination.sheet);
+    expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
   testWidgets('New and Import actions are present', (t) async {

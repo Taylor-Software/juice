@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/features/loop_bar.dart';
+import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 
@@ -27,6 +28,35 @@ void main() {
     await tester.tap(find.byKey(const Key('loop-steps')));
     await tester.pumpAndSettle();
   }
+
+  // Regression: the app theme sets FilledButton.minimumSize = Size.fromHeight
+  // (width == infinity). Under that theme a FilledButton must not sit in a
+  // width-unbounding parent (Row/Wrap), or layout throws "forces an infinite
+  // width". This pumps LoopBar under the real AppTheme and exercises the
+  // always-visible Next-beat button, the beat menu, the Steps cards, and the
+  // inline interpret card's Keep button — all themed-FilledButton hot spots.
+  testWidgets('no infinite-width under AppTheme (Next-beat + interpret)',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    final fake = FakeInterpreterService();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+            body: SingleChildScrollView(child: LoopBar())),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull); // Next-beat renders themed
+    // Open the beat menu (context actions render as buttons).
+    await tester.tap(find.byKey(const Key('loop-next-beat')));
+    await tester.pumpAndSettle();
+    // Expand the Steps tile (themed FilledButtons in _step Wraps).
+    await tester.tap(find.byKey(const Key('loop-steps')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('renders the five steps', (tester) async {
     await pump(tester);

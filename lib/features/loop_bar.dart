@@ -80,16 +80,19 @@ class _LoopBarState extends ConsumerState<LoopBar> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
+          // A themed FilledButton has minimumSize width == infinity
+          // (Size.fromHeight in theme.dart), so it must NOT sit in a width-
+          // unbounding parent like Row/Wrap (which would force infinite width).
+          // As a direct Padding child it clamps to the available width — a
+          // full-width primary "Next beat" button, which is the intended look.
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-          child: Row(children: [
-            FilledButton.icon(
-              key: const Key('loop-next-beat'),
-              icon: const Icon(Icons.bolt),
-              label: const Text('Next beat'),
-              onPressed: () =>
-                  ref.read(_loopBeatOpenProvider.notifier).update((v) => !v),
-            ),
-          ]),
+          child: FilledButton.icon(
+            key: const Key('loop-next-beat'),
+            icon: const Icon(Icons.bolt),
+            label: const Text('Next beat'),
+            onPressed: () =>
+                ref.read(_loopBeatOpenProvider.notifier).update((v) => !v),
+          ),
         ),
         if (beatOpen)
           Padding(
@@ -524,6 +527,11 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
                     const SizedBox(width: 8),
                     FilledButton(
                       key: const Key('loop-interpret-keep'),
+                      // Override the theme's full-width (Size.fromHeight)
+                      // minimumSize so this button can sit natural-width beside
+                      // Discard in a Row without forcing an infinite width.
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 40)),
                       onPressed: () async {
                         await ref.read(journalProvider.notifier).addResult(
                               'Oracle reading',

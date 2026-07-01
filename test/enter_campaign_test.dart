@@ -38,10 +38,10 @@ void main() {
       hasEncounter: false,
     );
 
-    // party mode without encounter → Sheet destination
+    // party mode without encounter → Play (journal) destination
     expect(
       container.read(shellRouteProvider).destination,
-      Destination.sheet,
+      Destination.journal,
     );
     // nothing pushed onto the navigator
     expect(nav.canPop(), isFalse);
