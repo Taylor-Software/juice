@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/oracle_interpreter.dart';
+import 'cloud_interpreter.dart';
 import 'interpreter_gemma.dart';
+import 'providers.dart';
 
 enum InterpreterPhase {
   /// Model not on disk; user consent (download) required.
@@ -86,12 +88,85 @@ abstract class InterpreterService {
   Future<void> dispose();
 }
 
+/// Wraps an on-device [InterpreterService], routing ONLY interpret() to a
+/// [CloudInterpreter] when cloud is enabled and a key is available; every
+/// other method delegates straight through unchanged. Takes plain closures
+/// (not a Riverpod Ref) so it's constructible and testable without any
+/// Riverpod machinery — see interpreterServiceProvider below for how the real
+/// app wires the closures to actual providers.
+class RoutingInterpreterService implements InterpreterService {
+  RoutingInterpreterService(
+    this._onDevice, {
+    required bool Function() cloudEnabled,
+    required Future<String?> Function() cloudApiKey,
+    CloudInterpreter? cloudInterpreter,
+  })  : _cloudEnabled = cloudEnabled,
+        _cloudApiKey = cloudApiKey,
+        _cloud = cloudInterpreter ?? const CloudInterpreter();
+
+  final InterpreterService _onDevice;
+  final bool Function() _cloudEnabled;
+  final Future<String?> Function() _cloudApiKey;
+  final CloudInterpreter _cloud;
+
+  @override
+  Future<List<OracleInterpretation>> interpret(OracleSeed seed) async {
+    if (_cloudEnabled()) {
+      final key = await _cloudApiKey();
+      if (key != null && key.isNotEmpty) {
+        return _cloud.interpret(seed, key);
+      }
+    }
+    return _onDevice.interpret(seed);
+  }
+
+  @override
+  ValueListenable<InterpreterStatus> get status => _onDevice.status;
+
+  @override
+  String get downloadLabel => _onDevice.downloadLabel;
+
+  @override
+  Future<void> refresh() => _onDevice.refresh();
+
+  @override
+  Future<void> warmUp() => _onDevice.warmUp();
+
+  @override
+  Future<String> voiceLine(VoiceSeed seed) => _onDevice.voiceLine(seed);
+
+  @override
+  Future<String> summarize(List<String> entries) =>
+      _onDevice.summarize(entries);
+
+  @override
+  Future<String> gmChat(GmChatSeed seed) => _onDevice.gmChat(seed);
+
+  @override
+  Future<String> narrate(NarrateSeed seed) => _onDevice.narrate(seed);
+
+  @override
+  Future<String> fleshOut(FleshOutSeed seed) => _onDevice.fleshOut(seed);
+
+  @override
+  Future<RankResult> rankSuggestions(RankSuggestionsSeed seed) =>
+      _onDevice.rankSuggestions(seed);
+
+  @override
+  Future<void> dispose() => _onDevice.dispose();
+}
+
 /// App-global service. Overridden with a fake in every widget test —
 /// the real implementation touches platform channels.
 final interpreterServiceProvider = Provider<InterpreterService>((ref) {
-  final service = GemmaInterpreterService();
-  ref.onDispose(service.dispose);
-  return service;
+  final onDevice = GemmaInterpreterService();
+  ref.onDispose(onDevice.dispose);
+  return RoutingInterpreterService(
+    onDevice,
+    cloudEnabled: () =>
+        ref.read(cloudInterpretEnabledProvider).valueOrNull ?? false,
+    cloudApiKey: () => ref.read(cloudApiKeyProvider.future),
+  );
 });
 
 /// Debug-only eval over the engine's seed set (spec "Quality bar").
