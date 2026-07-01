@@ -29,6 +29,10 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      // The sheet's readiness gate now routes through interpretReadyProvider
+      // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
+      // alone — so tests exercising the "ready" path need the toggle on too.
+      'juice.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(initial: initial);
     await tester.pumpWidget(ProviderScope(
@@ -123,6 +127,10 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      // The sheet's readiness gate now routes through interpretReadyProvider
+      // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
+      // alone — so tests exercising the "ready" path need the toggle on too.
+      'juice.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -147,6 +155,10 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      // The sheet's readiness gate now routes through interpretReadyProvider
+      // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
+      // alone — so tests exercising the "ready" path need the toggle on too.
+      'juice.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
