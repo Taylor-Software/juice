@@ -12,7 +12,7 @@ import 'quick_ref.dart';
 
 /// A shareable bundle: tables + ref cards + a starter scene. Importing one
 /// appends its tables/refCards to the app-global stores and creates+activates
-/// its scene as a new journal entry (see `applyLoopKit` in providers.dart).
+/// its scene as a new journal entry (see `applyLoopKit` in play_context.dart).
 class LoopKit {
   const LoopKit({
     required this.name,
