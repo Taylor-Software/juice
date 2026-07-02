@@ -382,6 +382,7 @@ class _SidekickScreenState extends ConsumerState<SidekickScreen> {
           children: [
             FilledButton(
               key: const Key('sd-hex-step'),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
               onPressed: () => _step(data, selected),
               child: const Text('Step (2d6)'),
             ),

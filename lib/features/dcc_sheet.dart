@@ -244,6 +244,8 @@ class DccSheetView extends ConsumerWidget {
         ]),
         FilledButton.icon(
           key: const Key('dcc-deed-roll'),
+          // Natural width inside the section Wrap (see loop_bar note).
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
           icon: const Icon(Icons.casino_outlined, size: 18),
           label: const Text('Attack + Deed'),
           onPressed: () {
@@ -287,6 +289,7 @@ class DccSheetView extends ConsumerWidget {
         ),
         FilledButton.icon(
           key: const Key('dcc-spell-check-roll'),
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
           icon: const Icon(Icons.auto_awesome, size: 18),
           label: const Text('Spell check'),
           onPressed: () async {
@@ -328,6 +331,7 @@ class DccSheetView extends ConsumerWidget {
         ),
         FilledButton.icon(
           key: const Key('dcc-disapproval-roll'),
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
           icon: const Icon(Icons.casino_outlined, size: 18),
           label: const Text('Check'),
           onPressed: () {

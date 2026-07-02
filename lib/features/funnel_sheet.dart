@@ -165,6 +165,7 @@ class FunnelSheetView extends ConsumerWidget {
               if (p.alive)
                 FilledButton(
                   key: Key('funnel-peasant-$i-graduate'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                   onPressed: () => _graduateDialog(context, ref, s, i),
                   child: const Text('Graduate →'),
                 ),

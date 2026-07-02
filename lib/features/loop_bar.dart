@@ -129,6 +129,10 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                 scene == null ? 'No scene yet.' : scene.title, [
               FilledButton.tonalIcon(
                 key: const Key('loop-new-scene'),
+                // Natural width in the _step Wrap (the app-wide filledButtonTheme
+                // full-width Size.fromHeight minimumSize would otherwise stretch
+                // it to the whole run).
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                 icon: const Icon(Icons.add),
                 label: const Text('New scene'),
                 onPressed: _newScene,
@@ -150,6 +154,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
               ),
               FilledButton(
                 key: const Key('loop-ask'),
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                 onPressed: _ask,
                 child: const Text('Ask'),
               ),
