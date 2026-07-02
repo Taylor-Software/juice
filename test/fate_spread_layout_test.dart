@@ -2,27 +2,26 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/fate_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Regression guard for the "BoxConstraints forces an infinite width" crash in
-/// the Cards -> Spreads row (fate_screen.dart). The draw-spread FilledButton is
-/// a NON-flex child of a Row whose other child (the spread picker) is Expanded;
-/// the flex sizing pass measures the button with unbounded width, and the
-/// app-wide filledButtonTheme minimumSize (Size.fromHeight => infinite min
-/// width) then throws.
+import 'support/app_harness.dart';
+
+/// Layout regression guard for the theme-induced "BoxConstraints forces an
+/// infinite width" crash.
 ///
-/// This test MUST pump under the real [AppTheme]. The sibling fate_cards_test
-/// uses MaterialApp's default theme (no filledButtonTheme), so it never
-/// reproduced the crash even though it taps the same button — which is exactly
-/// why the bug shipped.
+/// The app theme makes every FilledButton full-width (min-width == infinity),
+/// so the `cards-draw-spread` button — a non-flex child of a Row beside an
+/// Expanded dropdown — throws at layout time unless it pins a finite
+/// minimumSize. This pumps FateScreen under the REAL theme via [appHarness];
+/// a plain `MaterialApp()` (default theme) can NOT reproduce the crash, which
+/// is why `fate_cards_test` tapped the same button yet the bug shipped.
+/// See lib/shared/theme.dart and lib/features/fate_screen.dart.
 void main() {
-  testWidgets('Spreads row lays out under AppTheme without infinite width',
+  testWidgets('FateScreen cards section lays out under the app theme',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -36,15 +35,18 @@ void main() {
     final data = OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
             as Map<String, dynamic>);
-    await tester.pumpWidget(ProviderScope(
-      child: MaterialApp(
-        theme: AppTheme.light(),
-        home: Scaffold(body: FateScreen(oracle: Oracle(data))),
-      ),
-    ));
+
+    await tester.pumpApp(FateScreen(oracle: Oracle(data)));
     await tester.pumpAndSettle();
 
+    // The cards section (incl. the Draw-spread Row) built without a layout
+    // assertion firing.
     expect(tester.takeException(), isNull);
     expect(find.byKey(const Key('cards-draw-spread')), findsOneWidget);
+
+    // Drawing a spread builds the Log-spread affordance too — still no crash.
+    await tester.tap(find.byKey(const Key('cards-draw-spread')));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }
