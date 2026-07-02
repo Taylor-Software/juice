@@ -212,6 +212,7 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
                 children: [
                   FilledButton(
                     key: const Key('pe-roll'),
+                    style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                     onPressed: _roll,
                     child: const Text('Roll d6'),
                   ),
@@ -651,6 +652,7 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
               children: [
                 FilledButton(
                   key: const Key('pe-act'),
+                  style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                   onPressed: () => _act(data, selected),
                   child: const Text('ACT'),
                 ),
