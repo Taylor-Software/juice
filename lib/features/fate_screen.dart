@@ -546,6 +546,16 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         key: const Key('cards-draw-spread'),
                         icon: const Icon(Icons.dashboard_outlined),
                         label: const Text('Draw spread'),
+                        // The app-wide FilledButton theme sets a full-width
+                        // minimumSize (Size.fromHeight in theme.dart => infinite
+                        // min-width). As a non-flex child of a Row with an
+                        // Expanded sibling (the picker), the flex sizing pass
+                        // measures this button with unbounded width, so that
+                        // infinite min-width throws "forces an infinite width".
+                        // Pin a finite min-width so it sits natural-width beside
+                        // the dropdown.
+                        style: FilledButton.styleFrom(
+                            minimumSize: const Size(64, 48)),
                         onPressed: _drawSpread,
                       ),
                     ],
