@@ -12,6 +12,8 @@ import 'package:juice_oracle/shared/card_image.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/app_harness.dart';
+
 Future<ProviderContainer> pumpFate(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
@@ -25,9 +27,10 @@ Future<ProviderContainer> pumpFate(WidgetTester tester) async {
   final data = OracleData(
       jsonDecode(File('assets/oracle_data.json').readAsStringSync())
           as Map<String, dynamic>);
-  await tester.pumpWidget(ProviderScope(
-      child:
-          MaterialApp(home: Scaffold(body: FateScreen(oracle: Oracle(data))))));
+  // Pump under the REAL app theme (via appHarness) so theme-induced layout
+  // crashes — e.g. the full-width filledButtonTheme forcing an infinite width
+  // on the `cards-draw-spread` Row button — surface here instead of shipping.
+  await tester.pumpApp(FateScreen(oracle: Oracle(data)));
   await tester.pumpAndSettle();
   return ProviderScope.containerOf(tester.element(find.byType(FateScreen)));
 }

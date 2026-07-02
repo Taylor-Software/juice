@@ -102,6 +102,11 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
             Row(children: [
               FilledButton(
                 key: const Key('settings-cloud-key-save'),
+                // Override the theme's full-width (Size.fromHeight) minimumSize
+                // so this button sizes to its content inside the Row instead of
+                // forcing an infinite width beside the Clear button.
+                style:
+                    FilledButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () async {
                   final v = _keyCtrl.text.trim();
                   if (v.isEmpty) return;
