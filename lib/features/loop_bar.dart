@@ -574,24 +574,57 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
       );
 }
 
-/// The "Play" destination body: the loop controls above the live journal feed.
+/// The "Play" destination body: the collapsible Solo-Loop bar above the live
+/// journal feed.
 ///
-/// Layout: [LoopBar] scrolls within its natural min-height (but can shrink if
-/// needed), then [JournalScreen] fills the remaining space.
-class PlayScreen extends StatelessWidget {
+/// Layout: a slim toggle header, then (when expanded) the [LoopBar] at its
+/// natural height capped at ~45% of the play area (scrolling internally beyond
+/// that), then [JournalScreen] fills — and owns the scroll of — the rest.
+///
+/// The loop bar is a NON-flex child so the journal always keeps priority. An
+/// earlier `Flexible(fit: loose)` had the DEFAULT flex: 1, identical to the
+/// journal's `Expanded` flex: 1, so the column split its height ~50/50 — the
+/// loop bar reserved half the screen and squeezed the feed to a sliver that
+/// couldn't scroll. Collapse state is sticky ([loopBarExpandedProvider]).
+class PlayScreen extends ConsumerWidget {
   const PlayScreen({super.key});
   @override
-  Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Flexible(
-          fit: FlexFit.loose,
-          child: SingleChildScrollView(
-            child: LoopBar(),
-          ),
-        ),
-        Expanded(child: JournalScreen()),
-      ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expanded = ref.watch(loopBarExpandedProvider).valueOrNull ?? true;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cap = constraints.maxHeight.isFinite
+            ? constraints.maxHeight * 0.45
+            : double.infinity;
+        return Column(
+          children: [
+            InkWell(
+              key: const Key('loop-collapse-toggle'),
+              onTap: () => ref
+                  .read(loopBarExpandedProvider.notifier)
+                  .setExpanded(!expanded),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+                child: Row(
+                  children: [
+                    Icon(expanded ? Icons.expand_less : Icons.expand_more,
+                        size: 20),
+                    const SizedBox(width: 6),
+                    Text('Solo Loop',
+                        style: Theme.of(context).textTheme.labelMedium),
+                  ],
+                ),
+              ),
+            ),
+            if (expanded)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: cap),
+                child: const SingleChildScrollView(child: LoopBar()),
+              ),
+            const Expanded(child: JournalScreen()),
+          ],
+        );
+      },
     );
   }
 }
