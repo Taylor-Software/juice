@@ -1592,6 +1592,28 @@ final assistantRailExpandedProvider =
     AsyncNotifierProvider<AssistantRailExpandedNotifier, bool>(
         AssistantRailExpandedNotifier.new);
 
+/// App-global sticky state for the Play screen's Solo-Loop bar (expanded vs
+/// collapsed). Default true (expanded) so new users discover the loop controls;
+/// collapsing reclaims the vertical space for the journal feed. Per-device,
+/// NOT session-scoped — same posture as [assistantRailExpandedProvider].
+class LoopBarExpandedNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.loopbar_expanded.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? true;
+
+  Future<void> setExpanded(bool value) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, value);
+    state = AsyncData(value);
+  }
+}
+
+final loopBarExpandedProvider =
+    AsyncNotifierProvider<LoopBarExpandedNotifier, bool>(
+        LoopBarExpandedNotifier.new);
+
 /// The interpreter's status as a reactive provider (the service exposes it as
 /// a ValueListenable). Lets AI affordances rebuild as the phase flips.
 final interpreterStatusProvider = StreamProvider<InterpreterStatus>((ref) {
