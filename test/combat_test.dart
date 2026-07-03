@@ -71,4 +71,31 @@ void main() {
       );
     });
   });
+
+  group('attackDiceFromDetail', () {
+    test('d20 token is the attack, the other die is damage', () {
+      final r = attackDiceFromDetail('Longbow 1d20+5, 1d8+3');
+      expect(r.attack, '1d20+5');
+      expect(r.damage, '1d8+3');
+    });
+    test('a bare +N modifier is not a die; only damage is filled', () {
+      final r = attackDiceFromDetail('Scimitar +4, 1d6+2 slashing');
+      expect(r.attack, isNull);
+      expect(r.damage, '1d6+2');
+    });
+    test('damage-only attack fills damage, leaves attack null', () {
+      final r = attackDiceFromDetail('Claw 2d4');
+      expect(r.attack, isNull);
+      expect(r.damage, '2d4');
+    });
+    test('attack-only detail fills attack, leaves damage null', () {
+      final r = attackDiceFromDetail('1d20+7 to hit');
+      expect(r.attack, '1d20+7');
+      expect(r.damage, isNull);
+    });
+    test('no dice yields two nulls', () {
+      expect(attackDiceFromDetail('grapple, no damage').attack, isNull);
+      expect(attackDiceFromDetail('').damage, isNull);
+    });
+  });
 }
