@@ -1421,6 +1421,20 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
     });
   }
 
+  /// Fills the dice fields from a stat-block attack's freeform detail and
+  /// clears any prior roll so the next Roll uses the new dice. A field is only
+  /// overwritten when a token was found (a damage-only attack keeps the 1d20
+  /// attack default).
+  void _pickAttack(Attack a) {
+    final d = attackDiceFromDetail(a.detail);
+    setState(() {
+      if (d.attack != null) _atk.text = d.attack!;
+      if (d.damage != null) _dmg.text = d.damage!;
+      _attackTotal = null;
+      _hit = null;
+    });
+  }
+
   /// Applies [damage] to [_target]'s HP pool — a linked character's pool via
   /// [characterHpPool]/[Character.withHpDelta], or its own [CharTrack]. Marks
   /// the target defeated at 0. Returns (before, after) HP, or null if it has no
@@ -1524,12 +1538,24 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
                 }
               },
             ),
+            // Tap an attack to prefill the dice fields from its freeform detail.
             if (attacks.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  'Your attacks: ${attacks.map((a) => a.detail.isEmpty ? a.name : '${a.name} — ${a.detail}').join(' · ')}',
-                  style: Theme.of(context).textTheme.bodySmall,
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final (i, a) in attacks.indexed)
+                      ActionChip(
+                        key: Key('attack-pick-$i'),
+                        label: Text(a.name.isEmpty ? a.detail : a.name),
+                        visualDensity: VisualDensity.compact,
+                        materialTapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
+                        onPressed: () => _pickAttack(a),
+                      ),
+                  ],
                 ),
               ),
             const SizedBox(height: 12),
