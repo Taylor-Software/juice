@@ -447,16 +447,18 @@ Working rules for this repo:
   buttons), then on a hit roll damage (`attack-damage`) and apply it to the
   target's HP — linked `characterHpPool`/`Character.withHpDelta` or own
   `CharTrack.adjusted`, marking `defeated` at 0 — and log ONE `combat` journal
-  entry via `addResult`. Facts-only: NO stored attack stats (the attacker's
-  stat-block attacks are read-only reference text in the dialog), reuses the
-  existing dice path. The dialog's FilledButtons beside `Expanded` fields pin a
-  finite `minimumSize` (the theme full-width gotcha); the encounter row was
-  hardened for the extra action (HP steppers `FittedBox`-scaled on their own
-  line, trailing icons compacted) so it survives phone-width. Covered by
-  `test/combat_test.dart` + `test/encounter_attack_test.dart` — the latter pumps
-  `EncounterScreen` under the REAL `AppTheme` (catches theme-induced layout
-  crashes) and guards the narrow-width row. Deferred: rollable stat-block attacks
-  (prefill dice from `Attack.detail`), attacker-in-dialog picker, turn gating.
+  entry via `addResult`. Facts-only: NO stored attack stats. The attacker's
+  stat-block attacks show as tappable `attack-pick-<i>` chips that prefill the
+  attack + damage dice fields via the pure `attackDiceFromDetail` (`scanDice`-
+  based: first `d20` token → attack, first other die → damage; leaves a field's
+  default when no token parses). Reuses the existing dice path. The dialog's
+  FilledButtons beside `Expanded` fields pin a finite `minimumSize` (the theme
+  full-width gotcha); the encounter row was hardened for the extra action (HP
+  steppers `FittedBox`-scaled on their own line, trailing icons compacted) so it
+  survives phone-width. Covered by `test/combat_test.dart` +
+  `test/encounter_attack_test.dart` — the latter pumps `EncounterScreen` under
+  the REAL `AppTheme` (catches theme-induced layout crashes) and guards the
+  narrow-width row. Deferred: attacker-in-dialog picker, turn gating.
 - The **Bestiary library** (`Creature {id,name,statBlock,maxHp}` in `models.dart`,
   `BestiaryNotifier`/`bestiaryProvider` in `providers.dart`) is an **app-global**
   saved-creature store (key `juice.bestiary.v1`, NOT session-scoped, NOT in
