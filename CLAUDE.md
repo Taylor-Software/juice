@@ -438,6 +438,25 @@ Working rules for this repo:
   on the row as `enc-initmod-<id>` when nonzero); `rollInitiativeForAll` rolls
   `d20 + initMod` for unset combatants and tie-breaks by mod. See
   `docs/superpowers/specs/2026-06-28-initiative-modifiers-design.md`.
+- **Combat resolve** (pure `lib/engine/combat.dart`: `resolveHit(total, ac)` →
+  `AttackOutcome {hit,miss,unknown}` + `combatLogLine(...)`). The Encounter row's
+  `enc-attack-<id>` chip (in the subtitle Wrap, gated on `!c.defeated` + a live
+  target) opens `_AttackDialog`: pick a target, roll the attack (inline
+  `parseDice(text).roll(oracle.dice).total`), auto Hit/Miss vs the target's
+  `StatBlock.ac` (an int; `0` = unknown → manual `attack-hit`/`attack-miss`
+  buttons), then on a hit roll damage (`attack-damage`) and apply it to the
+  target's HP — linked `characterHpPool`/`Character.withHpDelta` or own
+  `CharTrack.adjusted`, marking `defeated` at 0 — and log ONE `combat` journal
+  entry via `addResult`. Facts-only: NO stored attack stats (the attacker's
+  stat-block attacks are read-only reference text in the dialog), reuses the
+  existing dice path. The dialog's FilledButtons beside `Expanded` fields pin a
+  finite `minimumSize` (the theme full-width gotcha); the encounter row was
+  hardened for the extra action (HP steppers `FittedBox`-scaled on their own
+  line, trailing icons compacted) so it survives phone-width. Covered by
+  `test/combat_test.dart` + `test/encounter_attack_test.dart` — the latter pumps
+  `EncounterScreen` under the REAL `AppTheme` (catches theme-induced layout
+  crashes) and guards the narrow-width row. Deferred: rollable stat-block attacks
+  (prefill dice from `Attack.detail`), attacker-in-dialog picker, turn gating.
 - The **Bestiary library** (`Creature {id,name,statBlock,maxHp}` in `models.dart`,
   `BestiaryNotifier`/`bestiaryProvider` in `providers.dart`) is an **app-global**
   saved-creature store (key `juice.bestiary.v1`, NOT session-scoped, NOT in
