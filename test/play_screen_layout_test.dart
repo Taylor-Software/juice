@@ -41,37 +41,40 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  testWidgets('loop bar is compact and the journal dominates the height',
+  testWidgets('loop bar is collapsed by default so the journal fills the height',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
-
-    final loopH = t.getSize(find.byType(LoopBar)).height;
-    final journalH = t.getSize(find.byType(JournalScreen)).height;
-    // The journal must dwarf the loop bar (the old 50/50 split made these
-    // roughly equal). The composer must be present at the bottom.
-    expect(journalH, greaterThan(loopH * 2),
-        reason: 'journal ($journalH) should dwarf loop bar ($loopH)');
-    expect(loopH, lessThan(260), reason: 'loop bar should be compact');
+    // Default is collapsed: no loop bar chrome, the journal owns the height and
+    // the composer is reachable at the bottom.
+    expect(find.byType(LoopBar), findsNothing);
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 
-  testWidgets('collapsing the loop bar hands its space to the journal',
+  testWidgets('expanding shows a compact loop bar the journal still dwarfs',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
-    final before = t.getSize(find.byType(JournalScreen)).height;
+    final collapsedJournalH = t.getSize(find.byType(JournalScreen)).height;
 
+    // Expand the loop bar via its sticky toggle.
     await t.tap(find.byKey(const Key('loop-collapse-toggle')));
     await t.pumpAndSettle();
 
-    expect(find.byType(LoopBar), findsNothing);
-    expect(t.getSize(find.byType(JournalScreen)).height, greaterThan(before));
+    final loopH = t.getSize(find.byType(LoopBar)).height;
+    final journalH = t.getSize(find.byType(JournalScreen)).height;
+    // Even expanded, the loop bar stays compact and the journal dominates (the
+    // old Flexible(flex:1) bug split the height ~50/50).
+    expect(journalH, greaterThan(loopH * 2),
+        reason: 'journal ($journalH) should dwarf loop bar ($loopH)');
+    expect(loopH, lessThan(260), reason: 'loop bar should be compact');
+    // Expanding took height away from the journal.
+    expect(journalH, lessThan(collapsedJournalH));
   });
 }

@@ -1593,15 +1593,17 @@ final assistantRailExpandedProvider =
         AssistantRailExpandedNotifier.new);
 
 /// App-global sticky state for the Play screen's Solo-Loop bar (expanded vs
-/// collapsed). Default true (expanded) so new users discover the loop controls;
-/// collapsing reclaims the vertical space for the journal feed. Per-device,
-/// NOT session-scoped — same posture as [assistantRailExpandedProvider].
+/// collapsed). Default false (collapsed) so the Play screen opens to the journal
+/// feed — the loop bar's "Next beat" + Steps otherwise stack ~160px of chrome
+/// above the feed and squeeze it. The always-visible "Solo Loop" header keeps it
+/// one tap away. Per-device, NOT session-scoped — same posture as
+/// [assistantRailExpandedProvider].
 class LoopBarExpandedNotifier extends AsyncNotifier<bool> {
   static const _key = 'juice.loopbar_expanded.v1';
 
   @override
   Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? true;
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
 
   Future<void> setExpanded(bool value) async {
     final p = await SharedPreferences.getInstance();
