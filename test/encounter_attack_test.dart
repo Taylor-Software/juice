@@ -176,4 +176,48 @@ void main() {
     expect(find.byKey(const Key('enc-attack-g')), findsOneWidget);
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('tapping a stat-block attack chip fills the dice fields',
+      (t) async {
+    final c = await pump(
+        t,
+        _enc([
+          _c('g', 'Goblin', 15, attacks: [
+            {'name': 'Bite', 'detail': '1d20+4, 2d6+2'}
+          ]),
+          _c('m', 'Mira', 10,
+              ac: 1, track: {'label': 'HP', 'current': 10, 'max': 10}),
+        ]));
+
+    await t.tap(find.byKey(const Key('enc-attack-g')));
+    await t.pumpAndSettle();
+
+    await t.tap(find.byKey(const Key('attack-pick-0')));
+    await t.pumpAndSettle();
+
+    // The attack field is always visible; it now holds the parsed attack die.
+    expect(
+        t
+            .widget<TextField>(find.byKey(const Key('attack-roll')))
+            .controller!
+            .text,
+        '1d20+4');
+
+    // Roll (1d20+4 vs AC 1 => hit) reveals the damage field, prefilled too.
+    await t.tap(find.byKey(const Key('attack-roll-go')));
+    await t.pumpAndSettle();
+    expect(
+        t
+            .widget<TextField>(find.byKey(const Key('attack-damage')))
+            .controller!
+            .text,
+        '2d6+2');
+
+    await t.tap(find.byKey(const Key('attack-apply')));
+    await t.pumpAndSettle();
+    final mira = (await c.read(encounterProvider.future))
+        .combatants
+        .firstWhere((x) => x.id == 'm');
+    expect(mira.track!.current, lessThan(10));
+  });
 }
