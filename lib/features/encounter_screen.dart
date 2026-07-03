@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/combat.dart';
+import '../engine/dice_notation.dart';
 import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
@@ -195,6 +197,8 @@ class EncounterScreen extends ConsumerWidget {
         ),
         title: Text(
           name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: c.defeated
               ? TextStyle(
                   decoration: TextDecoration.lineThrough,
@@ -208,30 +212,50 @@ class EncounterScreen extends ConsumerWidget {
               Text('init ${c.initMod >= 0 ? '+' : ''}${c.initMod}',
                   key: Key('enc-initmod-${c.id}'),
                   style: theme.textTheme.bodySmall),
+            // HP steppers on their own line. The FittedBox scales this
+            // fixed-size Row down to fit a narrow subtitle instead of
+            // overflowing.
             if (curHp != null)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: Key('enc-minus-$i'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: minus,
-                  ),
-                  Text('$curHp/$maxHp', key: Key('enc-track-$i')),
-                  IconButton(
-                    key: Key('enc-plus-$i'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: plus,
-                  ),
-                ],
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('enc-minus-$i'),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: minus,
+                    ),
+                    Text('$curHp/$maxHp', key: Key('enc-track-$i')),
+                    IconButton(
+                      key: Key('enc-plus-$i'),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: plus,
+                    ),
+                  ],
+                ),
               ),
             Wrap(
               spacing: 4,
               runSpacing: 4,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                // Attack: pick a target, roll, resolve. Lives in the wrapping
+                // subtitle (not the fixed trailing slot) so it never overflows
+                // a narrow row. Hidden for a defeated attacker / no live target.
+                if (!c.defeated && _liveTargets(s, c).isNotEmpty)
+                  ActionChip(
+                    key: Key('enc-attack-${c.id}'),
+                    avatar: const Icon(Icons.sports_martial_arts, size: 16),
+                    label: const Text('Attack'),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    onPressed: () =>
+                        _attack(context, ref, c, _liveTargets(s, c), chars),
+                  ),
                 // Linked character's conditions, read through live (like HP) so
                 // a poisoned PC shows it in the turn order; edit on the sheet.
                 if (char != null)
@@ -262,11 +286,16 @@ class EncounterScreen extends ConsumerWidget {
             ),
           ],
         ),
+        // Compact so the three actions leave the wrapping subtitle enough room
+        // on a narrow (phone-width) encounter pane.
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               key: Key('enc-statblock-${c.id}'),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
               icon: Icon(
                 Icons.shield_outlined,
                 color: (c.statBlock != null && !c.statBlock!.isEmpty)
@@ -278,6 +307,9 @@ class EncounterScreen extends ConsumerWidget {
             ),
             IconButton(
               key: Key('enc-defeat-$i'),
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
               icon: Icon(c.defeated
                   ? Icons.favorite_outline
                   : Icons.heart_broken_outlined),
@@ -287,13 +319,32 @@ class EncounterScreen extends ConsumerWidget {
                   .updateCombatant(c.copyWith(defeated: !c.defeated)),
             ),
             IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
               icon: const Icon(Icons.delete_outline),
+              tooltip: 'Remove',
               onPressed: () =>
                   ref.read(encounterProvider.notifier).removeCombatant(c.id),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Live (non-defeated) combatants other than [attacker] — eligible targets.
+  List<Combatant> _liveTargets(EncounterState s, Combatant attacker) => s
+      .combatants
+      .where((x) => x.id != attacker.id && !x.defeated)
+      .toList();
+
+  void _attack(BuildContext context, WidgetRef ref, Combatant attacker,
+      List<Combatant> targets, List<Character> chars) {
+    showDialog<void>(
+      context: context,
+      builder: (_) =>
+          _AttackDialog(attacker: attacker, targets: targets, chars: chars),
     );
   }
 
@@ -1303,6 +1354,270 @@ class _ReferenceMonsterPickerState extends State<_ReferenceMonsterPicker> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
         ),
+      ],
+    );
+  }
+}
+
+/// Resolves one attack: pick a target, roll the attack (inline dice), auto
+/// hit/miss against the target's recorded AC (manual when AC is 0), roll damage
+/// on a hit and apply it to the target's HP (marking it defeated at 0), then log
+/// one `combat` journal entry.
+class _AttackDialog extends ConsumerStatefulWidget {
+  const _AttackDialog(
+      {required this.attacker, required this.targets, required this.chars});
+  final Combatant attacker;
+  final List<Combatant> targets;
+  final List<Character> chars;
+
+  @override
+  ConsumerState<_AttackDialog> createState() => _AttackDialogState();
+}
+
+class _AttackDialogState extends ConsumerState<_AttackDialog> {
+  late Combatant _target = widget.targets.first;
+  final _atk = TextEditingController(text: '1d20');
+  final _dmg = TextEditingController(text: '1d6');
+  int? _attackTotal;
+  bool? _hit; // null while undecided (AC unknown, awaiting a manual pick)
+
+  // The app-wide FilledButton theme is full-width (Size.fromHeight => infinite
+  // min-width); a bare FilledButton beside an Expanded field would throw
+  // "forces an infinite width", so pin a finite min-width.
+  static final _naturalWidth =
+      FilledButton.styleFrom(minimumSize: const Size(0, 48));
+
+  @override
+  void dispose() {
+    _atk.dispose();
+    _dmg.dispose();
+    super.dispose();
+  }
+
+  int _acOf(Combatant t) => t.statBlock?.ac ?? 0;
+
+  /// Rolls a dice notation to its total, or null on empty oracle / bad notation.
+  int? _roll(String notation) {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return null;
+    try {
+      return parseDice(notation.trim()).roll(oracle.dice).total;
+    } on FormatException {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid dice notation')));
+      return null;
+    }
+  }
+
+  void _rollAttack() {
+    final total = _roll(_atk.text);
+    if (total == null) return;
+    final outcome = resolveHit(total, _acOf(_target));
+    setState(() {
+      _attackTotal = total;
+      _hit = outcome == AttackOutcome.unknown
+          ? null
+          : outcome == AttackOutcome.hit;
+    });
+  }
+
+  /// Applies [damage] to [_target]'s HP pool — a linked character's pool via
+  /// [characterHpPool]/[Character.withHpDelta], or its own [CharTrack]. Marks
+  /// the target defeated at 0. Returns (before, after) HP, or null if it has no
+  /// HP pool.
+  (int, int)? _applyDamage(int damage) {
+    final t = _target;
+    if (t.characterId != null) {
+      final match = widget.chars.where((ch) => ch.id == t.characterId);
+      if (match.isEmpty) return null;
+      final linked = match.first;
+      final pool = characterHpPool(linked);
+      if (pool == null) return null;
+      ref
+          .read(charactersProvider.notifier)
+          .replace(linked.withHpDelta(-damage));
+      final after = (pool.$1 - damage).clamp(0, pool.$2);
+      if (after <= 0 && !t.defeated) {
+        ref
+            .read(encounterProvider.notifier)
+            .updateCombatant(t.copyWith(defeated: true));
+      }
+      return (pool.$1, after);
+    }
+    if (t.track != null) {
+      final before = t.track!.current;
+      final after = (before - damage).clamp(0, t.track!.max);
+      var updated = t.copyWith(track: t.track!.adjusted(-damage));
+      if (after <= 0) updated = updated.copyWith(defeated: true);
+      ref.read(encounterProvider.notifier).updateCombatant(updated);
+      return (before, after);
+    }
+    return null;
+  }
+
+  void _log(
+      {required int total, required bool hit, int? damage, (int, int)? hp}) {
+    final line = combatLogLine(
+      attacker: widget.attacker.name,
+      target: _target.name,
+      attackTotal: total,
+      targetAc: _acOf(_target),
+      hit: hit,
+      damage: damage,
+      hp: hp,
+    );
+    ref
+        .read(journalProvider.notifier)
+        .addResult('Combat', line, sourceTool: 'combat');
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(line)));
+  }
+
+  void _apply() {
+    final total = _attackTotal;
+    if (total == null || _hit != true) return;
+    final damage = _roll(_dmg.text);
+    if (damage == null) return;
+    _log(total: total, hit: true, damage: damage, hp: _applyDamage(damage));
+    Navigator.of(context).pop();
+  }
+
+  void _logMiss() {
+    final total = _attackTotal;
+    if (total == null) return;
+    _log(total: total, hit: false);
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final attacks = widget.attacker.statBlock?.attacks ?? const <Attack>[];
+    final ac = _acOf(_target);
+    final acClause = ac > 0 ? ' vs AC $ac' : '';
+    return AlertDialog(
+      key: const Key('attack-dialog'),
+      title: Text('${widget.attacker.name} attacks'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Target'),
+            DropdownButton<Combatant>(
+              key: const Key('attack-target'),
+              isExpanded: true,
+              value: _target,
+              items: [
+                for (final t in widget.targets)
+                  DropdownMenuItem(
+                    value: t,
+                    child: Text(
+                        _acOf(t) > 0 ? '${t.name}  (AC ${_acOf(t)})' : t.name),
+                  ),
+              ],
+              onChanged: (t) {
+                if (t != null) {
+                  setState(() {
+                    _target = t;
+                    _attackTotal = null;
+                    _hit = null;
+                  });
+                }
+              },
+            ),
+            if (attacks.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Your attacks: ${attacks.map((a) => a.detail.isEmpty ? a.name : '${a.name} — ${a.detail}').join(' · ')}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('attack-roll'),
+                    controller: _atk,
+                    decoration:
+                        const InputDecoration(labelText: 'Attack roll'),
+                    onSubmitted: (_) => _rollAttack(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
+                  key: const Key('attack-roll-go'),
+                  style: _naturalWidth,
+                  onPressed: _rollAttack,
+                  child: const Text('Roll'),
+                ),
+              ],
+            ),
+            if (_attackTotal != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _hit == null
+                    ? 'Attack $_attackTotal$acClause — hit or miss?'
+                    : 'Attack $_attackTotal$acClause — ${_hit! ? 'Hit' : 'Miss'}',
+                key: const Key('attack-result'),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              if (_hit == null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      OutlinedButton(
+                        key: const Key('attack-hit'),
+                        onPressed: () => setState(() => _hit = true),
+                        child: const Text('Hit'),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        key: const Key('attack-miss'),
+                        onPressed: () => setState(() => _hit = false),
+                        child: const Text('Miss'),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_hit == true) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        key: const Key('attack-damage'),
+                        controller: _dmg,
+                        decoration: const InputDecoration(labelText: 'Damage'),
+                        onSubmitted: (_) => _apply(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      key: const Key('attack-apply'),
+                      style: _naturalWidth,
+                      onPressed: _apply,
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+        if (_hit == false)
+          FilledButton(
+            key: const Key('attack-log-miss'),
+            onPressed: _logMiss,
+            child: const Text('Log miss'),
+          ),
       ],
     );
   }
