@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -75,6 +76,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   final TextEditingController _composer = TextEditingController();
   final FocusNode _composerFocus = FocusNode();
   final TextEditingController _search = TextEditingController();
+  Timer? _searchDebounce;
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
   final ScrollController _entryScroll = ScrollController();
   bool _slashActive = false;
@@ -359,7 +361,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     if (oracle == null) return;
     final notation = arg.trim();
     if (notation.isEmpty) {
-      showDiceSheet(context, oracle.dice);
+      unawaited(showDiceSheet(context, oracle.dice));
       return;
     }
     final DiceRollResult r;
@@ -547,6 +549,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _composer.removeListener(_onComposerChanged);
     _composer.dispose();
     _composerFocus.dispose();
@@ -915,7 +918,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               }),
             ),
           ),
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) {
+            // Debounced: searchEntries re-scans the journal in build(), so
+            // don't rebuild on every keystroke.
+            _searchDebounce?.cancel();
+            _searchDebounce = Timer(const Duration(milliseconds: 250), () {
+              if (mounted) setState(() {});
+            });
+          },
         ),
       );
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
@@ -109,7 +110,7 @@ class LauncherScreen extends ConsumerWidget {
       if (result.start == 'kit' && result.kit != null) {
         await applyLoopKit(ref, result.kit!);
       }
-      _enter(ref, result.mode);
+      unawaited(_enter(ref, result.mode));
     }
   }
 
@@ -138,10 +139,10 @@ class LauncherScreen extends ConsumerWidget {
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
       // Land on the imported campaign's restored mode.
-      _enter(
+      unawaited(_enter(
           ref,
           ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
-              CampaignMode.party);
+              CampaignMode.party));
     } on FormatException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)

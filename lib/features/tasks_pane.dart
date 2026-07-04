@@ -109,6 +109,8 @@ class TasksPane extends ConsumerWidget {
         ],
       ),
     );
+    // Post-frame: the route's exit transition may still read the controller.
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.dispose());
     if (name == null || name.isEmpty) return;
     if (!context.mounted) return;
 

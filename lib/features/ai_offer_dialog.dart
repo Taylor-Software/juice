@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -65,7 +67,7 @@ Future<void> showAiFirstRunOffer(BuildContext context, WidgetRef ref) async {
   // service is app-global and single-flight, so the install keeps running even
   // after we leave this screen).
   await ref.read(aiEnabledProvider.notifier).setEnabled(true);
-  ref.read(interpreterServiceProvider).warmUp();
+  unawaited(ref.read(interpreterServiceProvider).warmUp());
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

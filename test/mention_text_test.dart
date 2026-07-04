@@ -162,7 +162,7 @@ void main() {
     ));
     final dice = recognizerSpans(tester).where((p) => p.$1 == '2d6+3').toList();
     expect(dice, hasLength(1));
-    (dice.single.$2.recognizer as TapGestureRecognizer).onTap!();
+    (dice.single.$2.recognizer! as TapGestureRecognizer).onTap!();
     expect(rolled, '2d6+3');
   });
 

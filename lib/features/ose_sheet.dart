@@ -105,11 +105,11 @@ class OseSheetView extends ConsumerWidget {
               min: 1, max: 20, onSet: (v) => _save(ref, s.copyWith(level: v))),
           const SizedBox(width: 16),
           Expanded(
-            child: TextFormField(
+            child: DebouncedTextField(
               key: const Key('ose-xp'),
               initialValue: s.xp,
-              decoration: const InputDecoration(labelText: 'XP'),
-              onChanged: (v) => _save(ref, s.copyWith(xp: v)),
+              label: 'XP',
+              onSave: (v) => _save(ref, s.copyWith(xp: v)),
             ),
           ),
         ]),
@@ -171,13 +171,13 @@ class OseSheetView extends ConsumerWidget {
               min: -10, max: 20, onSet: (v) => _save(ref, s.copyWith(ac: v))),
           SizedBox(
             width: 100,
-            child: TextFormField(
+            child: DebouncedTextField(
               key: const Key('ose-thac0'),
               initialValue: '${s.thac0}',
-              decoration:
-                  const InputDecoration(labelText: 'THAC0', isDense: true),
+              label: 'THAC0',
+              isDense: true,
               keyboardType: TextInputType.number,
-              onChanged: (v) {
+              onSave: (v) {
                 final n = int.tryParse(v);
                 if (n != null) _save(ref, s.copyWith(thac0: n));
               },
@@ -185,21 +185,21 @@ class OseSheetView extends ConsumerWidget {
           ),
         ]),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('ose-coins'),
           initialValue: s.coins,
-          decoration: const InputDecoration(labelText: 'Coins (cp/sp/gp/pp)'),
-          onChanged: (v) => _save(ref, s.copyWith(coins: v)),
+          label: 'Coins (cp/sp/gp/pp)',
+          onSave: (v) => _save(ref, s.copyWith(coins: v)),
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'ose'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('ose-notes'),
           initialValue: s.notes,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notes / Equipment'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes / Equipment',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

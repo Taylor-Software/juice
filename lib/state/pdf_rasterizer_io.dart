@@ -18,7 +18,7 @@ class PdfrxRasterizer implements PdfRasterizer {
     try {
       return doc.pages.length;
     } finally {
-      doc.dispose();
+      await doc.dispose();
     }
   }
 
@@ -54,7 +54,7 @@ class PdfrxRasterizer implements PdfRasterizer {
     } catch (_) {
       return null; // unsupported / corrupt PDF
     } finally {
-      doc?.dispose();
+      await doc?.dispose();
     }
   }
 

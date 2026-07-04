@@ -28,7 +28,14 @@ class FileBlobStore implements BlobStore {
     return d;
   }
 
-  Future<File> _file(String id) async => File('${(await _dir()).path}/$id');
+  Future<File> _file(String id) async {
+    // Ids are content-addressed (blobId), but imports carry ids from campaign
+    // files — never let one name a path outside the blobs dir.
+    if (id.contains('/') || id.contains(r'\') || id.contains('..')) {
+      throw ArgumentError.value(id, 'id', 'Invalid blob id');
+    }
+    return File('${(await _dir()).path}/$id');
+  }
 
   @override
   Future<String> put(List<int> bytes, {String? ext}) async {

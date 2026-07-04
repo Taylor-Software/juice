@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import '../engine/gm_chat.dart';
 import '../engine/models.dart';
 import 'providers.dart' show sessionScopedKeys;
+import 'verdant.dart' show VerdantJourney;
 
 /// Campaign file format version this build writes and the max it reads.
 const campaignSchemaVersion = 3;
@@ -123,9 +125,20 @@ CampaignImport parseCampaign(String raw) {
         final settings =
             CampaignSettings.fromJson(value as Map<String, dynamic>);
         if (settings.genre.isNotEmpty) genre = settings.genre;
+      } else if (key == 'juice.verdant.v1') {
+        VerdantJourney.fromJson(value as Map<String, dynamic>);
+      } else if (key == 'juice.context.v1') {
+        PlayContext.fromJson(value as Map<String, dynamic>);
+      } else if (key == 'juice.decks.v1') {
+        DecksState.fromJson(value as Map<String, dynamic>);
+      } else if (key == 'juice.gmchat.v1') {
+        GmChatState.fromJson(value as Map<String, dynamic>);
+      } else if (key == 'juice.light.v1') {
+        // Persisted as a bare int (see LightNotifier).
+        value as int;
       }
     } catch (_) {
-      throw const FormatException('Campaign file data is malformed');
+      throw FormatException('Campaign file data is malformed ($key)');
     }
     rawByKey[key] = jsonEncode(value);
   }

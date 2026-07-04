@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -161,7 +162,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         label: _defaultLabel(type),
         config: defaultConfigFor(type));
     _save(_s.copyWith(blocks: [..._s.blocks, block]));
-    if (mounted) _configBlock(block);
+    if (mounted) unawaited(_configBlock(block));
   }
 
   String _defaultLabel(CustomBlockType t) => switch (t) {
@@ -262,11 +263,11 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'min': result.min,
-                      'max': result.max,
-                      'step': result.step,
-                    })
+                        ...x.config,
+                        'min': result.min,
+                        'max': result.max,
+                        'step': result.step,
+                      })
                 : x)
             .toList()));
   }
@@ -337,10 +338,10 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'rows': result.rows,
-                      'roll': result.rollConfig.toJson(),
-                    })
+                        ...x.config,
+                        'rows': result.rows,
+                        'roll': result.rollConfig.toJson(),
+                      })
                 : x)
             .toList()));
   }
@@ -362,42 +363,44 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
           if (st['key'] is String)
             () {
               final key = st['key'] as String;
-            final label = (st['label'] as String?) ?? key.toUpperCase();
-            final score = (cur[key] as num?)?.toInt() ?? ((min + max) ~/ 2);
-            final modText = formula == StatModFormula.raw
-                ? ''
-                : fmtSigned(customStatMod(formula, score));
-            return ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 80),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Text(label, style: const TextStyle(fontSize: 11)),
-                if (modText.isNotEmpty)
-                  Text(modText,
-                      style: const TextStyle(
-                          fontSize: 20, fontWeight: FontWeight.bold)),
-                Row(mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center, children: [
-                  IconButton(
-                    key: Key('custom-${b.id}-stat-$key-minus'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.remove, size: 16),
-                    onPressed: score > min
-                        ? () => _setVal(b.id, {...cur, key: score - 1})
-                        : null,
-                  ),
-                  Text('$score'),
-                  IconButton(
-                    key: Key('custom-${b.id}-stat-$key-plus'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.add, size: 16),
-                    onPressed: score < max
-                        ? () => _setVal(b.id, {...cur, key: score + 1})
-                        : null,
-                  ),
+              final label = (st['label'] as String?) ?? key.toUpperCase();
+              final score = (cur[key] as num?)?.toInt() ?? ((min + max) ~/ 2);
+              final modText = formula == StatModFormula.raw
+                  ? ''
+                  : fmtSigned(customStatMod(formula, score));
+              return ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 80),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(label, style: const TextStyle(fontSize: 11)),
+                  if (modText.isNotEmpty)
+                    Text(modText,
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                  Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          key: Key('custom-${b.id}-stat-$key-minus'),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.remove, size: 16),
+                          onPressed: score > min
+                              ? () => _setVal(b.id, {...cur, key: score - 1})
+                              : null,
+                        ),
+                        Text('$score'),
+                        IconButton(
+                          key: Key('custom-${b.id}-stat-$key-plus'),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.add, size: 16),
+                          onPressed: score < max
+                              ? () => _setVal(b.id, {...cur, key: score + 1})
+                              : null,
+                        ),
+                      ]),
                 ]),
-              ]),
-            );
-          }(),
+              );
+            }(),
       ]),
     ]);
   }
@@ -414,12 +417,12 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'stats': result.stats,
-                      'min': result.min,
-                      'max': result.max,
-                      'modFormula': result.formula.name,
-                    })
+                        ...x.config,
+                        'stats': result.stats,
+                        'min': result.min,
+                        'max': result.max,
+                        'modFormula': result.formula.name,
+                      })
                 : x)
             .toList()));
   }
@@ -456,13 +459,15 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     // Persist label (block) and max value (play state) in one save.
     final updatedBlocks = _s.blocks
         .map((x) => x.id == b.id
-            ? x.copyWith(
-                label: result.label.isEmpty ? x.label : result.label)
+            ? x.copyWith(label: result.label.isEmpty ? x.label : result.label)
             : x)
         .toList();
     _save(_s.copyWith(
       blocks: updatedBlocks,
-      values: {..._s.values, b.id: {'cur': result.max, 'max': result.max}},
+      values: {
+        ..._s.values,
+        b.id: {'cur': result.max, 'max': result.max}
+      },
     ));
   }
 
@@ -475,41 +480,44 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final temp = (v['temp'] as num?)?.toInt() ?? 0;
     final allowTemp = b.config['allowTemp'] == true;
     void set(Map<String, dynamic> next) => _setVal(b.id, {...v, ...next});
-    return Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
-      SizedBox(width: 64, child: Text(b.label)),
-      IconButton(
-          key: Key('custom-${b.id}-hp-cur-minus'),
-          icon: const Icon(Icons.remove_circle_outline),
-          onPressed: () => set({'cur': cur - 1})),
-      Text('$cur / $max'),
-      IconButton(
-          key: Key('custom-${b.id}-hp-cur-plus'),
-          icon: const Icon(Icons.add_circle_outline),
-          onPressed: () => set({'cur': cur + 1})),
-      const SizedBox(width: 8),
-      const Text('Max'),
-      IconButton(
-          key: Key('custom-${b.id}-hp-max-minus'),
-          icon: const Icon(Icons.remove, size: 16),
-          onPressed: () => set({'max': max - 1})),
-      IconButton(
-          key: Key('custom-${b.id}-hp-max-plus'),
-          icon: const Icon(Icons.add, size: 16),
-          onPressed: () => set({'max': max + 1})),
-      if (allowTemp) ...[
-        const SizedBox(width: 8),
-        const Text('Temp'),
-        IconButton(
-            key: Key('custom-${b.id}-hp-temp-minus'),
-            icon: const Icon(Icons.remove, size: 16),
-            onPressed: () => set({'temp': temp - 1})),
-        Text('$temp'),
-        IconButton(
-            key: Key('custom-${b.id}-hp-temp-plus'),
-            icon: const Icon(Icons.add, size: 16),
-            onPressed: () => set({'temp': temp + 1})),
-      ],
-    ]);
+    return Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        children: [
+          SizedBox(width: 64, child: Text(b.label)),
+          IconButton(
+              key: Key('custom-${b.id}-hp-cur-minus'),
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () => set({'cur': cur - 1})),
+          Text('$cur / $max'),
+          IconButton(
+              key: Key('custom-${b.id}-hp-cur-plus'),
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => set({'cur': cur + 1})),
+          const SizedBox(width: 8),
+          const Text('Max'),
+          IconButton(
+              key: Key('custom-${b.id}-hp-max-minus'),
+              icon: const Icon(Icons.remove, size: 16),
+              onPressed: () => set({'max': max - 1})),
+          IconButton(
+              key: Key('custom-${b.id}-hp-max-plus'),
+              icon: const Icon(Icons.add, size: 16),
+              onPressed: () => set({'max': max + 1})),
+          if (allowTemp) ...[
+            const SizedBox(width: 8),
+            const Text('Temp'),
+            IconButton(
+                key: Key('custom-${b.id}-hp-temp-minus'),
+                icon: const Icon(Icons.remove, size: 16),
+                onPressed: () => set({'temp': temp - 1})),
+            Text('$temp'),
+            IconButton(
+                key: Key('custom-${b.id}-hp-temp-plus'),
+                icon: const Icon(Icons.add, size: 16),
+                onPressed: () => set({'temp': temp + 1})),
+          ],
+        ]);
   }
 
   Future<void> _configHp(CustomBlock b) async {
@@ -524,9 +532,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'allowTemp': result.allowTemp,
-                    })
+                        ...x.config,
+                        'allowTemp': result.allowTemp,
+                      })
                 : x)
             .toList()));
   }
@@ -534,8 +542,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   // --- dropdown --------------------------------------------------------------
 
   Widget _playDropdown(CustomBlock b) {
-    final options =
-        ((b.config['options'] as List?) ?? const []).whereType<String>().toList();
+    final options = ((b.config['options'] as List?) ?? const [])
+        .whereType<String>()
+        .toList();
     final raw = _s.values[b.id];
     final value = raw is String ? raw : (options.isEmpty ? '' : options.first);
     return Padding(
@@ -546,9 +555,12 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
           child: DropdownButton<String>(
             key: Key('custom-${b.id}-dropdown'),
             isExpanded: true,
-            value: options.contains(value) ? value : (options.isEmpty ? null : options.first),
+            value: options.contains(value)
+                ? value
+                : (options.isEmpty ? null : options.first),
             items: [
-              for (final o in options) DropdownMenuItem(value: o, child: Text(o)),
+              for (final o in options)
+                DropdownMenuItem(value: o, child: Text(o)),
             ],
             onChanged: (v) => v == null ? null : _setVal(b.id, v),
           ),
@@ -569,9 +581,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'options': result.options,
-                    })
+                        ...x.config,
+                        'options': result.options,
+                      })
                 : x)
             .toList()));
   }
@@ -617,9 +629,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'start': result.start,
-                    })
+                        ...x.config,
+                        'start': result.start,
+                      })
                 : x)
             .toList()));
   }
@@ -627,10 +639,10 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   // --- toggle-chips ----------------------------------------------------------
 
   Widget _playToggleChips(CustomBlock b) {
-    final options =
-        ((b.config['options'] as List?) ?? const []).whereType<String>().toList();
-    final selected =
-        (_valList(b.id).whereType<String>().toSet());
+    final options = ((b.config['options'] as List?) ?? const [])
+        .whereType<String>()
+        .toList();
+    final selected = (_valList(b.id).whereType<String>().toSet());
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       sheetSection(context, b.label),
       Wrap(spacing: 6, runSpacing: 4, children: [
@@ -661,9 +673,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
                 ? x.copyWith(
                     label: result.label.isEmpty ? x.label : result.label,
                     config: {
-                      ...x.config,
-                      'options': result.options,
-                    })
+                        ...x.config,
+                        'options': result.options,
+                      })
                 : x)
             .toList()));
   }
@@ -734,8 +746,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
   }
 
   Future<void> _configComputed(CustomBlock b) async {
-    final result =
-        await showDialog<({ComputedConfig cfg, String label})>(
+    final result = await showDialog<({ComputedConfig cfg, String label})>(
       context: context,
       builder: (_) => _ComputedConfigDialog(block: b, blocks: _s.blocks),
     );
@@ -744,7 +755,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
         blocks: _s.blocks
             .map((x) => x.id == b.id
                 ? x.copyWith(
-                    label: result.label.trim().isEmpty ? x.label : result.label.trim(),
+                    label: result.label.trim().isEmpty
+                        ? x.label
+                        : result.label.trim(),
                     config: result.cfg.toJson())
                 : x)
             .toList()));
@@ -766,12 +779,12 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
     final raw = _s.values[b.id];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: TextFormField(
+      child: DebouncedTextField(
         key: Key('custom-${b.id}-freeform'),
         initialValue: raw is String ? raw : '',
         maxLines: (b.config['multiline'] == true) ? 4 : 1,
-        decoration: InputDecoration(labelText: b.label),
-        onChanged: (v) => _setVal(b.id, v),
+        label: b.label,
+        onSave: (v) => _setVal(b.id, v),
       ),
     );
   }
@@ -798,7 +811,8 @@ Map<String, dynamic> defaultConfigFor(CustomBlockType type) => switch (type) {
       CustomBlockType.timer => {'start': 0},
       CustomBlockType.togglechips => {'options': <String>[]},
       CustomBlockType.computed => const ComputedConfig(
-          a: ComputedOperand(), op: ComputedOp.add, b: ComputedOperand()).toJson(),
+              a: ComputedOperand(), op: ComputedOp.add, b: ComputedOperand())
+          .toJson(),
       _ => const {},
     };
 
@@ -933,8 +947,8 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
   late final TextEditingController _max = TextEditingController(
       text: '${(widget.block.config['max'] as num?)?.toInt() ?? 18}');
 
-  late StatModFormula _formula = statModFormulaFromName(
-      widget.block.config['modFormula'] as String?);
+  late StatModFormula _formula =
+      statModFormulaFromName(widget.block.config['modFormula'] as String?);
 
   // One pair of controllers per stat row. Both lists grow/shrink together via
   // _addRow/_removeRow; every controller ever created is disposed in dispose().
@@ -1012,8 +1026,7 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
               value: _formula,
               isExpanded: true,
               items: StatModFormula.values
-                  .map((f) =>
-                      DropdownMenuItem(value: f, child: Text(f.name)))
+                  .map((f) => DropdownMenuItem(value: f, child: Text(f.name)))
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _formula = v);
@@ -1074,10 +1087,7 @@ class _StatConfigDialogState extends State<_StatConfigDialog> {
                       formula: _formula,
                       stats: [
                         for (var i = 0; i < _keyCtls.length; i++)
-                          {
-                            'key': _keyCtls[i].text,
-                            'label': _lblCtls[i].text
-                          },
+                          {'key': _keyCtls[i].text, 'label': _lblCtls[i].text},
                       ],
                     ),
                   ),
@@ -1130,8 +1140,8 @@ class _RollConfigDialogState extends State<_RollConfigDialog> {
   @override
   void initState() {
     super.initState();
-    final rows =
-        ((widget.block.config['rows'] as List?) ?? const []).whereType<String>();
+    final rows = ((widget.block.config['rows'] as List?) ?? const [])
+        .whereType<String>();
     for (final r in rows) {
       _rowCtls.add(TextEditingController(text: r));
     }
@@ -1146,8 +1156,8 @@ class _RollConfigDialogState extends State<_RollConfigDialog> {
     _crit = cfg.crit;
 
     for (final band in cfg.bands) {
-      _bandThreshCtls.add(
-          TextEditingController(text: band.threshold.toStringAsFixed(2)));
+      _bandThreshCtls
+          .add(TextEditingController(text: band.threshold.toStringAsFixed(2)));
       _bandLblCtls.add(TextEditingController(text: band.label));
     }
   }
@@ -1229,7 +1239,8 @@ class _RollConfigDialogState extends State<_RollConfigDialog> {
             // --- Row labels ---
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Rows', style: TextStyle(fontWeight: FontWeight.bold)),
+              child:
+                  Text('Rows', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             for (var i = 0; i < _rowCtls.length; i++)
               Row(key: ObjectKey(_rowCtls[i]), children: [
@@ -1625,8 +1636,8 @@ class _DropdownConfigDialogState extends State<_DropdownConfigDialog> {
   @override
   void initState() {
     super.initState();
-    final rawOptions =
-        ((widget.block.config['options'] as List?) ?? const []).whereType<String>();
+    final rawOptions = ((widget.block.config['options'] as List?) ?? const [])
+        .whereType<String>();
     for (final o in rawOptions) {
       _optCtls.add(TextEditingController(text: o));
     }
@@ -1643,7 +1654,8 @@ class _DropdownConfigDialogState extends State<_DropdownConfigDialog> {
 
   void _addOption() {
     setState(() {
-      _optCtls.add(TextEditingController(text: 'Option ${_optCtls.length + 1}'));
+      _optCtls
+          .add(TextEditingController(text: 'Option ${_optCtls.length + 1}'));
     });
   }
 
@@ -1666,7 +1678,8 @@ class _DropdownConfigDialogState extends State<_DropdownConfigDialog> {
             const SizedBox(height: 8),
             const Align(
               alignment: Alignment.centerLeft,
-              child: Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text('Options',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             for (var i = 0; i < _optCtls.length; i++)
               Row(key: ObjectKey(_optCtls[i]), children: [
@@ -1735,9 +1748,8 @@ class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
   @override
   void initState() {
     super.initState();
-    final rawOptions =
-        ((widget.block.config['options'] as List?) ?? const [])
-            .whereType<String>();
+    final rawOptions = ((widget.block.config['options'] as List?) ?? const [])
+        .whereType<String>();
     for (final o in rawOptions) {
       _optCtls.add(TextEditingController(text: o));
     }
@@ -1754,8 +1766,8 @@ class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
 
   void _addOption() {
     setState(() {
-      _optCtls.add(
-          TextEditingController(text: 'Option ${_optCtls.length + 1}'));
+      _optCtls
+          .add(TextEditingController(text: 'Option ${_optCtls.length + 1}'));
     });
   }
 
@@ -1778,8 +1790,8 @@ class _ToggleChipsConfigDialogState extends State<_ToggleChipsConfigDialog> {
             const SizedBox(height: 8),
             const Align(
               alignment: Alignment.centerLeft,
-              child:
-                  Text('Options', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text('Options',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
             ),
             for (var i = 0; i < _optCtls.length; i++)
               Row(key: ObjectKey(_optCtls[i]), children: [
@@ -1902,7 +1914,8 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
           initialValue: '${o.constant}',
           decoration: const InputDecoration(labelText: 'Value'),
           keyboardType: TextInputType.number,
-          onChanged: (v) => onChange(o.copyWith(constant: int.tryParse(v) ?? 0)),
+          onChanged: (v) =>
+              onChange(o.copyWith(constant: int.tryParse(v) ?? 0)),
         )
       else ...[
         DropdownButton<String>(
@@ -1954,30 +1967,43 @@ class _ComputedConfigDialogState extends State<_ComputedConfigDialog> {
               onChanged: (v) => _label = v,
             ),
             const SizedBox(height: 12),
-            _operandEditor('Operand A', _cfg.a,
-                (o) => setState(() => _cfg = ComputedConfig(a: o, op: _cfg.op, b: _cfg.b))),
+            _operandEditor(
+                'Operand A',
+                _cfg.a,
+                (o) => setState(
+                    () => _cfg = ComputedConfig(a: o, op: _cfg.op, b: _cfg.b))),
             const SizedBox(height: 12),
             DropdownButton<ComputedOp>(
               key: const Key('custom-computed-op'),
               isExpanded: true,
               value: _cfg.op,
               items: const [
-                DropdownMenuItem(value: ComputedOp.add, child: Text('+ (number)')),
-                DropdownMenuItem(value: ComputedOp.sub, child: Text('- (number)')),
-                DropdownMenuItem(value: ComputedOp.mul, child: Text('x (number)')),
-                DropdownMenuItem(value: ComputedOp.divFloor, child: Text('/ floor (number)')),
-                DropdownMenuItem(value: ComputedOp.le, child: Text('<= (chip)')),
+                DropdownMenuItem(
+                    value: ComputedOp.add, child: Text('+ (number)')),
+                DropdownMenuItem(
+                    value: ComputedOp.sub, child: Text('- (number)')),
+                DropdownMenuItem(
+                    value: ComputedOp.mul, child: Text('x (number)')),
+                DropdownMenuItem(
+                    value: ComputedOp.divFloor,
+                    child: Text('/ floor (number)')),
+                DropdownMenuItem(
+                    value: ComputedOp.le, child: Text('<= (chip)')),
                 DropdownMenuItem(value: ComputedOp.lt, child: Text('< (chip)')),
                 DropdownMenuItem(value: ComputedOp.eq, child: Text('= (chip)')),
-                DropdownMenuItem(value: ComputedOp.ge, child: Text('>= (chip)')),
+                DropdownMenuItem(
+                    value: ComputedOp.ge, child: Text('>= (chip)')),
                 DropdownMenuItem(value: ComputedOp.gt, child: Text('> (chip)')),
               ],
-              onChanged: (v) => setState(
-                  () => _cfg = ComputedConfig(a: _cfg.a, op: v ?? _cfg.op, b: _cfg.b)),
+              onChanged: (v) => setState(() => _cfg =
+                  ComputedConfig(a: _cfg.a, op: v ?? _cfg.op, b: _cfg.b)),
             ),
             const SizedBox(height: 12),
-            _operandEditor('Operand B', _cfg.b,
-                (o) => setState(() => _cfg = ComputedConfig(a: _cfg.a, op: _cfg.op, b: o))),
+            _operandEditor(
+                'Operand B',
+                _cfg.b,
+                (o) => setState(
+                    () => _cfg = ComputedConfig(a: _cfg.a, op: _cfg.op, b: o))),
           ]),
         ),
         actions: [

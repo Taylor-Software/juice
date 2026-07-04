@@ -94,11 +94,11 @@ class DrawSteelSheetView extends ConsumerWidget {
           onChanged: (v) =>
               v == null ? null : _save(ref, s.copyWith(className: v)),
         ),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('draw-steel-ancestry'),
           initialValue: s.ancestry,
-          decoration: const InputDecoration(labelText: 'Ancestry'),
-          onChanged: (v) => _save(ref, s.copyWith(ancestry: v)),
+          label: 'Ancestry',
+          onSave: (v) => _save(ref, s.copyWith(ancestry: v)),
         ),
         const SizedBox(height: 8),
         _stepper('draw-steel-level', 'Level', s.level,
@@ -175,19 +175,19 @@ class DrawSteelSheetView extends ConsumerWidget {
 
         // ── Skills + Notes ───────────────────────────────────────────────────
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('draw-steel-skills'),
           initialValue: s.skills,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Skills'),
-          onChanged: (v) => _save(ref, s.copyWith(skills: v)),
+          label: 'Skills',
+          onSave: (v) => _save(ref, s.copyWith(skills: v)),
         ),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('draw-steel-notes'),
           initialValue: s.notes,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Notes'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

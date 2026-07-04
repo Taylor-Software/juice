@@ -1,22 +1,14 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-
 /// Parsed view over assets/oracle_data.json (emitted by build_oracle.py).
+/// Pure Dart: the rootBundle load lives in [oracleProvider] (lib/state/).
 class OracleData {
   OracleData(this._json);
 
   final Map<String, dynamic> _json;
 
-  static Future<OracleData> load() async {
-    final raw = await rootBundle.loadString('assets/oracle_data.json');
-    return OracleData(jsonDecode(raw) as Map<String, dynamic>);
-  }
-
   Map<String, dynamic> get _tables => _json['tables'] as Map<String, dynamic>;
 
   /// A simple d10 table (10 string entries) by key.
-  List<String> table(String key) =>
-      (_tables[key] as List).cast<String>();
+  List<String> table(String key) => (_tables[key] as List).cast<String>();
 
   /// Intensity (6 entries).
   List<String> get intensity => table('intensity');
@@ -46,9 +38,7 @@ class OracleData {
 
   // Extended NPC d100 tables: list of [maxRoll, text] ---------------------
   List<List<dynamic>> ext(String key) =>
-      ((_json['ext'] as Map)[key] as List)
-          .map((e) => (e as List))
-          .toList();
+      ((_json['ext'] as Map)[key] as List).map((e) => (e as List)).toList();
 
   // Monster encounter ------------------------------------------------------
   Map<String, dynamic> get _monster =>
@@ -68,9 +58,8 @@ class OracleData {
   Map<String, dynamic> get _dialog => _json['dialog'] as Map<String, dynamic>;
 
   /// 5x5 fragment grid; rows 0-1 are past tense.
-  List<List<String>> get dialogGrid => (_dialog['grid'] as List)
-      .map((r) => (r as List).cast<String>())
-      .toList();
+  List<List<String>> get dialogGrid =>
+      (_dialog['grid'] as List).map((r) => (r as List).cast<String>()).toList();
 
   /// [maxRoll, tone, dRow, dCol] bands for die 1.
   List<List<dynamic>> get dialogDirection =>
@@ -107,8 +96,7 @@ class OracleData {
       (_rollHigh['outcomes'] as List).cast<String>();
 
   /// Seven likelihood labels, Almost Certain .. Almost Impossible.
-  List<String> get rollHighOdds =>
-      (_rollHigh['odds'] as List).cast<String>();
+  List<String> get rollHighOdds => (_rollHigh['odds'] as List).cast<String>();
 
   /// Rows for [die] ('d100', 'd20', '2d6'): 7 odds rows x 6 outcome slots,
   /// each [min, max] or null when the outcome is absent from that row.
@@ -123,14 +111,12 @@ class OracleData {
   Map<String, dynamic> get _mythic => _json['mythic'] as Map<String, dynamic>;
 
   /// Odds labels, Certain..Impossible.
-  List<String> get mythicOdds =>
-      (_mythic['odds'] as List).cast<String>();
+  List<String> get mythicOdds => (_mythic['odds'] as List).cast<String>();
 
   /// 17-entry threshold ladder of [excYesMax, target, excNoMin]; cell for
   /// (oddsIndex, chaos) is index `9 - chaos + oddsIndex`.
-  List<List<int>> get mythicBands => (_mythic['bands'] as List)
-      .map((e) => (e as List).cast<int>())
-      .toList();
+  List<List<int>> get mythicBands =>
+      (_mythic['bands'] as List).map((e) => (e as List).cast<int>()).toList();
 
   /// [maxRoll, label, listTarget|null] event focus ranges.
   List<List<dynamic>> get mythicEventFocus =>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -28,9 +30,11 @@ class CampaignSearchSheet extends ConsumerStatefulWidget {
 class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
   final _ctl = TextEditingController();
   String _query = '';
+  Timer? _debounce;
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _ctl.dispose();
     super.dispose();
   }
@@ -47,16 +51,11 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final entries =
-        ref.watch(journalProvider).valueOrNull ?? const [];
-    final threads =
-        ref.watch(threadsProvider).valueOrNull ?? const [];
-    final rumors =
-        ref.watch(rumorsProvider).valueOrNull ?? const [];
-    final tracks =
-        ref.watch(tracksProvider).valueOrNull ?? const [];
-    final characters =
-        ref.watch(charactersProvider).valueOrNull ?? const [];
+    final entries = ref.watch(journalProvider).valueOrNull ?? const [];
+    final threads = ref.watch(threadsProvider).valueOrNull ?? const [];
+    final rumors = ref.watch(rumorsProvider).valueOrNull ?? const [];
+    final tracks = ref.watch(tracksProvider).valueOrNull ?? const [];
+    final characters = ref.watch(charactersProvider).valueOrNull ?? const [];
 
     final results = searchCampaign(
       _query,
@@ -101,7 +100,14 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
                 border: const OutlineInputBorder(),
                 isDense: true,
               ),
-              onChanged: (v) => setState(() => _query = v),
+              onChanged: (v) {
+                // Debounced: searchCampaign re-scans all five entity lists
+                // in build(), so don't rebuild on every keystroke.
+                _debounce?.cancel();
+                _debounce = Timer(const Duration(milliseconds: 250), () {
+                  if (mounted) setState(() => _query = v);
+                });
+              },
             ),
           ),
           if (_query.isNotEmpty && results.isEmpty)
@@ -120,8 +126,7 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
                   for (final kind in SearchResultKind.values)
                     if (grouped[kind] != null) ...[
                       Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
                         child: Text(_kindLabel(kind),
                             style: theme.textTheme.labelMedium),
                       ),
@@ -129,8 +134,8 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
                         ListTile(
                           key: Key('search-result-${r.kind.name}-${r.id}'),
                           dense: true,
-                          title: Text(r.title, maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
+                          title: Text(r.title,
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
                           subtitle: r.snippet.isNotEmpty
                               ? Text(r.snippet,
                                   maxLines: 1,

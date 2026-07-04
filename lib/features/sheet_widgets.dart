@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -688,7 +690,9 @@ class StatBlockView extends StatelessWidget {
           if (curHp != null && maxHp != null) chip('$curHp/$maxHp'),
           if (block.speed.isNotEmpty) chip(block.speed),
         ]),
-        if (block.cr != null || block.creatureType != null || block.size != null)
+        if (block.cr != null ||
+            block.creatureType != null ||
+            block.size != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(
@@ -704,7 +708,9 @@ class StatBlockView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
-              block.abilities!.entries.map((e) => '${e.key} ${e.value}').join('  '),
+              block.abilities!.entries
+                  .map((e) => '${e.key} ${e.value}')
+                  .join('  '),
               style: theme.textTheme.bodySmall,
             ),
           ),
@@ -716,7 +722,9 @@ class StatBlockView extends StatelessWidget {
                 TextSpan(
                   style: theme.textTheme.bodySmall,
                   children: [
-                    TextSpan(text: '${tr.name}. ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    TextSpan(
+                        text: '${tr.name}. ',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     TextSpan(text: tr.text),
                   ],
                 ),
@@ -735,8 +743,8 @@ class StatBlockView extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.w500)),
                 if (a.detail.isNotEmpty)
                   Text(' — ${a.detail}',
-                      style: TextStyle(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                      style:
+                          TextStyle(color: theme.colorScheme.onSurfaceVariant)),
               ]),
             ),
         ],
@@ -745,4 +753,89 @@ class StatBlockView extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Freeform sheet text field whose [onSave] is debounced: it fires
+/// [debounce] after the last keystroke (and immediately on submit or
+/// dispose), so typing doesn't re-encode the whole character list into
+/// SharedPreferences per keystroke.
+class DebouncedTextField extends StatefulWidget {
+  const DebouncedTextField({
+    super.key,
+    required this.initialValue,
+    required this.onSave,
+    this.label,
+    this.maxLines = 1,
+    this.hint,
+    this.enabled = true,
+    this.keyboardType,
+    this.isDense = false,
+  });
+
+  final String initialValue;
+  final String? label;
+  final ValueChanged<String> onSave;
+  final int? maxLines;
+  final String? hint;
+  final bool enabled;
+  final TextInputType? keyboardType;
+  final bool isDense;
+
+  static const debounce = Duration(milliseconds: 400);
+
+  @override
+  State<DebouncedTextField> createState() => _DebouncedTextFieldState();
+}
+
+class _DebouncedTextFieldState extends State<DebouncedTextField> {
+  Timer? _timer;
+  String? _pending;
+
+  void _flush() {
+    _timer?.cancel();
+    final v = _pending;
+    _pending = null;
+    if (v != null) widget.onSave(v);
+  }
+
+  @override
+  void dispose() {
+    // Flush a pending edit so navigating away never drops typed text — but
+    // post-frame: saving mutates the characters provider, which must not
+    // notify listeners mid-teardown.
+    _timer?.cancel();
+    final v = _pending;
+    _pending = null;
+    if (v != null) {
+      final save = widget.onSave;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          save(v);
+        } catch (_) {
+          // The parent's ref is gone on a full-tree teardown (session
+          // switch / app close); anything older than the debounce window
+          // is already persisted, so the loss is at most the last burst.
+        }
+      });
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextFormField(
+        initialValue: widget.initialValue,
+        enabled: widget.enabled,
+        maxLines: widget.maxLines,
+        keyboardType: widget.keyboardType,
+        decoration: InputDecoration(
+            labelText: widget.label,
+            hintText: widget.hint,
+            isDense: widget.isDense),
+        onEditingComplete: _flush,
+        onChanged: (v) {
+          _pending = v;
+          _timer?.cancel();
+          _timer = Timer(DebouncedTextField.debounce, _flush);
+        },
+      );
 }

@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
-
 /// One Journey Task row.
 class VerdantTask {
   const VerdantTask({
@@ -91,11 +87,6 @@ class VerdantData {
   VerdantData(this._json);
 
   final Map<String, dynamic> _json;
-
-  static Future<VerdantData> load() async {
-    final raw = await rootBundle.loadString('assets/verdant_data.json');
-    return VerdantData(jsonDecode(raw) as Map<String, dynamic>);
-  }
 
   Map<String, dynamic> get _c => _json['constants'] as Map<String, dynamic>;
 

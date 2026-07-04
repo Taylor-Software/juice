@@ -60,7 +60,8 @@ class FunnelSheetView extends ConsumerWidget {
                 ? '0-Level Funnel — Custom (${_templateLabel(s.seedVariant)})'
                 : '0-Level Funnel — ${s.seedSystem}',
             style: theme.textTheme.labelSmall),
-        Text('${s.aliveCount} / ${s.peasants.length} alive · '
+        Text(
+            '${s.aliveCount} / ${s.peasants.length} alive · '
             '${s.graduatedCount} graduated',
             style: theme.textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -79,8 +80,12 @@ class FunnelSheetView extends ConsumerWidget {
               key: const Key('funnel-add-peasant'),
               onPressed: s.peasants.length >= kFunnelMaxPeasants
                   ? null
-                  : () => _save(ref,
-                      s.copyWith(peasants: [...s.peasants, profile.seedPeasant(s.seedVariant)])),
+                  : () => _save(
+                      ref,
+                      s.copyWith(peasants: [
+                        ...s.peasants,
+                        profile.seedPeasant(s.seedVariant)
+                      ])),
               icon: const Icon(Icons.person_add),
               label: const Text('Add peasant'),
             ),
@@ -106,8 +111,7 @@ class FunnelSheetView extends ConsumerWidget {
             ? const TextStyle(
                 decoration: TextDecoration.lineThrough, color: Colors.grey)
             : null;
-    final statusText =
-        p.graduated ? 'graduated' : (p.alive ? 'alive' : 'dead');
+    final statusText = p.graduated ? 'graduated' : (p.alive ? 'alive' : 'dead');
 
     return Card(
       child: ExpansionTile(
@@ -117,21 +121,20 @@ class FunnelSheetView extends ConsumerWidget {
         subtitle: Text('HP ${p.hp}  •  $statusText'),
         childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
         children: [
-          TextFormField(
+          DebouncedTextField(
             key: Key('funnel-peasant-$i-name'),
             initialValue: p.name,
             enabled: !p.graduated,
-            decoration: const InputDecoration(labelText: 'Name'),
-            onChanged: (v) => setP(p.copyWith(name: v)),
+            label: 'Name',
+            onSave: (v) => setP(p.copyWith(name: v)),
           ),
           for (final f in schema.flavorFields)
-            TextFormField(
+            DebouncedTextField(
               key: Key('funnel-peasant-$i-flavor-${f.key}'),
               initialValue: p.flavor[f.key] ?? '',
               enabled: !p.graduated,
-              decoration: InputDecoration(labelText: f.label),
-              onChanged: (v) =>
-                  setP(p.copyWith(flavor: {...p.flavor, f.key: v})),
+              label: f.label,
+              onSave: (v) => setP(p.copyWith(flavor: {...p.flavor, f.key: v})),
             ),
           const SizedBox(height: 8),
           _stepper('funnel-peasant-$i-hp', 'HP', p.hp,
@@ -145,8 +148,8 @@ class FunnelSheetView extends ConsumerWidget {
               Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(st.label,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                _stepper('funnel-peasant-$i-${st.key}',
-                    '', p.stats[st.key] ?? schema.statDefault,
+                _stepper('funnel-peasant-$i-${st.key}', '',
+                    p.stats[st.key] ?? schema.statDefault,
                     min: schema.statMin,
                     max: schema.statMax,
                     enabled: !p.graduated,
@@ -156,20 +159,25 @@ class FunnelSheetView extends ConsumerWidget {
           ]),
           const SizedBox(height: 8),
           if (!p.graduated)
-            Wrap(alignment: WrapAlignment.spaceBetween, runSpacing: 4, children: [
-              TextButton(
-                key: Key('funnel-peasant-$i-${p.alive ? "kill" : "revive"}'),
-                onPressed: () => setP(p.copyWith(alive: !p.alive)),
-                child: Text(p.alive ? 'Mark dead' : 'Mark alive'),
-              ),
-              if (p.alive)
-                FilledButton(
-                  key: Key('funnel-peasant-$i-graduate'),
-                  style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                  onPressed: () => _graduateDialog(context, ref, s, i),
-                  child: const Text('Graduate →'),
-                ),
-            ]),
+            Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                runSpacing: 4,
+                children: [
+                  TextButton(
+                    key:
+                        Key('funnel-peasant-$i-${p.alive ? "kill" : "revive"}'),
+                    onPressed: () => setP(p.copyWith(alive: !p.alive)),
+                    child: Text(p.alive ? 'Mark dead' : 'Mark alive'),
+                  ),
+                  if (p.alive)
+                    FilledButton(
+                      key: Key('funnel-peasant-$i-graduate'),
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 48)),
+                      onPressed: () => _graduateDialog(context, ref, s, i),
+                      child: const Text('Graduate →'),
+                    ),
+                ]),
         ],
       ),
     );
@@ -197,6 +205,7 @@ class FunnelSheetView extends ConsumerWidget {
       }
       return m;
     }
+
     var target = s.seedSystem;
     var picks = picksFor(target);
 
@@ -250,8 +259,8 @@ class FunnelSheetView extends ConsumerWidget {
     final profile = funnelProfileFor(target)!;
     final peasant = s.peasants[i];
     final messenger = ScaffoldMessenger.of(context);
-    await ref.read(charactersProvider.notifier).graduateFunnelPeasant(
-        character, i, (id) => profile.graduate(id, peasant, picks, s.seedVariant));
+    await ref.read(charactersProvider.notifier).graduateFunnelPeasant(character,
+        i, (id) => profile.graduate(id, peasant, picks, s.seedVariant));
     final cls = picks['className'] ?? picks.values.firstOrNull ?? '';
     messenger.showSnackBar(SnackBar(
       content: Text(

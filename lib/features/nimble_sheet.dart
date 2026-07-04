@@ -67,11 +67,11 @@ class NimbleSheetView extends ConsumerWidget {
           onChanged: (v) =>
               v == null ? null : _save(ref, s.copyWith(className: v)),
         ),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('nimble-ancestry'),
           initialValue: s.ancestry,
-          decoration: const InputDecoration(labelText: 'Ancestry'),
-          onChanged: (v) => _save(ref, s.copyWith(ancestry: v)),
+          label: 'Ancestry',
+          onSave: (v) => _save(ref, s.copyWith(ancestry: v)),
         ),
         const SizedBox(height: 12),
         Text('Stats (modifiers) + saves', style: theme.textTheme.titleMedium),
@@ -122,19 +122,19 @@ class NimbleSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'nimble'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('nimble-talents'),
           initialValue: s.talents,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Talents'),
-          onChanged: (v) => _save(ref, s.copyWith(talents: v)),
+          label: 'Talents',
+          onSave: (v) => _save(ref, s.copyWith(talents: v)),
         ),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('nimble-notes'),
           initialValue: s.notes,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Notes'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

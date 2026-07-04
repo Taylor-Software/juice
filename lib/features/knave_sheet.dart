@@ -100,11 +100,11 @@ class KnaveSheetView extends ConsumerWidget {
             onBack: onBack, nameKey: 'knave-name'),
         Text('Knave', style: theme.textTheme.labelSmall),
         const SizedBox(height: 8),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('knave-career'),
           initialValue: s.career,
-          decoration: const InputDecoration(labelText: 'Career / Background'),
-          onChanged: (v) => _save(ref, s.copyWith(career: v)),
+          label: 'Career / Background',
+          onSave: (v) => _save(ref, s.copyWith(career: v)),
         ),
         const SizedBox(height: 8),
         _stepper('knave-level', 'Level', s.level,
@@ -145,21 +145,21 @@ class KnaveSheetView extends ConsumerWidget {
               style: const TextStyle(fontSize: 14)),
         ]),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('knave-coins'),
           initialValue: s.coins,
-          decoration: const InputDecoration(labelText: 'Coins (cp/sp/gp)'),
-          onChanged: (v) => _save(ref, s.copyWith(coins: v)),
+          label: 'Coins (cp/sp/gp)',
+          onSave: (v) => _save(ref, s.copyWith(coins: v)),
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'knave'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('knave-notes'),
           initialValue: s.notes,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notes / Inventory'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes / Inventory',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

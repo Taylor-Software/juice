@@ -51,7 +51,7 @@ void main() {
       void walk(InlineSpan s) {
         if (s is TextSpan) {
           if (s.text == '2d6+3' && s.recognizer is TapGestureRecognizer) {
-            diceTap = s.recognizer as TapGestureRecognizer;
+            diceTap = s.recognizer! as TapGestureRecognizer;
           }
           s.children?.forEach(walk);
         }

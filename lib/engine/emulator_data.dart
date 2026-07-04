@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-
 /// One pet.agenda row (keys 2..12): a named agenda in one of six groups,
 /// with the Ask question ACT poses and the zine's flavor text.
 class AgendaEntry {
@@ -64,11 +61,6 @@ class EmulatorData {
   EmulatorData(this._json);
 
   final Map<String, dynamic> _json;
-
-  static Future<EmulatorData> load() async {
-    final raw = await rootBundle.loadString('assets/emulator_data.json');
-    return EmulatorData(jsonDecode(raw) as Map<String, dynamic>);
-  }
 
   Map<String, dynamic> get _tripleO =>
       _json['triple_o'] as Map<String, dynamic>;

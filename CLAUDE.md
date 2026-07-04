@@ -914,8 +914,16 @@ Working rules for this repo:
   pushed routes — run with `flutter test integration_test/ai_flows_test.dart -d macos`) +
   `flutter_svg` (renders the bundled CC0 standard-deck card SVGs in
   `assets/playing/`; tarot art in `assets/tarot/` is raster JPG — `CardImage`
-  in `lib/shared/card_image.dart` picks the renderer by extension).
-  No dio/repository (no network), no codegen (static data), no router (the
+  in `lib/shared/card_image.dart` picks the renderer by extension) +
+  `anthropic_sdk_dart`/`http` (opt-in **cloud interpret seam**,
+  `lib/state/cloud_interpreter.dart` — Claude Haiku on the user's own API key,
+  routed by the decorator in `interpreter.dart`; `interpret()` ONLY, every
+  other AI seam stays on-device) + `flutter_secure_storage` (that API key in
+  the OS keychain via `lib/state/cloud_key_store.dart` — the app's one real
+  secret, never in SharedPreferences; macOS device verification blocked on an
+  ad-hoc-signed build, see the note in that file).
+  No dio/repository (no network beyond the cloud-interpret opt-in + model
+  download), no codegen (static data), no router (the
   journal is the single home screen; tools open in a keep-alive panel via
   `lib/shared/tool_host.dart` + the declarative registry in
   `lib/shared/tool_registry.dart`). Add rails only when a real need appears.
