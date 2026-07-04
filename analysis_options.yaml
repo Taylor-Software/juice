@@ -5,6 +5,10 @@ linter:
     prefer_const_constructors: true
     prefer_final_locals: true
     avoid_print: true
+    unawaited_futures: true
+    cancel_subscriptions: true
+    close_sinks: true
+    cast_nullable_to_non_nullable: true
 
 analyzer:
   language:

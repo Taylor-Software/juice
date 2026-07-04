@@ -43,7 +43,8 @@ Future<void> _showThreadEntries(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
           ListTile(
-            title: Text('${t.title} — ${entries.length} journal entr${entries.length == 1 ? 'y' : 'ies'}',
+            title: Text(
+                '${t.title} — ${entries.length} journal entr${entries.length == 1 ? 'y' : 'ies'}',
                 style: Theme.of(context).textTheme.titleMedium),
           ),
           for (final e in entries)
@@ -162,9 +163,8 @@ class ThreadsPane extends ConsumerWidget {
                       ),
                       ThreadTallyRow(t),
                       Builder(builder: (ctx) {
-                        final linked = journal
-                            .where((e) => e.threadId == t.id)
-                            .toList();
+                        final linked =
+                            journal.where((e) => e.threadId == t.id).toList();
                         if (linked.isEmpty) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -174,8 +174,7 @@ class ThreadsPane extends ConsumerWidget {
                             label: Text(
                                 '${linked.length} entr${linked.length == 1 ? 'y' : 'ies'}'),
                             visualDensity: VisualDensity.compact,
-                            onPressed: () =>
-                                _showThreadEntries(ctx, t, linked),
+                            onPressed: () => _showThreadEntries(ctx, t, linked),
                           ),
                         );
                       }),
@@ -298,6 +297,42 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Id of the character whose sheet is open, or null for the list view.
   String? _editingId;
 
+  /// The bespoke sheet view for a pre-made-system character, or null for the
+  /// generic `_buildSheet`. One line per sheet type — a new sheet system adds
+  /// its row here.
+  Widget? _premadeSheetView(Character c) {
+    void onBack() {
+      ref.read(playContextProvider.notifier).setActiveCharacter(null);
+      setState(() => _editingId = null);
+    }
+
+    if (c.custom != null) return CustomSheetView(character: c, onBack: onBack);
+    if (c.starforged != null) {
+      return StarforgedSheetView(character: c, onBack: onBack);
+    }
+    if (c.shadowdark != null) {
+      return ShadowdarkSheetView(character: c, onBack: onBack);
+    }
+    if (c.kalArath != null) {
+      return KalArathSheetView(character: c, onBack: onBack);
+    }
+    if (c.ose != null) return OseSheetView(character: c, onBack: onBack);
+    if (c.dcc != null) return DccSheetView(character: c, onBack: onBack);
+    if (c.funnel != null) return FunnelSheetView(character: c, onBack: onBack);
+    if (c.knave != null) return KnaveSheetView(character: c, onBack: onBack);
+    if (c.cairn != null) return CairnSheetView(character: c, onBack: onBack);
+    if (c.argosa != null) return ArgosaSheetView(character: c, onBack: onBack);
+    if (c.drawSteel != null) {
+      return DrawSteelSheetView(character: c, onBack: onBack);
+    }
+    if (c.nimble != null) return NimbleSheetView(character: c, onBack: onBack);
+    if (c.dnd != null) return DndSheetView(character: c, onBack: onBack);
+    if (c.ironsworn != null) {
+      return IronswornSheetView(character: c, onBack: onBack);
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     // The active PC surfaces as a rich lead card in the roster *list* (vitals +
@@ -318,161 +353,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               _editingId = null;
             } else {
               final c = match.first;
-              if (c.custom != null) {
-                return CustomSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.starforged != null) {
-                return StarforgedSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.shadowdark != null) {
-                return ShadowdarkSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.kalArath != null) {
-                return KalArathSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.ose != null) {
-                return OseSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.dcc != null) {
-                return DccSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.funnel != null) {
-                return FunnelSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.knave != null) {
-                return KnaveSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.cairn != null) {
-                return CairnSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.argosa != null) {
-                return ArgosaSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.drawSteel != null) {
-                return DrawSteelSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.nimble != null) {
-                return NimbleSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.dnd != null) {
-                return DndSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              if (c.ironsworn != null) {
-                return IronswornSheetView(
-                  character: c,
-                  onBack: () {
-                    ref
-                        .read(playContextProvider.notifier)
-                        .setActiveCharacter(null);
-                    setState(() => _editingId = null);
-                  },
-                );
-              }
-              return _buildSheet(context, c);
+              return _premadeSheetView(c) ?? _buildSheet(context, c);
             }
           }
           if (chars.isEmpty) {
@@ -920,12 +801,9 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _newFunnel(BuildContext context) async {
-    final enabled = ref
-            .read(sessionsProvider)
-            .valueOrNull
-            ?.activeMeta
-            .enabledSystems ??
-        const <String>{};
+    final enabled =
+        ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+            const <String>{};
     final seeds =
         kFunnelProfiles.keys.where((s) => enabled.contains(s)).toList();
     if (seeds.isEmpty) {

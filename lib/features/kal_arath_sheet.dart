@@ -116,11 +116,11 @@ class KalArathSheetView extends ConsumerWidget {
               min: 1, max: 9, onSet: (v) => _save(ref, s.copyWith(level: v))),
           const SizedBox(width: 16),
           Expanded(
-            child: TextFormField(
+            child: DebouncedTextField(
               key: const Key('kal-arath-xp'),
               initialValue: s.xp,
-              decoration: const InputDecoration(labelText: 'XP'),
-              onChanged: (v) => _save(ref, s.copyWith(xp: v)),
+              label: 'XP',
+              onSave: (v) => _save(ref, s.copyWith(xp: v)),
             ),
           ),
         ]),
@@ -170,28 +170,28 @@ class KalArathSheetView extends ConsumerWidget {
               onSet: (v) => _save(ref, s.copyWith(damageReduction: v))),
         ]),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('kal-arath-doom'),
           initialValue: s.doom,
-          decoration: const InputDecoration(labelText: 'Doom'),
-          onChanged: (v) => _save(ref, s.copyWith(doom: v)),
+          label: 'Doom',
+          onSave: (v) => _save(ref, s.copyWith(doom: v)),
         ),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('kal-arath-skills'),
           initialValue: s.skills,
-          decoration: const InputDecoration(labelText: 'Skills'),
-          onChanged: (v) => _save(ref, s.copyWith(skills: v)),
+          label: 'Skills',
+          onSave: (v) => _save(ref, s.copyWith(skills: v)),
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'kal-arath'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('kal-arath-notes'),
           initialValue: s.notes,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notes'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

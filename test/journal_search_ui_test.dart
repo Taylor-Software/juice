@@ -55,6 +55,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(
         find.byKey(const Key('journal-search-field')), query);
+    // Let the search-input debounce fire before asserting on results.
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpAndSettle();
   }
 

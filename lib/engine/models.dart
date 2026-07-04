@@ -5,6 +5,11 @@ library;
 import 'custom_sheet.dart';
 import 'tally.dart';
 
+/// Upper clamp for player-managed numeric sheet fields (HP, slots, pools…):
+/// an arbitrary "large enough" ceiling to keep JSON round-trips sane, not a
+/// rules value.
+const int kFieldClampMax = 1 << 20;
+
 // Tolerant JSON readers shared by the sheets' `maybeFromJson` factories.
 int _intOr(dynamic v, int d) => v is int ? v : d;
 String _strOr(dynamic v) => v is String ? v : '';
@@ -249,7 +254,8 @@ class Thread {
         pinned: (j['pinned'] as bool?) ?? false,
         progress: (j['progress'] as int?) ?? 0,
         progressMax: (j['progressMax'] as int?) ?? 10,
-        tally: Tally.maybeFromJson((j['tally'] as Map?)?.cast<String, dynamic>()),
+        tally:
+            Tally.maybeFromJson((j['tally'] as Map?)?.cast<String, dynamic>()),
       );
 }
 
@@ -1220,8 +1226,10 @@ class DndSheet {
       className == 'Warlock' ? kDndPactSlots[(level - 1).clamp(0, 19)].$2 : 0;
 
   /// Normalize an expended-slots list to exactly 9 non-negative ints.
-  static List<int> _normSlots(List<int> v) =>
-      [for (var i = 0; i < 9; i++) (i < v.length ? v[i] : 0).clamp(0, 1 << 20)];
+  static List<int> _normSlots(List<int> v) => [
+        for (var i = 0; i < 9; i++)
+          (i < v.length ? v[i] : 0).clamp(0, kFieldClampMax)
+      ];
 
   factory DndSheet.premade() => const DndSheet(
         abilities: {
@@ -1287,9 +1295,9 @@ class DndSheet {
       alignment: alignment ?? this.alignment,
       level: lvl,
       ac: (ac ?? this.ac).clamp(0, 99),
-      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
-      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
-      tempHp: (tempHp ?? this.tempHp).clamp(0, 1 << 20),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, kFieldClampMax),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, kFieldClampMax),
+      tempHp: (tempHp ?? this.tempHp).clamp(0, kFieldClampMax),
       hitDiceRemaining:
           (hitDiceRemaining ?? this.hitDiceRemaining).clamp(0, lvl),
       speed: (speed ?? this.speed).clamp(0, 999),
@@ -1315,7 +1323,8 @@ class DndSheet {
       xp: (xp ?? this.xp).clamp(0, 1 << 31),
       featuresText: featuresText ?? this.featuresText,
       spellSlotsUsed: _normSlots(spellSlotsUsed ?? this.spellSlotsUsed),
-      pactSlotsUsed: (pactSlotsUsed ?? this.pactSlotsUsed).clamp(0, 1 << 20),
+      pactSlotsUsed:
+          (pactSlotsUsed ?? this.pactSlotsUsed).clamp(0, kFieldClampMax),
       preparedSpells: preparedSpells ?? this.preparedSpells,
       spellIds: spellIds ?? this.spellIds,
     );
@@ -1372,9 +1381,9 @@ class DndSheet {
       alignment: _strOr(j['alignment']),
       level: _intOr(j['level'], 1).clamp(1, 20),
       ac: _intOr(j['ac'], 10).clamp(0, 99),
-      currentHp: _intOr(j['currentHp'], 1).clamp(0, 1 << 20),
-      maxHp: _intOr(j['maxHp'], 1).clamp(0, 1 << 20),
-      tempHp: _intOr(j['tempHp'], 0).clamp(0, 1 << 20),
+      currentHp: _intOr(j['currentHp'], 1).clamp(0, kFieldClampMax),
+      maxHp: _intOr(j['maxHp'], 1).clamp(0, kFieldClampMax),
+      tempHp: _intOr(j['tempHp'], 0).clamp(0, kFieldClampMax),
       hitDiceRemaining: _intOr(j['hitDiceRemaining'], 1)
           .clamp(0, _intOr(j['level'], 1).clamp(1, 20)),
       speed: _intOr(j['speed'], 30).clamp(0, 999),
@@ -1398,7 +1407,7 @@ class DndSheet {
       spellSlotsUsed: _normSlots(j['spellSlotsUsed'] is List
           ? [for (final x in j['spellSlotsUsed'] as List) x is int ? x : 0]
           : const []),
-      pactSlotsUsed: _intOr(j['pactSlotsUsed'], 0).clamp(0, 1 << 20),
+      pactSlotsUsed: _intOr(j['pactSlotsUsed'], 0).clamp(0, kFieldClampMax),
       preparedSpells: _strOr(j['preparedSpells']),
       spellIds: ((j['spellIds'] as List?) ?? const []).cast<String>(),
     );
@@ -1485,8 +1494,8 @@ class NimbleSheet {
       ancestry: ancestry ?? this.ancestry,
       level: (level ?? this.level).clamp(1, 10),
       hitDieSize: (hitDieSize ?? this.hitDieSize).clamp(1, 100),
-      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
-      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, kFieldClampMax),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, kFieldClampMax),
       wounds: (wounds ?? this.wounds).clamp(0, 99),
       maxWounds: (maxWounds ?? this.maxWounds).clamp(1, 99),
       speed: (speed ?? this.speed).clamp(0, 99),
@@ -1629,7 +1638,7 @@ class DrawSteelSheet {
     String? notes,
   }) {
     final cls = className ?? this.className;
-    final ms = (maxStamina ?? this.maxStamina).clamp(0, 1 << 20);
+    final ms = (maxStamina ?? this.maxStamina).clamp(0, kFieldClampMax);
     final ch = characteristics ?? this.characteristics;
     return DrawSteelSheet(
       className:
@@ -1641,10 +1650,12 @@ class DrawSteelSheet {
       },
       maxStamina: ms,
       currentStamina: (currentStamina ?? this.currentStamina).clamp(0, ms),
-      recoveries: (recoveries ?? this.recoveries).clamp(0, 1 << 20),
-      maxRecoveries: (maxRecoveries ?? this.maxRecoveries).clamp(0, 1 << 20),
+      recoveries: (recoveries ?? this.recoveries).clamp(0, kFieldClampMax),
+      maxRecoveries:
+          (maxRecoveries ?? this.maxRecoveries).clamp(0, kFieldClampMax),
       stability: (stability ?? this.stability).clamp(0, 99),
-      heroicResource: (heroicResource ?? this.heroicResource).clamp(0, 1 << 20),
+      heroicResource:
+          (heroicResource ?? this.heroicResource).clamp(0, kFieldClampMax),
       skills: skills ?? this.skills,
       notes: notes ?? this.notes,
     );
@@ -1760,7 +1771,7 @@ class ArgosaSheet {
     String? notes,
   }) {
     final cls = className ?? this.className;
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     final st = stats ?? this.stats;
     return ArgosaSheet(
       className: kArgosaClasses.contains(cls) ? cls : kArgosaClasses.first,
@@ -1886,7 +1897,7 @@ class CairnSheet {
     String? notes,
   }) {
     final bg = background ?? this.background;
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     return CairnSheet(
       background: kCairnBackgrounds.contains(bg) ? bg : kCairnBackgrounds.first,
       str: (str ?? this.str).clamp(3, 18),
@@ -1992,7 +2003,7 @@ class KnaveSheet {
     String? coins,
     String? notes,
   }) {
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     final st = stats ?? this.stats;
     return KnaveSheet(
       career: career ?? this.career,
@@ -2224,7 +2235,7 @@ class DccSheet {
     int? disapprovalRange,
     String? notes,
   }) {
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     final st = stats ?? this.stats;
     final sv = saves ?? this.saves;
     final bn = burns ?? this.burns;
@@ -2304,8 +2315,9 @@ class DccSheet {
           k: ((st[k] ?? 10) as num).round().clamp(3, 18),
       },
       lckMax: ((j['lckMax'] as num?)?.round() ?? 10).clamp(3, 18),
-      currentHp: ((j['currentHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
-      maxHp: ((j['maxHp'] as num?)?.round() ?? 4).clamp(0, 1 << 20),
+      currentHp:
+          ((j['currentHp'] as num?)?.round() ?? 4).clamp(0, kFieldClampMax),
+      maxHp: ((j['maxHp'] as num?)?.round() ?? 4).clamp(0, kFieldClampMax),
       ac: ((j['ac'] as num?)?.round() ?? 10).clamp(0, 30),
       attackBonus: ((j['attackBonus'] as num?)?.round() ?? 0).clamp(-5, 20),
       // Validate the dice tokens: the widget parses sides via substring(1),
@@ -2387,7 +2399,7 @@ class OseSheet {
     String? coins,
     String? notes,
   }) {
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     final st = stats ?? this.stats;
     final sv = saves ?? this.saves;
     return OseSheet(
@@ -2529,7 +2541,7 @@ class KalArathSheet {
     String? skills,
     String? notes,
   }) {
-    final mh = (maxHp ?? this.maxHp).clamp(0, 1 << 20);
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
     final st = stats ?? this.stats;
     return KalArathSheet(
       archetype: archetype ?? this.archetype,
@@ -2704,8 +2716,8 @@ class ShadowdarkSheet {
       level: (level ?? this.level).clamp(1, 10),
       xp: (xp ?? this.xp).clamp(0, 1 << 31),
       ac: (ac ?? this.ac).clamp(0, 99),
-      currentHp: (currentHp ?? this.currentHp).clamp(0, 1 << 20),
-      maxHp: (maxHp ?? this.maxHp).clamp(0, 1 << 20),
+      currentHp: (currentHp ?? this.currentHp).clamp(0, kFieldClampMax),
+      maxHp: (maxHp ?? this.maxHp).clamp(0, kFieldClampMax),
       gearSlotsUsed: (gearSlotsUsed ?? this.gearSlotsUsed).clamp(0, 999),
       torch: (torch ?? this.torch).clamp(0, 9999),
       luckToken: luckToken ?? this.luckToken,
@@ -2755,8 +2767,8 @@ class ShadowdarkSheet {
       level: _intOr(j['level'], 1).clamp(1, 10),
       xp: _intOr(j['xp'], 0).clamp(0, 1 << 31),
       ac: _intOr(j['ac'], 10).clamp(0, 99),
-      currentHp: _intOr(j['currentHp'], 1).clamp(0, 1 << 20),
-      maxHp: _intOr(j['maxHp'], 1).clamp(0, 1 << 20),
+      currentHp: _intOr(j['currentHp'], 1).clamp(0, kFieldClampMax),
+      maxHp: _intOr(j['maxHp'], 1).clamp(0, kFieldClampMax),
       gearSlotsUsed: _intOr(j['gearSlotsUsed'], 0).clamp(0, 999),
       torch: _intOr(j['torch'], 0).clamp(0, 9999),
       luckToken: j['luckToken'] == true,
@@ -2899,8 +2911,7 @@ class StatBlock {
       creatureType: j['creatureType'] as String?,
       size: j['size'] as String?,
       abilities: abil is Map
-          ? abil.map((k, v) =>
-              MapEntry(k as String, (v as num?)?.toInt() ?? 0))
+          ? abil.map((k, v) => MapEntry(k as String, (v as num?)?.toInt() ?? 0))
           : null,
       traits: trts is List
           ? trts
@@ -3560,7 +3571,7 @@ class FunnelPeasant {
   }) =>
       FunnelPeasant(
         name: name ?? this.name,
-        hp: (hp ?? this.hp).clamp(0, 1 << 20),
+        hp: (hp ?? this.hp).clamp(0, kFieldClampMax),
         alive: alive ?? this.alive,
         graduated: graduated ?? this.graduated,
         stats: stats ?? this.stats,
@@ -3578,13 +3589,13 @@ class FunnelPeasant {
 
   factory FunnelPeasant.fromJson(Map<String, dynamic> j) => FunnelPeasant(
         name: j['name'] as String? ?? '',
-        hp: ((j['hp'] as num?)?.round() ?? 0).clamp(0, 1 << 20),
+        hp: ((j['hp'] as num?)?.round() ?? 0).clamp(0, kFieldClampMax),
         alive: j['alive'] as bool? ?? true,
         graduated: j['graduated'] as bool? ?? false,
-        stats: ((j['stats'] as Map?) ?? const {}).map(
-            (k, v) => MapEntry(k as String, (v as num).round())),
-        flavor: ((j['flavor'] as Map?) ?? const {}).map(
-            (k, v) => MapEntry(k as String, v as String)),
+        stats: ((j['stats'] as Map?) ?? const {})
+            .map((k, v) => MapEntry(k as String, (v as num).round())),
+        flavor: ((j['flavor'] as Map?) ?? const {})
+            .map((k, v) => MapEntry(k as String, v as String)),
       );
 }
 
@@ -3654,7 +3665,9 @@ class FunnelSheet {
 /// encounter tracker, and the run-screen.
 (int, int)? characterHpPool(Character c) {
   if (c.dnd != null) return (c.dnd!.currentHp, c.dnd!.maxHp);
-  if (c.shadowdark != null) return (c.shadowdark!.currentHp, c.shadowdark!.maxHp);
+  if (c.shadowdark != null) {
+    return (c.shadowdark!.currentHp, c.shadowdark!.maxHp);
+  }
   if (c.nimble != null) return (c.nimble!.currentHp, c.nimble!.maxHp);
   if (c.drawSteel != null) {
     return (c.drawSteel!.currentStamina, c.drawSteel!.maxStamina);
@@ -3743,6 +3756,7 @@ class Character {
 
   /// User-defined custom/homebrew sheet; null unless this is a custom PC.
   final CustomSheet? custom;
+
   /// Bespoke DCC sheet; null unless this is a DCC character.
   final DccSheet? dcc;
 
@@ -4633,7 +4647,14 @@ class Track {
 // -- Ironsworn-family foe entries (from ruleset npc_collections) --------------
 
 /// Rank label by 1-based index (Ironsworn 1=Troublesome … 5=Epic).
-const kRankNames = ['', 'Troublesome', 'Dangerous', 'Formidable', 'Extreme', 'Epic'];
+const kRankNames = [
+  '',
+  'Troublesome',
+  'Dangerous',
+  'Formidable',
+  'Extreme',
+  'Epic'
+];
 
 class FoeEntry {
   const FoeEntry({

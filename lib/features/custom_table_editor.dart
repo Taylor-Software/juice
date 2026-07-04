@@ -36,8 +36,7 @@ Future<void> showCustomTableDialog(
             SegmentedButton<TableRoll>(
               key: const Key('table-mode'),
               segments: const [
-                ButtonSegment(
-                    value: TableRoll.uniform, label: Text('Uniform')),
+                ButtonSegment(value: TableRoll.uniform, label: Text('Uniform')),
                 ButtonSegment(
                     value: TableRoll.weighted, label: Text('Weighted')),
                 ButtonSegment(value: TableRoll.ranges, label: Text('Ranges')),
@@ -98,6 +97,13 @@ Future<void> showCustomTableDialog(
       ),
     ),
   );
+  // Post-frame: runs after the synchronous .text reads below and after the
+  // route's exit transition, so disposing here is safe either way.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    nameCtl.dispose();
+    diceCtl.dispose();
+    rowsCtl.dispose();
+  });
   if (result != true) return;
   final rows = parseRows(rowsCtl.text, mode);
   final name = nameCtl.text.trim();

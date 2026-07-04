@@ -122,12 +122,11 @@ class DccSheetView extends ConsumerWidget {
           for (final k in kDccStats) _statCell(context, ref, s, k),
         ]),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('dcc-lucky-sign'),
           initialValue: s.luckySign,
-          decoration:
-              const InputDecoration(labelText: 'Lucky Sign / Birth Augur'),
-          onChanged: (v) => save(s.copyWith(luckySign: v)),
+          label: 'Lucky Sign / Birth Augur',
+          onSave: (v) => save(s.copyWith(luckySign: v)),
         ),
         const SizedBox(height: 12),
         sheetSection(context, 'Combat'),
@@ -176,21 +175,21 @@ class DccSheetView extends ConsumerWidget {
         if (s.isCaster) _spellburnSection(context, ref, s),
         if (s.isCleric) _disapprovalSection(context, ref, s),
         sheetSection(context, 'Occupation'),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('dcc-occupation'),
           initialValue: s.occupation,
-          decoration: const InputDecoration(labelText: 'Occupation'),
-          onChanged: (v) => save(s.copyWith(occupation: v)),
+          label: 'Occupation',
+          onSave: (v) => save(s.copyWith(occupation: v)),
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'dcc'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('dcc-notes'),
           initialValue: s.notes,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notes / Equipment'),
-          onChanged: (v) => save(s.copyWith(notes: v)),
+          label: 'Notes / Equipment',
+          onSave: (v) => save(s.copyWith(notes: v)),
         ),
       ],
     );
@@ -274,38 +273,41 @@ class DccSheetView extends ConsumerWidget {
             _stepper('dcc-burn-$k', 'burn', s.burned(k),
                 min: 0,
                 max: 18,
-                onSet: (v) => _save(ref, s.copyWith(burns: {...s.burns, k: v}))),
+                onSet: (v) =>
+                    _save(ref, s.copyWith(burns: {...s.burns, k: v}))),
           ]),
       ]),
-      Wrap(spacing: 8, runSpacing: 4,
+      Wrap(
+          spacing: 8,
+          runSpacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-        Text('Spellburn: +${s.totalSpellburn}'),
-        TextButton(
-          key: const Key('dcc-spellburn-reset'),
-          onPressed: () => _save(ref,
-              s.copyWith(burns: {for (final k in s.burnableStats) k: 0})),
-          child: const Text('Reset'),
-        ),
-        FilledButton.icon(
-          key: const Key('dcc-spell-check-roll'),
-          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-          icon: const Icon(Icons.auto_awesome, size: 18),
-          label: const Text('Spell check'),
-          onPressed: () async {
-            final dc = await _askDc(context);
-            if (dc == null || !context.mounted) return;
-            final sides = int.parse(s.actionDie.substring(1));
-            final base = Random().nextInt(sides) +
-                1 +
-                s.level +
-                dccAbilityMod(s.stats[castStat] ?? 10);
-            final total = base + s.totalSpellburn;
-            _snack(context,
-                'Spell check: $total (base $base + ${s.totalSpellburn} spellburn) vs DC $dc — ${total >= dc ? "Success" : "Fail"}');
-          },
-        ),
-      ]),
+            Text('Spellburn: +${s.totalSpellburn}'),
+            TextButton(
+              key: const Key('dcc-spellburn-reset'),
+              onPressed: () => _save(ref,
+                  s.copyWith(burns: {for (final k in s.burnableStats) k: 0})),
+              child: const Text('Reset'),
+            ),
+            FilledButton.icon(
+              key: const Key('dcc-spell-check-roll'),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Spell check'),
+              onPressed: () async {
+                final dc = await _askDc(context);
+                if (dc == null || !context.mounted) return;
+                final sides = int.parse(s.actionDie.substring(1));
+                final base = Random().nextInt(sides) +
+                    1 +
+                    s.level +
+                    dccAbilityMod(s.stats[castStat] ?? 10);
+                final total = base + s.totalSpellburn;
+                _snack(context,
+                    'Spell check: $total (base $base + ${s.totalSpellburn} spellburn) vs DC $dc — ${total >= dc ? "Success" : "Fail"}');
+              },
+            ),
+          ]),
       const SizedBox(height: 12),
     ]);
   }
@@ -313,35 +315,37 @@ class DccSheetView extends ConsumerWidget {
   Widget _disapprovalSection(BuildContext context, WidgetRef ref, DccSheet s) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       sheetSection(context, 'Disapproval'),
-      Wrap(spacing: 8, runSpacing: 4,
+      Wrap(
+          spacing: 8,
+          runSpacing: 4,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-        Text('Range 1–${s.disapprovalRange}'),
-        IconButton(
-          key: const Key('dcc-disapproval-inc'),
-          icon: const Icon(Icons.add),
-          tooltip: '+1 after failed casting',
-          onPressed: () =>
-              _save(ref, s.copyWith(disapprovalRange: s.disapprovalRange + 1)),
-        ),
-        TextButton(
-          key: const Key('dcc-disapproval-reset'),
-          onPressed: () => _save(ref, s.copyWith(disapprovalRange: 1)),
-          child: const Text('Reset'),
-        ),
-        FilledButton.icon(
-          key: const Key('dcc-disapproval-roll'),
-          style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-          icon: const Icon(Icons.casino_outlined, size: 18),
-          label: const Text('Check'),
-          onPressed: () {
-            final roll = Random().nextInt(20) + 1;
-            final bad = roll <= s.disapprovalRange;
-            _snack(context,
-                'Disapproval check: $roll vs 1–${s.disapprovalRange} — ${bad ? "Disapproval!" : "Safe"}');
-          },
-        ),
-      ]),
+            Text('Range 1–${s.disapprovalRange}'),
+            IconButton(
+              key: const Key('dcc-disapproval-inc'),
+              icon: const Icon(Icons.add),
+              tooltip: '+1 after failed casting',
+              onPressed: () => _save(
+                  ref, s.copyWith(disapprovalRange: s.disapprovalRange + 1)),
+            ),
+            TextButton(
+              key: const Key('dcc-disapproval-reset'),
+              onPressed: () => _save(ref, s.copyWith(disapprovalRange: 1)),
+              child: const Text('Reset'),
+            ),
+            FilledButton.icon(
+              key: const Key('dcc-disapproval-roll'),
+              style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+              icon: const Icon(Icons.casino_outlined, size: 18),
+              label: const Text('Check'),
+              onPressed: () {
+                final roll = Random().nextInt(20) + 1;
+                final bad = roll <= s.disapprovalRange;
+                _snack(context,
+                    'Disapproval check: $roll vs 1–${s.disapprovalRange} — ${bad ? "Disapproval!" : "Safe"}');
+              },
+            ),
+          ]),
       const SizedBox(height: 12),
     ]);
   }

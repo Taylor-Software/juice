@@ -220,8 +220,7 @@ class DndSheetView extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
-                  Text('Prepared / known',
-                      style: theme.textTheme.labelLarge),
+                  Text('Prepared / known', style: theme.textTheme.labelLarge),
                   const Spacer(),
                   TextButton.icon(
                     key: const Key('dnd-spell-add'),
@@ -271,23 +270,22 @@ class DndSheetView extends ConsumerWidget {
               ],
             );
           }),
-          TextFormField(
+          DebouncedTextField(
             key: const Key('dnd-prepared'),
             initialValue: s.preparedSpells,
             maxLines: null,
-            decoration: const InputDecoration(
-                labelText: 'Spell notes', hintText: 'Spell names…'),
-            onChanged: (v) => _save(ref, s.copyWith(preparedSpells: v)),
+            label: 'Spell notes',
+            hint: 'Spell names…',
+            onSave: (v) => _save(ref, s.copyWith(preparedSpells: v)),
           ),
         ],
         sheetSection(context, 'Features & Traits'),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('dnd-features'),
           initialValue: s.featuresText,
           maxLines: null,
-          decoration: const InputDecoration(
-              hintText: 'Class features, racial traits, feats, attacks…'),
-          onChanged: (v) => _save(ref, s.copyWith(featuresText: v)),
+          hint: 'Class features, racial traits, feats, attacks…',
+          onSave: (v) => _save(ref, s.copyWith(featuresText: v)),
         ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
@@ -409,7 +407,9 @@ class _SpellPickerDialogState extends State<_SpellPickerDialog> {
   List<SpellEntry> get _filtered {
     if (_query.isEmpty) return widget.spells;
     final q = _query.toLowerCase();
-    return widget.spells.where((sp) => sp.name.toLowerCase().contains(q)).toList();
+    return widget.spells
+        .where((sp) => sp.name.toLowerCase().contains(q))
+        .toList();
   }
 
   @override

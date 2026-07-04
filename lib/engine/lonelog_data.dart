@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
-
 /// One core symbol entry.
 class LonelogSymbol {
   const LonelogSymbol(
@@ -101,11 +97,6 @@ class LonelogExample {
 class LonelogData {
   LonelogData(this._json);
   final Map<String, dynamic> _json;
-
-  static Future<LonelogData> load() async {
-    final raw = await rootBundle.loadString('assets/lonelog_data.json');
-    return LonelogData(jsonDecode(raw) as Map<String, dynamic>);
-  }
 
   String get version => _json['version'] as String;
 

@@ -164,21 +164,21 @@ class CairnSheetView extends ConsumerWidget {
         _stepper('cairn-fatigue', 'Fatigue slots', s.fatigue,
             max: 10, onSet: (v) => _save(ref, s.copyWith(fatigue: v))),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('cairn-coins'),
           initialValue: s.coins,
-          decoration: const InputDecoration(labelText: 'Coins (gp/sp/cp)'),
-          onChanged: (v) => _save(ref, s.copyWith(coins: v)),
+          label: 'Coins (gp/sp/cp)',
+          onSave: (v) => _save(ref, s.copyWith(coins: v)),
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'cairn'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('cairn-notes'),
           initialValue: s.notes,
           maxLines: 4,
-          decoration: const InputDecoration(labelText: 'Notes / Inventory'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes / Inventory',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

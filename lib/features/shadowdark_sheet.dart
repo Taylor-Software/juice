@@ -32,11 +32,11 @@ class ShadowdarkSheetView extends ConsumerWidget {
 
   Widget _freeform(WidgetRef ref, String key, String label, String value,
           ValueChanged<String> onSet) =>
-      TextFormField(
+      DebouncedTextField(
         key: Key(key),
         initialValue: value,
-        decoration: InputDecoration(labelText: label),
-        onChanged: onSet,
+        label: label,
+        onSave: onSet,
       );
 
   @override

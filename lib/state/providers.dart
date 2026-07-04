@@ -39,10 +39,11 @@ import 'campaign_io.dart';
 import 'cloud_key_store.dart';
 import 'interpreter.dart';
 
-/// Loads the data asset and builds the engine once.
+/// Loads the data asset and builds the engine once. (The rootBundle load
+/// lives here, not in the engine — lib/engine/ stays Flutter-free.)
 final oracleProvider = FutureProvider<Oracle>((ref) async {
-  final data = await OracleData.load();
-  return Oracle(data);
+  final raw = await rootBundle.loadString('assets/oracle_data.json');
+  return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
 });
 
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
@@ -2267,18 +2268,28 @@ final contentSpellsProvider = FutureProvider<List<SpellEntry>>((ref) async {
   ];
 });
 
-/// Loads the party-emulator asset (Triple-O + Pettish tables) once.
-final emulatorDataProvider =
-    FutureProvider<EmulatorData>((ref) => EmulatorData.load());
+/// Loads the party-emulator asset (Triple-O + Pettish tables) once. Like
+/// [oracleProvider], the rootBundle loads live here so lib/engine/ stays
+/// Flutter-free.
+final emulatorDataProvider = FutureProvider<EmulatorData>((ref) async {
+  final raw = await rootBundle.loadString('assets/emulator_data.json');
+  return EmulatorData(jsonDecode(raw) as Map<String, dynamic>);
+});
 
-final verdantDataProvider =
-    FutureProvider<VerdantData>((ref) => VerdantData.load());
+final verdantDataProvider = FutureProvider<VerdantData>((ref) async {
+  final raw = await rootBundle.loadString('assets/verdant_data.json');
+  return VerdantData(jsonDecode(raw) as Map<String, dynamic>);
+});
 
-final lonelogDataProvider =
-    FutureProvider<LonelogData>((ref) => LonelogData.load());
+final lonelogDataProvider = FutureProvider<LonelogData>((ref) async {
+  final raw = await rootBundle.loadString('assets/lonelog_data.json');
+  return LonelogData(jsonDecode(raw) as Map<String, dynamic>);
+});
 
-final hexcrawlDataProvider =
-    FutureProvider<HexcrawlData>((ref) => HexcrawlData.load());
+final hexcrawlDataProvider = FutureProvider<HexcrawlData>((ref) async {
+  final raw = await rootBundle.loadString('assets/hexcrawl_data.json');
+  return HexcrawlData(jsonDecode(raw) as Map<String, dynamic>);
+});
 
 /// Loads the hand-written help asset once.
 final helpDataProvider = FutureProvider<HelpData>((ref) async {

@@ -1,7 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/services.dart' show rootBundle;
-
 class HexTerrain {
   const HexTerrain(
       {required this.key,
@@ -41,11 +37,6 @@ class WeightedTerrain {
 class HexcrawlData {
   HexcrawlData(this._json);
   final Map<String, dynamic> _json;
-
-  static Future<HexcrawlData> load() async {
-    final raw = await rootBundle.loadString('assets/hexcrawl_data.json');
-    return HexcrawlData(jsonDecode(raw) as Map<String, dynamic>);
-  }
 
   List<String> get climates => (_json['climates'] as List).cast<String>();
 

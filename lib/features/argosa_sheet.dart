@@ -151,19 +151,19 @@ class ArgosaSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'argosa'),
         const SizedBox(height: 12),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('argosa-skills'),
           initialValue: s.skills,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Skills & Abilities'),
-          onChanged: (v) => _save(ref, s.copyWith(skills: v)),
+          label: 'Skills & Abilities',
+          onSave: (v) => _save(ref, s.copyWith(skills: v)),
         ),
-        TextFormField(
+        DebouncedTextField(
           key: const Key('argosa-notes'),
           initialValue: s.notes,
           maxLines: 3,
-          decoration: const InputDecoration(labelText: 'Notes'),
-          onChanged: (v) => _save(ref, s.copyWith(notes: v)),
+          label: 'Notes',
+          onSave: (v) => _save(ref, s.copyWith(notes: v)),
         ),
       ],
     );

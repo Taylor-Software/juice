@@ -208,7 +208,7 @@ void main() {
     await tester.pumpAndSettle(); // expand + post-frame rank + setState
     final keys = tester
         .widgetList<ActionChip>(find.byType(ActionChip))
-        .map((w) => (w.key as ValueKey).value)
+        .map((w) => (w.key! as ValueKey).value)
         .toList();
     expect(keys.indexOf('suggest-advance-thread'),
         lessThan(keys.indexOf('suggest-start-scene')));
@@ -226,7 +226,7 @@ void main() {
     // First navigate chip in rule order is start-scene (inline rolls dropped).
     final keys = tester
         .widgetList<ActionChip>(find.byType(ActionChip))
-        .map((w) => (w.key as ValueKey).value)
+        .map((w) => (w.key! as ValueKey).value)
         .toList();
     expect(keys.first, 'suggest-start-scene');
   });

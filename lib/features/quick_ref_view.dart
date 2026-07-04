@@ -117,7 +117,8 @@ class QuickRefView extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('• ', style: theme.textTheme.bodyMedium),
-                  Expanded(child: Text(line, style: theme.textTheme.bodyMedium)),
+                  Expanded(
+                      child: Text(line, style: theme.textTheme.bodyMedium)),
                 ],
               ),
             ),
@@ -198,18 +199,24 @@ Future<void> showRefCardEditor(BuildContext context, WidgetRef ref,
       ],
     ),
   );
+  // Post-frame: runs after the synchronous .text reads below and after the
+  // route's exit transition, so disposing here is safe either way.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    titleCtrl.dispose();
+    bodyCtrl.dispose();
+  });
   if (saved != true) return;
   final title = titleCtrl.text.trim();
   final sections = parseRefSections(bodyCtrl.text);
   if (title.isEmpty || sections.isEmpty) return;
   final notifier = ref.read(userRefCardsProvider.notifier);
   if (existing == null) {
-    notifier.add(UserRefCard(
+    await notifier.add(UserRefCard(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         title: title,
         sections: sections));
   } else {
-    notifier.replace(
+    await notifier.replace(
         UserRefCard(id: existing.id, title: title, sections: sections));
   }
 }
