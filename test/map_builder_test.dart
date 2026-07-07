@@ -26,28 +26,35 @@ void main() {
   group('Map models', () {
     test('full MapState round-trips through JSON', () {
       const s = MapState(
-        levels: [
-          DungeonLevel(
-            depth: 1,
-            rooms: [
-              DungeonRoom(
-                  id: 'r0', x: 0, y: 0, title: 'Entry', detail: 'Dusty'),
-              DungeonRoom(id: 'r1', x: 1, y: 0, title: 'Hall'),
+        dungeons: [
+          DungeonSite(
+            id: 'd1',
+            name: 'The Undercroft',
+            levels: [
+              DungeonLevel(
+                depth: 1,
+                rooms: [
+                  DungeonRoom(
+                      id: 'r0', x: 0, y: 0, title: 'Entry', detail: 'Dusty'),
+                  DungeonRoom(id: 'r1', x: 1, y: 0, title: 'Hall'),
+                ],
+                corridors: [
+                  ['r0', 'r1'],
+                ],
+                currentRoomId: 'r1',
+              ),
             ],
-            corridors: [
-              ['r0', 'r1'],
-            ],
-            currentRoomId: 'r1',
+            anchorHexCol: 2,
+            anchorHexRow: 3,
           ),
         ],
+        activeDungeonId: 'd1',
         hexes: [
           HexCell(col: 0, row: 0, envRow: 3, sketchEntryId: 's1'),
           HexCell(col: 1, row: 0, envRow: 7, lost: true),
         ],
         currentHexCol: 1,
         currentHexRow: 0,
-        anchorHexCol: 2,
-        anchorHexRow: 3,
       );
       final back = MapState.fromJson(
           jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>);
@@ -76,6 +83,66 @@ void main() {
       expect(back.anchorHexCol, 2);
       expect(back.anchorHexRow, 3);
       expect(back.hasAnchor, isTrue);
+    });
+
+    test('legacy top-level levels + anchor lift into one DungeonSite', () {
+      final s = MapState.fromJson(jsonDecode(jsonEncode({
+        'levels': [
+          {
+            'depth': 1,
+            'rooms': [
+              {'id': 'r0', 'x': 0, 'y': 0, 'title': 'Entry'},
+            ],
+            'corridors': [],
+          },
+        ],
+        'activeLevel': 0,
+        'anchorHexCol': 4,
+        'anchorHexRow': 5,
+        'hexes': [],
+      })) as Map<String, dynamic>);
+      expect(s.dungeons, hasLength(1));
+      expect(s.dungeons.single.id, 'd1');
+      expect(s.activeDungeon!.anchorHexCol, 4);
+      expect(s.rooms.single.id, 'r0'); // compat view still works
+      // Re-emits in the new shape.
+      expect(s.toJson().containsKey('dungeons'), isTrue);
+      expect(s.toJson().containsKey('levels'), isFalse);
+    });
+
+    test('multiple dungeons: active views + anchoredAt lookup', () {
+      const s = MapState(
+        dungeons: [
+          DungeonSite(id: 'a', name: 'Crypt', anchorHexCol: 0, anchorHexRow: 0),
+          DungeonSite(
+              id: 'b',
+              name: 'Mine',
+              levels: [
+                DungeonLevel(depth: 1, rooms: [
+                  DungeonRoom(id: 'r1', x: 0, y: 0, title: 'Shaft'),
+                ]),
+              ],
+              anchorHexCol: 1,
+              anchorHexRow: 2),
+        ],
+        activeDungeonId: 'b',
+      );
+      expect(s.activeDungeon!.name, 'Mine');
+      expect(s.rooms.single.id, 'r1');
+      expect(s.dungeonAnchoredAt(0, 0)!.name, 'Crypt');
+      expect(s.dungeonAnchoredAt(1, 2)!.name, 'Mine');
+      expect(s.dungeonAnchoredAt(9, 9), isNull);
+      // Room edits hit ONLY the active dungeon.
+      final s2 = s.copyWith(rooms: const [
+        DungeonRoom(id: 'r2', x: 1, y: 0, title: 'Deep'),
+      ]);
+      expect(s2.dungeons.first.levels, isEmpty); // Crypt untouched
+      expect(s2.rooms.single.id, 'r2');
+      // Round-trips.
+      final back = MapState.fromJson(
+          jsonDecode(jsonEncode(s2.toJson())) as Map<String, dynamic>);
+      expect(back.dungeons, hasLength(2));
+      expect(back.activeDungeon!.id, 'b');
     });
 
     test('anchor is omitted from JSON when unset (legacy byte-compat)', () {
@@ -439,13 +506,16 @@ void main() {
   group('Campaign file map key', () {
     test('round-trips through encode/parse and rejects wrong shape', () {
       const s = MapState(
-        levels: [
-          DungeonLevel(
-            depth: 1,
-            rooms: [DungeonRoom(id: 'r0', x: 0, y: 0, title: 'Entry')],
-            currentRoomId: 'r0',
-          ),
+        dungeons: [
+          DungeonSite(id: 'd1', levels: [
+            DungeonLevel(
+              depth: 1,
+              rooms: [DungeonRoom(id: 'r0', x: 0, y: 0, title: 'Entry')],
+              currentRoomId: 'r0',
+            ),
+          ]),
         ],
+        activeDungeonId: 'd1',
         hexes: [HexCell(col: 0, row: 0, envRow: 6)],
         currentHexCol: 0,
         currentHexRow: 0,

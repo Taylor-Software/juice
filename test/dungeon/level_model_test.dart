@@ -28,7 +28,9 @@ void main() {
         typeName: 'Grotto',
         note: 'n',
         stone: 'Basalt');
-    const s = MapState(levels: [lvl1, lvl2], activeLevel: 1);
+    const s = MapState(
+        dungeons: [DungeonSite(id: 'd1', levels: [lvl1, lvl2], activeLevel: 1)],
+        activeDungeonId: 'd1');
     final back = MapState.fromJson(s.toJson());
     expect(back.levels[1].stone, 'Basalt');
     expect(back.activeLevel, 1);
@@ -42,10 +44,12 @@ void main() {
         s.copyWith(rooms: const [DungeonRoom(id: 'a', x: 0, y: 0, title: 'T')]);
     expect(s2.levels, hasLength(1));
     expect(s2.rooms.single.id, 'a');
-    final s3 = const MapState(levels: [
-      DungeonLevel(depth: 1),
-      DungeonLevel(depth: 2),
-    ], activeLevel: 1)
+    final s3 = const MapState(dungeons: [
+      DungeonSite(
+          id: 'd1',
+          levels: [DungeonLevel(depth: 1), DungeonLevel(depth: 2)],
+          activeLevel: 1),
+    ], activeDungeonId: 'd1')
         .copyWith(
             currentRoomId: 'x',
             rooms: const [DungeonRoom(id: 'x', x: 0, y: 0, title: 'X')]);
