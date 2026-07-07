@@ -1076,6 +1076,9 @@ git commit -m "feat(dungeon): 4D6 room generator, ref expansion, A2 effect, fact
 
 - [ ] **Step 1: Write the failing test**
 
+The real deserializer is `DungeonRoom.maybeFromJson(dynamic)` (returns nullable —
+there is NO `fromJson`). `copyWith` currently threads only `title`/`detail`/`status`.
+
 ```dart
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dungeon/footprint.dart';
@@ -1084,8 +1087,7 @@ import 'package:juice_oracle/engine/models.dart';
 void main() {
   test('legacy single-cell room round-trips and defaults footprint to [(0,0)]', () {
     const r = DungeonRoom(id: 'a', x: 2, y: 3, title: 'Old');
-    final j = r.toJson();
-    final back = DungeonRoom.fromJson(j);
+    final back = DungeonRoom.maybeFromJson(r.toJson())!;
     expect(back.footprint, [(0, 0)]);
     expect(back.doors, isEmpty);
     expect(back.roomType, isNull);
@@ -1096,7 +1098,7 @@ void main() {
         footprint: const [(0, 0), (0, 1)],
         doors: const [DoorEdge((0, 1), Side.s, DoorKind.open)],
         roomType: 'chamber');
-    final back = DungeonRoom.fromJson(r.toJson());
+    final back = DungeonRoom.maybeFromJson(r.toJson())!;
     expect(back.footprint, [(0, 0), (0, 1)]);
     expect(back.doors.single.kind, DoorKind.open);
     expect(back.roomType, 'chamber');
@@ -1109,34 +1111,50 @@ void main() {
 Run: `flutter test test/dungeon/dungeon_room_json_test.dart`
 Expected: FAIL (no `footprint` named param).
 
-- [ ] **Step 3: Modify `DungeonRoom`** (add import `import 'dungeon/footprint.dart';` at the top of `models.dart` if not already re-exported; then extend the class). Replace the class body's constructor/fields/`copyWith`/`toJson`/`fromJson` to include the new optional fields:
+- [ ] **Step 3: Modify `DungeonRoom`** (models.dart lines ~3125-3173). Add `import 'dungeon/footprint.dart';` near the other engine imports at the top of `models.dart` (footprint.dart is pure and does NOT import models.dart, so no cycle — same one-way pattern as `custom_sheet.dart`). Then extend the class, keeping the existing `id/x/y/title/detail/status` handling verbatim:
 
 ```dart
-// add fields after `status`:
+// fields — add after `status`:
   final List<(int, int)> footprint; // cell offsets from (x,y); default [(0,0)]
-  final List<DoorEdge> doors;       // world-relative door edges (offsets from (x,y))
+  final List<DoorEdge> doors;       // door edges, cells are offsets from (x,y)
   final String? roomType;           // 'corridor' | 'chamber' | null (legacy)
 
-// constructor: add
-//   this.footprint = const [(0, 0)], this.doors = const [], this.roomType,
+// constructor — add these three params (after status):
+//   this.footprint = const [(0, 0)],
+//   this.doors = const [],
+//   this.roomType,
 
-// copyWith: thread the three new fields through (nullable roomType with a
-// clearRoomType bool is unnecessary — null just means "keep"; a legacy room
-// never sets it).
+// copyWith — add the three params + thread them (null means "keep"):
+  DungeonRoom copyWith({
+    String? title, String? detail, String? status,
+    List<(int, int)>? footprint, List<DoorEdge>? doors, String? roomType,
+  }) => DungeonRoom(
+        id: id, x: x, y: y,
+        title: title ?? this.title,
+        detail: detail ?? this.detail,
+        status: status ?? this.status,
+        footprint: footprint ?? this.footprint,
+        doors: doors ?? this.doors,
+        roomType: roomType ?? this.roomType,
+      );
 
-// toJson: add (omit when default, to keep legacy JSON small)
+// toJson — add (omit when default, to keep legacy JSON small), inside the map:
   if (footprint.length != 1 || footprint.first != (0, 0))
     'fp': [for (final c in footprint) [c.$1, c.$2]],
   if (doors.isNotEmpty) 'dr': [for (final d in doors) d.toJson()],
   if (roomType != null) 'rt': roomType,
 
-// fromJson: parse them
-  footprint: (j['fp'] as List?)?.map((e) => ((e as List)[0] as int, e[1] as int)).toList() ?? const [(0, 0)],
-  doors: (j['dr'] as List?)?.map((e) => DoorEdge.fromJson((e as Map).cast())).toList() ?? const [],
+// maybeFromJson — add to the DungeonRoom(...) it returns:
+  footprint: (j['fp'] as List?)
+          ?.map((e) => ((e as List)[0] as int, e[1] as int))
+          .toList() ??
+      const [(0, 0)],
+  doors: (j['dr'] as List?)
+          ?.map((e) => DoorEdge.fromJson((e as Map).cast<String, dynamic>()))
+          .toList() ??
+      const [],
   roomType: j['rt'] as String?,
 ```
-
-(Read the existing `toJson`/`fromJson`/`copyWith` first and splice these in; keep the existing `id/x/y/title/detail/status` handling verbatim.)
 
 - [ ] **Step 4: Run it, expect PASS.**
 
