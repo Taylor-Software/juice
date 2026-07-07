@@ -188,6 +188,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         return Column(
           children: [
             _controls(context, s),
+            if (_classicOn() && s.levels.isNotEmpty) _levelHeader(context, s),
             if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
             Expanded(child: s.rooms.isEmpty ? _empty(context) : _canvas(s)),
             if (selected != null) _detailCard(context, selected),
@@ -219,10 +220,30 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // tab's layout (blank tool / hung release web).
           if (classic && s.rooms.isEmpty)
             Flexible(
-              child: FilledButton.tonal(
-                key: const Key('classic-enter'),
-                onPressed: _enterDungeon,
-                child: const Text('Enter the dungeon'),
+              // Wrap under the Flexible's bounded width, so the two buttons
+              // stack on narrow screens instead of overflowing the Row. The
+              // theme's full-width FilledButton minimumSize is pinned finite
+              // so they can sit side by side (the loop_bar pattern).
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  FilledButton.tonal(
+                    key: const Key('classic-enter'),
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: _enterDungeon,
+                    child: const Text('Enter the dungeon'),
+                  ),
+                  FilledButton.tonalIcon(
+                    key: const Key('classic-enter-cave'),
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: _enterCave,
+                    icon: const Icon(Icons.landscape_outlined),
+                    label: const Text('Enter a cave'),
+                  ),
+                ],
               ),
             )
           else if (!classic)
@@ -362,6 +383,64 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         dice: widget.oracle.dice);
   }
 
+  /// Enter a fresh classic cave (D-branch) the same way.
+  Future<void> _enterCave() async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    await ref.read(mapProvider.notifier).enterClassicDungeon(
+        branch: DungeonBranch.cave, tables: tables, dice: widget.oracle.dice);
+  }
+
+  /// Follow the selected level-transition room down/up a level.
+  Future<void> _descend(DungeonRoom room) async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    await ref
+        .read(mapProvider.notifier)
+        .descendFrom(room.id, tables: tables, dice: widget.oracle.dice);
+  }
+
+  /// Active-level readout (depth · type · stone) + a level switcher once
+  /// more than one level exists.
+  Widget _levelHeader(BuildContext context, MapState s) {
+    final theme = Theme.of(context);
+    final lvl = s.levels[s.activeLevel.clamp(0, s.levels.length - 1)];
+    final label = 'Depth ${lvl.depth} · ${lvl.typeName}'
+        '${lvl.stone.isEmpty ? '' : ' · ${lvl.stone}'}';
+    return Padding(
+      key: const Key('classic-level-header'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: theme.textTheme.labelLarge
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            if (s.levels.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final l in s.levels)
+                      ChoiceChip(
+                        key: Key('classic-level-chip-${l.depth}'),
+                        label: Text('D${l.depth}'),
+                        visualDensity: VisualDensity.compact,
+                        selected: l.depth == lvl.depth,
+                        onSelected: (_) =>
+                            ref.read(mapProvider.notifier).switchLevel(l.depth),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Explore through an open door: generate + place the next room mated there.
   Future<void> _exploreDoor(MapState s, DoorHit hit) async {
     final tables = await ref.read(dungeonDataProvider.future);
@@ -453,6 +532,15 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                 child: Text(room.detail, style: theme.textTheme.bodyMedium),
               ),
             ),
+            if (room.crossTo != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Openings lead to the '
+                '${room.crossTo == 'cave' ? 'caves' : 'dungeon'}',
+                style:
+                    const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
             const SizedBox(height: 8),
             if (_lonelogOn()) ...[
               Wrap(
@@ -481,6 +569,17 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                   onPressed: () => _linger(room),
                   child: const Text('Linger'),
                 ),
+                if (room.levelDelta != 0)
+                  FilledButton.tonalIcon(
+                    key: const Key('classic-descend'),
+                    // Finite minimumSize: the theme's full-width default would
+                    // put this on its own Wrap line (loop_bar pattern).
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: () => _descend(room),
+                    icon: const Icon(Icons.stairs_outlined),
+                    label: Text(room.levelDelta < 0 ? 'Descend' : 'Ascend'),
+                  ),
                 if (ref.watch(aiReadyProvider))
                   OutlinedButton.icon(
                     key: const Key('flesh-out-room'),
