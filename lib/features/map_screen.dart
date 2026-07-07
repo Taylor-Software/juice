@@ -267,6 +267,30 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         return Column(
           children: [
             _controls(context, s),
+            // Map-layer hierarchy: when the dungeon is anchored to a world
+            // hex, offer the "up" hop back to it.
+            if (s.hasAnchor)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                  child: ActionChip(
+                    key: const Key('dungeon-up-world'),
+                    avatar: const Icon(Icons.arrow_upward, size: 16),
+                    label: Text(
+                        'World: Hex (${s.anchorHexCol}, ${s.anchorHexRow})'),
+                    onPressed: () async {
+                      await ref
+                          .read(playContextProvider.notifier)
+                          .setActiveLocation(LocationRef(
+                              hexCol: s.anchorHexCol, hexRow: s.anchorHexRow));
+                      ref
+                          .read(shellRouteProvider.notifier)
+                          .goTo(Destination.map, subtab: 'world');
+                    },
+                  ),
+                ),
+              ),
             if (_classicOn() && s.levels.isNotEmpty) _levelHeader(context, s),
             if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
             Expanded(child: s.rooms.isEmpty ? _empty(context) : _canvas(s)),
@@ -1540,6 +1564,41 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   key: Key('loc-entries-${h.col}-${h.row}'),
                   entries: entries,
                   placeLabel: 'Hex (${h.col}, ${h.row})',
+                );
+              }),
+              // Map-layer hierarchy: the dungeon can anchor to this hex —
+              // "Enter dungeon" descends, the link-off chip un-anchors.
+              Builder(builder: (context) {
+                final m = ref.watch(mapProvider).valueOrNull;
+                final anchored =
+                    m?.anchorHexCol == h.col && m?.anchorHexRow == h.row;
+                if (anchored) {
+                  return Wrap(spacing: 4, children: [
+                    ActionChip(
+                      key: const Key('hex-enter-dungeon'),
+                      avatar: const Icon(Icons.stairs_outlined, size: 16),
+                      label: const Text('Enter dungeon'),
+                      onPressed: () => ref
+                          .read(shellRouteProvider.notifier)
+                          .goTo(Destination.map, subtab: 'dungeon'),
+                    ),
+                    ActionChip(
+                      key: const Key('hex-unlink-dungeon'),
+                      avatar: const Icon(Icons.link_off, size: 16),
+                      label: const Text('Unlink'),
+                      onPressed: () => ref
+                          .read(mapProvider.notifier)
+                          .setDungeonAnchor(null, null),
+                    ),
+                  ]);
+                }
+                return ActionChip(
+                  key: const Key('hex-place-dungeon'),
+                  avatar: const Icon(Icons.stairs_outlined, size: 16),
+                  label: const Text('Dungeon here'),
+                  onPressed: () => ref
+                      .read(mapProvider.notifier)
+                      .setDungeonAnchor(h.col, h.row),
                 );
               }),
             ]),

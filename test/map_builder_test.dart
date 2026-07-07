@@ -46,6 +46,8 @@ void main() {
         ],
         currentHexCol: 1,
         currentHexRow: 0,
+        anchorHexCol: 2,
+        anchorHexRow: 3,
       );
       final back = MapState.fromJson(
           jsonDecode(jsonEncode(s.toJson())) as Map<String, dynamic>);
@@ -69,6 +71,22 @@ void main() {
       expect(back.hexes[1].lost, isTrue);
       expect(back.currentHexCol, 1);
       expect(back.currentHexRow, 0);
+      expect(back.anchorHexCol, 2);
+      expect(back.anchorHexRow, 3);
+      expect(back.hasAnchor, isTrue);
+    });
+
+    test('anchor is omitted from JSON when unset (legacy byte-compat)', () {
+      const s = MapState(hexes: [HexCell(col: 0, row: 0, envRow: 3)]);
+      final j = s.toJson();
+      expect(j.containsKey('anchorHexCol'), isFalse);
+      expect(j.containsKey('anchorHexRow'), isFalse);
+      expect(s.hasAnchor, isFalse);
+      // clearAnchor drops a set anchor.
+      final cleared = s
+          .copyWith(anchorHexCol: 1, anchorHexRow: 1)
+          .copyWith(clearAnchor: true);
+      expect(cleared.hasAnchor, isFalse);
     });
 
     test('tolerant parse: empty map gives empty state', () {
@@ -79,6 +97,7 @@ void main() {
       expect(s.hexes, isEmpty);
       expect(s.currentHexCol, isNull);
       expect(s.currentHexRow, isNull);
+      expect(s.hasAnchor, isFalse);
     });
 
     test('tolerant parse: junk corridor/room/hex entries are skipped', () {
