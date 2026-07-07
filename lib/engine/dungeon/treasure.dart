@@ -9,7 +9,14 @@ final _dicePart = RegExp(r'^(\d*)[dD](\d+)(?:\*(\d+))?\s+(GP|SP)$');
 
 String rollTreasure(Map<String, dynamic> h8,
     {required int depth, required int bonus, required Dice dice}) {
-  final forms = (h8['form_d4'] as List? ?? const []);
+  // The asset emits form_d4 as a {"1".."4": form} dict; list fixtures also
+  // accepted.
+  final formsRaw = h8['form_d4'];
+  final forms = formsRaw is List
+      ? formsRaw
+      : formsRaw is Map
+          ? formsRaw.values.toList()
+          : const [];
   final rows = (h8['d10_plus_level'] as List? ?? const []);
   if (rows.isEmpty) return 'Treasure';
   final form = forms.isEmpty ? '' : forms[dice.dN(forms.length) - 1].toString();

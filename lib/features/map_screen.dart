@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dungeon/footprint.dart';
-import '../engine/dungeon/generator.dart' show stripRefTokens;
-import '../engine/dungeon/tables.dart';
+import '../engine/dungeon/generator.dart' show DungeonBranch;
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -174,11 +173,6 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   GenResult? _last; // latest linger result
   final GlobalKey _dungeonSnapKey = GlobalKey();
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
-
-  /// Classic-dungeon A2 effect for this run, rolled by Enter. Ephemeral: on
-  /// restart an existing classic dungeon continues under a neutral effect
-  /// (the rolled type is recorded in the entrance room's detail).
-  A2Type _a2 = const A2Type(name: '');
 
   @override
   Widget build(BuildContext context) {
@@ -355,32 +349,16 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               kAllSystems)
           .contains('classic-dungeon');
 
-  /// Roll the classic entrance: A1 surroundings + A2 dungeon type (kept for
-  /// this run's effect), then place the entrance chamber/corridor at (0,0).
+  /// Enter a fresh classic dungeon: the notifier rolls the entrance
+  /// surroundings + level type and places the entrance room.
   Future<void> _enterDungeon() async {
     // Await the asset (a cold read of an unwatched FutureProvider is
     // AsyncLoading on first tap — the repo's Run-screen gotcha).
     final tables = await ref.read(dungeonDataProvider.future);
-    final dice = widget.oracle.dice;
-    final a1 = tables.a1[dice.dN(tables.a1.length) - 1];
-    final a2 =
-        tables.a2['${dice.dN(6) + dice.dN(6)}'] ?? const A2Type(name: '');
-    setState(() => _a2 = a2);
-    final notifier = ref.read(mapProvider.notifier);
-    await notifier.addClassicRoom(
-        fromRoomId: null,
-        doorEdge: null,
+    await ref.read(mapProvider.notifier).enterClassicDungeon(
+        branch: DungeonBranch.dungeon,
         tables: tables,
-        effect: a2,
-        dice: dice);
-    // Record the rolled context on the entrance room.
-    final s = ref.read(mapProvider).valueOrNull;
-    final entrance = s?.rooms.lastOrNull;
-    if (entrance != null) {
-      // A2 notes reference tables by name ({ref:G3} etc.) — de-tokenize.
-      await notifier.appendRoomDetail(entrance.id,
-          'Entrance: $a1\nDungeon type: ${a2.name} — ${stripRefTokens(a2.note)}');
-    }
+        dice: widget.oracle.dice);
   }
 
   /// Explore through an open door: generate + place the next room mated there.
@@ -395,7 +373,6 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         fromRoomId: hit.roomId,
         doorEdge: world,
         tables: tables,
-        effect: _a2,
         dice: widget.oracle.dice);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
