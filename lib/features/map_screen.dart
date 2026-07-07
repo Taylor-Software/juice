@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dungeon/footprint.dart';
+import '../engine/dungeon/tables.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -173,6 +174,11 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   final GlobalKey _dungeonSnapKey = GlobalKey();
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
+  /// Classic-dungeon A2 effect for this run, rolled by Enter. Ephemeral: on
+  /// restart an existing classic dungeon continues under a neutral effect
+  /// (the rolled type is recorded in the entrance room's detail).
+  A2Type _a2 = const A2Type(name: '');
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(mapProvider);
@@ -205,6 +211,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   }
 
   Widget _controls(BuildContext context, MapState s) {
+    final classic = _classicOn();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       child: Row(
@@ -214,13 +221,22 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // non-flex children against an unbounded main axis) and throws
           // "BoxConstraints forces an infinite width" — aborting the whole
           // tab's layout (blank tool / hung release web).
-          Flexible(
-            child: FilledButton.tonal(
-              key: const Key('new-room'),
-              onPressed: _newRoom,
-              child: const Text('New room'),
+          if (classic && s.rooms.isEmpty)
+            Flexible(
+              child: FilledButton.tonal(
+                key: const Key('classic-enter'),
+                onPressed: _enterDungeon,
+                child: const Text('Enter the dungeon'),
+              ),
+            )
+          else if (!classic)
+            Flexible(
+              child: FilledButton.tonal(
+                key: const Key('new-room'),
+                onPressed: _newRoom,
+                child: const Text('New room'),
+              ),
             ),
-          ),
           const Spacer(),
           IconButton(
             key: const Key('dungeon-journal'),
@@ -255,7 +271,10 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'No rooms yet. New room rolls the dungeon oracle and maps it.',
+          _classicOn()
+              ? 'No dungeon yet. Enter the dungeon rolls the entrance, then '
+                  'tap an opening to explore room by room.'
+              : 'No rooms yet. New room rolls the dungeon oracle and maps it.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -266,10 +285,16 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
 
   Widget _canvas(MapState s) {
     final scheme = Theme.of(context).colorScheme;
-    final minX = s.rooms.map((r) => r.x).reduce(math.min);
-    final minY = s.rooms.map((r) => r.y).reduce(math.min);
-    final maxX = s.rooms.map((r) => r.x).reduce(math.max);
-    final maxY = s.rooms.map((r) => r.y).reduce(math.max);
+    // Bounds range over every footprint cell (multi-cell rooms extend past
+    // their anchor), so classic shapes never paint outside the canvas.
+    final cellsX =
+        s.rooms.expand((r) => r.footprint.map((c) => r.x + c.$1)).toList();
+    final cellsY =
+        s.rooms.expand((r) => r.footprint.map((c) => r.y + c.$2)).toList();
+    final minX = cellsX.reduce(math.min);
+    final minY = cellsY.reduce(math.min);
+    final maxX = cellsX.reduce(math.max);
+    final maxY = cellsY.reduce(math.max);
     final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
     final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
     return InteractiveViewer(
@@ -284,6 +309,15 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // InteractiveViewer delivers tap positions in child coordinates
           // (already inverse-transformed) — no manual matrix math.
           onTapUp: (d) {
+            // Classic mode: an open-door tap explores through that door;
+            // it wins over room selection (markers sit on room edges).
+            if (_classicOn()) {
+              final hit = doorEdgeAt(s.rooms, d.localPosition, _cell);
+              if (hit != null) {
+                _exploreDoor(s, hit);
+                return;
+              }
+            }
             final id = roomIdAt(s.rooms, d.localPosition, _cell);
             if (id != null) ref.read(mapProvider.notifier).selectRoom(id);
           },
@@ -314,6 +348,58 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
               kAllSystems)
           .contains('lonelog');
+
+  bool _classicOn() =>
+      (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems)
+          .contains('classic-dungeon');
+
+  /// Roll the classic entrance: A1 surroundings + A2 dungeon type (kept for
+  /// this run's effect), then place the entrance chamber/corridor at (0,0).
+  Future<void> _enterDungeon() async {
+    // Await the asset (a cold read of an unwatched FutureProvider is
+    // AsyncLoading on first tap — the repo's Run-screen gotcha).
+    final tables = await ref.read(dungeonDataProvider.future);
+    final dice = widget.oracle.dice;
+    final a1 = tables.a1[dice.dN(tables.a1.length) - 1];
+    final a2 =
+        tables.a2['${dice.dN(6) + dice.dN(6)}'] ?? const A2Type(name: '');
+    setState(() => _a2 = a2);
+    final notifier = ref.read(mapProvider.notifier);
+    await notifier.addClassicRoom(
+        fromRoomId: null,
+        doorEdge: null,
+        tables: tables,
+        effect: a2,
+        dice: dice);
+    // Record the rolled context on the entrance room.
+    final s = ref.read(mapProvider).valueOrNull;
+    final entrance = s?.rooms.lastOrNull;
+    if (entrance != null) {
+      await notifier.appendRoomDetail(
+          entrance.id, 'Entrance: $a1\nDungeon type: ${a2.name} — ${a2.note}');
+    }
+  }
+
+  /// Explore through an open door: generate + place the next room mated there.
+  Future<void> _exploreDoor(MapState s, DoorHit hit) async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    final room = s.rooms.firstWhere((r) => r.id == hit.roomId);
+    final world = (
+      cell: (room.x + hit.door.cell.$1, room.y + hit.door.cell.$2),
+      side: hit.door.side,
+    );
+    final ok = await ref.read(mapProvider.notifier).addClassicRoom(
+        fromRoomId: hit.roomId,
+        doorEdge: world,
+        tables: tables,
+        effect: _a2,
+        dice: widget.oracle.dice);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No room fits that way — try another exit')));
+    }
+  }
 
   bool _hexcrawlOn() =>
       (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
@@ -521,6 +607,9 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     );
     if (ok != true) return;
     await ref.read(mapProvider.notifier).resetDungeon();
+    // A classic dungeon's factions belong to the mapped dungeon — clear them
+    // with it (harmless no-op for the base pane).
+    await ref.read(dungeonFactionsProvider.notifier).reset();
     if (mounted) setState(() => _last = null);
   }
 }
