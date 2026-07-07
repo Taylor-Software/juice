@@ -23,10 +23,11 @@ void main() {
     for (var i = 0; i < 60; i++) {
       final before = reg.factions.length;
       (reg, _) = assignFaction(reg, 'Goblins', 'r$i', _names, d);
-      if (reg.factions.length == before)
+      if (reg.factions.length == before) {
         reuse++;
-      else
+      } else {
         mint++;
+      }
     }
     expect(reuse, greaterThan(mint));
   });

@@ -1,7 +1,8 @@
 /// Pure 4D6 classic-dungeon room resolution over DungeonTables. Expands
-/// {ref:XX} cross-reference tokens (depth-capped), applies the A2 dungeon-type
-/// effect, rolls reaction + faction for organized monsters, and renders the
-/// room's detail text. No Flutter, no I/O.
+/// {ref:XX} cross-reference tokens (depth-capped), applies the A2 stockDouble
+/// effect (tierBump/treasureBonus/leadsToCaves are parsed but deferred to the
+/// P2 treasure/level features), rolls reaction + faction for organized
+/// monsters, and renders the room's detail text. No Flutter, no I/O.
 library;
 
 import '../dice.dart';
@@ -16,11 +17,17 @@ class DungeonGenContext {
       {required this.level,
       required this.effect,
       required this.tables,
-      required this.factions});
+      required this.factions,
+      required this.roomId});
   final int level;
   final A2Type effect;
   final DungeonTables tables;
   final FactionRegistry factions;
+
+  /// Id of the room being generated. The caller mints it BEFORE generating so
+  /// a faction assigned here carries the real room id from the start (no
+  /// placeholder reconciliation).
+  final String roomId;
 }
 
 class RoomResult {
@@ -115,7 +122,7 @@ RoomResult generateRoom(DungeonGenContext ctx, Dice dice) {
     if (mon.organized) {
       final DungeonFaction? fac;
       (factions, fac) =
-          assignFaction(factions, mon.text, 'pending', t.factionNames, dice);
+          assignFaction(factions, mon.text, ctx.roomId, t.factionNames, dice);
       if (fac != null) lines.add('Faction: ${fac.name}');
     }
   }

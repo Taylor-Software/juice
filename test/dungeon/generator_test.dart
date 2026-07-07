@@ -29,6 +29,7 @@ void main() {
     final r = generateRoom(
         DungeonGenContext(
             level: 1,
+            roomId: 'roomX',
             effect: const A2Type(name: 'Ruins'),
             tables: _tables(),
             factions: const FactionRegistry()),
@@ -43,6 +44,7 @@ void main() {
       final r = generateRoom(
           DungeonGenContext(
               level: 1,
+              roomId: 'roomX',
               effect: const A2Type(name: 'Ruins'),
               tables: _tables(),
               factions: const FactionRegistry()),
@@ -50,10 +52,36 @@ void main() {
       if (r.factions.factions.isNotEmpty) {
         expect(r.factions.factions.single.monsterType, 'Goblins');
         expect(r.detail, contains('Rotfangs'));
+        // the minted faction carries the caller-supplied room id (no
+        // 'pending' placeholder to reconcile)
+        expect(r.factions.factions.single.roomIds, ['roomX']);
         return;
       }
     }
     fail('no seed produced an organized-monster chamber');
+  });
+
+  test('an unknown ref renders its id as a plain label (never throws)', () {
+    final t = DungeonTables.fromJson(jsonDecode('''
+{"A1":${jsonEncode(List.filled(12, 'x'))},"A2":{"2":{"name":"x"},"3":{"name":"x"},"4":{"name":"x"},"5":{"name":"x"},"6":{"name":"x"},"7":{"name":"x"},"8":{"name":"x"},"9":{"name":"x"},"10":{"name":"x"},"11":{"name":"x"},"12":{"name":"x"}},
+ "B2":["Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}"],
+ "B5":["W","W","W","W","W","W","W","W","W","W"],
+ "C2":["Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}","Weird {ref:Z9}"],
+ "G1":{"2":"a","3":"a","4":"a","5":"a","6":"a","7":"a","8":"a","9":"a","10":"a","11":"a","12":"a"},
+ "G2":[{"text":"g","count":"1","organized":false}],
+ "faction_names":["N"],"corridor_families":{"straight":[[11,66]]},
+ "chamber_families":{"small":[[11,66]]},"label_fallbacks":{}}
+''') as Map<String, dynamic>);
+    final r = generateRoom(
+        DungeonGenContext(
+            level: 1,
+            roomId: 'roomX',
+            effect: const A2Type(name: 'x'),
+            tables: t,
+            factions: const FactionRegistry()),
+        Dice(Random(0)));
+    // Z9 is not a table, not a dict label, not a fallback -> raw id shown.
+    expect(r.detail, contains('Weird Z9'));
   });
 
   test('ref expansion is depth-capped (no infinite loop on self-ref)', () {
@@ -71,6 +99,7 @@ void main() {
     final r = generateRoom(
         DungeonGenContext(
             level: 1,
+            roomId: 'roomX',
             effect: const A2Type(name: 'x'),
             tables: t,
             factions: const FactionRegistry()),
@@ -95,6 +124,7 @@ void main() {
       final r = generateRoom(
           DungeonGenContext(
               level: 1,
+              roomId: 'roomX',
               effect: const A2Type(name: 'x'),
               tables: t,
               factions: const FactionRegistry()),

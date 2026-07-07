@@ -13,6 +13,7 @@ void main() {
     expect(t.corridorFamilies.keys, contains('straight'));
     expect(t.factionNames, isNotEmpty);
     expect(t.upperMonsters, isNotEmpty);
-    expect(t.raw['B4'], isA<Map>()); // dict tables reachable via raw
+    // dict tables reachable via raw
+    expect(t.raw['B4'], isA<Map<String, dynamic>>());
   });
 }
