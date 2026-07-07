@@ -141,7 +141,7 @@ void main() {
     expect(find.byKey(const Key('table-name')), findsOneWidget);
   });
 
-  testWidgets('My Tables is hidden when a search query is active',
+  testWidgets('My Tables is hidden when the query matches nothing of mine',
       (tester) async {
     const seed = '[{"id":"t1","name":"My Loot","rows":["Gold"]}]';
     await pumpWithContainer(tester, customTablesJson: seed);
@@ -150,5 +150,72 @@ void main() {
         find.byKey(const Key('tables-search')), 'settlement');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('tables-my-tables')), findsNothing);
+  });
+
+  testWidgets('library search matches a custom table by its source',
+      (tester) async {
+    const seed = '[{"id":"t1","name":"My Loot","rows":["Gold"],'
+        '"src":"Big Book of Bars"},'
+        '{"id":"t2","name":"Other","rows":["x"]}]';
+    await pumpWithContainer(tester, customTablesJson: seed);
+    await tester.enterText(
+        find.byKey(const Key('tables-search')), 'book of bars');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('tables-my-tables')), findsOneWidget);
+    expect(find.byKey(const Key('my-table-t1')), findsOneWidget);
+    expect(find.byKey(const Key('my-table-t2')), findsNothing);
+  });
+
+  testWidgets(
+      'My Tables groups by category with headers and filters by genre chips',
+      (tester) async {
+    const seed = '[{"id":"t1","name":"Patrons","rows":["a"],'
+        '"cat":"Characters & NPCs","genre":"Fantasy"},'
+        '{"id":"t2","name":"Anomalies","rows":["b"],'
+        '"cat":"Locations & Settings","genre":"Sci-fi"}]';
+    await pumpWithContainer(tester, customTablesJson: seed);
+
+    // Two categories → headers show, in taxonomy order.
+    expect(find.byKey(const Key('tables-cat-Characters & NPCs')),
+        findsOneWidget);
+    expect(find.byKey(const Key('tables-cat-Locations & Settings')),
+        findsOneWidget);
+    // Row subtitle carries the genre.
+    expect(find.text('Fantasy'), findsWidgets);
+
+    // Two genres → filter chips; picking one hides the other's table.
+    await tester.tap(find.byKey(const Key('tables-genre-Sci-fi')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('my-table-t2')), findsOneWidget);
+    expect(find.byKey(const Key('my-table-t1')), findsNothing);
+    await tester.tap(find.byKey(const Key('tables-genre-all')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('my-table-t1')), findsOneWidget);
+  });
+
+  testWidgets('editor saves genre/category/source onto the table',
+      (tester) async {
+    final c = await pumpWithContainer(tester);
+    await tester.tap(find.byKey(const Key('tables-my-new')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('table-name')), 'Patrons');
+    await tester.enterText(find.byKey(const Key('table-genre')), 'Fantasy');
+    await tester.enterText(
+        find.byKey(const Key('table-source')), 'Big Book of Bars');
+    await tester.tap(find.byKey(const Key('table-category')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Characters & NPCs').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('table-rows')), 'Grim dwarf');
+    await tester.tap(find.byKey(const Key('table-save')));
+    await tester.pumpAndSettle();
+
+    final saved =
+        (await c.read(customTablesProvider.future)).single;
+    expect(saved.name, 'Patrons');
+    expect(saved.genre, 'Fantasy');
+    expect(saved.category, 'Characters & NPCs');
+    expect(saved.source, 'Big Book of Bars');
   });
 }

@@ -28,6 +28,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
   final Map<String, Roll> _last = {};
   final TextEditingController _search = TextEditingController();
   String _query = '';
+  String _genre = ''; // '' = all genres (My Tables library filter)
 
   @override
   void dispose() {
@@ -96,9 +97,12 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
-              // User-authored tables sit above the built-in groups. Hidden while
-              // searching so they don't clutter built-in-table results.
-              if (q.isEmpty) _myTablesSection(customTables),
+              // User-authored tables sit above the built-in groups. While
+              // searching, they stay visible when the query matches their
+              // name/genre/category/source (library search).
+              if (_visibleMyTables(customTables, q) case final mine
+                  when q.isEmpty || mine.isNotEmpty)
+                _myTablesSection(customTables, mine),
               for (final group in groups)
                 if (_matching(group, q) case final matches
                     when matches.isNotEmpty)
@@ -132,40 +136,92 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     );
   }
 
-  /// The "My Tables" section: a roll/edit row per user-authored table plus a
-  /// "New table" affordance. Shown only when not searching.
-  Widget _myTablesSection(List<CustomTable> tables) {
+  /// The user tables visible under the current genre filter + search query.
+  List<CustomTable> _visibleMyTables(List<CustomTable> all, String q) => [
+        for (final t in all)
+          if ((_genre.isEmpty || t.genre.trim() == _genre) &&
+              (q.isEmpty || matchesTableQuery(t, q)))
+            t,
+      ];
+
+  /// The "My Tables" library: genre filter chips, then tables grouped by
+  /// category (the community binder pattern: genre → category → table), each
+  /// row showing its genre/source. [all] drives the genre chips; [visible]
+  /// is the filtered set actually listed.
+  Widget _myTablesSection(List<CustomTable> all, List<CustomTable> visible) {
     final theme = Theme.of(context);
+    final genres = tableGenres(all);
+    final groups = groupTablesByCategory(visible);
     return ExpansionTile(
       key: const Key('tables-my-tables'),
       initiallyExpanded: true,
       title: Text('My Tables', style: theme.textTheme.titleMedium),
       childrenPadding: const EdgeInsets.only(bottom: 4),
       children: [
-        for (final t in tables)
-          Card(
-            child: ListTile(
-              key: Key('my-table-${t.id}'),
-              title: Text(t.name.isEmpty ? '(untitled)' : t.name),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: Key('my-table-edit-${t.id}'),
-                    tooltip: 'Edit table',
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => showCustomTableDialog(context, ref, t),
-                  ),
-                  IconButton(
-                    tooltip: 'Roll',
-                    icon: const Icon(Icons.casino_outlined),
-                    onPressed: () => _rollCustomTable(t),
-                  ),
-                ],
+        if (genres.length >= 2)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Wrap(spacing: 6, runSpacing: 4, children: [
+              ChoiceChip(
+                key: const Key('tables-genre-all'),
+                label: const Text('All'),
+                selected: _genre.isEmpty,
+                onSelected: (_) => setState(() => _genre = ''),
               ),
-              onTap: () => _rollCustomTable(t),
-            ),
+              for (final g in genres)
+                ChoiceChip(
+                  key: Key('tables-genre-$g'),
+                  label: Text(g),
+                  selected: _genre == g,
+                  onSelected: (_) => setState(() => _genre = g),
+                ),
+            ]),
           ),
+        for (final (category, tables) in groups) ...[
+          // Category headers only earn their space once the library spans
+          // more than one bucket.
+          if (groups.length > 1)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(category,
+                    key: Key('tables-cat-$category'),
+                    style: theme.textTheme.labelMedium),
+              ),
+            ),
+          for (final t in tables)
+            Card(
+              child: ListTile(
+                key: Key('my-table-${t.id}'),
+                title: Text(t.name.isEmpty ? '(untitled)' : t.name),
+                subtitle: switch ([
+                  if (t.genre.trim().isNotEmpty) t.genre.trim(),
+                  if (t.source.trim().isNotEmpty) t.source.trim(),
+                ].join(' · ')) {
+                  '' => null,
+                  final meta => Text(meta),
+                },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('my-table-edit-${t.id}'),
+                      tooltip: 'Edit table',
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => showCustomTableDialog(context, ref, t),
+                    ),
+                    IconButton(
+                      tooltip: 'Roll',
+                      icon: const Icon(Icons.casino_outlined),
+                      onPressed: () => _rollCustomTable(t),
+                    ),
+                  ],
+                ),
+                onTap: () => _rollCustomTable(t),
+              ),
+            ),
+        ],
         Card(
           child: ListTile(
             key: const Key('tables-my-new'),

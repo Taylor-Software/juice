@@ -675,7 +675,17 @@ Working rules for this repo:
   `showCustomTableDialog` (`lib/features/custom_table_editor.dart`, extracted from
   the old private `_showTableDialog`; `table-name`/`table-mode`/`table-dice`/
   `table-rows`/`table-save`/`table-delete`). **Facts-only:** ships zero vendored
-  content — the user authors every row. P2 added `TableRoll` modes (uniform /
+  content — the user authors every row. **Library taxonomy (community binder
+  pattern, 2026-07-07):** tables carry optional `genre`/`category`/`source`
+  (JSON `genre`/`cat`/`src`; `kTableCategories` = 13 authored buckets +
+  `kUncategorized`); pure `groupTablesByCategory`/`tableGenres`/
+  `matchesTableQuery` drive a category-grouped My Tables (headers
+  `tables-cat-<c>` when >1 bucket, genre `ChoiceChip` filter
+  `tables-genre-<g>` when ≥2 genres, row subtitle "genre · source"), library
+  search now matches custom tables by name/genre/category/source while
+  searching built-ins, the editor gained `table-category`/`table-genre`/
+  `table-source`, GenerateSheet chips sort by category, and packs carry the
+  metadata. P2 added `TableRoll` modes (uniform /
   **weighted** / **ranges**): each `CustomRow` carries a `weight` + optional
   `min`/`max` span, and `CustomTable` carries a `mode` + `dice` notation
   (`parseDiceNotation`/`rollNotation`); the editor exposes a `table-mode`

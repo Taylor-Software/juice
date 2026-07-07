@@ -64,6 +64,79 @@ void main() {
     });
   });
 
+  group('library metadata', () {
+    test('genre/category/source round-trip and are omitted when empty', () {
+      const t = CustomTable(
+          id: 'x',
+          name: 'Tavern Patrons',
+          genre: 'Fantasy',
+          category: 'Characters & NPCs',
+          source: 'Homebrew binder');
+      final j = t.toJson();
+      expect(j['genre'], 'Fantasy');
+      expect(j['cat'], 'Characters & NPCs');
+      expect(j['src'], 'Homebrew binder');
+      final back = CustomTable.fromJson(j);
+      expect(back.genre, 'Fantasy');
+      expect(back.category, 'Characters & NPCs');
+      expect(back.source, 'Homebrew binder');
+
+      const bare = CustomTable(id: 'y', name: 'Plain');
+      expect(bare.toJson().containsKey('genre'), isFalse);
+      expect(bare.toJson().containsKey('cat'), isFalse);
+      expect(bare.toJson().containsKey('src'), isFalse);
+      expect(CustomTable.fromJson(bare.toJson()).category, '');
+    });
+
+    test('pack round-trip carries the metadata', () {
+      const t = CustomTable(
+          id: 'x', name: 'N', genre: 'Horror', category: 'Names', source: 'S');
+      final back = decodeTablePack(encodeTablePack(const [t])).single;
+      expect(back.genre, 'Horror');
+      expect(back.category, 'Names');
+      expect(back.source, 'S');
+    });
+
+    test('groupTablesByCategory orders known, unknown, uncategorized', () {
+      const tables = [
+        CustomTable(id: '1', name: 'a'), // uncategorized
+        CustomTable(id: '2', name: 'b', category: 'Names'),
+        CustomTable(id: '3', name: 'c', category: 'Zeppelin Parts'),
+        CustomTable(id: '4', name: 'd', category: 'Characters & NPCs'),
+        CustomTable(id: '5', name: 'e', category: 'Names'),
+      ];
+      final groups = groupTablesByCategory(tables);
+      expect([for (final (c, _) in groups) c],
+          ['Characters & NPCs', 'Names', 'Zeppelin Parts', kUncategorized]);
+      expect(groups[1].$2.map((t) => t.id), ['2', '5']);
+    });
+
+    test('tableGenres is sorted + unique + skips blanks', () {
+      const tables = [
+        CustomTable(id: '1', name: 'a', genre: 'Horror'),
+        CustomTable(id: '2', name: 'b', genre: 'Fantasy'),
+        CustomTable(id: '3', name: 'c', genre: 'Horror'),
+        CustomTable(id: '4', name: 'd'),
+      ];
+      expect(tableGenres(tables), ['Fantasy', 'Horror']);
+    });
+
+    test('matchesTableQuery searches name/genre/category/source', () {
+      const t = CustomTable(
+          id: 'x',
+          name: 'Tavern Patrons',
+          genre: 'Fantasy',
+          category: 'Characters & NPCs',
+          source: 'Big Book of Bars');
+      expect(matchesTableQuery(t, 'tavern'), isTrue);
+      expect(matchesTableQuery(t, 'FANTASY'), isTrue);
+      expect(matchesTableQuery(t, 'npc'), isTrue);
+      expect(matchesTableQuery(t, 'book of bars'), isTrue);
+      expect(matchesTableQuery(t, ''), isTrue);
+      expect(matchesTableQuery(t, 'spaceship'), isFalse);
+    });
+  });
+
   group('parseDiceNotation', () {
     test('parses d-only, count d, case/space tolerant', () {
       expect(parseDiceNotation('d6')!.count, 1);
