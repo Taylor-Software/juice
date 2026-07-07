@@ -476,6 +476,63 @@ void main() {
     expect(find.byKey(const Key('loc-entry-row-n1')), findsNothing);
   });
 
+  testWidgets(
+      'hex detail card links a sketch map: pick, open chip shows title, unlink',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+          '"name":"C1","systems":["juice","hexcrawl"]}]}',
+      'juice.map.v1.default': jsonEncode({
+        'hexes': [
+          {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+        ],
+        'currentHexCol': 0,
+        'currentHexRow': 0,
+      }),
+      'juice.journal.v2.default': '[{"id":"s1",'
+          '"timestamp":"2026-06-12T09:00:00.000Z","title":"Town map",'
+          '"body":"","kind":"sketch","tags":[],'
+          '"payload":{"v":1,"sketch":{"v":1,"strokes":[],"w":100,"h":100}}}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: HexMapPane(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
+
+    final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
+    await tester.tapAt(origin + hexCenterFor(0, 0, -1, -1, 34.0));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('hex-link-sketch')));
+    await tester.tap(find.byKey(const Key('hex-link-sketch')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sketch-pick-s1')));
+    await tester.pumpAndSettle();
+
+    final hex = container
+        .read(mapProvider)
+        .valueOrNull!
+        .hexes
+        .firstWhere((x) => x.col == 0 && x.row == 0);
+    expect(hex.sketchEntryId, 's1');
+    await tester.ensureVisible(find.byKey(const Key('hex-open-sketch')));
+    expect(find.text('Map: Town map'), findsOneWidget);
+
+    await tester.ensureVisible(find.byKey(const Key('hex-unlink-sketch')));
+    await tester.tap(find.byKey(const Key('hex-unlink-sketch')));
+    await tester.pumpAndSettle();
+    expect(
+        container
+            .read(mapProvider)
+            .valueOrNull!
+            .hexes
+            .firstWhere((x) => x.col == 0 && x.row == 0)
+            .sketchEntryId,
+        isNull);
+  });
+
   testWidgets('dungeon pane shows the up-to-world chip when anchored',
       (tester) async {
     final container = await pumpDungeon(tester,

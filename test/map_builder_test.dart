@@ -41,7 +41,7 @@ void main() {
           ),
         ],
         hexes: [
-          HexCell(col: 0, row: 0, envRow: 3),
+          HexCell(col: 0, row: 0, envRow: 3, sketchEntryId: 's1'),
           HexCell(col: 1, row: 0, envRow: 7, lost: true),
         ],
         currentHexCol: 1,
@@ -67,6 +67,8 @@ void main() {
       expect(back.hexes[0].row, 0);
       expect(back.hexes[0].envRow, 3);
       expect(back.hexes[0].lost, isFalse);
+      expect(back.hexes[0].sketchEntryId, 's1');
+      expect(back.hexes[1].sketchEntryId, isNull);
       expect(back.hexes[1].envRow, 7);
       expect(back.hexes[1].lost, isTrue);
       expect(back.currentHexCol, 1);

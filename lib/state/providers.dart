@@ -1001,6 +1001,16 @@ class MapNotifier extends AsyncNotifier<MapState> {
   /// [_scopedKey] or clobber previously persisted data.
   Future<MapState> get _ready async => state.valueOrNull ?? await future;
 
+  /// Link (or, with null, unlink) a sketch-map journal entry to a hex — the
+  /// hierarchy hook for hand-drawn town/building maps.
+  Future<void> setHexSketch(int col, int row, String? entryId) =>
+      _updateHex(
+          col,
+          row,
+          (h) => entryId == null
+              ? h.copyWith(clearSketchEntry: true)
+              : h.copyWith(sketchEntryId: entryId));
+
   /// Anchor (or, with nulls, un-anchor) the dungeon to a world hex — the
   /// map-layer hierarchy link behind the hex "Enter dungeon" / dungeon
   /// "up to world" navigation.

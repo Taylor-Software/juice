@@ -13,6 +13,7 @@ import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/result_card.dart';
 import '../shared/entry_preview.dart';
+import 'sketch_open.dart';
 import '../shared/shell_route.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
@@ -1614,11 +1615,77 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                       .setDungeonAnchor(h.col, h.row),
                 );
               }),
+              // Map-layer hierarchy: a hand-drawn/PDF sketch map (a
+              // JournalKind.sketch entry) can anchor to this hex.
+              Builder(builder: (context) {
+                final entries = ref.watch(journalProvider).valueOrNull ??
+                    const <JournalEntry>[];
+                if (h.sketchEntryId != null) {
+                  final e = entries
+                      .where((x) => x.id == h.sketchEntryId)
+                      .firstOrNull;
+                  final title = e?.title.trim();
+                  return Wrap(spacing: 4, children: [
+                    ActionChip(
+                      key: const Key('hex-open-sketch'),
+                      avatar: const Icon(Icons.brush_outlined, size: 16),
+                      label: Text((title == null || title.isEmpty)
+                          ? 'Map'
+                          : 'Map: $title'),
+                      // Linked sketch deleted -> chip stays to Unlink only.
+                      onPressed: e == null
+                          ? null
+                          : () => openSketchEntry(context, ref, e),
+                    ),
+                    ActionChip(
+                      key: const Key('hex-unlink-sketch'),
+                      avatar: const Icon(Icons.link_off, size: 16),
+                      label: const Text('Unlink map'),
+                      onPressed: () => ref
+                          .read(mapProvider.notifier)
+                          .setHexSketch(h.col, h.row, null),
+                    ),
+                  ]);
+                }
+                final sketches = entries
+                    .where((x) => x.kind == JournalKind.sketch)
+                    .toList();
+                if (sketches.isEmpty) return const SizedBox.shrink();
+                return ActionChip(
+                  key: const Key('hex-link-sketch'),
+                  avatar: const Icon(Icons.brush_outlined, size: 16),
+                  label: const Text('Link map…'),
+                  onPressed: () => _pickHexSketch(context, h, sketches),
+                );
+              }),
             ]),
           ],
         ),
       ),
     );
+  }
+
+  /// Picker over the campaign's sketch entries; the chosen one anchors to [h].
+  Future<void> _pickHexSketch(
+      BuildContext context, HexCell h, List<JournalEntry> sketches) async {
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => SimpleDialog(
+        title: const Text('Link a sketch map'),
+        children: [
+          for (final e in sketches)
+            SimpleDialogOption(
+              key: Key('sketch-pick-${e.id}'),
+              onPressed: () => Navigator.of(dialogContext).pop(e.id),
+              child: Text(e.title.trim().isEmpty
+                  ? 'Sketch · ${e.timestamp.toLocal().toString().split(' ').first}'
+                  : e.title),
+            ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    await ref.read(mapProvider.notifier).setHexSketch(h.col, h.row, picked);
   }
 
   Future<void> _localCrawl(HexCell h) async {

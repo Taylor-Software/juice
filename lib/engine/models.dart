@@ -3284,6 +3284,7 @@ class HexCell {
     this.local = const [],
     this.siteLines = const [],
     this.siteAreas = const [],
+    this.sketchEntryId,
   });
   final int col;
   final int row;
@@ -3295,6 +3296,10 @@ class HexCell {
   final List<LocalCell> local; // local-zoom flower ring (H4a); [] = not zoomed
   final List<String> siteLines; // site writeup lines (H4b); [] = none
   final List<SiteArea> siteAreas; // site interior areas (H4c); [] = none
+
+  /// A sketch-map anchored to this hex: the id of a [JournalKind.sketch]
+  /// entry (drawn town/building map, PDF page). Null = none.
+  final String? sketchEntryId;
 
   HexCell copyWith({
     int? envRow,
@@ -3310,6 +3315,8 @@ class HexCell {
     bool clearSiteLines = false,
     List<SiteArea>? siteAreas,
     bool clearSiteAreas = false,
+    String? sketchEntryId,
+    bool clearSketchEntry = false,
   }) =>
       HexCell(
         col: col,
@@ -3322,6 +3329,8 @@ class HexCell {
         local: clearLocal ? const [] : (local ?? this.local),
         siteLines: clearSiteLines ? const [] : (siteLines ?? this.siteLines),
         siteAreas: clearSiteAreas ? const [] : (siteAreas ?? this.siteAreas),
+        sketchEntryId:
+            clearSketchEntry ? null : (sketchEntryId ?? this.sketchEntryId),
       );
 
   Map<String, dynamic> toJson() => {
@@ -3336,6 +3345,7 @@ class HexCell {
         if (siteLines.isNotEmpty) 'siteLines': siteLines,
         if (siteAreas.isNotEmpty)
           'siteAreas': siteAreas.map((e) => e.toJson()).toList(),
+        if (sketchEntryId != null) 'sketch': sketchEntryId,
       };
 
   /// Parses one hex entry; null for anything without a map shape and int
@@ -3360,6 +3370,7 @@ class HexCell {
           .map(SiteArea.maybeFromJson)
           .whereType<SiteArea>()
           .toList(),
+      sketchEntryId: j['sketch'] as String?,
     );
   }
 }
