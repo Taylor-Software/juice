@@ -98,10 +98,16 @@ class DiceLogRow extends StatelessWidget {
   }
 }
 
-/// Rich rendering for entries that carry a structured payload: a warm gradient
-/// hero with a source row, a big serif answer, roll rows, an appended-notes
-/// remainder, and an inline action row (Interpret / Voice / Pin).
-class PayloadCard extends StatelessWidget {
+/// Rich rendering for entries that carry a structured payload. Collapses by
+/// default to a single compact row (source icon + one-line answer + a muted
+/// roll summary + reroll + menu) — consistent with [DiceLogRow] — so
+/// mechanics stay out of the way of the story. Tapping the row expands it in
+/// place to reveal the full hero treatment: the big serif answer, intensity
+/// caption, tarot image, roll rows, an appended-notes remainder, extras
+/// footer, place chip, and the Interpret / Voice / Pin action row. Pinned
+/// entries (`entry.pinned`) start expanded — pinning means "keep this
+/// visible."
+class PayloadCard extends StatefulWidget {
   const PayloadCard({
     super.key,
     required this.entry,
@@ -138,8 +144,24 @@ class PayloadCard extends StatelessWidget {
   final Widget? placeChip;
 
   @override
+  State<PayloadCard> createState() => _PayloadCardState();
+}
+
+class _PayloadCardState extends State<PayloadCard> {
+  late bool _expanded = widget.entry.pinned;
+
+  @override
+  void didUpdateWidget(PayloadCard old) {
+    super.didUpdateWidget(old);
+    // A newly-pinned entry (e.g. via the on-card Pin button) snaps open; an
+    // unpinned entry keeps whatever expand state the user left it in.
+    if (widget.entry.pinned && !old.entry.pinned) _expanded = true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tk = context.juice;
+    final entry = widget.entry;
     final p = entry.payload!;
     final summary = p['summary'] as String?;
     final allRolls = [
@@ -174,11 +196,25 @@ class PayloadCard extends StatelessWidget {
           : entry.body;
     }
 
-    final showActions =
-        onInterpret != null || onVoice != null || onTogglePin != null;
+    final showActions = widget.onInterpret != null ||
+        widget.onVoice != null ||
+        widget.onTogglePin != null;
+
+    // One-line answer shared by both the collapsed row and the expanded
+    // header's absence thereof: prefer the summary, else the first body line,
+    // else the title (mirrors DiceLogRow's fallback).
+    final oneLiner = (summary != null && summary.trim().isNotEmpty)
+        ? summary.trim()
+        : (entry.body.trim().isNotEmpty
+            ? entry.body.split('\n').first.trim()
+            : entry.title);
+    // Muted trailing roll summary for the collapsed row, e.g. "Answer: Yes
+    // (+04)" — the first non-Intensity roll, truncated to one line.
+    final rollSummary =
+        rolls.isEmpty ? null : '${rolls.first.$1} ${rolls.first.$2}';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -187,180 +223,263 @@ class PayloadCard extends StatelessWidget {
             colors: tk.resultHeroGradient,
           ),
           border: Border.all(color: const Color(0xFFEFC9B4)),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: tk.terracotta.withValues(alpha: 0.16),
-              blurRadius: 22,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // SOURCE ROW: icon tile + uppercase source label + reroll/open +
-              // right-aligned sub-label + overflow menu.
-              Row(
-                children: [
-                  Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: tk.terracotta,
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: const Icon(Icons.auto_stories,
-                        size: 14, color: Colors.white),
+          borderRadius: BorderRadius.circular(_expanded ? 18 : 12),
+          boxShadow: _expanded
+              ? [
+                  BoxShadow(
+                    color: tk.terracotta.withValues(alpha: 0.16),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
+                ]
+              : null,
+        ),
+        child: _expanded
+            ? Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _expandedHeader(tk, subLabel),
+                    // BIG SERIF ANSWER.
+                    if (summary != null) _answer(tk, summary),
+                    if (intensity != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          intensity,
+                          style: tk.uiLabel
+                              .copyWith(fontSize: 11, color: tk.inkMuted),
+                        ),
+                      ),
+                    if (entry.sourceTool == 'cards' && summary != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Builder(builder: (_) {
+                            final r = readTarot(summary);
+                            return CardImage(r.name,
+                                reversed: r.reversed, height: 120);
+                          }),
+                        ),
+                      ),
+                    const SizedBox(height: 4),
+                    for (final r in rolls)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 110,
+                              child: Text(
+                                r.$1,
+                                style: tk.uiLabel
+                                    .copyWith(fontSize: 12, color: tk.inkMuted),
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                r.$2,
+                                style: tk.narrative
+                                    .copyWith(fontSize: 14, color: tk.inkBody),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (remainder.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      MentionText(
+                        remainder,
+                        style: tk.narrative
+                            .copyWith(fontSize: 14, color: tk.inkBody),
+                        onCharacterTap: widget.onCharacterTap,
+                        onThreadTap: widget.onThreadTap,
+                        onDiceTap: widget.onDiceTap,
+                        lonelog: widget.lonelog,
+                      ),
+                    ],
+                    if (widget.extras.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.extras.join('\n'),
+                        style: tk.uiLabel
+                            .copyWith(fontSize: 11, color: tk.inkMuted),
+                      ),
+                    ],
+                    if (widget.placeChip != null) ...[
+                      const SizedBox(height: 4),
+                      widget.placeChip!,
+                    ],
+                    // INLINE ACTION ROW above a hairline divider.
+                    if (showActions) ...[
+                      const SizedBox(height: 8),
+                      Divider(color: tk.hairline, height: 1),
+                      Row(
+                        children: [
+                          if (widget.onInterpret != null)
+                            TextButton(
+                              onPressed: widget.onInterpret,
+                              child: const AiBadge(label: 'Interpret'),
+                            ),
+                          if (widget.onVoice != null)
+                            TextButton(
+                              onPressed: widget.onVoice,
+                              child: const AiBadge(label: 'Voice line'),
+                            ),
+                          const Spacer(),
+                          if (widget.onTogglePin != null)
+                            TextButton.icon(
+                              key: Key('pin-${entry.id}'),
+                              onPressed: widget.onTogglePin,
+                              icon: Icon(
+                                entry.pinned
+                                    ? Icons.push_pin
+                                    : Icons.push_pin_outlined,
+                                size: 16,
+                                color: entry.pinned ? tk.terracotta : null,
+                              ),
+                              label: const Text('Pin'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              )
+            : _collapsedRow(tk, entry, oneLiner, rollSummary),
+      ),
+    );
+  }
+
+  /// The always-visible header row shown while expanded: icon tile + source
+  /// label + sub-label + reroll/open-in-tool + menu.
+  Widget _expandedHeader(JuiceTokens tk, String? subLabel) {
+    final entry = widget.entry;
+    return Row(
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: tk.terracotta,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: const Icon(Icons.auto_stories, size: 14, color: Colors.white),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: GestureDetector(
+            key: Key('payload-expand-${entry.id}'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _expanded = false),
+            child: Text(
+              _sourceLabel(entry.sourceTool),
+              style: tk.uiLabel.copyWith(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: tk.inkFaint,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+        ),
+        if (subLabel != null)
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Text(
+              subLabel,
+              style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+            ),
+          ),
+        if (widget.onReroll != null)
+          IconButton(
+            key: Key('entry-reroll-${entry.id}'),
+            tooltip: 'Roll again',
+            icon: const Icon(Icons.replay, size: 20),
+            visualDensity: VisualDensity.compact,
+            onPressed: widget.onReroll,
+          ),
+        if (widget.onOpenTool != null)
+          IconButton(
+            key: Key('entry-open-tool-${entry.id}'),
+            tooltip: 'Open in tool',
+            icon: const Icon(Icons.open_in_new, size: 20),
+            visualDensity: VisualDensity.compact,
+            onPressed: widget.onOpenTool,
+          ),
+        widget.menu,
+      ],
+    );
+  }
+
+  /// Collapsed one-line row, visually consistent with [DiceLogRow]: a small
+  /// source icon + the one-line answer (serif, ellipsized) + a muted trailing
+  /// roll summary + a compact reroll icon (a primary loop action — kept
+  /// visible collapsed) + the overflow menu. Tapping the row body expands it.
+  Widget _collapsedRow(JuiceTokens tk, JournalEntry entry, String oneLiner,
+      String? rollSummary) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: tk.terracotta,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child:
+                const Icon(Icons.auto_stories, size: 13, color: Colors.white),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: GestureDetector(
+              key: Key('payload-expand-${entry.id}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() => _expanded = true),
+              child: Row(
+                children: [
+                  Flexible(
                     child: Text(
-                      _sourceLabel(entry.sourceTool),
-                      style: tk.uiLabel.copyWith(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: tk.inkFaint,
-                        letterSpacing: 1.2,
+                      oneLiner,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tk.narrative.copyWith(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: tk.ink,
                       ),
                     ),
                   ),
-                  if (subLabel != null)
+                  if (rollSummary != null)
                     Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsets.only(left: 8),
                       child: Text(
-                        subLabel,
+                        rollSummary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: tk.uiLabel
                             .copyWith(fontSize: 11, color: tk.inkMuted),
                       ),
                     ),
-                  if (onReroll != null)
-                    IconButton(
-                      key: Key('entry-reroll-${entry.id}'),
-                      tooltip: 'Roll again',
-                      icon: const Icon(Icons.replay, size: 20),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: onReroll,
-                    ),
-                  if (onOpenTool != null)
-                    IconButton(
-                      key: Key('entry-open-tool-${entry.id}'),
-                      tooltip: 'Open in tool',
-                      icon: const Icon(Icons.open_in_new, size: 20),
-                      visualDensity: VisualDensity.compact,
-                      onPressed: onOpenTool,
-                    ),
-                  menu,
                 ],
               ),
-              // BIG SERIF ANSWER.
-              if (summary != null) _answer(tk, summary),
-              if (intensity != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
-                    intensity,
-                    style:
-                        tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
-                  ),
-                ),
-              if (entry.sourceTool == 'cards' && summary != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Builder(builder: (_) {
-                      final r = readTarot(summary);
-                      return CardImage(r.name,
-                          reversed: r.reversed, height: 120);
-                    }),
-                  ),
-                ),
-              const SizedBox(height: 4),
-              for (final r in rolls)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 110,
-                        child: Text(
-                          r.$1,
-                          style: tk.uiLabel
-                              .copyWith(fontSize: 12, color: tk.inkMuted),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          r.$2,
-                          style: tk.narrative
-                              .copyWith(fontSize: 14, color: tk.inkBody),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (remainder.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                MentionText(
-                  remainder,
-                  style: tk.narrative.copyWith(fontSize: 14, color: tk.inkBody),
-                  onCharacterTap: onCharacterTap,
-                  onThreadTap: onThreadTap,
-                  onDiceTap: onDiceTap,
-                  lonelog: lonelog,
-                ),
-              ],
-              if (extras.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  extras.join('\n'),
-                  style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
-                ),
-              ],
-              if (placeChip != null) ...[
-                const SizedBox(height: 4),
-                placeChip!,
-              ],
-              // INLINE ACTION ROW above a hairline divider.
-              if (showActions) ...[
-                const SizedBox(height: 8),
-                Divider(color: tk.hairline, height: 1),
-                Row(
-                  children: [
-                    if (onInterpret != null)
-                      TextButton(
-                        onPressed: onInterpret,
-                        child: const AiBadge(label: 'Interpret'),
-                      ),
-                    if (onVoice != null)
-                      TextButton(
-                        onPressed: onVoice,
-                        child: const AiBadge(label: 'Voice line'),
-                      ),
-                    const Spacer(),
-                    if (onTogglePin != null)
-                      TextButton.icon(
-                        key: Key('pin-${entry.id}'),
-                        onPressed: onTogglePin,
-                        icon: Icon(
-                          entry.pinned
-                              ? Icons.push_pin
-                              : Icons.push_pin_outlined,
-                          size: 16,
-                          color: entry.pinned ? tk.terracotta : null,
-                        ),
-                        label: const Text('Pin'),
-                      ),
-                  ],
-                ),
-              ],
-            ],
+            ),
           ),
-        ),
+          if (widget.onReroll != null)
+            IconButton(
+              key: Key('entry-reroll-${entry.id}'),
+              tooltip: 'Roll again',
+              icon: const Icon(Icons.replay, size: 18),
+              visualDensity: VisualDensity.compact,
+              onPressed: widget.onReroll,
+            ),
+          widget.menu,
+        ],
       ),
     );
   }
