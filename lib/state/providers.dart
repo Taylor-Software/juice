@@ -102,6 +102,26 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
   @override
   Map<String, dynamic> toJsonMap(JournalEntry item) => item.toJson();
 
+  /// The [PlayContext] spine's active location, read directly from prefs
+  /// (NOT via `playContextProvider` — `play_context.dart` imports this file,
+  /// so the reverse import would cycle). Mirrors `PlayContextNotifier`'s own
+  /// key scheme; tolerant of missing/garbage state (returns null).
+  Future<LocationRef?> _activeLocation() async {
+    final sessions = await ref.read(sessionsProvider.future);
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('juice.context.v1.${sessions.active}');
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final j = jsonDecode(raw) as Map<String, dynamic>;
+      final loc = j['activeLocation'];
+      if (loc is! Map) return null;
+      final ref0 = LocationRef.fromJson(Map<String, dynamic>.from(loc));
+      return ref0.isEmpty ? null : ref0;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> add(String title, String body) async {
     await _persist([
       JournalEntry(
@@ -123,7 +143,8 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           title: title,
           body: body,
           sourceTool: sourceTool,
-          payload: payload),
+          payload: payload,
+          location: await _activeLocation()),
       ...await _ready,
     ]);
   }
@@ -135,7 +156,8 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           timestamp: DateTime.now(),
           title: '',
           body: body,
-          kind: JournalKind.text),
+          kind: JournalKind.text,
+          location: await _activeLocation()),
       ...await _ready,
     ]);
   }
@@ -151,7 +173,8 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           title: title,
           body: '',
           kind: JournalKind.scene,
-          chaosFactor: chaosFactor),
+          chaosFactor: chaosFactor,
+          location: await _activeLocation()),
       ...await _ready,
     ]);
     return id;

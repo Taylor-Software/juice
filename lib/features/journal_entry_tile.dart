@@ -116,6 +116,7 @@ class PayloadCard extends StatelessWidget {
     this.onThreadTap,
     this.onDiceTap,
     this.lonelog = false,
+    this.placeChip,
   });
 
   final JournalEntry entry;
@@ -130,6 +131,11 @@ class PayloadCard extends StatelessWidget {
   final void Function(String id)? onThreadTap;
   final void Function(String notation)? onDiceTap;
   final bool lonelog;
+
+  /// Low-chrome tappable "where this happened" suffix (see `PlaceChip` in
+  /// journal_screen.dart), rendered alongside the extras line. Null when the
+  /// entry has no logged location.
+  final Widget? placeChip;
 
   @override
   Widget build(BuildContext context) {
@@ -314,6 +320,10 @@ class PayloadCard extends StatelessWidget {
                   extras.join('\n'),
                   style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
                 ),
+              ],
+              if (placeChip != null) ...[
+                const SizedBox(height: 4),
+                placeChip!,
               ],
               // INLINE ACTION ROW above a hairline divider.
               if (showActions) ...[

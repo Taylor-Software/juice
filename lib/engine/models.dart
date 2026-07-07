@@ -109,6 +109,7 @@ class JournalEntry {
     this.sourceTool,
     this.payload,
     this.pinned = false,
+    this.location,
   });
   final String id;
   final DateTime timestamp;
@@ -134,6 +135,11 @@ class JournalEntry {
   /// Player-pinned flag (shows a ⚑ Pin action on result cards), default false.
   final bool pinned;
 
+  /// The map location (hex or dungeon room) this entry was logged at, when
+  /// the [PlayContext] spine had an active location at creation time. Null
+  /// for entries logged with no location focus (and all legacy entries).
+  final LocationRef? location;
+
   JournalEntry copyWith({
     String? title,
     String? body,
@@ -142,6 +148,8 @@ class JournalEntry {
     List<String>? tags,
     Map<String, dynamic>? payload,
     bool? pinned,
+    LocationRef? location,
+    bool clearLocation = false,
   }) =>
       JournalEntry(
         id: id,
@@ -155,6 +163,7 @@ class JournalEntry {
         sourceTool: sourceTool,
         payload: payload ?? this.payload,
         pinned: pinned ?? this.pinned,
+        location: clearLocation ? null : (location ?? this.location),
       );
 
   Map<String, dynamic> toJson() => {
@@ -169,6 +178,7 @@ class JournalEntry {
         if (sourceTool != null) 'sourceTool': sourceTool,
         if (payload != null) 'payload': payload,
         'pinned': pinned,
+        if (location != null) 'loc': location!.toJson(),
       };
 
   factory JournalEntry.fromJson(Map<String, dynamic> j) => JournalEntry(
@@ -183,6 +193,9 @@ class JournalEntry {
         sourceTool: j['sourceTool'] as String?,
         payload: (j['payload'] as Map?)?.cast<String, dynamic>(),
         pinned: (j['pinned'] as bool?) ?? false,
+        location: j['loc'] is Map
+            ? LocationRef.fromJson(Map<String, dynamic>.from(j['loc'] as Map))
+            : null,
       );
 }
 
@@ -3372,7 +3385,23 @@ class LocationRef {
         hexCol: (j['hexCol'] as num?)?.toInt(),
         hexRow: (j['hexRow'] as num?)?.toInt(),
       );
+
+  /// True when [other] refers to the same place (room id match, or matching
+  /// hex col+row). Two empty refs do NOT match (nothing to link on).
+  bool matches(LocationRef? other) {
+    if (other == null || isEmpty || other.isEmpty) return false;
+    if (roomId != null || other.roomId != null) return roomId == other.roomId;
+    return hexCol == other.hexCol && hexRow == other.hexRow;
+  }
 }
+
+/// Journal entries whose [JournalEntry.location] matches [loc] (a room-id or
+/// hex-col/row match via [LocationRef.matches]). Used by the map panes'
+/// "what happened here" backlink. Order follows [entries] (newest-first, the
+/// journal's storage order).
+List<JournalEntry> entriesAtLocation(
+        List<JournalEntry> entries, LocationRef loc) =>
+    entries.where((e) => loc.matches(e.location)).toList(growable: false);
 
 /// The play-state spine: what's "current" in the active campaign. Pointers
 /// are nullable; null means no focus (consumers fall back to defaults).
