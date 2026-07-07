@@ -45,7 +45,7 @@ void main() {
     final r = classifyYesNo(SoloLikelihood.even, 2); // plain Yes
     final g = r.toGenResult(question: '  Is the bridge guarded?  ');
     expect(g.title, 'Is the bridge guarded?');
-    expect(g.summary, 'Yes');
+    expect(g.summary, 'Is the bridge guarded? — Yes');
     expect(g.asText, contains('Odds: Even'));
     // No question -> the P1 title survives unchanged.
     expect(r.toGenResult().title, 'Yes/No — Even');

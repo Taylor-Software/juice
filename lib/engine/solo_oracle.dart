@@ -42,16 +42,18 @@ class SoloYesNo {
   }
 
   /// [question] is the player's asked question; when given it becomes the
-  /// entry title so the journal reads "Q — Yes" instead of a context-free
-  /// answer (stranger-test audit S1).
+  /// entry title AND leads the summary (the journal result card headlines the
+  /// summary), so the log reads "Q — Yes" instead of a context-free answer
+  /// (stranger-test audit S1).
   GenResult toGenResult({String question = ''}) {
     final q = question.trim();
     return GenResult(
       title: q.isEmpty ? 'Yes/No — ${odds.label}' : q,
-      summary: phrase,
+      summary: q.isEmpty ? phrase : '$q — $phrase',
       rolls: [
         Roll(label: 'Result', value: phrase, detail: 'd10=$roll'),
-        if (q.isNotEmpty) Roll(label: 'Odds', value: odds.label, detail: ''),
+        if (q.isNotEmpty)
+          Roll(label: 'Odds', value: odds.label, detail: 'd10=$roll'),
       ],
     );
   }
