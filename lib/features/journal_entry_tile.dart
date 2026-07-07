@@ -264,6 +264,21 @@ class _PayloadCardState extends State<PayloadCard> {
                           }),
                         ),
                       ),
+                    // Story-dice entries carry their icon asset paths in the
+                    // payload — render the rolled strip.
+                    if (p['icons'] case final List<dynamic> icons
+                        when icons.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final a in icons.whereType<String>())
+                              Image.asset(a, width: 52, height: 52),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 4),
                     for (final r in rolls)
                       Padding(

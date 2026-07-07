@@ -125,25 +125,55 @@ void main() {
   });
 
   testWidgets(
-      'gen-abstract-icon chip renders icon card and adds NO journal entry',
-      (tester) async {
+      'gen-abstract-icon chip renders a settled icon die and adds NO journal '
+      'entry until logged', (tester) async {
     final c = await _makeContainer();
     await _pumpSheet(tester, c);
 
-    // Tap the Abstract Icon chip.
+    // Tap the Story Dice chip (default count 1).
     await tester.tap(find.byKey(const Key('gen-abstract-icon')));
-    await tester.pumpAndSettle();
+    await tester.pumpAndSettle(); // past the tumble
 
-    // The icon card shows the d10/d6 label text (chip label + card text = 2 widgets).
-    expect(find.textContaining('Abstract Icon'), findsAtLeast(1));
+    // The single-die card shows the Abstract Icon title + settled die + pairs.
+    expect(find.text('Abstract Icon'), findsOneWidget);
+    expect(find.byKey(const Key('icon-die-0')), findsOneWidget);
+    expect(find.textContaining('d10 '), findsOneWidget);
 
-    // There is no ResultCard and no log button — purely display-only.
-    expect(find.byType(ResultCard), findsNothing);
-    expect(find.byTooltip('Add to journal'), findsNothing);
-
-    // Journal stays empty.
+    // Roll itself is display-only — journal stays empty.
     final entries = await c.read(journalProvider.future);
     expect(entries, isEmpty);
+  });
+
+  testWidgets(
+      'story dice: count picker rolls N icons; log writes one entry with the '
+      'icon paths in the payload', (tester) async {
+    final c = await _makeContainer();
+    await _pumpSheet(tester, c);
+
+    await tester.tap(find.byKey(const Key('icon-dice-count-3')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('gen-abstract-icon')));
+    await tester.pumpAndSettle(); // past the tumble
+
+    expect(find.text('Story Dice'), findsAtLeast(1));
+    for (var i = 0; i < 3; i++) {
+      expect(find.byKey(Key('icon-die-$i')), findsOneWidget);
+    }
+    expect(find.byKey(const Key('icon-die-3')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('icon-dice-log')));
+    await tester.pumpAndSettle();
+
+    final entries = await c.read(journalProvider.future);
+    expect(entries.length, 1);
+    final e = entries.first;
+    expect(e.title, 'Story Dice (3)');
+    expect(e.sourceTool, 'gen-story');
+    final icons = (e.payload?['icons'] as List).cast<String>();
+    expect(icons.length, 3);
+    for (final a in icons) {
+      expect(a, startsWith('assets/abstract_icons/'));
+    }
   });
 
   // --- My Tables (user-authored custom tables) ------------------------------
@@ -188,7 +218,8 @@ void main() {
 
     final tables = await c.read(customTablesProvider.future);
     expect(tables.single.name, 'Loot');
-    expect(tables.single.rows.map((r) => r.text).toList(), ['Gold', 'Gem', 'Scroll']);
+    expect(tables.single.rows.map((r) => r.text).toList(),
+        ['Gold', 'Gem', 'Scroll']);
     expect(find.widgetWithText(InputChip, 'Loot'), findsOneWidget);
   });
 
@@ -210,8 +241,8 @@ void main() {
     expect(find.byKey(const Key('table-dice')), findsOneWidget);
 
     await tester.enterText(find.byKey(const Key('table-dice')), 'd100');
-    await tester.enterText(find.byKey(const Key('table-rows')),
-        '1-50 Copper\n51-100 Gold');
+    await tester.enterText(
+        find.byKey(const Key('table-rows')), '1-50 Copper\n51-100 Gold');
     await tester.tap(find.byKey(const Key('table-save')));
     await tester.pumpAndSettle();
 
