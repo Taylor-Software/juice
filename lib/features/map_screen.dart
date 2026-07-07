@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dungeon/footprint.dart';
 import '../engine/dungeon/generator.dart' show DungeonBranch;
+import '../engine/dungeon/organic.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -635,10 +636,43 @@ class _DungeonPainter extends CustomPainter {
         ..color = isCurrent
             ? scheme.primaryContainer
             : scheme.surfaceContainerHighest;
-      // Multi-cell footprints draw as the union of their cell rects (slightly
-      // over-inset seams bridged by a full-bleed body per cell); a legacy
-      // single-cell room keeps its rounded-square look exactly.
-      if (r.footprint.length == 1) {
+      // Cave/tunnel rooms paint as an organic wobbly blob around the fused
+      // footprint instead of the P1 rounded-rect look; dungeon rooms
+      // (corridor/chamber/legacy null) keep the P1 code path verbatim.
+      if (r.roomType == 'tunnel' || r.roomType == 'cave') {
+        final pts = organicPerimeter(r.footprint,
+            seed: r.id.hashCode, cellSize: _cell, jitter: _cell * 0.12);
+        final origin = Offset((r.x - _minX) * _cell + _cell / 2,
+            (r.y - _minY) * _cell + _cell / 2);
+        final path = Path()
+          ..moveTo(pts.first.$1 + origin.dx, pts.first.$2 + origin.dy);
+        for (final p in pts.skip(1)) {
+          path.lineTo(p.$1 + origin.dx, p.$2 + origin.dy);
+        }
+        path.close();
+        final caveFill = Paint()
+          ..color = Color.lerp(scheme.surfaceContainerHighest,
+              scheme.tertiaryContainer, isCurrent ? 0.9 : 0.5)!;
+        canvas.drawPath(path, caveFill);
+        if (isCurrent) {
+          canvas.drawPath(
+              path,
+              Paint()
+                ..color = scheme.primary
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        } else {
+          canvas.drawPath(
+              path,
+              Paint()
+                ..color = scheme.outlineVariant
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        }
+      } else if (r.footprint.length == 1) {
+        // Multi-cell footprints draw as the union of their cell rects
+        // (slightly over-inset seams bridged by a full-bleed body per cell);
+        // a legacy single-cell room keeps its rounded-square look exactly.
         final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
         canvas.drawRRect(rrect, fill);
         if (isCurrent) {
