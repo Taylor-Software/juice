@@ -987,7 +987,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           color: tk.inkMuted,
         );
         return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1057,7 +1057,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         // so result heroes carry the visual weight. The overflow menu stays
         // reachable via a compact trailing button.
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1077,19 +1077,24 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       onDiceTap: _rollDice,
                       lonelog: lonelog,
                     ),
-                    if (extras.isNotEmpty)
+                    // Suffix metadata stays on ONE compact line (thread ·
+                    // tags · place) so notes read as flowing prose.
+                    if (extras.isNotEmpty || _placeChip(e) != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          extras.join('\n'),
-                          style: tk.uiLabel
-                              .copyWith(fontSize: 11, color: tk.inkMuted),
+                        child: Wrap(
+                          spacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (extras.isNotEmpty)
+                              Text(
+                                extras.join(' · '),
+                                style: tk.uiLabel
+                                    .copyWith(fontSize: 11, color: tk.inkMuted),
+                              ),
+                            if (_placeChip(e) case final chip?) chip,
+                          ],
                         ),
-                      ),
-                    if (_placeChip(e) case final chip?)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: chip,
                       ),
                   ],
                 ),
@@ -1171,7 +1176,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               children: [
                 SizedBox(
                   key: Key('sketch-thumb-${e.id}'),
-                  height: 180,
+                  height: 120,
                   child: SketchThumbnail(data),
                 ),
                 Row(

@@ -60,8 +60,8 @@ OracleData _loadData() {
   return OracleData(jsonDecode(raw) as Map<String, dynamic>);
 }
 
-VerdantData _loadVerdant() => VerdantData(
-    jsonDecode(File('assets/verdant_data.json').readAsStringSync())
+VerdantData _loadVerdant() =>
+    VerdantData(jsonDecode(File('assets/verdant_data.json').readAsStringSync())
         as Map<String, dynamic>);
 
 EmulatorData _loadEmulator() => EmulatorData(
@@ -119,24 +119,46 @@ void main() {
   testWidgets('a logged tarot card entry renders its bundled image',
       (tester) async {
     await pumpJournal(tester, _journalPrefs(cardEntryJson));
+    // Collapsed row shows the card name; no image until expanded.
+    expect(find.text('The Tower (reversed)'), findsOneWidget);
+    expect(find.byType(CardImage), findsNothing);
+
+    await tester.tap(find.byKey(const Key('payload-expand-c1')));
+    await tester.pumpAndSettle();
+
     expect(find.text('The Tower (reversed)'), findsWidgets); // summary + body
     expect(find.byType(CardImage), findsOneWidget);
   });
 
-  testWidgets('payload entry renders summary, roll rows, and actions',
+  testWidgets(
+      'payload entry collapses by default: one-line answer, no roll rows or actions',
       (tester) async {
     await pumpJournal(tester, _journalPrefs(_entryJson));
 
-    // Summary text visible.
+    // Summary text visible on the collapsed one-liner.
     expect(find.text('Yes'), findsOneWidget);
+    // Roll rows are NOT shown until expanded.
+    expect(find.text('Answer'), findsNothing);
+    // Open-in-tool is inside the expanded header — not visible collapsed.
+    expect(find.byKey(const Key('entry-open-tool-$_entryId')), findsNothing);
+    // The raw flat body string is NOT rendered as a single Text widget.
+    expect(find.text(_payloadBody), findsNothing);
+  });
+
+  testWidgets(
+      'tapping the collapsed row expands to reveal roll rows, remainder, and actions',
+      (tester) async {
+    await pumpJournal(tester, _journalPrefs(_entryJson));
+
+    expect(find.byKey(const Key('payload-expand-$_entryId')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('payload-expand-$_entryId')));
+    await tester.pumpAndSettle();
+
     // Roll row label + value render as separate cells (label has no colon).
     expect(find.text('Answer'), findsOneWidget);
     expect(find.textContaining('Yes (+04)'), findsOneWidget);
-    // Re-roll icon present (oracle not loaded in plain JournalScreen so
-    // _canReroll may be false; but open-in-tool is unconditional on sourceTool).
+    // Open-in-tool now reachable in the expanded header.
     expect(find.byKey(const Key('entry-open-tool-$_entryId')), findsOneWidget);
-    // The raw flat body string is NOT rendered as a single Text widget.
-    expect(find.text(_payloadBody), findsNothing);
   });
 
   testWidgets('appended notes beyond the payload text still render',
@@ -158,6 +180,10 @@ void main() {
         '"rerollable":true}'
         '}';
     await pumpJournal(tester, _journalPrefs(entryWithNote));
+    // Remainder text is inside the expanded body — not visible collapsed.
+    expect(find.textContaining('Oracle reading'), findsNothing);
+    await tester.tap(find.byKey(const Key('payload-expand-$_entryId')));
+    await tester.pumpAndSettle();
     expect(find.textContaining('Oracle reading'), findsOneWidget);
   });
 
@@ -244,7 +270,9 @@ void main() {
     final data = _loadData();
     await pumpShell(tester, _journalPrefs(_entryJson), data);
 
-    // The open-in-tool icon should be visible in the journal.
+    // Open-in-tool lives in the expanded header — expand first.
+    await tester.tap(find.byKey(const Key('payload-expand-$_entryId')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('entry-open-tool-$_entryId')), findsOneWidget);
     await tester.tap(find.byKey(const Key('entry-open-tool-$_entryId')));
     await tester.pumpAndSettle();
@@ -316,6 +344,12 @@ void main() {
         '"rerollable":true}'
         '}';
     await pumpJournal(tester, _journalPrefs(heroEntry));
+
+    // Collapsed one-liner still shows the combined summary text.
+    expect(find.text('Yes, and…'), findsOneWidget);
+    // Pin lives in the expanded action row — expand first.
+    await tester.tap(find.byKey(const Key('payload-expand-h1')));
+    await tester.pumpAndSettle();
 
     // Big serif answer renders (combined rich-text run).
     expect(find.text('Yes, and…'), findsOneWidget);
@@ -447,5 +481,78 @@ void main() {
     expect(newest.kind, JournalKind.result);
     expect(newest.sourceTool, 'fate-check');
     expect(newest.title, contains('Fate Check'));
+  });
+
+  testWidgets(
+      'collapsed payload card shows a one-liner and hides the Interpret/Voice/Pin row',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      ..._journalPrefs(_entryJson),
+      'juice.ai_enabled.v1': true,
+    });
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    // Collapsed one-liner answer visible.
+    expect(find.text('Yes'), findsOneWidget);
+    // No action row until expanded, even though AI is ready.
+    expect(find.text('Interpret'), findsNothing);
+    expect(find.text('Voice line'), findsNothing);
+    expect(find.byKey(const Key('pin-$_entryId')), findsNothing);
+  });
+
+  testWidgets(
+      'tapping the collapsed row expands and reveals Interpret when AI is ready',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      ..._journalPrefs(_entryJson),
+      'juice.ai_enabled.v1': true,
+    });
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    await tester.pumpWidget(ProviderScope(
+      overrides: [interpreterServiceProvider.overrideWithValue(fake)],
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(body: JournalScreen()),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('payload-expand-$_entryId')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Interpret'), findsOneWidget);
+    expect(find.byKey(const Key('pin-$_entryId')), findsOneWidget);
+  });
+
+  testWidgets('a pinned entry renders expanded by default', (tester) async {
+    const pinnedEntry = '{'
+        '"id":"p1",'
+        '"timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"$_entryTitle",'
+        '"body":"Yes\\nAnswer: Yes (+04)",'
+        '"kind":"result",'
+        '"tags":[],'
+        '"sourceTool":"fate-check",'
+        '"pinned":true,'
+        '"payload":{"v":1,"command":"fate-juice","args":{"odds":"likely"},'
+        '"summary":"Yes",'
+        '"rolls":[{"label":"Answer","display":"Yes (+04)"}],'
+        '"rerollable":true}'
+        '}';
+    await pumpJournal(tester, _journalPrefs(pinnedEntry));
+
+    // Roll rows visible without tapping — pinned entries start expanded.
+    expect(find.text('Answer'), findsOneWidget);
+    expect(find.byIcon(Icons.push_pin), findsOneWidget);
   });
 }
