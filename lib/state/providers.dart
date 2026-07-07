@@ -1032,7 +1032,10 @@ class MapNotifier extends AsyncNotifier<MapState> {
     final id = _newId();
     final gen = generateRoom(
         DungeonGenContext(
-            level: 1,
+            // Task 6 threads the real branch/depth from pane state; the base
+            // dungeon pane explores the entrance level of the built dungeon.
+            branch: DungeonBranch.dungeon,
+            depth: 1,
             effect: effect,
             tables: tables,
             factions: factions,
