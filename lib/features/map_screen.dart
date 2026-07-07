@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/dungeon/footprint.dart';
+import '../engine/dungeon/generator.dart' show stripRefTokens;
+import '../engine/dungeon/tables.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -26,21 +29,78 @@ const _roomInset = 6.0;
 /// Pixel rect of a room's cell content. The canvas origin is offset so the
 /// minimum grid coordinates land at pad = cell/2 from the top-left; painter
 /// and [roomIdAt] share this so they can't drift.
-Rect roomRectFor(DungeonRoom r, int minX, int minY, double cell) {
+Rect roomRectFor(DungeonRoom r, int minX, int minY, double cell) =>
+    cellRectFor(r, (0, 0), minX, minY, cell);
+
+/// Pixel rect of one footprint cell of [r] (offset [c] from the room anchor)
+/// in canvas space. Same origin contract as [roomRectFor].
+Rect cellRectFor(DungeonRoom r, (int, int) c, int minX, int minY, double cell) {
   final pad = cell / 2;
-  final left = (r.x - minX) * cell + pad;
-  final top = (r.y - minY) * cell + pad;
+  final left = (r.x + c.$1 - minX) * cell + pad;
+  final top = (r.y + c.$2 - minY) * cell + pad;
   return Rect.fromLTWH(left + _roomInset, top + _roomInset,
       cell - 2 * _roomInset, cell - 2 * _roomInset);
 }
 
-/// Pure hit-test: id of the room whose rect contains [local], else null.
+/// Center of one footprint cell of [r], in canvas space.
+Offset cellCenterFor(
+        DungeonRoom r, (int, int) c, int minX, int minY, double cell) =>
+    cellRectFor(r, c, minX, minY, cell).center;
+
+/// Min grid x over every footprint cell (multi-cell rooms extend past r.x).
+int roomsMinX(List<DungeonRoom> rooms) =>
+    rooms.expand((r) => r.footprint.map((c) => r.x + c.$1)).reduce(math.min);
+
+/// Min grid y over every footprint cell.
+int roomsMinY(List<DungeonRoom> rooms) =>
+    rooms.expand((r) => r.footprint.map((c) => r.y + c.$2)).reduce(math.min);
+
+/// Pure hit-test: id of the room whose footprint contains [local], else null.
 String? roomIdAt(List<DungeonRoom> rooms, Offset local, double cell) {
   if (rooms.isEmpty) return null;
-  final minX = rooms.map((r) => r.x).reduce(math.min);
-  final minY = rooms.map((r) => r.y).reduce(math.min);
+  final minX = roomsMinX(rooms);
+  final minY = roomsMinY(rooms);
   for (final r in rooms) {
-    if (roomRectFor(r, minX, minY, cell).contains(local)) return r.id;
+    for (final c in r.footprint) {
+      if (cellRectFor(r, c, minX, minY, cell).contains(local)) return r.id;
+    }
+  }
+  return null;
+}
+
+/// Center of a door marker: mid-point of the [door] edge on its cell.
+Offset doorMarkerCenter(
+    DungeonRoom r, DoorEdge door, int minX, int minY, double cell) {
+  final rect = cellRectFor(r, door.cell, minX, minY, cell);
+  return switch (door.side) {
+    Side.n => rect.topCenter,
+    Side.s => rect.bottomCenter,
+    Side.e => rect.centerRight,
+    Side.w => rect.centerLeft,
+  };
+}
+
+/// A hit on a room's open door marker.
+class DoorHit {
+  const DoorHit(this.roomId, this.door);
+  final String roomId;
+  final DoorEdge door;
+}
+
+/// Nearest OPEN door edge within a third of a cell of [local], else null.
+/// Locked/typed doors are inert (P1 has no key mechanic).
+DoorHit? doorEdgeAt(List<DungeonRoom> rooms, Offset local, double cell) {
+  if (rooms.isEmpty) return null;
+  final minX = roomsMinX(rooms);
+  final minY = roomsMinY(rooms);
+  for (final r in rooms) {
+    for (final d in r.doors) {
+      if (d.kind == DoorKind.open &&
+          (doorMarkerCenter(r, d, minX, minY, cell) - local).distance <
+              cell / 3) {
+        return DoorHit(r.id, d);
+      }
+    }
   }
   return null;
 }
@@ -115,6 +175,11 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   final GlobalKey _dungeonSnapKey = GlobalKey();
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
+  /// Classic-dungeon A2 effect for this run, rolled by Enter. Ephemeral: on
+  /// restart an existing classic dungeon continues under a neutral effect
+  /// (the rolled type is recorded in the entrance room's detail).
+  A2Type _a2 = const A2Type(name: '');
+
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(mapProvider);
@@ -147,6 +212,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   }
 
   Widget _controls(BuildContext context, MapState s) {
+    final classic = _classicOn();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       child: Row(
@@ -156,13 +222,22 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // non-flex children against an unbounded main axis) and throws
           // "BoxConstraints forces an infinite width" — aborting the whole
           // tab's layout (blank tool / hung release web).
-          Flexible(
-            child: FilledButton.tonal(
-              key: const Key('new-room'),
-              onPressed: _newRoom,
-              child: const Text('New room'),
+          if (classic && s.rooms.isEmpty)
+            Flexible(
+              child: FilledButton.tonal(
+                key: const Key('classic-enter'),
+                onPressed: _enterDungeon,
+                child: const Text('Enter the dungeon'),
+              ),
+            )
+          else if (!classic)
+            Flexible(
+              child: FilledButton.tonal(
+                key: const Key('new-room'),
+                onPressed: _newRoom,
+                child: const Text('New room'),
+              ),
             ),
-          ),
           const Spacer(),
           IconButton(
             key: const Key('dungeon-journal'),
@@ -197,7 +272,10 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Text(
-          'No rooms yet. New room rolls the dungeon oracle and maps it.',
+          _classicOn()
+              ? 'No dungeon yet. Enter the dungeon rolls the entrance, then '
+                  'tap an opening to explore room by room.'
+              : 'No rooms yet. New room rolls the dungeon oracle and maps it.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodyLarge
               ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
@@ -208,10 +286,16 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
 
   Widget _canvas(MapState s) {
     final scheme = Theme.of(context).colorScheme;
-    final minX = s.rooms.map((r) => r.x).reduce(math.min);
-    final minY = s.rooms.map((r) => r.y).reduce(math.min);
-    final maxX = s.rooms.map((r) => r.x).reduce(math.max);
-    final maxY = s.rooms.map((r) => r.y).reduce(math.max);
+    // Bounds range over every footprint cell (multi-cell rooms extend past
+    // their anchor), so classic shapes never paint outside the canvas.
+    final cellsX =
+        s.rooms.expand((r) => r.footprint.map((c) => r.x + c.$1)).toList();
+    final cellsY =
+        s.rooms.expand((r) => r.footprint.map((c) => r.y + c.$2)).toList();
+    final minX = cellsX.reduce(math.min);
+    final minY = cellsY.reduce(math.min);
+    final maxX = cellsX.reduce(math.max);
+    final maxY = cellsY.reduce(math.max);
     final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
     final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
     return InteractiveViewer(
@@ -226,6 +310,15 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // InteractiveViewer delivers tap positions in child coordinates
           // (already inverse-transformed) — no manual matrix math.
           onTapUp: (d) {
+            // Classic mode: an open-door tap explores through that door;
+            // it wins over room selection (markers sit on room edges).
+            if (_classicOn()) {
+              final hit = doorEdgeAt(s.rooms, d.localPosition, _cell);
+              if (hit != null) {
+                _exploreDoor(s, hit);
+                return;
+              }
+            }
             final id = roomIdAt(s.rooms, d.localPosition, _cell);
             if (id != null) ref.read(mapProvider.notifier).selectRoom(id);
           },
@@ -256,6 +349,59 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
               kAllSystems)
           .contains('lonelog');
+
+  bool _classicOn() =>
+      (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
+              kAllSystems)
+          .contains('classic-dungeon');
+
+  /// Roll the classic entrance: A1 surroundings + A2 dungeon type (kept for
+  /// this run's effect), then place the entrance chamber/corridor at (0,0).
+  Future<void> _enterDungeon() async {
+    // Await the asset (a cold read of an unwatched FutureProvider is
+    // AsyncLoading on first tap — the repo's Run-screen gotcha).
+    final tables = await ref.read(dungeonDataProvider.future);
+    final dice = widget.oracle.dice;
+    final a1 = tables.a1[dice.dN(tables.a1.length) - 1];
+    final a2 =
+        tables.a2['${dice.dN(6) + dice.dN(6)}'] ?? const A2Type(name: '');
+    setState(() => _a2 = a2);
+    final notifier = ref.read(mapProvider.notifier);
+    await notifier.addClassicRoom(
+        fromRoomId: null,
+        doorEdge: null,
+        tables: tables,
+        effect: a2,
+        dice: dice);
+    // Record the rolled context on the entrance room.
+    final s = ref.read(mapProvider).valueOrNull;
+    final entrance = s?.rooms.lastOrNull;
+    if (entrance != null) {
+      // A2 notes reference tables by name ({ref:G3} etc.) — de-tokenize.
+      await notifier.appendRoomDetail(entrance.id,
+          'Entrance: $a1\nDungeon type: ${a2.name} — ${stripRefTokens(a2.note)}');
+    }
+  }
+
+  /// Explore through an open door: generate + place the next room mated there.
+  Future<void> _exploreDoor(MapState s, DoorHit hit) async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    final room = s.rooms.firstWhere((r) => r.id == hit.roomId);
+    final world = (
+      cell: (room.x + hit.door.cell.$1, room.y + hit.door.cell.$2),
+      side: hit.door.side,
+    );
+    final ok = await ref.read(mapProvider.notifier).addClassicRoom(
+        fromRoomId: hit.roomId,
+        doorEdge: world,
+        tables: tables,
+        effect: _a2,
+        dice: widget.oracle.dice);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No room fits that way — try another exit')));
+    }
+  }
 
   bool _hexcrawlOn() =>
       (ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
@@ -463,6 +609,9 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     );
     if (ok != true) return;
     await ref.read(mapProvider.notifier).resetDungeon();
+    // A classic dungeon's factions belong to the mapped dungeon — clear them
+    // with it (harmless no-op for the base pane).
+    await ref.read(dungeonFactionsProvider.notifier).reset();
     if (mounted) setState(() => _last = null);
   }
 }
@@ -474,8 +623,8 @@ class _DungeonPainter extends CustomPainter {
     required this.currentRoomId,
     required this.scheme,
     this.encounterRoomId,
-  })  : _minX = rooms.isEmpty ? 0 : rooms.map((r) => r.x).reduce(math.min),
-        _minY = rooms.isEmpty ? 0 : rooms.map((r) => r.y).reduce(math.min);
+  })  : _minX = rooms.isEmpty ? 0 : roomsMinX(rooms),
+        _minY = rooms.isEmpty ? 0 : roomsMinY(rooms);
 
   final List<DungeonRoom> rooms;
   final List<List<String>> corridors;
@@ -504,21 +653,51 @@ class _DungeonPainter extends CustomPainter {
 
     for (final r in rooms) {
       final rect = roomRectFor(r, _minX, _minY, _cell);
-      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
       final isCurrent = r.id == currentRoomId;
-      canvas.drawRRect(
-          rrect,
-          Paint()
-            ..color = isCurrent
-                ? scheme.primaryContainer
-                : scheme.surfaceContainerHighest);
-      if (isCurrent) {
-        canvas.drawRRect(
-            rrect,
-            Paint()
-              ..color = scheme.primary
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 2);
+      final fill = Paint()
+        ..color = isCurrent
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerHighest;
+      // Multi-cell footprints draw as the union of their cell rects (slightly
+      // over-inset seams bridged by a full-bleed body per cell); a legacy
+      // single-cell room keeps its rounded-square look exactly.
+      if (r.footprint.length == 1) {
+        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+        canvas.drawRRect(rrect, fill);
+        if (isCurrent) {
+          canvas.drawRRect(
+              rrect,
+              Paint()
+                ..color = scheme.primary
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        }
+      } else {
+        final stroke = Paint()
+          ..color = isCurrent ? scheme.primary : scheme.outlineVariant
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2;
+        for (final c in r.footprint) {
+          final cr = cellRectFor(r, c, _minX, _minY, _cell);
+          // bleed each cell to the grid line so adjacent cells fuse
+          canvas.drawRect(cr.inflate(_roomInset - 1), fill);
+        }
+        for (final c in r.footprint) {
+          final cr = cellRectFor(r, c, _minX, _minY, _cell).inflate(
+            _roomInset - 1,
+          );
+          // draw only the outline edges that face out of the footprint
+          final cells = {for (final fc in r.footprint) fc};
+          void edge(bool exposed, Offset a, Offset b) {
+            if (exposed) canvas.drawLine(a, b, stroke);
+          }
+
+          edge(!cells.contains((c.$1, c.$2 - 1)), cr.topLeft, cr.topRight);
+          edge(
+              !cells.contains((c.$1, c.$2 + 1)), cr.bottomLeft, cr.bottomRight);
+          edge(!cells.contains((c.$1 + 1, c.$2)), cr.topRight, cr.bottomRight);
+          edge(!cells.contains((c.$1 - 1, c.$2)), cr.topLeft, cr.bottomLeft);
+        }
       }
       final tp = TextPainter(
         text: TextSpan(
@@ -533,10 +712,54 @@ class _DungeonPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, rect.center - Offset(tp.width / 2, tp.height / 2));
+      // Door glyphs: open = filled triangle pointing out, door = short bar,
+      // locked = heavier crossed bar. Drawn on every DoorEdge.
+      for (final d in r.doors) {
+        _paintDoor(canvas, doorMarkerCenter(r, d, _minX, _minY, _cell), d,
+            isCurrent ? scheme.primary : scheme.onSurfaceVariant);
+      }
       if (r.id == encounterRoomId) {
         paintEncounterPin(
             canvas, Offset(rect.right - 7, rect.top + 7), scheme.error);
       }
+    }
+  }
+
+  /// One door marker at [center]: open = outward triangle, door = bar across
+  /// the edge, locked = bar + cross-tick.
+  void _paintDoor(Canvas canvas, Offset center, DoorEdge d, Color color) {
+    final horizontal = d.side == Side.n || d.side == Side.s;
+    switch (d.kind) {
+      case DoorKind.open:
+        final dir = switch (d.side) {
+          Side.n => const Offset(0, -1),
+          Side.s => const Offset(0, 1),
+          Side.e => const Offset(1, 0),
+          Side.w => const Offset(-1, 0),
+        };
+        final tip = center + dir * 6;
+        final left =
+            center + (horizontal ? const Offset(-5, 0) : const Offset(0, -5));
+        final right =
+            center + (horizontal ? const Offset(5, 0) : const Offset(0, 5));
+        final path = Path()
+          ..moveTo(tip.dx, tip.dy)
+          ..lineTo(left.dx, left.dy)
+          ..lineTo(right.dx, right.dy)
+          ..close();
+        canvas.drawPath(path, Paint()..color = color);
+      case DoorKind.door:
+      case DoorKind.locked:
+        final along = horizontal ? const Offset(6, 0) : const Offset(0, 6);
+        final bar = Paint()
+          ..color = color
+          ..strokeWidth = d.kind == DoorKind.locked ? 4 : 3
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(center - along, center + along, bar);
+        if (d.kind == DoorKind.locked) {
+          final across = horizontal ? const Offset(0, 4) : const Offset(4, 0);
+          canvas.drawLine(center - across, center + across, bar);
+        }
     }
   }
 

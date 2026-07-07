@@ -3,6 +3,7 @@
 library;
 
 import 'custom_sheet.dart';
+import 'dungeon/footprint.dart';
 import 'tally.dart';
 
 /// Upper clamp for player-managed numeric sheet fields (HP, slots, pools…):
@@ -3130,6 +3131,9 @@ class DungeonRoom {
     required this.title,
     this.detail = '',
     this.status = '',
+    this.footprint = const [(0, 0)],
+    this.doors = const [],
+    this.roomType,
   });
   final String id;
   final int x;
@@ -3137,8 +3141,18 @@ class DungeonRoom {
   final String title; // e.g. the room's oracle headline
   final String detail; // full GenResult.asText (+ appended linger lines)
   final String status; // Lonelog room status (cleared/looted/…); '' = unset
+  final List<(int, int)> footprint; // cell offsets from (x,y); default [(0,0)]
+  final List<DoorEdge> doors; // door edges, cells are offsets from (x,y)
+  final String? roomType; // 'corridor' | 'chamber' | null (legacy)
 
-  DungeonRoom copyWith({String? title, String? detail, String? status}) =>
+  DungeonRoom copyWith({
+    String? title,
+    String? detail,
+    String? status,
+    List<(int, int)>? footprint,
+    List<DoorEdge>? doors,
+    String? roomType,
+  }) =>
       DungeonRoom(
         id: id,
         x: x,
@@ -3146,6 +3160,9 @@ class DungeonRoom {
         title: title ?? this.title,
         detail: detail ?? this.detail,
         status: status ?? this.status,
+        footprint: footprint ?? this.footprint,
+        doors: doors ?? this.doors,
+        roomType: roomType ?? this.roomType,
       );
 
   Map<String, dynamic> toJson() => {
@@ -3155,6 +3172,12 @@ class DungeonRoom {
         'title': title,
         'detail': detail,
         if (status.isNotEmpty) 'status': status,
+        if (footprint.length != 1 || footprint.first != (0, 0))
+          'fp': [
+            for (final c in footprint) [c.$1, c.$2]
+          ],
+        if (doors.isNotEmpty) 'dr': [for (final d in doors) d.toJson()],
+        if (roomType != null) 'rt': roomType,
       };
 
   /// Parses one room entry; null for anything without a map shape and id
@@ -3168,6 +3191,16 @@ class DungeonRoom {
       title: (j['title'] as String?) ?? '',
       detail: (j['detail'] as String?) ?? '',
       status: (j['status'] as String?) ?? '',
+      footprint: (j['fp'] as List?)
+              ?.map((e) => ((e as List)[0] as int, e[1] as int))
+              .toList() ??
+          const [(0, 0)],
+      doors: (j['dr'] as List?)
+              ?.map(
+                  (e) => DoorEdge.fromJson((e as Map).cast<String, dynamic>()))
+              .toList() ??
+          const [],
+      roomType: j['rt'] as String?,
     );
   }
 }
@@ -4090,6 +4123,7 @@ const kKnownSystems = <String>{
   'verdant',
   'lonelog',
   'hexcrawl',
+  'classic-dungeon',
   'dnd',
   'shadowdark',
   'nimble',
@@ -4129,6 +4163,7 @@ const kSystemCategory = <String, SystemCategory>{
   'cards': SystemCategory.oracle,
   'verdant': SystemCategory.exploration,
   'hexcrawl': SystemCategory.exploration,
+  'classic-dungeon': SystemCategory.exploration,
   'party': SystemCategory.tools,
   'lonelog': SystemCategory.tools,
   'funnel': SystemCategory.tools,
@@ -4144,6 +4179,7 @@ const kSystemLabels = <String, String>{
   'verdant': 'Verdant',
   'lonelog': 'Lonelog',
   'hexcrawl': 'Hexcrawl',
+  'classic-dungeon': 'Classic Dungeon',
   'dnd': 'D&D',
   'shadowdark': 'Shadowdark',
   'nimble': 'Nimble',

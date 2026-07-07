@@ -4,7 +4,7 @@ import 'package:juice_oracle/engine/models.dart';
 
 void main() {
   group('kKnownSystems + kSystemCategory', () {
-    test('kKnownSystems has the 20 ids', () {
+    test('kKnownSystems has the 21 ids', () {
       expect(kKnownSystems, {
         'juice',
         'mythic',
@@ -13,6 +13,7 @@ void main() {
         'verdant',
         'lonelog',
         'hexcrawl',
+        'classic-dungeon',
         'dnd',
         'shadowdark',
         'nimble',
@@ -65,7 +66,8 @@ void main() {
           .map((e) => e.key)
           .toSet();
       expect(of(SystemCategory.oracle), {'juice', 'mythic', 'cards'});
-      expect(of(SystemCategory.exploration), {'verdant', 'hexcrawl'});
+      expect(of(SystemCategory.exploration),
+          {'verdant', 'hexcrawl', 'classic-dungeon'});
       expect(of(SystemCategory.tools), {'party', 'lonelog', 'funnel'});
     });
   });

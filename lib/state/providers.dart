@@ -6,6 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
+import '../engine/dungeon/faction.dart';
+import '../engine/dungeon/footprint.dart';
+import '../engine/dungeon/generator.dart';
+import '../engine/dungeon/placement.dart';
+import '../engine/dungeon/tables.dart';
 import '../engine/emulator_data.dart';
 import '../engine/hexcrawl.dart';
 import '../engine/hexcrawl_data.dart';
@@ -44,6 +49,12 @@ import 'interpreter.dart';
 final oracleProvider = FutureProvider<Oracle>((ref) async {
   final raw = await rootBundle.loadString('assets/oracle_data.json');
   return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
+});
+
+/// Loads the Roll 4 Ruin dungeon-branch tables asset once.
+final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
+  final raw = await rootBundle.loadString('assets/dungeon_data.json');
+  return DungeonTables.fromJson(jsonDecode(raw) as Map<String, dynamic>);
 });
 
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
@@ -748,6 +759,40 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
 final decksProvider =
     AsyncNotifierProvider<DecksNotifier, DecksState>(DecksNotifier.new);
 
+// -- Classic-dungeon factions (tracked monster factions per campaign) --------
+class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
+  static const _baseKey = 'juice.dungeon_factions.v1';
+
+  late String _scopedKey;
+
+  @override
+  Future<FactionRegistry> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_scopedKey);
+    return (raw == null || raw.isEmpty)
+        ? const FactionRegistry()
+        : FactionRegistry.fromJson(jsonDecode(raw));
+  }
+
+  Future<void> save(FactionRegistry reg) async {
+    state = AsyncData(reg);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(reg.toJson()));
+  }
+
+  Future<void> reset() async {
+    state = const AsyncData(FactionRegistry());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_scopedKey);
+  }
+}
+
+final dungeonFactionsProvider =
+    AsyncNotifierProvider<DungeonFactionsNotifier, FactionRegistry>(
+        DungeonFactionsNotifier.new);
+
 // -- Light timer (campaign-wide, session-scoped, ungated) -------------------
 class LightNotifier extends AsyncNotifier<int> {
   static const _baseKey = 'juice.light.v1';
@@ -966,6 +1011,104 @@ class MapNotifier extends AsyncNotifier<MapState> {
       currentRoomId: room.id,
     ));
     return room;
+  }
+
+  /// Generate + place one classic-dungeon room mated to [doorEdge] on room
+  /// [fromRoomId] (null/null = the entrance at (0,0)). Persists the faction
+  /// registry when the generator extended it. Returns false when no footprint
+  /// fits the chosen door (state unchanged).
+  Future<bool> addClassicRoom({
+    required String? fromRoomId,
+    required ({(int, int) cell, Side side})? doorEdge,
+    required DungeonTables tables,
+    required A2Type effect,
+    required Dice dice,
+  }) async {
+    final s = await _ready;
+    final factions = ref.read(dungeonFactionsProvider).valueOrNull ??
+        const FactionRegistry();
+    // The id is minted BEFORE generating so a faction assigned inside
+    // generateRoom carries the real room id from the start.
+    final id = _newId();
+    final gen = generateRoom(
+        DungeonGenContext(
+            level: 1,
+            effect: effect,
+            tables: tables,
+            factions: factions,
+            roomId: id),
+        dice);
+    final catalog =
+        gen.type == RoomType.corridor ? kCorridorShapes : kChamberShapes;
+    final candidates = catalog[gen.shapeFamily]!;
+
+    final List<(int, int)> footprintOffsets;
+    final List<DoorEdge> doors;
+    final int ax, ay;
+
+    if (fromRoomId == null || doorEdge == null) {
+      // Entrance at (0,0): first footprint of the rolled family, unrotated;
+      // every opening starts open (there is no entry edge).
+      final fp = candidates.first;
+      ax = 0;
+      ay = 0;
+      footprintOffsets = fp.normalizedCells;
+      doors = [
+        for (final o in fp.openings) DoorEdge(o.cell, o.side, DoorKind.open)
+      ];
+    } else {
+      final occupied = <(int, int)>{
+        for (final r in s.rooms)
+          for (final c in r.footprint) (r.x + c.$1, r.y + c.$2)
+      };
+      final placed = placeRoom(occupied, doorEdge, candidates, dice);
+      if (placed == null) return false;
+      final minX =
+          placed.cells.map((c) => c.$1).reduce((a, b) => a < b ? a : b);
+      final minY =
+          placed.cells.map((c) => c.$2).reduce((a, b) => a < b ? a : b);
+      ax = minX;
+      ay = minY;
+      footprintOffsets = [
+        for (final c in placed.cells) (c.$1 - minX, c.$2 - minY)
+      ];
+      doors = [
+        // The mated entry edge takes its kind from the type die.
+        DoorEdge(
+            (placed.entryDoor.cell.$1 - minX, placed.entryDoor.cell.$2 - minY),
+            placed.entryDoor.side,
+            gen.entryDoorKind),
+        for (final d in placed.openDoors)
+          DoorEdge((d.cell.$1 - minX, d.cell.$2 - minY), d.side, DoorKind.open),
+      ];
+    }
+
+    final room = DungeonRoom(
+      id: id,
+      x: ax,
+      y: ay,
+      title: gen.detail.split('\n').first,
+      detail: gen.detail,
+      footprint: footprintOffsets,
+      doors: doors,
+      roomType: gen.type == RoomType.corridor ? 'corridor' : 'chamber',
+    );
+
+    if (!identical(gen.factions, factions)) {
+      await ref.read(dungeonFactionsProvider.notifier).save(gen.factions);
+    }
+
+    await save(s.copyWith(
+      rooms: [...s.rooms, room],
+      corridors: fromRoomId == null
+          ? s.corridors
+          : [
+              ...s.corridors,
+              [fromRoomId, id],
+            ],
+      currentRoomId: room.id,
+    ));
+    return true;
   }
 
   /// Hexcrawl crawl: add one dungeon room with generic content.
@@ -1700,6 +1843,7 @@ const sessionScopedKeys = [
   'juice.crawl.v1',
   'juice.encounter.v1',
   'juice.map.v1',
+  'juice.dungeon_factions.v1',
   'juice.verdant.v1',
   'juice.rumors.v1',
   'juice.tracks.v1',
