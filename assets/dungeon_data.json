@@ -56,12 +56,12 @@
     },
     "11": {
       "name": "Transformed ruins",
-      "note": "If you roll a 6 on C2 for stocking, roll an obstacle {ref:E4} for the room."
+      "leads_to_caves": true,
+      "note": "If you roll a 6 on C2 for stocking, the openings of the chamber lead to cave rooms D-F."
     },
     "12": {
       "name": "Ancient ruin",
-      "leads_to_caves": true,
-      "note": "If you roll a 6 on B2, the openings of the chamber lead to cave rooms D-F."
+      "note": "If you roll a 6 on B2, roll an obstacle {ref:E4} for the room."
     }
   },
   "B2": [

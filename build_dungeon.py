@@ -49,12 +49,12 @@ A2 = {
     "10": {"name": "Cursed ruins", "tier_bump": 1, "treasure_bonus": 3,
            "note": "Monster stocking begins at {ref:G3} instead of {ref:G2}. "
                    "Treasure roll {ref:H8} +3."},
-    "11": {"name": "Transformed ruins",
-           "note": "If you roll a 6 on C2 for stocking, roll an obstacle "
-                   "{ref:E4} for the room."},
-    "12": {"name": "Ancient ruin", "leads_to_caves": True,
-           "note": "If you roll a 6 on B2, the openings of the chamber lead "
-                   "to cave rooms D-F."},
+    "11": {"name": "Transformed ruins", "leads_to_caves": True,
+           "note": "If you roll a 6 on C2 for stocking, the openings of the "
+                   "chamber lead to cave rooms D-F."},
+    "12": {"name": "Ancient ruin",
+           "note": "If you roll a 6 on B2, roll an obstacle {ref:E4} for "
+                   "the room."},
 }
 
 # --- Corridors -------------------------------------------------------------
@@ -505,11 +505,10 @@ def verify(data):
         "G2", "G3", "G4", "G5", "G6", "G7",
         "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8",
     }
-    refs = all_ref_ids(
-        data["A2"], data["B2"], data["B3"], data["C2"], data["C3"], data["C4"],
-        data["H1"], data["H2"], data["H3"], data["H4"], data["H5"], data["H6"],
-        data["H7"],
-    )
+    # Scan EVERY shipped table (all_ref_ids recurses strings/lists/dicts; the
+    # support keys carry no {ref} tokens, so scanning the whole dict is safe and
+    # closes the gap where B4/B5/C5/G*/H8 refs went unchecked).
+    refs = all_ref_ids(data)
     for rid in refs:
         if rid not in known and rid not in data["label_fallbacks"]:
             errs.append(f"unknown ref {{ref:{rid}}} (add to a table or "
