@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
+import '../engine/dungeon/tables.dart';
 import '../engine/emulator_data.dart';
 import '../engine/hexcrawl.dart';
 import '../engine/hexcrawl_data.dart';
@@ -44,6 +45,12 @@ import 'interpreter.dart';
 final oracleProvider = FutureProvider<Oracle>((ref) async {
   final raw = await rootBundle.loadString('assets/oracle_data.json');
   return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
+});
+
+/// Loads the Roll 4 Ruin dungeon-branch tables asset once.
+final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
+  final raw = await rootBundle.loadString('assets/dungeon_data.json');
+  return DungeonTables.fromJson(jsonDecode(raw) as Map<String, dynamic>);
 });
 
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
