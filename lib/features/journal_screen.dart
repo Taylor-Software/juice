@@ -26,6 +26,7 @@ import '../shared/dice_sheet.dart';
 import '../shared/empty_state.dart';
 import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
+import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
@@ -2214,17 +2215,28 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   void _showSketchEntries(List<JournalEntry> here) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: ListView(
           shrinkWrap: true,
           children: [
             for (final x in here)
               ListTile(
+                key: Key('loc-entry-row-${x.id}'),
                 dense: true,
-                title: Text(
-                    x.title.isEmpty ? (x.body.split('\n').first) : x.title),
-                subtitle:
-                    Text(x.timestamp.toLocal().toString().split('.').first),
+                title: Text(x.title.isEmpty
+                    ? (x.body.split('\n').first)
+                    : x.title),
+                subtitle: Text(
+                    x.timestamp.toLocal().toString().split('.').first),
+                onTap: () async {
+                  final navigated =
+                      await showEntryPreview(sheetContext, ref, x);
+                  // Already on the journal: just close the sheet so the
+                  // entry list is visible again.
+                  if (navigated && sheetContext.mounted) {
+                    Navigator.of(sheetContext).pop();
+                  }
+                },
               ),
           ],
         ),

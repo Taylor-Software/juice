@@ -424,6 +424,58 @@ void main() {
     expect(container.read(mapProvider).valueOrNull!.hasAnchor, isFalse);
   });
 
+  testWidgets(
+      'backlink sheet row previews the entry; Open journal navigates',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+          '"name":"C1","systems":["juice","hexcrawl"]}]}',
+      'juice.map.v1.default': jsonEncode({
+        'hexes': [
+          {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+        ],
+        'currentHexCol': 0,
+        'currentHexRow': 0,
+      }),
+      'juice.journal.v2.default': '[{"id":"n1",'
+          '"timestamp":"2026-06-12T10:00:00.000Z","title":"Ambush",'
+          '"body":"Goblins strike.","kind":"text","tags":[],'
+          '"loc":{"hexCol":0,"hexRow":0}}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: HexMapPane(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
+
+    final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
+    await tester.tapAt(origin + hexCenterFor(0, 0, -1, -1, 34.0));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('loc-entries-0-0')));
+    await tester.tap(find.byKey(const Key('loc-entries-0-0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('loc-entry-row-n1')));
+    await tester.pumpAndSettle();
+
+    // Preview dialog shows title + body.
+    expect(find.byKey(const Key('entry-preview-n1')), findsOneWidget);
+    expect(
+        find.descendant(
+            of: find.byKey(const Key('entry-preview-n1')),
+            matching: find.text('Goblins strike.')),
+        findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('entry-preview-open-n1')));
+    await tester.pumpAndSettle();
+    expect(container.read(shellRouteProvider).destination,
+        Destination.journal);
+    // Both the preview and the backlink sheet are gone.
+    expect(find.byKey(const Key('entry-preview-n1')), findsNothing);
+    expect(find.byKey(const Key('loc-entry-row-n1')), findsNothing);
+  });
+
   testWidgets('dungeon pane shows the up-to-world chip when anchored',
       (tester) async {
     final container = await pumpDungeon(tester,

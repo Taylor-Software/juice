@@ -12,6 +12,7 @@ import '../engine/oracle.dart';
 import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/result_card.dart';
+import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
@@ -167,6 +168,7 @@ Widget encounterJumpButton({
 /// cards (mirrors the character-card `mentions-` chip in tracker_screen.dart).
 Widget locationEntriesChip({
   required BuildContext context,
+  required WidgetRef ref,
   required Key key,
   required List<JournalEntry> entries,
   required String placeLabel,
@@ -177,15 +179,15 @@ Widget locationEntriesChip({
     avatar: const Icon(Icons.link, size: 16),
     label: Text('${entries.length} entr${entries.length == 1 ? 'y' : 'ies'}'),
     visualDensity: VisualDensity.compact,
-    onPressed: () => _showLocationEntries(context, placeLabel, entries),
+    onPressed: () => _showLocationEntries(context, ref, placeLabel, entries),
   );
 }
 
-Future<void> _showLocationEntries(
-    BuildContext context, String placeLabel, List<JournalEntry> entries) {
+Future<void> _showLocationEntries(BuildContext context, WidgetRef ref,
+    String placeLabel, List<JournalEntry> entries) {
   return showModalBottomSheet<void>(
     context: context,
-    builder: (_) => SafeArea(
+    builder: (sheetContext) => SafeArea(
       child: ListView(
         shrinkWrap: true,
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -198,6 +200,7 @@ Future<void> _showLocationEntries(
           ),
           for (final e in entries)
             ListTile(
+              key: Key('loc-entry-row-${e.id}'),
               dense: true,
               leading: const Icon(Icons.notes_outlined),
               title: Text(
@@ -208,6 +211,14 @@ Future<void> _showLocationEntries(
               subtitle: e.title.isEmpty
                   ? null
                   : Text(e.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+              onTap: () async {
+                final navigated = await showEntryPreview(sheetContext, ref, e);
+                // Opening the journal closes the backlink sheet under the
+                // now-dismissed preview.
+                if (navigated && sheetContext.mounted) {
+                  Navigator.of(sheetContext).pop();
+                }
+              },
             ),
         ],
       ),
@@ -725,6 +736,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                       entriesAtLocation(all, LocationRef(roomId: room.id));
                   return locationEntriesChip(
                     context: context,
+                    ref: ref,
                     key: Key('loc-entries-${room.id}'),
                     entries: entries,
                     placeLabel: room.title,
@@ -1561,6 +1573,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                     all, LocationRef(hexCol: h.col, hexRow: h.row));
                 return locationEntriesChip(
                   context: context,
+                  ref: ref,
                   key: Key('loc-entries-${h.col}-${h.row}'),
                   entries: entries,
                   placeLabel: 'Hex (${h.col}, ${h.row})',
