@@ -202,7 +202,9 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final t in tables)
+                // Category order mirrors the Ask → Tables library grouping.
+                for (final (_, group) in groupTablesByCategory(tables))
+                  for (final t in group)
                   InputChip(
                     key: Key('table-roll-${t.id}'),
                     label: Text(t.name.isEmpty ? '(untitled)' : t.name),

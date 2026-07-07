@@ -78,7 +78,31 @@ class CustomRow {
   }
 }
 
-/// A user-authored random table.
+/// The library taxonomy for user tables (binder-organization advice from the
+/// solo-play community: genre first, then category). Order here is the
+/// display order.
+const kTableCategories = <String>[
+  'Characters & NPCs',
+  'Locations & Settings',
+  'Objects & Items',
+  'Events & Encounters',
+  'Plot & Adventure Hooks',
+  'Dungeon & Exploration',
+  'Combat & Tactics',
+  'Magic & Spells',
+  'Factions & Organizations',
+  'Bestiary & Creatures',
+  'Social & Roleplay',
+  'Names',
+  'Inspiration & Prompts',
+];
+
+/// Display bucket for tables without a category.
+const kUncategorized = 'Uncategorized';
+
+/// A user-authored random table. [genre]/[category]/[source] are optional
+/// library metadata ("Fantasy" · "Characters & NPCs" · the book it came
+/// from) for organizing + searching a growing collection.
 class CustomTable {
   const CustomTable({
     required this.id,
@@ -86,6 +110,9 @@ class CustomTable {
     this.mode = TableRoll.uniform,
     this.dice = '',
     this.rows = const [],
+    this.genre = '',
+    this.category = '',
+    this.source = '',
   });
 
   final String id;
@@ -93,12 +120,18 @@ class CustomTable {
   final TableRoll mode;
   final String dice;
   final List<CustomRow> rows;
+  final String genre;
+  final String category;
+  final String source;
 
   CustomTable copyWith({
     String? name,
     TableRoll? mode,
     String? dice,
     List<CustomRow>? rows,
+    String? genre,
+    String? category,
+    String? source,
   }) =>
       CustomTable(
         id: id,
@@ -106,6 +139,9 @@ class CustomTable {
         mode: mode ?? this.mode,
         dice: dice ?? this.dice,
         rows: rows ?? this.rows,
+        genre: genre ?? this.genre,
+        category: category ?? this.category,
+        source: source ?? this.source,
       );
 
   Map<String, dynamic> toJson() => {
@@ -114,6 +150,9 @@ class CustomTable {
         if (mode != TableRoll.uniform) 'mode': mode.name,
         if (dice.isNotEmpty) 'dice': dice,
         'rows': rows.map((r) => r.toJson()).toList(),
+        if (genre.isNotEmpty) 'genre': genre,
+        if (category.isNotEmpty) 'cat': category,
+        if (source.isNotEmpty) 'src': source,
       };
 
   factory CustomTable.fromJson(Map<String, dynamic> j) => CustomTable(
@@ -125,6 +164,9 @@ class CustomTable {
           for (final r in (j['rows'] as List? ?? const []))
             if (r is String || r is Map) CustomRow.fromJson(r),
         ],
+        genre: (j['genre'] as String?) ?? '',
+        category: (j['cat'] as String?) ?? '',
+        source: (j['src'] as String?) ?? '',
       );
 
   /// Tolerant decode for persistence: null when [raw] is not a map or lacks id.
@@ -282,3 +324,42 @@ String rowsToText(List<CustomRow> rows, TableRoll mode) => switch (mode) {
           return '$span ${r.text}';
         }).join('\n'),
     };
+
+/// Group [tables] by category for display: known categories in
+/// [kTableCategories] order, unknown (user-typed) categories alphabetically
+/// after them, and [kUncategorized] last. Empty groups are omitted.
+List<(String, List<CustomTable>)> groupTablesByCategory(
+    List<CustomTable> tables) {
+  final byCat = <String, List<CustomTable>>{};
+  for (final t in tables) {
+    byCat.putIfAbsent(t.category.trim(), () => []).add(t);
+  }
+  final unknown = byCat.keys
+      .where((c) => c.isNotEmpty && !kTableCategories.contains(c))
+      .toList()
+    ..sort();
+  return [
+    for (final c in [...kTableCategories, ...unknown])
+      if (byCat[c] case final list?) (c, list),
+    if (byCat[''] case final list?) (kUncategorized, list),
+  ];
+}
+
+/// Sorted unique non-empty genres across [tables] (the genre-filter chips).
+List<String> tableGenres(List<CustomTable> tables) {
+  final set = <String>{
+    for (final t in tables)
+      if (t.genre.trim().isNotEmpty) t.genre.trim(),
+  };
+  return set.toList()..sort();
+}
+
+/// Case-insensitive library search over name, genre, category, and source.
+bool matchesTableQuery(CustomTable t, String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return true;
+  return t.name.toLowerCase().contains(q) ||
+      t.genre.toLowerCase().contains(q) ||
+      t.category.toLowerCase().contains(q) ||
+      t.source.toLowerCase().contains(q);
+}

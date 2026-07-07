@@ -10,6 +10,9 @@ Future<void> showCustomTableDialog(
     BuildContext context, WidgetRef ref, CustomTable? existing) async {
   final nameCtl = TextEditingController(text: existing?.name ?? '');
   final diceCtl = TextEditingController(text: existing?.dice ?? '');
+  final genreCtl = TextEditingController(text: existing?.genre ?? '');
+  final sourceCtl = TextEditingController(text: existing?.source ?? '');
+  var category = existing?.category ?? '';
   var mode = existing?.mode ?? TableRoll.uniform;
   final rowsCtl =
       TextEditingController(text: rowsToText(existing?.rows ?? const [], mode));
@@ -32,6 +35,34 @@ Future<void> showCustomTableDialog(
                 key: const Key('table-name'),
                 controller: nameCtl,
                 decoration: const InputDecoration(labelText: 'Name')),
+            const SizedBox(height: 8),
+            // Library metadata (binder-style organization): category within
+            // genre, plus the source the table came from.
+            DropdownButtonFormField<String>(
+              key: const Key('table-category'),
+              initialValue:
+                  kTableCategories.contains(category) ? category : '',
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: [
+                const DropdownMenuItem(value: '', child: Text('(none)')),
+                for (final c in kTableCategories)
+                  DropdownMenuItem(value: c, child: Text(c)),
+              ],
+              onChanged: (v) => category = v ?? '',
+            ),
+            const SizedBox(height: 8),
+            TextField(
+                key: const Key('table-genre'),
+                controller: genreCtl,
+                decoration: const InputDecoration(
+                    labelText: 'Genre', hintText: 'Fantasy, Sci-fi, Horror…')),
+            const SizedBox(height: 8),
+            TextField(
+                key: const Key('table-source'),
+                controller: sourceCtl,
+                decoration: const InputDecoration(
+                    labelText: 'Source',
+                    hintText: 'Book / site it came from')),
             const SizedBox(height: 12),
             SegmentedButton<TableRoll>(
               key: const Key('table-mode'),
@@ -102,6 +133,8 @@ Future<void> showCustomTableDialog(
   WidgetsBinding.instance.addPostFrameCallback((_) {
     nameCtl.dispose();
     diceCtl.dispose();
+    genreCtl.dispose();
+    sourceCtl.dispose();
     rowsCtl.dispose();
   });
   if (result != true) return;
@@ -110,15 +143,26 @@ Future<void> showCustomTableDialog(
   if (name.isEmpty && rows.isEmpty) return;
   final dice = mode == TableRoll.ranges ? diceCtl.text.trim() : '';
   final notifier = ref.read(customTablesProvider.notifier);
+  final genre = genreCtl.text.trim();
+  final source = sourceCtl.text.trim();
   if (existing == null) {
     await notifier.add(CustomTable(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         name: name,
         mode: mode,
         dice: dice,
-        rows: rows));
+        rows: rows,
+        genre: genre,
+        category: category,
+        source: source));
   } else {
-    await notifier.replace(
-        existing.copyWith(name: name, mode: mode, dice: dice, rows: rows));
+    await notifier.replace(existing.copyWith(
+        name: name,
+        mode: mode,
+        dice: dice,
+        rows: rows,
+        genre: genre,
+        category: category,
+        source: source));
   }
 }
