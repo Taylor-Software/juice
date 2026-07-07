@@ -3537,29 +3537,113 @@ class DungeonLevel {
 /// Persisted map state: dungeon levels + revealed hex field. The dungeon
 /// graph lives on [levels]; [rooms]/[corridors]/[currentRoomId] are views
 /// over the [activeLevel] so existing consumers keep working.
-class MapState {
-  const MapState({
+class DungeonSite {
+  const DungeonSite({
+    required this.id,
+    this.name = 'Dungeon',
     this.levels = const [],
     this.activeLevel = 0,
-    this.hexes = const [],
-    this.currentHexCol,
-    this.currentHexRow,
     this.anchorHexCol,
     this.anchorHexRow,
   });
+
+  final String id;
+  final String name;
   final List<DungeonLevel> levels;
   final int activeLevel; // index into [levels]
-  final List<HexCell> hexes;
-  final int? currentHexCol;
-  final int? currentHexRow;
 
-  /// The world hex the dungeon sits at (map-layer hierarchy: the dungeon is
-  /// "entered from" this hex). Null = unanchored — every layer can exist
-  /// parentless.
+  /// The world hex this dungeon sits at (map-layer hierarchy); null =
+  /// unanchored — every layer can exist parentless.
   final int? anchorHexCol;
   final int? anchorHexRow;
 
   bool get hasAnchor => anchorHexCol != null && anchorHexRow != null;
+
+  DungeonSite copyWith({
+    String? name,
+    List<DungeonLevel>? levels,
+    int? activeLevel,
+    int? anchorHexCol,
+    int? anchorHexRow,
+    bool clearAnchor = false,
+  }) =>
+      DungeonSite(
+        id: id,
+        name: name ?? this.name,
+        levels: levels ?? this.levels,
+        activeLevel: activeLevel ?? this.activeLevel,
+        anchorHexCol: clearAnchor ? null : (anchorHexCol ?? this.anchorHexCol),
+        anchorHexRow: clearAnchor ? null : (anchorHexRow ?? this.anchorHexRow),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (levels.isNotEmpty) 'levels': levels.map((l) => l.toJson()).toList(),
+        if (activeLevel != 0) 'activeLevel': activeLevel,
+        if (anchorHexCol != null) 'anchorHexCol': anchorHexCol,
+        if (anchorHexRow != null) 'anchorHexRow': anchorHexRow,
+      };
+
+  static DungeonSite? maybeFromJson(dynamic j) {
+    if (j is! Map || j['id'] is! String) return null;
+    return DungeonSite(
+      id: j['id'] as String,
+      name: (j['name'] as String?) ?? 'Dungeon',
+      levels: ((j['levels'] as List?) ?? const [])
+          .map(DungeonLevel.maybeFromJson)
+          .whereType<DungeonLevel>()
+          .toList(),
+      activeLevel: (j['activeLevel'] as int?) ?? 0,
+      anchorHexCol: j['anchorHexCol'] as int?,
+      anchorHexRow: j['anchorHexRow'] as int?,
+    );
+  }
+}
+
+class MapState {
+  const MapState({
+    this.dungeons = const [],
+    this.activeDungeonId,
+    this.hexes = const [],
+    this.currentHexCol,
+    this.currentHexRow,
+  });
+
+  /// Every dungeon on the session map, each with its own levels + optional
+  /// world-hex anchor.
+  final List<DungeonSite> dungeons;
+
+  /// Which dungeon the Dungeon pane shows/edits; falls back to the first.
+  final String? activeDungeonId;
+
+  final List<HexCell> hexes;
+  final int? currentHexCol;
+  final int? currentHexRow;
+
+  DungeonSite? get activeDungeon => dungeons.isEmpty
+      ? null
+      : dungeons.firstWhere((d) => d.id == activeDungeonId,
+          orElse: () => dungeons.first);
+
+  /// The dungeon anchored at hex ([col],[row]), or null.
+  DungeonSite? dungeonAnchoredAt(int col, int row) {
+    for (final d in dungeons) {
+      if (d.anchorHexCol == col && d.anchorHexRow == row) return d;
+    }
+    return null;
+  }
+
+  /// Levels of the ACTIVE dungeon (compat view; empty when none).
+  List<DungeonLevel> get levels => activeDungeon?.levels ?? const [];
+
+  /// Active-level index of the ACTIVE dungeon (compat view).
+  int get activeLevel => activeDungeon?.activeLevel ?? 0;
+
+  /// The active dungeon's world-hex anchor (compat view for the pane chips).
+  int? get anchorHexCol => activeDungeon?.anchorHexCol;
+  int? get anchorHexRow => activeDungeon?.anchorHexRow;
+  bool get hasAnchor => activeDungeon?.hasAnchor ?? false;
 
   DungeonLevel? get _active =>
       levels.isEmpty ? null : levels[activeLevel.clamp(0, levels.length - 1)];
@@ -3573,7 +3657,7 @@ class MapState {
   /// Current room of the active level (compat view).
   String? get currentRoomId => _active?.currentRoomId;
 
-  /// The level at [depth], or null when none exists.
+  /// The active dungeon's level at [depth], or null when none exists.
   DungeonLevel? levelAt(int depth) {
     for (final l in levels) {
       if (l.depth == depth) return l;
@@ -3581,13 +3665,15 @@ class MapState {
     return null;
   }
 
-  /// [clearCurrentRoomId] / [clearCurrentHex] null out the nullable trio
-  /// (the hex current is one position, so its col/row clear together).
-  /// Room-field edits ([rooms]/[corridors]/[currentRoomId]) apply to the
-  /// ACTIVE level — seeding a default depth-1 dungeon level when [levels]
-  /// is empty. When [levels]/[activeLevel] are also passed, they apply
-  /// first, then the room-field edits hit the new active level.
+  /// Dungeon-field edits ([levels]/[activeLevel]/[rooms]/[corridors]/
+  /// [currentRoomId]/anchor) apply to the ACTIVE dungeon — seeding a default
+  /// dungeon (and depth-1 level for room edits) when none exists yet, so the
+  /// single-dungeon call sites keep working unchanged. When [dungeons]/
+  /// [activeDungeonId] are also passed, they apply first, then the dungeon
+  /// edits hit the new active dungeon.
   MapState copyWith({
+    List<DungeonSite>? dungeons,
+    String? activeDungeonId,
     List<DungeonLevel>? levels,
     int? activeLevel,
     List<DungeonRoom>? rooms,
@@ -3602,97 +3688,147 @@ class MapState {
     int? anchorHexRow,
     bool clearAnchor = false,
   }) {
-    var newLevels = levels ?? this.levels;
-    final newActive = activeLevel ?? this.activeLevel;
-    final hasRoomEdit = rooms != null ||
+    var newDungeons = dungeons ?? this.dungeons;
+    var newActiveId = activeDungeonId ?? this.activeDungeonId;
+    final hasDungeonEdit = levels != null ||
+        activeLevel != null ||
+        rooms != null ||
         corridors != null ||
         currentRoomId != null ||
-        clearCurrentRoomId;
-    if (hasRoomEdit) {
-      if (newLevels.isEmpty) {
-        newLevels = const [DungeonLevel(depth: 1)];
+        clearCurrentRoomId ||
+        anchorHexCol != null ||
+        anchorHexRow != null ||
+        clearAnchor;
+    if (hasDungeonEdit) {
+      if (newDungeons.isEmpty) {
+        newDungeons = const [DungeonSite(id: 'd1')];
+        newActiveId ??= 'd1';
       }
-      final i = newActive.clamp(0, newLevels.length - 1);
-      newLevels = [
-        for (var k = 0; k < newLevels.length; k++)
-          k == i
-              ? newLevels[k].copyWith(
-                  rooms: rooms,
-                  corridors: corridors,
-                  currentRoomId: currentRoomId,
-                  clearCurrentRoomId: clearCurrentRoomId,
-                )
-              : newLevels[k],
+      var idx = newDungeons.indexWhere((d) => d.id == newActiveId);
+      if (idx < 0) idx = 0;
+      var newLevels = levels ?? newDungeons[idx].levels;
+      final newActiveLevel = activeLevel ?? newDungeons[idx].activeLevel;
+      final hasRoomEdit = rooms != null ||
+          corridors != null ||
+          currentRoomId != null ||
+          clearCurrentRoomId;
+      if (hasRoomEdit) {
+        if (newLevels.isEmpty) {
+          newLevels = const [DungeonLevel(depth: 1)];
+        }
+        final i = newActiveLevel.clamp(0, newLevels.length - 1);
+        newLevels = [
+          for (var k = 0; k < newLevels.length; k++)
+            k == i
+                ? newLevels[k].copyWith(
+                    rooms: rooms,
+                    corridors: corridors,
+                    currentRoomId: currentRoomId,
+                    clearCurrentRoomId: clearCurrentRoomId,
+                  )
+                : newLevels[k],
+        ];
+      }
+      final edited = newDungeons[idx].copyWith(
+        levels: newLevels,
+        activeLevel: newActiveLevel,
+        anchorHexCol: anchorHexCol,
+        anchorHexRow: anchorHexRow,
+        clearAnchor: clearAnchor,
+      );
+      newDungeons = [
+        for (var k = 0; k < newDungeons.length; k++)
+          k == idx ? edited : newDungeons[k],
       ];
     }
     return MapState(
-      levels: newLevels,
-      activeLevel: newActive,
+      dungeons: newDungeons,
+      activeDungeonId: newActiveId,
       hexes: hexes ?? this.hexes,
       currentHexCol:
           clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
       currentHexRow:
           clearCurrentHex ? null : (currentHexRow ?? this.currentHexRow),
-      anchorHexCol: clearAnchor ? null : (anchorHexCol ?? this.anchorHexCol),
-      anchorHexRow: clearAnchor ? null : (anchorHexRow ?? this.anchorHexRow),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        if (levels.isNotEmpty) 'levels': levels.map((l) => l.toJson()).toList(),
-        if (activeLevel != 0) 'activeLevel': activeLevel,
+        if (dungeons.isNotEmpty)
+          'dungeons': dungeons.map((d) => d.toJson()).toList(),
+        if (activeDungeonId != null) 'activeDungeon': activeDungeonId,
         'hexes': hexes.map((h) => h.toJson()).toList(),
         'currentHexCol': currentHexCol,
         'currentHexRow': currentHexRow,
-        if (anchorHexCol != null) 'anchorHexCol': anchorHexCol,
-        if (anchorHexRow != null) 'anchorHexRow': anchorHexRow,
       };
 
-  /// Tolerant: malformed level/hex entries are skipped. Legacy single-level
-  /// JSON (bare `rooms`/`corridors`/`currentRoomId`) lifts into one depth-1
-  /// dungeon level.
+  /// Tolerant: malformed dungeon/level/hex entries are skipped. Legacy
+  /// single-dungeon JSON (top-level `levels` + optional `anchorHexCol/Row`,
+  /// or the older bare `rooms`/`corridors`/`currentRoomId`) lifts into one
+  /// DungeonSite.
   factory MapState.fromJson(Map<String, dynamic> j) {
-    List<DungeonLevel> levels;
-    var activeLevel = 0;
-    if (j['levels'] is List) {
-      levels = (j['levels'] as List)
-          .map(DungeonLevel.maybeFromJson)
-          .whereType<DungeonLevel>()
+    List<DungeonSite> dungeons;
+    String? activeId;
+    if (j['dungeons'] is List) {
+      dungeons = (j['dungeons'] as List)
+          .map(DungeonSite.maybeFromJson)
+          .whereType<DungeonSite>()
           .toList();
-      activeLevel = (j['activeLevel'] as int?) ?? 0;
+      activeId = j['activeDungeon'] as String?;
     } else {
-      final rooms = ((j['rooms'] as List?) ?? const [])
-          .map(DungeonRoom.maybeFromJson)
-          .whereType<DungeonRoom>()
-          .toList();
-      levels = rooms.isEmpty
+      List<DungeonLevel> levels;
+      var activeLevel = 0;
+      if (j['levels'] is List) {
+        levels = (j['levels'] as List)
+            .map(DungeonLevel.maybeFromJson)
+            .whereType<DungeonLevel>()
+            .toList();
+        activeLevel = (j['activeLevel'] as int?) ?? 0;
+      } else {
+        final rooms = ((j['rooms'] as List?) ?? const [])
+            .map(DungeonRoom.maybeFromJson)
+            .whereType<DungeonRoom>()
+            .toList();
+        levels = rooms.isEmpty
+            ? const []
+            : [
+                DungeonLevel(
+                  depth: 1,
+                  rooms: rooms,
+                  corridors: [
+                    for (final e in (j['corridors'] as List?) ?? const [])
+                      if (e is List &&
+                          e.length == 2 &&
+                          e.every((id) => id is String))
+                        List<String>.from(e),
+                  ],
+                  currentRoomId: j['currentRoomId'] as String?,
+                ),
+              ];
+      }
+      final hasAnchor =
+          j['anchorHexCol'] is int && j['anchorHexRow'] is int;
+      dungeons = levels.isEmpty && !hasAnchor
           ? const []
           : [
-              DungeonLevel(
-                depth: 1,
-                rooms: rooms,
-                corridors: [
-                  for (final e in (j['corridors'] as List?) ?? const [])
-                    if (e is List &&
-                        e.length == 2 &&
-                        e.every((id) => id is String))
-                      List<String>.from(e),
-                ],
-                currentRoomId: j['currentRoomId'] as String?,
+              DungeonSite(
+                id: 'd1',
+                levels: levels,
+                activeLevel: activeLevel,
+                anchorHexCol: j['anchorHexCol'] as int?,
+                anchorHexRow: j['anchorHexRow'] as int?,
               ),
             ];
+      activeId = dungeons.isEmpty ? null : 'd1';
     }
     return MapState(
-      levels: levels,
-      activeLevel: activeLevel,
+      dungeons: dungeons,
+      activeDungeonId: activeId,
       hexes: ((j['hexes'] as List?) ?? const [])
           .map(HexCell.maybeFromJson)
           .whereType<HexCell>()
           .toList(),
       currentHexCol: j['currentHexCol'] as int?,
       currentHexRow: j['currentHexRow'] as int?,
-      anchorHexCol: j['anchorHexCol'] as int?,
-      anchorHexRow: j['anchorHexRow'] as int?,
     );
   }
 }

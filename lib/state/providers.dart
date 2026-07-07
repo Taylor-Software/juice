@@ -1011,14 +1011,64 @@ class MapNotifier extends AsyncNotifier<MapState> {
               ? h.copyWith(clearSketchEntry: true)
               : h.copyWith(sketchEntryId: entryId));
 
-  /// Anchor (or, with nulls, un-anchor) the dungeon to a world hex — the
-  /// map-layer hierarchy link behind the hex "Enter dungeon" / dungeon
+  /// Anchor (or, with nulls, un-anchor) the ACTIVE dungeon to a world hex —
+  /// the map-layer hierarchy link behind the hex "Enter dungeon" / dungeon
   /// "up to world" navigation.
   Future<void> setDungeonAnchor(int? col, int? row) async {
     final s = await _ready;
     await save(col == null || row == null
         ? s.copyWith(clearAnchor: true)
         : s.copyWith(anchorHexCol: col, anchorHexRow: row));
+  }
+
+  /// Un-anchor dungeon [id] (whichever hex it sits at).
+  Future<void> unanchorDungeon(String id) async {
+    final s = await _ready;
+    await save(s.copyWith(dungeons: [
+      for (final d in s.dungeons)
+        if (d.id == id) d.copyWith(clearAnchor: true) else d,
+    ]));
+  }
+
+  /// Create a new named dungeon (optionally anchored) and make it active.
+  Future<void> addDungeon({String? name, int? anchorCol, int? anchorRow}) async {
+    final s = await _ready;
+    final id = _newId();
+    await save(MapState(
+      dungeons: [
+        ...s.dungeons,
+        DungeonSite(
+          id: id,
+          name: name ?? 'Dungeon ${s.dungeons.length + 1}',
+          anchorHexCol: anchorCol,
+          anchorHexRow: anchorRow,
+        ),
+      ],
+      activeDungeonId: id,
+      hexes: s.hexes,
+      currentHexCol: s.currentHexCol,
+      currentHexRow: s.currentHexRow,
+    ));
+  }
+
+  /// Make dungeon [id] the one the Dungeon pane shows; unknown id = no-op.
+  Future<void> switchDungeon(String id) async {
+    final s = await _ready;
+    if (!s.dungeons.any((d) => d.id == id)) return;
+    await save(s.copyWith(activeDungeonId: id));
+  }
+
+  /// The hex card's "Dungeon here": anchors the active dungeon when it has
+  /// no anchor yet, else creates a NEW dungeon anchored at ([col],[row]) —
+  /// so a world can hold many dungeons.
+  Future<void> anchorDungeonHere(int col, int row) async {
+    final s = await _ready;
+    final active = s.activeDungeon;
+    if (active != null && !active.hasAnchor) {
+      await save(s.copyWith(anchorHexCol: col, anchorHexRow: row));
+      return;
+    }
+    await addDungeon(anchorCol: col, anchorRow: row);
   }
 
   /// Find the hex at (col,row), apply [f] to it, and persist. [f] returning

@@ -122,15 +122,18 @@ void main() {
       (tester) async {
     final fake = _fake();
     const seeded = MapState(
-      levels: [
-        DungeonLevel(
-          depth: 1,
-          rooms: [
-            DungeonRoom(id: 'r1', x: 0, y: 0, title: 'Crypt', detail: 'Dim.')
-          ],
-          currentRoomId: 'r1',
-        ),
+      dungeons: [
+        DungeonSite(id: 'd1', levels: [
+          DungeonLevel(
+            depth: 1,
+            rooms: [
+              DungeonRoom(id: 'r1', x: 0, y: 0, title: 'Crypt', detail: 'Dim.')
+            ],
+            currentRoomId: 'r1',
+          ),
+        ]),
       ],
+      activeDungeonId: 'd1',
     );
     SharedPreferences.setMockInitialValues({
       'flutter.juice.map.v1.default': jsonEncode(seeded.toJson()),

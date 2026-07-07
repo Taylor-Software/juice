@@ -533,6 +533,99 @@ void main() {
         isNull);
   });
 
+  testWidgets(
+      'Dungeon-here on a second hex creates a new dungeon; switcher chips '
+      'switch the active dungeon', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+          '"name":"C1","systems":["juice","hexcrawl"]}]}',
+      'juice.map.v1.default': jsonEncode({
+        'dungeons': [
+          {
+            'id': 'a',
+            'name': 'Crypt',
+            'anchorHexCol': 5,
+            'anchorHexRow': 5,
+          },
+        ],
+        'activeDungeon': 'a',
+        'hexes': [
+          {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
+        ],
+        'currentHexCol': 0,
+        'currentHexRow': 0,
+      }),
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            home: Scaffold(body: HexMapPane(oracle: Oracle(data))))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
+
+    final origin = tester.getTopLeft(find.byKey(const Key('hex-canvas')));
+    await tester.tapAt(origin + hexCenterFor(0, 0, -1, -1, 34.0));
+    await tester.pumpAndSettle();
+
+    // Active dungeon already anchored elsewhere → Dungeon-here creates a NEW
+    // dungeon anchored to this hex and makes it active.
+    await tester.ensureVisible(find.byKey(const Key('hex-place-dungeon')));
+    await tester.tap(find.byKey(const Key('hex-place-dungeon')));
+    await tester.pumpAndSettle();
+    final m = container.read(mapProvider).valueOrNull!;
+    expect(m.dungeons, hasLength(2));
+    expect(m.activeDungeon!.name, 'Dungeon 2');
+    expect(m.dungeonAnchoredAt(0, 0)!.id, m.activeDungeon!.id);
+    // The Enter chip names the anchored dungeon.
+    await tester.ensureVisible(find.byKey(const Key('hex-enter-dungeon')));
+    expect(find.text('Enter Dungeon 2'), findsOneWidget);
+  });
+
+  testWidgets('dungeon pane switcher lists dungeons and switches active',
+      (tester) async {
+    final container = await pumpDungeon(tester,
+        mapJson: jsonEncode({
+          'dungeons': [
+            {
+              'id': 'a',
+              'name': 'Crypt',
+              'levels': [
+                {
+                  'depth': 1,
+                  'rooms': [
+                    {'id': 'r1', 'x': 0, 'y': 0, 'title': 'Bone Hall'},
+                  ],
+                  'corridors': [],
+                },
+              ],
+            },
+            {'id': 'b', 'name': 'Mine'},
+          ],
+          'activeDungeon': 'a',
+          'hexes': [],
+          'currentHexCol': null,
+          'currentHexRow': null,
+        }));
+
+    expect(find.byKey(const Key('dungeon-site-chip-a')), findsOneWidget);
+    expect(find.byKey(const Key('dungeon-site-chip-b')), findsOneWidget);
+    expect(find.byKey(const Key('dungeon-new-site')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('dungeon-site-chip-b')));
+    await tester.pumpAndSettle();
+    expect(
+        container.read(mapProvider).valueOrNull!.activeDungeon!.name, 'Mine');
+    // Mine has no rooms yet — the pane shows the empty state.
+    expect(find.byKey(const Key('dungeon-canvas')), findsNothing);
+
+    // New dungeon appends and becomes active.
+    await tester.tap(find.byKey(const Key('dungeon-new-site')));
+    await tester.pumpAndSettle();
+    final m = container.read(mapProvider).valueOrNull!;
+    expect(m.dungeons, hasLength(3));
+    expect(m.activeDungeon!.name, 'Dungeon 3');
+  });
+
   testWidgets('dungeon pane shows the up-to-world chip when anchored',
       (tester) async {
     final container = await pumpDungeon(tester,

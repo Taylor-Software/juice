@@ -909,7 +909,17 @@ Working rules for this repo:
   ACTIVE-LEVEL VIEW GETTERS and a compatibility `copyWith` (room edits apply
   to the active level, seeding depth-1 when empty; legacy bare-`rooms` JSON
   lifts to one level) — this also fixed P1's ephemeral-A2 gap (type/effect/
-  stone persist on the level). `DungeonRoom` grew `levelDelta` (`ld`) +
+  stone persist on the level). **Multi-dungeon (solo-refocus follow-up):**
+  `MapState` now holds `dungeons: List<DungeonSite>` (`{id,name,levels,
+  activeLevel,anchorHexCol/Row}`) + `activeDungeonId`; `levels`/`activeLevel`/
+  `rooms`/… became ACTIVE-DUNGEON views and `copyWith` dungeon-edits apply to
+  the active dungeon (seeding `d1` when none); legacy top-level `levels`(+
+  anchor)/bare-`rooms` JSON lifts into one `DungeonSite('d1')`. Notifier:
+  `addDungeon`/`switchDungeon`/`anchorDungeonHere` (anchors active if
+  unanchored, else creates a new dungeon)/`unanchorDungeon`; hex card "Dungeon
+  here"/"Enter <name>"/Unlink chips + a `dungeon-site-chip-<id>` switcher +
+  `dungeon-new-site` on the Dungeon pane. `resetDungeon` clears the ACTIVE
+  dungeon only; factions stay dungeon-wide (shared across sites). `DungeonRoom` grew `levelDelta` (`ld`) +
   `crossTo` (`xt`). Notifier: `enterClassicDungeon(branch:…)` (A1/D1 + A2/D2
   + E5 stone), `descendFrom(roomId)` — SIGN CONVENTION: `levelDelta` is the
   zine's "−1 lvl" notation, target depth = `level.depth − delta` (−1 at depth

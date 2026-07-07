@@ -279,6 +279,32 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         return Column(
           children: [
             _controls(context, s),
+            // Several dungeons can live on one world map — switch or add.
+            if (s.dungeons.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+                  child: Wrap(spacing: 4, runSpacing: 4, children: [
+                    for (final d in s.dungeons)
+                      ChoiceChip(
+                        key: Key('dungeon-site-chip-${d.id}'),
+                        label: Text(d.name),
+                        selected: d.id == s.activeDungeon?.id,
+                        onSelected: (_) => ref
+                            .read(mapProvider.notifier)
+                            .switchDungeon(d.id),
+                      ),
+                    ActionChip(
+                      key: const Key('dungeon-new-site'),
+                      avatar: const Icon(Icons.add, size: 16),
+                      label: const Text('New dungeon'),
+                      onPressed: () =>
+                          ref.read(mapProvider.notifier).addDungeon(),
+                    ),
+                  ]),
+                ),
+              ),
             // Map-layer hierarchy: when the dungeon is anchored to a world
             // hex, offer the "up" hop back to it.
             if (s.hasAnchor)
@@ -1580,21 +1606,27 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   placeLabel: 'Hex (${h.col}, ${h.row})',
                 );
               }),
-              // Map-layer hierarchy: the dungeon can anchor to this hex —
-              // "Enter dungeon" descends, the link-off chip un-anchors.
+              // Map-layer hierarchy: dungeons anchor to hexes — "Enter"
+              // switches to the anchored dungeon, the link-off chip
+              // un-anchors, "Dungeon here" anchors the active dungeon or
+              // creates a new one (many dungeons per world).
               Builder(builder: (context) {
                 final m = ref.watch(mapProvider).valueOrNull;
-                final anchored =
-                    m?.anchorHexCol == h.col && m?.anchorHexRow == h.row;
-                if (anchored) {
+                final site = m?.dungeonAnchoredAt(h.col, h.row);
+                if (site != null) {
                   return Wrap(spacing: 4, children: [
                     ActionChip(
                       key: const Key('hex-enter-dungeon'),
                       avatar: const Icon(Icons.stairs_outlined, size: 16),
-                      label: const Text('Enter dungeon'),
-                      onPressed: () => ref
-                          .read(shellRouteProvider.notifier)
-                          .goTo(Destination.map, subtab: 'dungeon'),
+                      label: Text('Enter ${site.name}'),
+                      onPressed: () async {
+                        await ref
+                            .read(mapProvider.notifier)
+                            .switchDungeon(site.id);
+                        ref
+                            .read(shellRouteProvider.notifier)
+                            .goTo(Destination.map, subtab: 'dungeon');
+                      },
                     ),
                     ActionChip(
                       key: const Key('hex-unlink-dungeon'),
@@ -1602,7 +1634,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                       label: const Text('Unlink'),
                       onPressed: () => ref
                           .read(mapProvider.notifier)
-                          .setDungeonAnchor(null, null),
+                          .unanchorDungeon(site.id),
                     ),
                   ]);
                 }
@@ -1612,7 +1644,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   label: const Text('Dungeon here'),
                   onPressed: () => ref
                       .read(mapProvider.notifier)
-                      .setDungeonAnchor(h.col, h.row),
+                      .anchorDungeonHere(h.col, h.row),
                 );
               }),
               // Map-layer hierarchy: a hand-drawn/PDF sketch map (a
