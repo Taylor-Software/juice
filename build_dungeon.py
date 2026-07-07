@@ -31,7 +31,7 @@ A2 = {
     "3":  {"name": "Arcane lair",
            "note": "Halls transformed by arcane effects. If a 6 is rolled "
                    "on C2, roll on I2."},
-    "4":  {"name": "Forgotten ruins",
+    "4":  {"name": "Forgotten ruins", "monster_die": 12,
            "note": "Roll a D12 for monster stocking instead of a D20."},
     "5":  {"name": "Overgrown ruins", "on_stock_6": "D4 Flora {ref:I6} & fauna {ref:G7}",
            "note": "If you roll a 6 on B2 or C2, the room contains D4 flora "

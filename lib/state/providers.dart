@@ -51,7 +51,7 @@ final oracleProvider = FutureProvider<Oracle>((ref) async {
   return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
 });
 
-/// Loads the Roll 4 Ruin dungeon-branch tables asset once.
+/// Loads the Roll 4 Ruin tables asset (dungeon + cave branches) once.
 final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
   final raw = await rootBundle.loadString('assets/dungeon_data.json');
   return DungeonTables.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -1232,14 +1232,30 @@ class MapNotifier extends AsyncNotifier<MapState> {
       await save(s.copyWith(activeLevel: s.levels.indexOf(existing)));
       return;
     }
-    final stone = level.branch == 'cave' && tables.cavestone.isNotEmpty
+    // The new level's branch follows the transition ROOM (a chasm in a
+    // crossover cave room descends into caves even inside a dungeon level);
+    // legacy null roomType falls back to the level's branch.
+    final branch = room.roomType == null
+        ? level.branch
+        : branchOfRoomType(room.roomType).name;
+    // Same-branch descent stays in the same complex (type inherited); a
+    // cross-branch descent enters a NEW one — roll its type fresh.
+    var typeName = level.typeName;
+    var note = level.note;
+    if (branch != level.branch) {
+      final types = branch == 'cave' ? tables.d2 : tables.a2;
+      final type = types['${dice.dN(6) + dice.dN(6)}'];
+      typeName = type?.name ?? '';
+      note = stripRefTokens(type?.note ?? '');
+    }
+    final stone = branch == 'cave' && tables.cavestone.isNotEmpty
         ? tables.cavestone[dice.dN(tables.cavestone.length) - 1]
         : '';
     final next = DungeonLevel(
         depth: target,
-        branch: level.branch,
-        typeName: level.typeName,
-        note: level.note,
+        branch: branch,
+        typeName: typeName,
+        note: note,
         stone: stone);
     await save(
         s.copyWith(levels: [...s.levels, next], activeLevel: s.levels.length));

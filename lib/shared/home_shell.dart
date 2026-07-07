@@ -1031,9 +1031,9 @@ const kSystemBlurbs = <String, String>{
   'lonelog': 'Lonelog notation: Resources + Battle trackers, .md export.',
   'hexcrawl': 'Generic map generator: regions, dungeons, sites — any game.',
   'classic-dungeon':
-      'Roll 4 Ruin dungeon crawler: tap openings to reveal shaped rooms, '
-          'monsters, factions, treasure. '
-          'Roll 4 Ruin © Nocturnal Peacock, CC BY-NC-SA 4.0.',
+      'Roll 4 Ruin dungeon & cave crawler: tap openings to reveal shaped '
+          'rooms, monsters, factions, treasure; descend stairs and chasms to '
+          'deeper levels. Roll 4 Ruin © Nocturnal Peacock, CC BY-NC-SA 4.0.',
   'dnd': 'D&D 5e character sheet: ability scores, saves, skills, HP.',
   'shadowdark': 'Shadowdark character sheet: stats, HP, AC, gear, luck.',
   'nimble': 'Nimble character sheet: stats, wounds, AC, slots, gear.',

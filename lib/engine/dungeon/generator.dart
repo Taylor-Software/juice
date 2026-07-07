@@ -141,9 +141,11 @@ class _Expander {
   /// [budget] levels; H8 rolls a real treasure line; B4 (a
   /// `{triggers,effects}` dict) renders one "trigger -> effect" trap (each
   /// side recursively expanded — effect rows can carry their own refs, e.g.
-  /// "gas {ref:I8}"); other dict tables render a
-  /// `_dictRefLabels`/`labelFallbacks` word; a P2-only or unknown ref becomes
-  /// its fallback label; a self-referential ref stops at [budget].
+  /// "gas {ref:I8}"); H1/H2/H3/H6 render as `_dictRefLabels` words; any OTHER
+  /// dict-of-lists table (I1 hides/leads, I2 source/creates, I7
+  /// condition/liquid) rolls one row from each sub-list in key order, joined
+  /// with " — "; an unknown ref becomes its fallback label; a self-referential
+  /// ref stops at [budget].
   String expand(String text, {int budget = 4}) {
     final re = RegExp(r'\{ref:([A-Z]\d+)\}');
     return text.replaceAllMapped(re, (m) {
@@ -174,6 +176,19 @@ class _Expander {
         final trigText = _trimDots(trig[dice.dN(trig.length) - 1].toString());
         final effText = _trimDots(eff[dice.dN(eff.length) - 1].toString());
         return expand('$trigText -> $effText', budget: budget - 1);
+      }
+      // The narrative build-element dicts stay words (a coffin/statue/...).
+      if (_dictRefLabels.containsKey(id)) return _label(id);
+      // Generic dict-of-lists (I1/I2/I7): roll one row per sub-list, in the
+      // build script's key order, and join.
+      if (table is Map &&
+          table.isNotEmpty &&
+          table.values.every((v) => v is List && v.isNotEmpty)) {
+        final parts = <String>[
+          for (final v in table.values)
+            ((v as List)[dice.dN(v.length) - 1]).toString()
+        ];
+        return expand(parts.join(' — '), budget: budget - 1);
       }
       return _label(id);
     });

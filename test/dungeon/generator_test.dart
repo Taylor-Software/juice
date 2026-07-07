@@ -290,4 +290,52 @@ void main() {
     expect(branchOfRoomType('chamber'), DungeonBranch.dungeon);
     expect(branchOfRoomType(null), DungeonBranch.dungeon);
   });
+
+  test('a dict-of-lists ref (I7 liquid) rolls each sub-list, never bare id',
+      () {
+    final t = _stockTables('Puddle of {ref:I7}', {
+      'I7': {
+        'condition_d6': ['Clear'],
+        'liquid': ['Freshwater'],
+      }
+    });
+    final r = generateRoom(_ctx(t), Dice(Random(0)));
+    expect(r.detail, contains('Puddle of Clear — Freshwater'));
+    expect(r.detail, isNot(contains('I7')));
+  });
+
+  test('narrative build-element dicts (H1) still render as words', () {
+    final t = _stockTables('Alcove with {ref:H1}', {
+      'H1': {
+        'contains_d4': ['Dust'],
+        'd8_2d8': ['2x Treasures'],
+      }
+    });
+    final r = generateRoom(_ctx(t), Dice(Random(0)));
+    expect(r.detail, contains('Alcove with a coffin'));
+  });
+
+  test('monsterDie restricts the monster row range (A2-4 Forgotten ruins)', () {
+    // 20-row monster table where only row 1 is 'Rat'; monsterDie 1 forces it.
+    final rows = [
+      {'text': 'Rat', 'count': '1', 'organized': false},
+      for (var i = 0; i < 19; i++)
+        {'text': 'Dragon$i', 'count': '1', 'organized': false},
+    ];
+    final t = _stockTables('Feature {ref:C3} + Monster', {
+      'G2': rows,
+      'C3': ['A fresco'],
+    });
+    for (var s = 0; s < 30; s++) {
+      final r = generateRoom(
+          _ctx(t, effect: const A2Type(name: 'Forgotten', monsterDie: 1)),
+          Dice(Random(s)));
+      if (r.detail.contains('Monsters:')) {
+        expect(r.detail, contains('Rat'));
+        expect(r.detail, isNot(contains('Dragon')));
+        return;
+      }
+    }
+    fail('no seed produced a monster line');
+  });
 }

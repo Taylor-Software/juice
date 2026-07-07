@@ -97,6 +97,39 @@ void main() {
     expect(s.levels[s.activeLevel].depth, 1);
   });
 
+  test('descend from a CAVE room inside a dungeon level enters a cave level',
+      () async {
+    final (container, notifier) = await setUpContainer();
+    addTearDown(container.dispose);
+
+    await notifier.enterClassicDungeon(
+        branch: DungeonBranch.dungeon, tables: tables, dice: Dice(Random(3)));
+
+    // A crossover chasm: a cave-branch room (roomType 'cave') with a drop,
+    // sitting inside the dungeon level.
+    var s = container.read(mapProvider).requireValue;
+    await notifier.save(s.copyWith(rooms: [
+      ...s.rooms,
+      const DungeonRoom(
+          id: 'chasm',
+          x: 9,
+          y: 9,
+          title: 'Chasm',
+          roomType: 'cave',
+          levelDelta: -2),
+    ]));
+
+    await notifier.descendFrom('chasm', tables: tables, dice: Dice(Random(8)));
+    s = container.read(mapProvider).requireValue;
+    final lvl = s.levels[s.activeLevel];
+    expect(lvl.depth, 3); // depth 1 - (-2)
+    expect(lvl.branch, 'cave', reason: 'branch follows the transition room');
+    expect(lvl.stone, isNotEmpty, reason: 'new cave level rolls cavestone');
+    expect(lvl.typeName, isNotEmpty,
+        reason: 'cross-branch descent rolls a fresh D2 type');
+    expect(lvl.rooms.single.roomType, isIn(['tunnel', 'cave']));
+  });
+
   test('descendFrom is a no-op for levelDelta 0', () async {
     final (container, notifier) = await setUpContainer();
     addTearDown(container.dispose);

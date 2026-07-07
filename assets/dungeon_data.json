@@ -26,6 +26,7 @@
     },
     "4": {
       "name": "Forgotten ruins",
+      "monster_die": 12,
       "note": "Roll a D12 for monster stocking instead of a D20."
     },
     "5": {
