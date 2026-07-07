@@ -56,6 +56,8 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
     final rumors = ref.watch(rumorsProvider).valueOrNull ?? const [];
     final tracks = ref.watch(tracksProvider).valueOrNull ?? const [];
     final characters = ref.watch(charactersProvider).valueOrNull ?? const [];
+    final places = ref.watch(placesProvider).valueOrNull ?? const [];
+    final npcs = ref.watch(npcsProvider).valueOrNull ?? const [];
 
     final results = searchCampaign(
       _query,
@@ -64,6 +66,8 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
       rumors: rumors,
       tracks: tracks,
       characters: characters,
+      places: places,
+      npcs: npcs,
     );
 
     final theme = Theme.of(context);
@@ -161,6 +165,8 @@ String _kindLabel(SearchResultKind kind) => switch (kind) {
       SearchResultKind.rumor => 'Rumors',
       SearchResultKind.track => 'Progress Tracks',
       SearchResultKind.character => 'Characters',
+      SearchResultKind.place => 'Places',
+      SearchResultKind.npc => 'People',
     };
 
 IconData _kindIcon(SearchResultKind kind) => switch (kind) {
@@ -169,4 +175,6 @@ IconData _kindIcon(SearchResultKind kind) => switch (kind) {
       SearchResultKind.rumor => Icons.chat_bubble_outline,
       SearchResultKind.track => Icons.track_changes,
       SearchResultKind.character => Icons.person_outline,
+      SearchResultKind.place => Icons.place_outlined,
+      SearchResultKind.npc => Icons.groups_outlined,
     };

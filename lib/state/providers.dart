@@ -349,6 +349,17 @@ class CharacterNotifier extends _PersistedList<Character> {
     ]);
   }
 
+  /// Adds a companion (hireling) seeded from a met NPC — the People tracker's
+  /// "add to party" promotion. Returns the new character's id.
+  Future<String> addCompanion(String name, {String note = ''}) async {
+    final id = _newId();
+    await _persist([
+      Character(id: id, name: name, note: note, role: CharacterRole.companion),
+      ...await _ready,
+    ]);
+    return id;
+  }
+
   Future<String> addReturningId(String name) async {
     final id = _newId();
     await _persist([Character(id: id, name: name), ...await _ready]);
@@ -530,6 +541,87 @@ class RumorNotifier extends _PersistedList<Rumor> {
 
 final rumorsProvider =
     AsyncNotifierProvider<RumorNotifier, List<Rumor>>(RumorNotifier.new);
+
+// -- Places (named world locations) -----------------------------------------
+class PlaceNotifier extends _PersistedList<Place> {
+  @override
+  String get prefsKey => 'juice.places.v1';
+  @override
+  Place fromJson(Map<String, dynamic> json) => Place.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(Place item) => item.toJson();
+
+  Future<void> add(String name, {PlaceKind kind = PlaceKind.other}) async {
+    await _persist(
+        [Place(id: _newId(), name: name, kind: kind), ...await _ready]);
+  }
+
+  Future<void> replace(Place place) async {
+    await _persist([
+      for (final p in await _ready)
+        if (p.id == place.id) place else p,
+    ]);
+  }
+
+  /// Insert [place] (new id → prepended) or replace an existing one — the edit
+  /// dialog builds a complete Place either way.
+  Future<void> upsert(Place place) async {
+    final list = await _ready;
+    if (list.any((p) => p.id == place.id)) {
+      await replace(place);
+    } else {
+      await _persist([place, ...list]);
+    }
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((p) => p.id != id).toList());
+  }
+}
+
+final placesProvider =
+    AsyncNotifierProvider<PlaceNotifier, List<Place>>(PlaceNotifier.new);
+
+// -- People (world NPCs the party has met) ----------------------------------
+class NpcNotifier extends _PersistedList<Npc> {
+  @override
+  String get prefsKey => 'juice.npcs.v1';
+  @override
+  Npc fromJson(Map<String, dynamic> json) => Npc.fromJson(json);
+  @override
+  Map<String, dynamic> toJsonMap(Npc item) => item.toJson();
+
+  Future<void> add(String name, {String role = '', String note = ''}) async {
+    await _persist([
+      Npc(id: _newId(), name: name, role: role, note: note),
+      ...await _ready
+    ]);
+  }
+
+  Future<void> replace(Npc npc) async {
+    await _persist([
+      for (final n in await _ready)
+        if (n.id == npc.id) npc else n,
+    ]);
+  }
+
+  /// Insert [npc] (new id → prepended) or replace an existing one.
+  Future<void> upsert(Npc npc) async {
+    final list = await _ready;
+    if (list.any((n) => n.id == npc.id)) {
+      await replace(npc);
+    } else {
+      await _persist([npc, ...list]);
+    }
+  }
+
+  Future<void> remove(String id) async {
+    await _persist((await _ready).where((n) => n.id != id).toList());
+  }
+}
+
+final npcsProvider =
+    AsyncNotifierProvider<NpcNotifier, List<Npc>>(NpcNotifier.new);
 
 // -- Inventory (Lonelog Resource Tracking addon) ----------------------------
 class InventoryNotifier extends _PersistedList<InvItem> {
@@ -1003,13 +1095,12 @@ class MapNotifier extends AsyncNotifier<MapState> {
 
   /// Link (or, with null, unlink) a sketch-map journal entry to a hex — the
   /// hierarchy hook for hand-drawn town/building maps.
-  Future<void> setHexSketch(int col, int row, String? entryId) =>
-      _updateHex(
-          col,
-          row,
-          (h) => entryId == null
-              ? h.copyWith(clearSketchEntry: true)
-              : h.copyWith(sketchEntryId: entryId));
+  Future<void> setHexSketch(int col, int row, String? entryId) => _updateHex(
+      col,
+      row,
+      (h) => entryId == null
+          ? h.copyWith(clearSketchEntry: true)
+          : h.copyWith(sketchEntryId: entryId));
 
   /// Anchor (or, with nulls, un-anchor) the ACTIVE dungeon to a world hex —
   /// the map-layer hierarchy link behind the hex "Enter dungeon" / dungeon
@@ -1031,7 +1122,8 @@ class MapNotifier extends AsyncNotifier<MapState> {
   }
 
   /// Create a new named dungeon (optionally anchored) and make it active.
-  Future<void> addDungeon({String? name, int? anchorCol, int? anchorRow}) async {
+  Future<void> addDungeon(
+      {String? name, int? anchorCol, int? anchorRow}) async {
     final s = await _ready;
     final id = _newId();
     await save(MapState(
@@ -2101,6 +2193,8 @@ const sessionScopedKeys = [
   'juice.dungeon_factions.v1',
   'juice.verdant.v1',
   'juice.rumors.v1',
+  'juice.places.v1',
+  'juice.npcs.v1',
   'juice.tracks.v1',
   'juice.inventory.v1',
   'juice.units.v1',

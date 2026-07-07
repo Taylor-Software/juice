@@ -8,6 +8,8 @@ import 'battle_pane.dart';
 import 'behavior_tables_screen.dart';
 import 'encounter_screen.dart';
 import 'party_emulator_screen.dart';
+import 'people_pane.dart';
+import 'places_pane.dart';
 import 'resources_pane.dart';
 import 'rumors_pane.dart';
 import 'scenes_pane.dart';
@@ -35,6 +37,8 @@ class TrackingTab extends ConsumerWidget {
         const SubtabDef('tasks', 'Tasks'),
         const SubtabDef('scenes', 'Scenes'),
         const SubtabDef('threads', 'Threads'),
+        const SubtabDef('people', 'People'),
+        const SubtabDef('places', 'Places'),
         const SubtabDef('encounter', 'Encounter'),
         if (rumors) const SubtabDef('rumors', 'Rumors'),
         const SubtabDef('tracks', 'Tracks'),
@@ -49,6 +53,8 @@ class TrackingTab extends ConsumerWidget {
         const TasksPane(),
         const ScenesPane(),
         const ThreadsPane(),
+        const PeoplePane(),
+        const PlacesPane(),
         const EncounterScreen(),
         if (rumors) const RumorsPane(),
         const TracksPane(),
