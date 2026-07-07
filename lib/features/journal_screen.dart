@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -42,6 +41,7 @@ import 'oracle_interpretation_sheet.dart';
 import 'reference_view.dart';
 import '../engine/content_registry.dart';
 import 'sketch_editor.dart';
+import 'sketch_open.dart';
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
@@ -1636,32 +1636,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   /// Opens a sketch, resolving its background image (if any) from the blob store
   /// first so the editor reopens over the same image.
-  Future<void> _openSketch(JournalEntry e, SketchData data) async {
-    final id = data.backgroundBlobId;
-    ui.Image? bg;
-    if (id != null && ref.read(blobStoreAvailableProvider)) {
-      bg = await decodeSketchBackground(
-          await ref.read(blobStoreProvider).get(id));
-    }
-    try {
-      if (!mounted) return;
-      final edited = await showSketchEditor(context,
-          initial: data,
-          background: bg,
-          backgroundBlobId: id,
-          pdfBlobId: data.pdfBlobId,
-          pdfPage: data.pdfPage);
-      if (edited != null) {
-        await ref
-            .read(journalProvider.notifier)
-            .replace(e.copyWith(payload: {'v': 1, 'sketch': edited.toJson()}));
-      }
-    } finally {
-      // We own the decoded image; release it after the editor's exit
-      // transition (disposing inline races the pop animation).
-      disposeSketchBackgroundLater(bg);
-    }
-  }
+  Future<void> _openSketch(JournalEntry e, SketchData data) =>
+      openSketchEntry(context, ref, e);
 
   /// Import an image, store it as a blob, and annotate it in the sketch editor.
   Future<void> _annotateImage() async {
