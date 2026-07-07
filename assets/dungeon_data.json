@@ -231,7 +231,7 @@
     },
     "5": {
       "name": "Old Mine",
-      "vein_bonus": 6,
+      "vein_bonus_die": 6,
       "note": "Veins contain +D6 units."
     },
     "6": {
@@ -298,7 +298,7 @@
     "Fauna {ref:G7}",
     "D6 Dung piles",
     "D6 Bone piles",
-    "Secret Cave {ref:I1}"
+    "Secret Cave {ref:H3}"
   ],
   "E4": [
     "Thermic vents (really hot)",

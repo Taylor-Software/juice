@@ -148,7 +148,7 @@ D2 = {
            "on_stock_6": "{lvl:cross}Openings lead to dungeon rooms",
            "note": "On a roll of 6 on F2 the room openings lead to dungeon "
                    "rooms A-C."},
-    "5":  {"name": "Old Mine", "vein_bonus": 6,
+    "5":  {"name": "Old Mine", "vein_bonus_die": 6,  # "+D6 units": roll d6, add
            "note": "Veins contain +D6 units."},
     "6":  {"name": "Grotto", "on_stock_6": "A D6 ft. deep pool of {ref:I7}",
            "note": "On a roll of 6 on F2 the room contains a D6 ft. deep "
@@ -186,7 +186,7 @@ E3 = [
     "Extremely bad smell", "Change of cavestone {ref:E5}",
     "Puddle of {ref:I7}", "Full of pebbles of {ref:E5}",
     "Fossil mural walls", "Fauna {ref:G7}", "D6 Dung piles",
-    "D6 Bone piles", "Secret Cave {ref:I1}",
+    "D6 Bone piles", "Secret Cave {ref:H3}",
 ]
 
 E4 = [
