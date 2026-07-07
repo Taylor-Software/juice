@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/dungeon/footprint.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -26,21 +27,78 @@ const _roomInset = 6.0;
 /// Pixel rect of a room's cell content. The canvas origin is offset so the
 /// minimum grid coordinates land at pad = cell/2 from the top-left; painter
 /// and [roomIdAt] share this so they can't drift.
-Rect roomRectFor(DungeonRoom r, int minX, int minY, double cell) {
+Rect roomRectFor(DungeonRoom r, int minX, int minY, double cell) =>
+    cellRectFor(r, (0, 0), minX, minY, cell);
+
+/// Pixel rect of one footprint cell of [r] (offset [c] from the room anchor)
+/// in canvas space. Same origin contract as [roomRectFor].
+Rect cellRectFor(DungeonRoom r, (int, int) c, int minX, int minY, double cell) {
   final pad = cell / 2;
-  final left = (r.x - minX) * cell + pad;
-  final top = (r.y - minY) * cell + pad;
+  final left = (r.x + c.$1 - minX) * cell + pad;
+  final top = (r.y + c.$2 - minY) * cell + pad;
   return Rect.fromLTWH(left + _roomInset, top + _roomInset,
       cell - 2 * _roomInset, cell - 2 * _roomInset);
 }
 
-/// Pure hit-test: id of the room whose rect contains [local], else null.
+/// Center of one footprint cell of [r], in canvas space.
+Offset cellCenterFor(
+        DungeonRoom r, (int, int) c, int minX, int minY, double cell) =>
+    cellRectFor(r, c, minX, minY, cell).center;
+
+/// Min grid x over every footprint cell (multi-cell rooms extend past r.x).
+int roomsMinX(List<DungeonRoom> rooms) =>
+    rooms.expand((r) => r.footprint.map((c) => r.x + c.$1)).reduce(math.min);
+
+/// Min grid y over every footprint cell.
+int roomsMinY(List<DungeonRoom> rooms) =>
+    rooms.expand((r) => r.footprint.map((c) => r.y + c.$2)).reduce(math.min);
+
+/// Pure hit-test: id of the room whose footprint contains [local], else null.
 String? roomIdAt(List<DungeonRoom> rooms, Offset local, double cell) {
   if (rooms.isEmpty) return null;
-  final minX = rooms.map((r) => r.x).reduce(math.min);
-  final minY = rooms.map((r) => r.y).reduce(math.min);
+  final minX = roomsMinX(rooms);
+  final minY = roomsMinY(rooms);
   for (final r in rooms) {
-    if (roomRectFor(r, minX, minY, cell).contains(local)) return r.id;
+    for (final c in r.footprint) {
+      if (cellRectFor(r, c, minX, minY, cell).contains(local)) return r.id;
+    }
+  }
+  return null;
+}
+
+/// Center of a door marker: mid-point of the [door] edge on its cell.
+Offset doorMarkerCenter(
+    DungeonRoom r, DoorEdge door, int minX, int minY, double cell) {
+  final rect = cellRectFor(r, door.cell, minX, minY, cell);
+  return switch (door.side) {
+    Side.n => rect.topCenter,
+    Side.s => rect.bottomCenter,
+    Side.e => rect.centerRight,
+    Side.w => rect.centerLeft,
+  };
+}
+
+/// A hit on a room's open door marker.
+class DoorHit {
+  const DoorHit(this.roomId, this.door);
+  final String roomId;
+  final DoorEdge door;
+}
+
+/// Nearest OPEN door edge within a third of a cell of [local], else null.
+/// Locked/typed doors are inert (P1 has no key mechanic).
+DoorHit? doorEdgeAt(List<DungeonRoom> rooms, Offset local, double cell) {
+  if (rooms.isEmpty) return null;
+  final minX = roomsMinX(rooms);
+  final minY = roomsMinY(rooms);
+  for (final r in rooms) {
+    for (final d in r.doors) {
+      if (d.kind == DoorKind.open &&
+          (doorMarkerCenter(r, d, minX, minY, cell) - local).distance <
+              cell / 3) {
+        return DoorHit(r.id, d);
+      }
+    }
   }
   return null;
 }
@@ -474,8 +532,8 @@ class _DungeonPainter extends CustomPainter {
     required this.currentRoomId,
     required this.scheme,
     this.encounterRoomId,
-  })  : _minX = rooms.isEmpty ? 0 : rooms.map((r) => r.x).reduce(math.min),
-        _minY = rooms.isEmpty ? 0 : rooms.map((r) => r.y).reduce(math.min);
+  })  : _minX = rooms.isEmpty ? 0 : roomsMinX(rooms),
+        _minY = rooms.isEmpty ? 0 : roomsMinY(rooms);
 
   final List<DungeonRoom> rooms;
   final List<List<String>> corridors;
@@ -504,21 +562,51 @@ class _DungeonPainter extends CustomPainter {
 
     for (final r in rooms) {
       final rect = roomRectFor(r, _minX, _minY, _cell);
-      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
       final isCurrent = r.id == currentRoomId;
-      canvas.drawRRect(
-          rrect,
-          Paint()
-            ..color = isCurrent
-                ? scheme.primaryContainer
-                : scheme.surfaceContainerHighest);
-      if (isCurrent) {
-        canvas.drawRRect(
-            rrect,
-            Paint()
-              ..color = scheme.primary
-              ..style = PaintingStyle.stroke
-              ..strokeWidth = 2);
+      final fill = Paint()
+        ..color = isCurrent
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerHighest;
+      // Multi-cell footprints draw as the union of their cell rects (slightly
+      // over-inset seams bridged by a full-bleed body per cell); a legacy
+      // single-cell room keeps its rounded-square look exactly.
+      if (r.footprint.length == 1) {
+        final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+        canvas.drawRRect(rrect, fill);
+        if (isCurrent) {
+          canvas.drawRRect(
+              rrect,
+              Paint()
+                ..color = scheme.primary
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        }
+      } else {
+        final stroke = Paint()
+          ..color = isCurrent ? scheme.primary : scheme.outlineVariant
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2;
+        for (final c in r.footprint) {
+          final cr = cellRectFor(r, c, _minX, _minY, _cell);
+          // bleed each cell to the grid line so adjacent cells fuse
+          canvas.drawRect(cr.inflate(_roomInset - 1), fill);
+        }
+        for (final c in r.footprint) {
+          final cr = cellRectFor(r, c, _minX, _minY, _cell).inflate(
+            _roomInset - 1,
+          );
+          // draw only the outline edges that face out of the footprint
+          final cells = {for (final fc in r.footprint) fc};
+          void edge(bool exposed, Offset a, Offset b) {
+            if (exposed) canvas.drawLine(a, b, stroke);
+          }
+
+          edge(!cells.contains((c.$1, c.$2 - 1)), cr.topLeft, cr.topRight);
+          edge(
+              !cells.contains((c.$1, c.$2 + 1)), cr.bottomLeft, cr.bottomRight);
+          edge(!cells.contains((c.$1 + 1, c.$2)), cr.topRight, cr.bottomRight);
+          edge(!cells.contains((c.$1 - 1, c.$2)), cr.topLeft, cr.bottomLeft);
+        }
       }
       final tp = TextPainter(
         text: TextSpan(
@@ -533,10 +621,54 @@ class _DungeonPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       )..layout();
       tp.paint(canvas, rect.center - Offset(tp.width / 2, tp.height / 2));
+      // Door glyphs: open = filled triangle pointing out, door = short bar,
+      // locked = heavier crossed bar. Drawn on every DoorEdge.
+      for (final d in r.doors) {
+        _paintDoor(canvas, doorMarkerCenter(r, d, _minX, _minY, _cell), d,
+            isCurrent ? scheme.primary : scheme.onSurfaceVariant);
+      }
       if (r.id == encounterRoomId) {
         paintEncounterPin(
             canvas, Offset(rect.right - 7, rect.top + 7), scheme.error);
       }
+    }
+  }
+
+  /// One door marker at [center]: open = outward triangle, door = bar across
+  /// the edge, locked = bar + cross-tick.
+  void _paintDoor(Canvas canvas, Offset center, DoorEdge d, Color color) {
+    final horizontal = d.side == Side.n || d.side == Side.s;
+    switch (d.kind) {
+      case DoorKind.open:
+        final dir = switch (d.side) {
+          Side.n => const Offset(0, -1),
+          Side.s => const Offset(0, 1),
+          Side.e => const Offset(1, 0),
+          Side.w => const Offset(-1, 0),
+        };
+        final tip = center + dir * 6;
+        final left =
+            center + (horizontal ? const Offset(-5, 0) : const Offset(0, -5));
+        final right =
+            center + (horizontal ? const Offset(5, 0) : const Offset(0, 5));
+        final path = Path()
+          ..moveTo(tip.dx, tip.dy)
+          ..lineTo(left.dx, left.dy)
+          ..lineTo(right.dx, right.dy)
+          ..close();
+        canvas.drawPath(path, Paint()..color = color);
+      case DoorKind.door:
+      case DoorKind.locked:
+        final along = horizontal ? const Offset(6, 0) : const Offset(0, 6);
+        final bar = Paint()
+          ..color = color
+          ..strokeWidth = d.kind == DoorKind.locked ? 4 : 3
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(center - along, center + along, bar);
+        if (d.kind == DoorKind.locked) {
+          final across = horizontal ? const Offset(0, 4) : const Offset(4, 0);
+          canvas.drawLine(center - across, center + across, bar);
+        }
     }
   }
 
