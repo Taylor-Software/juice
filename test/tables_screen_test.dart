@@ -67,9 +67,10 @@ void main() {
     await pump(tester);
     // Top-of-list groups are built; 'General' (pinned last) is off-screen and
     // lazily unbuilt — its placement is covered by table_groups_test.
+    // ('Quest' and later groups sit below the lazy-list fold now that the
+    // My Tables section carries the starter-pack card.)
     expect(find.text('Challenge'), findsOneWidget);
     expect(find.text('NPC'), findsOneWidget);
-    expect(find.text('Quest'), findsOneWidget);
   });
 
   testWidgets('search filters to the matching group and hides the rest',
@@ -91,8 +92,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Clear'));
     await tester.pumpAndSettle();
-    expect(find.text('Quest'), findsOneWidget);
     expect(find.text('NPC'), findsOneWidget);
+    expect(find.text('Challenge'), findsOneWidget);
   });
 
   testWidgets('search expands a group the user had collapsed', (tester) async {
@@ -191,6 +192,18 @@ void main() {
     await tester.tap(find.byKey(const Key('tables-genre-all')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('my-table-t1')), findsOneWidget);
+  });
+
+  testWidgets(
+      'starter-pack import chip shows for a fresh library and hides once a '
+      'starter-sourced table exists', (tester) async {
+    await pumpWithContainer(tester);
+    expect(find.byKey(const Key('tables-starter-pack')), findsOneWidget);
+
+    const seeded = '[{"id":"t1","name":"Rumors","rows":["x"],'
+        '"src":"Starter set"}]';
+    await pumpWithContainer(tester, customTablesJson: seeded);
+    expect(find.byKey(const Key('tables-starter-pack')), findsNothing);
   });
 
   testWidgets('editor saves genre/category/source onto the table',
