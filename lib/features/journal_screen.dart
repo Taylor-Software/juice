@@ -962,7 +962,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         const PopupMenuItem(value: 'tags', child: Text('Tags…')),
         // Sketches edit in place via tap on the thumbnail, not the text editor.
         if (e.kind != JournalKind.sketch)
-          const PopupMenuItem(value: 'edit', child: Text('Edit note…')),
+          const PopupMenuItem(value: 'edit', child: Text('Edit note…'))
+        else
+          // A sketch (drawn map / PDF page / map snapshot) can act as the
+          // party's current map — later entries stamp it as their place.
+          const PopupMenuItem(
+              value: 'set-location', child: Text('Set as current location')),
         const PopupMenuItem(value: 'delete', child: Text('Delete')),
       ],
     );
@@ -1185,6 +1190,25 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       padding: EdgeInsets.only(left: 12),
                       child: Text('Sketch'),
                     ),
+                    // "What happened here" backlink when entries are stamped
+                    // with this sketch as their place.
+                    Builder(builder: (context) {
+                      final entries =
+                          ref.watch(journalProvider).valueOrNull ?? const [];
+                      final here = entriesAtLocation(
+                          entries, LocationRef(sketchEntryId: e.id));
+                      if (here.isEmpty) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: ActionChip(
+                          key: Key('sketch-entries-${e.id}'),
+                          visualDensity: VisualDensity.compact,
+                          label: Text(
+                              '${here.length} entr${here.length == 1 ? 'y' : 'ies'}'),
+                          onPressed: () => _showSketchEntries(here),
+                        ),
+                      );
+                    }),
                     const Spacer(),
                     menu,
                   ],
@@ -2114,6 +2138,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         await _voiceEntry(entry);
       case 'save-entity':
         await _saveAsEntity(entry);
+      case 'set-location':
+        await ref
+            .read(playContextProvider.notifier)
+            .setActiveLocation(LocationRef(sketchEntryId: entry.id));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Current location set')));
+        }
       case 'delete':
         await notifier.remove(entry.id);
       case 'link':
@@ -2177,10 +2209,39 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
 
-  /// Resolves [loc]'s display label: the room's title for a room ref (falling
-  /// back to a generic "Room" if the room can't be found — e.g. a reset map),
-  /// else "Hex (c, r)".
+  /// Lists the entries stamped with a sketch-map location ("what happened
+  /// here" for a drawn/PDF map).
+  void _showSketchEntries(List<JournalEntry> here) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            for (final x in here)
+              ListTile(
+                dense: true,
+                title: Text(
+                    x.title.isEmpty ? (x.body.split('\n').first) : x.title),
+                subtitle:
+                    Text(x.timestamp.toLocal().toString().split('.').first),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Resolves [loc]'s display label: the sketch's title for a sketch-map ref,
+  /// the room's title for a room ref (falling back to a generic "Room" if the
+  /// room can't be found — e.g. a reset map), else "Hex (c, r)".
   String _placeLabel(LocationRef loc) {
+    if (loc.sketchEntryId != null) {
+      final entries = ref.read(journalProvider).valueOrNull ?? const [];
+      final e = entries.where((x) => x.id == loc.sketchEntryId).firstOrNull;
+      final title = e?.title.trim();
+      return (title == null || title.isEmpty) ? 'Sketch map' : title;
+    }
     if (loc.roomId != null) {
       final levels = ref.read(mapProvider).valueOrNull?.levels ?? const [];
       for (final level in levels) {
@@ -2193,9 +2254,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   /// Points the PlayContext spine at [loc] and jumps to the matching map
-  /// subtab (world for a hex, dungeon for a room).
+  /// subtab (world for a hex, dungeon for a room) — or, for a sketch-map ref,
+  /// opens that sketch entry in place.
   void _openLocation(LocationRef loc) {
     ref.read(playContextProvider.notifier).setActiveLocation(loc);
+    if (loc.sketchEntryId != null) {
+      final entries = ref.read(journalProvider).valueOrNull ?? const [];
+      final e = entries.where((x) => x.id == loc.sketchEntryId).firstOrNull;
+      if (e == null) return;
+      final data = SketchData.fromJson(
+          (e.payload?['sketch'] as Map?)?.cast<String, dynamic>() ?? const {});
+      _openSketch(e, data);
+      return;
+    }
     ref.read(shellRouteProvider.notifier).goTo(Destination.map,
         subtab: loc.roomId != null ? 'dungeon' : 'world');
   }

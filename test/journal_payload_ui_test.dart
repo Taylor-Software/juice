@@ -160,6 +160,45 @@ void main() {
   });
 
   testWidgets(
+      'a sketch map acts as a place: backlink chip counts stamped entries and '
+      'the sketch menu offers Set as current location', (tester) async {
+    // A sketch entry + a text entry stamped with it as its location.
+    const sketchJson = '{'
+        '"id":"s1","timestamp":"2026-06-12T09:00:00.000Z","title":"Cave map",'
+        '"body":"","kind":"sketch","tags":[],'
+        '"payload":{"v":1,"sketch":{"v":1,"strokes":[],"w":100,"h":100}}}';
+    const noteJson = '{'
+        '"id":"n1","timestamp":"2026-06-12T10:00:00.000Z","title":"",'
+        '"body":"We enter the cave.","kind":"text","tags":[],'
+        '"loc":{"sketch":"s1"}}';
+    await pumpJournal(tester, {
+      ..._sessionPrefs,
+      'juice.journal.v2.default': '[$noteJson,$sketchJson]',
+    });
+
+    // The stamped note shows a place chip labeled with the sketch title.
+    expect(find.byKey(const Key('entry-loc-n1')), findsOneWidget);
+    expect(find.text('Cave map'), findsOneWidget);
+    // The sketch card shows the backlink count chip.
+    expect(find.byKey(const Key('sketch-entries-s1')), findsOneWidget);
+    expect(find.text('1 entry'), findsOneWidget);
+
+    // The sketch overflow menu offers Set as current location.
+    await tester.tap(find
+        .descendant(
+            of: find.ancestor(
+                of: find.byKey(const Key('sketch-thumb-s1')),
+                matching: find.byType(Card)),
+            matching: find.byType(PopupMenuButton<String>))
+        .first);
+    await tester.pumpAndSettle();
+    expect(find.text('Set as current location'), findsOneWidget);
+    await tester.tap(find.text('Set as current location'));
+    await tester.pumpAndSettle();
+    expect(find.text('Current location set'), findsOneWidget);
+  });
+
+  testWidgets(
       'payload entry collapses by default: one-line answer, no roll rows or actions',
       (tester) async {
     await pumpJournal(tester, _journalPrefs(_entryJson));
