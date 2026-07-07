@@ -124,8 +124,10 @@ label fallback in P1 (e.g. "flora" instead of expanding I6), noted with a
 **A2 effect modifiers** are structured where the effect is mechanical:
 `{"tier_bump": 1}` (monster stocking begins at G3), `{"treasure_bonus": 3}`,
 `{"stock_double": true}` (vault), `{"leads_to_caves": true}` (P2 no-op in P1) —
-else a display-only `note`. The generator applies these; unmechanizable ones are
-shown as dungeon-header flavor.
+else a display-only `note`. P1's generator applies `stock_double` only;
+`tier_bump`/`treasure_bonus` await the P2 treasure/level features and
+`leads_to_caves` awaits the P2 cave branch (all parsed into `A2Type` now, so
+P2 needs no data change). Unmechanizable notes show as dungeon-header flavor.
 
 **Self-checks** (structural — geometry lives in Dart, so no pdftotext geometry
 check; text tables *can* be cross-checked against a pdftotext extract when
