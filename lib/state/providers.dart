@@ -1001,6 +1001,16 @@ class MapNotifier extends AsyncNotifier<MapState> {
   /// [_scopedKey] or clobber previously persisted data.
   Future<MapState> get _ready async => state.valueOrNull ?? await future;
 
+  /// Anchor (or, with nulls, un-anchor) the dungeon to a world hex — the
+  /// map-layer hierarchy link behind the hex "Enter dungeon" / dungeon
+  /// "up to world" navigation.
+  Future<void> setDungeonAnchor(int? col, int? row) async {
+    final s = await _ready;
+    await save(col == null || row == null
+        ? s.copyWith(clearAnchor: true)
+        : s.copyWith(anchorHexCol: col, anchorHexRow: row));
+  }
+
   /// Find the hex at (col,row), apply [f] to it, and persist. [f] returning
   /// null (or no hex at that cell) is a no-op — used by the guard cases.
   Future<void> _updateHex(

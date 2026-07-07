@@ -3533,12 +3533,22 @@ class MapState {
     this.hexes = const [],
     this.currentHexCol,
     this.currentHexRow,
+    this.anchorHexCol,
+    this.anchorHexRow,
   });
   final List<DungeonLevel> levels;
   final int activeLevel; // index into [levels]
   final List<HexCell> hexes;
   final int? currentHexCol;
   final int? currentHexRow;
+
+  /// The world hex the dungeon sits at (map-layer hierarchy: the dungeon is
+  /// "entered from" this hex). Null = unanchored — every layer can exist
+  /// parentless.
+  final int? anchorHexCol;
+  final int? anchorHexRow;
+
+  bool get hasAnchor => anchorHexCol != null && anchorHexRow != null;
 
   DungeonLevel? get _active =>
       levels.isEmpty ? null : levels[activeLevel.clamp(0, levels.length - 1)];
@@ -3577,6 +3587,9 @@ class MapState {
     int? currentHexCol,
     int? currentHexRow,
     bool clearCurrentHex = false,
+    int? anchorHexCol,
+    int? anchorHexRow,
+    bool clearAnchor = false,
   }) {
     var newLevels = levels ?? this.levels;
     final newActive = activeLevel ?? this.activeLevel;
@@ -3609,6 +3622,8 @@ class MapState {
           clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
       currentHexRow:
           clearCurrentHex ? null : (currentHexRow ?? this.currentHexRow),
+      anchorHexCol: clearAnchor ? null : (anchorHexCol ?? this.anchorHexCol),
+      anchorHexRow: clearAnchor ? null : (anchorHexRow ?? this.anchorHexRow),
     );
   }
 
@@ -3618,6 +3633,8 @@ class MapState {
         'hexes': hexes.map((h) => h.toJson()).toList(),
         'currentHexCol': currentHexCol,
         'currentHexRow': currentHexRow,
+        if (anchorHexCol != null) 'anchorHexCol': anchorHexCol,
+        if (anchorHexRow != null) 'anchorHexRow': anchorHexRow,
       };
 
   /// Tolerant: malformed level/hex entries are skipped. Legacy single-level
@@ -3663,6 +3680,8 @@ class MapState {
           .toList(),
       currentHexCol: j['currentHexCol'] as int?,
       currentHexRow: j['currentHexRow'] as int?,
+      anchorHexCol: j['anchorHexCol'] as int?,
+      anchorHexRow: j['anchorHexRow'] as int?,
     );
   }
 }
