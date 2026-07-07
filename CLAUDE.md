@@ -866,6 +866,41 @@ Working rules for this repo:
   a tap-to-select hex detail card + a `_HexZoom` canvas-mode switch — the flower
   ring, `siteLines`, and `siteAreas` are all stored on `HexCell` (never
   `MapState.rooms`, so the Dungeon tab stays independent).
+- The **Classic Dungeon crawler** (opt-in `classic-dungeon` system,
+  `SystemCategory.exploration`, NOT in `kAllSystems`) vendors **Roll 4 Ruin
+  v2.1** (Nocturnal Peacock, **CC-BY-NC-SA-4.0** — attribution in
+  `kContentAttributions['classic-dungeon']`; the creator explicitly invited
+  online tools). Data rail: `build_dungeon.py` → `assets/dungeon_data.json`
+  (dungeon branch A–C + monsters G + build-elements H; `{ref:XX}` cross-ref
+  tokens; self-verifies row counts / d66 family coverage / every ref known or
+  label-fallback; cave tables D–F + natural elements I are P2). Pure engine
+  `lib/engine/dungeon/`: `tables.dart` (typed loader; unmodelled tables via
+  `raw`), `footprint.dart` (`RoomFootprint` cells+openings, rotation, authored
+  ~6-family corridor + chamber catalogs mapped from the D66 roll — NOT the
+  zine's 132 shapes; door KIND comes from the type die, not the footprint:
+  1=cor+locked … 6=cha+locked), `placement.dart` (`placeRoom` rotate+door-mate+
+  no-overlap, null when boxed in), `faction.dart` (tracked registry, 5/6
+  same-faction roll, authored name pool), `generator.dart` (`generateRoom` 4D6
+  resolution; `DungeonGenContext.roomId` is minted by the CALLER before
+  generating so factions carry real room ids; ref expansion depth-capped, B4
+  dict → "trigger -> effect", H-dict tables → labels). `DungeonRoom` grew
+  optional `footprint`/`doors`/`roomType` (legacy JSON byte-identical — new
+  keys omitted at defaults). State: `MapNotifier.addClassicRoom` +
+  `dungeonFactionsProvider` (`juice.dungeon_factions.v1`, in
+  `sessionScopedKeys` → exported; cleared on dungeon reset). UI: the base
+  Map → Dungeon pane gains a gated mode — `classic-enter` rolls A1/A2 and
+  places the entrance; tapping an open-door glyph explores a mated room
+  (`doorEdgeAt` hit-test; snackbar when nothing fits); multi-cell footprints
+  paint as fused cell rects with outward-edge outlines + door glyphs
+  (open=triangle, door=bar, locked=crossed bar); the base pane is visually
+  unchanged (single-cell rooms keep the rounded-square path). The A2 effect is
+  held in pane state for the run (ephemeral; recorded in the entrance detail).
+  GOTCHA: handlers must `await ref.read(dungeonDataProvider.future)` — a cold
+  `.valueOrNull` read is AsyncLoading on first tap (same as the Run-screen
+  oracle gotcha). P2 deferred: caves D–F/I, multi-level descent, interactive
+  traps, key-gated locked doors. See
+  `docs/superpowers/specs/2026-07-06-classic-dungeon-generator-design.md` +
+  `docs/superpowers/plans/2026-07-06-classic-dungeon-generator.md`.
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
