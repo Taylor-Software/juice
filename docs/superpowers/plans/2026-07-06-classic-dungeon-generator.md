@@ -1254,11 +1254,16 @@ Future<bool> addClassicRoom({
 }) async {
   final s = await _ready; // MapNotifier's awaited-state getter (see addRoom)
   final factions = ref.read(dungeonFactionsProvider).valueOrNull ?? const FactionRegistry();
+  final id = _newId(); // house helper in providers.dart (microsecond timestamp)
+  // The id is minted BEFORE generating: a faction assigned inside generateRoom
+  // carries the real room id from the start (DungeonGenContext.roomId — the
+  // engine review removed the old 'pending' placeholder + reconciliation).
   final gen = generateRoom(
-      DungeonGenContext(level: 1, effect: effect, tables: tables, factions: factions),
+      DungeonGenContext(
+          level: 1, effect: effect, tables: tables, factions: factions,
+          roomId: id),
       dice);
 
-  final id = _newId(); // house helper in providers.dart (microsecond timestamp)
   List<(int, int)> footprintOffsets;
   List<DoorEdge> doors;
   int ax, ay;
@@ -1296,14 +1301,9 @@ Future<bool> addClassicRoom({
       detail: gen.detail, footprint: footprintOffsets, doors: doors,
       roomType: gen.type == RoomType.corridor ? 'corridor' : 'chamber');
 
-  // Reconcile the 'pending' faction roomId -> real id, then persist.
-  if (gen.factions.factions.isNotEmpty) {
-    final reconciled = FactionRegistry(factions: [
-      for (final f in gen.factions.factions)
-        DungeonFaction(id: f.id, name: f.name, monsterType: f.monsterType,
-            roomIds: [for (final rid in f.roomIds) rid == 'pending' ? id : rid])
-    ]);
-    await ref.read(dungeonFactionsProvider.notifier).save(reconciled);
+  // Persist the (possibly extended) registry when it changed.
+  if (!identical(gen.factions, factions)) {
+    await ref.read(dungeonFactionsProvider.notifier).save(gen.factions);
   }
 
   final next = s.copyWith(
