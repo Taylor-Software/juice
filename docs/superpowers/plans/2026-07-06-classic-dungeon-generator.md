@@ -1160,30 +1160,37 @@ Expected: FAIL.
 
 - [ ] **Step 3: Add the faction notifier** (session-scoped, mirrors `DecksNotifier`). In `lib/state/providers.dart`:
 
+Mirror the EXACT session-scoping pattern of `DecksNotifier`/`MapNotifier`
+(verified in `lib/state/providers.dart`): derive `_scopedKey` in `build()` from
+`(await ref.watch(sessionsProvider.future)).active` — there is NO
+`activeSessionIdProvider`.
+
 ```dart
 class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
   static const _baseKey = 'juice.dungeon_factions.v1';
-  String get _key => '$_baseKey.${ref.watch(activeSessionIdProvider)}';
+  late String _scopedKey;
 
   @override
   Future<FactionRegistry> build() async {
+    final sessions = await ref.watch(sessionsProvider.future);
+    _scopedKey = '$_baseKey.${sessions.active}';
     final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    return raw == null
+    final raw = prefs.getString(_scopedKey);
+    return (raw == null || raw.isEmpty)
         ? const FactionRegistry()
         : FactionRegistry.fromJson(jsonDecode(raw));
   }
 
   Future<void> save(FactionRegistry reg) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, jsonEncode(reg.toJson()));
     state = AsyncData(reg);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(reg.toJson()));
   }
 
   Future<void> reset() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
     state = const AsyncData(FactionRegistry());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_scopedKey);
   }
 }
 
@@ -1191,7 +1198,7 @@ final dungeonFactionsProvider =
     AsyncNotifierProvider<DungeonFactionsNotifier, FactionRegistry>(
         DungeonFactionsNotifier.new);
 ```
-Add `'juice.dungeon_factions.v1',` to the `sessionScopedKeys` list (line ~1696) so it exports/imports with the campaign. Add the needed imports (`dungeon/faction.dart`, `dungeon/generator.dart`, `dungeon/footprint.dart`, `dungeon/placement.dart`) — check `activeSessionIdProvider` is the correct name by reading how `DecksNotifier` derives its key, and mirror it exactly.
+Add `'juice.dungeon_factions.v1',` to the `sessionScopedKeys` list (line ~1696) so it exports/imports with the campaign. Add the needed imports (`../engine/dungeon/faction.dart`, `generator.dart`, `footprint.dart`, `placement.dart`).
 
 - [ ] **Step 4: Add `addClassicRoom`** to `MapNotifier`:
 
@@ -1207,13 +1214,13 @@ Future<bool> addClassicRoom({
   required A2Type effect,
   required Dice dice,
 }) async {
-  final s = state.valueOrNull ?? const MapState();
+  final s = await _ready; // MapNotifier's awaited-state getter (see addRoom)
   final factions = ref.read(dungeonFactionsProvider).valueOrNull ?? const FactionRegistry();
   final gen = generateRoom(
       DungeonGenContext(level: 1, effect: effect, tables: tables, factions: factions),
       dice);
 
-  final id = 'room${DateTime.now().microsecondsSinceEpoch}';
+  final id = _newId(); // house helper in providers.dart (microsecond timestamp)
   List<(int, int)> footprintOffsets;
   List<DoorEdge> doors;
   int ax, ay;
@@ -1266,12 +1273,13 @@ Future<bool> addClassicRoom({
     corridors: fromRoomId == null ? s.corridors : [...s.corridors, [fromRoomId, id]],
     currentRoomId: id,
   );
-  state = AsyncData(next);
-  await _persist(next); // use whatever persistence call addRoom already uses
+  await save(next); // MapNotifier's public persistence helper (sets state + prefs)
   return true;
 }
 ```
-(Read `MapNotifier.addRoom` first to reuse its exact persistence helper — replace `_persist(next)` with the real call.)
+(`MapNotifier` exposes a public `Future<void> save(MapState)` that sets `state`
+and writes prefs; use it — do NOT invent `_persist`. Read `addRoom` (which uses
+`_ready`/`save`/`_newId`) to confirm.)
 
 - [ ] **Step 5: Wire dungeon reset to also clear factions** — find `MapNotifier`'s dungeon-clear method (the one setting `rooms: const []`) and, after it, add a note in the plan's UI task to call `dungeonFactionsProvider.notifier.reset()` from the same button. (No code here; handled in Task 9.)
 
@@ -1458,13 +1466,16 @@ git commit -m "feat(dungeon): classic-dungeon door-tap exploration + Enter actio
 - Modify: `lib/engine/content_registry.dart` (`kContentAttributions`)
 - Modify: `lib/features/settings_sheet.dart` (Sources dialog line — only if that dialog concatenates a manual list beyond `kContentAttributions`)
 - Modify: `lib/engine/campaign_surfaces.dart` (`surfacesFor` — add the Dungeon-crawl surface when `classic-dungeon` present, if not already implied by the Map verb)
-- Test: extend `test/` system-completeness test (the one asserting `kSystemCategory`/blurbs cover `kKnownSystems`)
+- Modify: `test/campaign_presets_test.dart` — the completeness test. It HARD-CODES the expected sets, so it must be updated in lockstep:
+  - the `kKnownSystems` set literal (currently 20 ids) → add `'classic-dungeon'` and change the test name `'kKnownSystems has the 20 ids'` → `'... 21 ids'`;
+  - the `SystemCategory.exploration` expectation `{'verdant', 'hexcrawl'}` → `{'verdant', 'hexcrawl', 'classic-dungeon'}`;
+  - the `test('every known system is categorized exactly once')` already checks `kSystemCategory.keys.toSet() == kKnownSystems` and passes automatically once you categorize the new id.
 
-- [ ] **Step 1: Run the existing system-completeness test to see it fail** once you add the id to `kKnownSystems` only.
+- [ ] **Step 1: Add the id to `kKnownSystems`, run the completeness test to see it fail.**
 
-Add `'classic-dungeon',` to `kKnownSystems`. Run the completeness test.
-Run: `flutter test test/ -name '*system*'` (find the actual file, e.g. `test/system_registration_test.dart`)
-Expected: FAIL (missing from `kSystemCategory`/labels).
+Add `'classic-dungeon',` to `kKnownSystems` in `lib/engine/models.dart`.
+Run: `flutter test test/campaign_presets_test.dart`
+Expected: FAIL (the "20 ids" set literal + exploration set + categorized-once check all diverge).
 
 - [ ] **Step 2: Fill in every map:**
 
