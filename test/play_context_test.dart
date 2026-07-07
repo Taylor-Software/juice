@@ -23,6 +23,43 @@ void main() {
     test('empty ref is empty', () {
       expect(const LocationRef().isEmpty, isTrue);
     });
+
+    group('matches', () {
+      test('same room id matches', () {
+        expect(
+            const LocationRef(roomId: 'r1')
+                .matches(const LocationRef(roomId: 'r1')),
+            isTrue);
+      });
+      test('different room id does not match', () {
+        expect(
+            const LocationRef(roomId: 'r1')
+                .matches(const LocationRef(roomId: 'r2')),
+            isFalse);
+      });
+      test('same hex col+row matches', () {
+        expect(
+            const LocationRef(hexCol: 1, hexRow: 2)
+                .matches(const LocationRef(hexCol: 1, hexRow: 2)),
+            isTrue);
+      });
+      test('different hex row does not match', () {
+        expect(
+            const LocationRef(hexCol: 1, hexRow: 2)
+                .matches(const LocationRef(hexCol: 1, hexRow: 3)),
+            isFalse);
+      });
+      test('room ref never matches a hex ref', () {
+        expect(
+            const LocationRef(roomId: 'r1')
+                .matches(const LocationRef(hexCol: 1, hexRow: 2)),
+            isFalse);
+      });
+      test('empty refs never match, even each other', () {
+        expect(const LocationRef().matches(const LocationRef()), isFalse);
+        expect(const LocationRef(roomId: 'r1').matches(null), isFalse);
+      });
+    });
   });
 
   group('PlayContext', () {

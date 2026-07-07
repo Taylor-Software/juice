@@ -1086,6 +1086,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                               .copyWith(fontSize: 11, color: tk.inkMuted),
                         ),
                       ),
+                    if (_placeChip(e) case final chip?)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: chip,
+                      ),
                   ],
                 ),
               ),
@@ -1126,17 +1131,29 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             onThreadTap: _openThread,
             onDiceTap: _rollDice,
             lonelog: lonelog,
+            placeChip: _placeChip(e),
           );
         }
         return Card(
           child: ListTile(
             title: Text(e.title),
-            subtitle: MentionText(
-              [e.body, ...extras].join('\n'),
-              onCharacterTap: _openCharacter,
-              onThreadTap: _openThread,
-              onDiceTap: _rollDice,
-              lonelog: lonelog,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                MentionText(
+                  [e.body, ...extras].join('\n'),
+                  onCharacterTap: _openCharacter,
+                  onThreadTap: _openThread,
+                  onDiceTap: _rollDice,
+                  lonelog: lonelog,
+                ),
+                if (_placeChip(e) case final chip?)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: chip,
+                  ),
+              ],
             ),
             trailing: menu,
             isThreeLine: e.body.contains('\n') || extras.isNotEmpty,
@@ -2154,6 +2171,56 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
+
+  /// Resolves [loc]'s display label: the room's title for a room ref (falling
+  /// back to a generic "Room" if the room can't be found — e.g. a reset map),
+  /// else "Hex (c, r)".
+  String _placeLabel(LocationRef loc) {
+    if (loc.roomId != null) {
+      final levels = ref.read(mapProvider).valueOrNull?.levels ?? const [];
+      for (final level in levels) {
+        final room = level.rooms.where((r) => r.id == loc.roomId).firstOrNull;
+        if (room != null) return room.title;
+      }
+      return 'Room';
+    }
+    return 'Hex (${loc.hexCol}, ${loc.hexRow})';
+  }
+
+  /// Points the PlayContext spine at [loc] and jumps to the matching map
+  /// subtab (world for a hex, dungeon for a room).
+  void _openLocation(LocationRef loc) {
+    ref.read(playContextProvider.notifier).setActiveLocation(loc);
+    ref.read(shellRouteProvider.notifier).goTo(Destination.map,
+        subtab: loc.roomId != null ? 'dungeon' : 'world');
+  }
+
+  /// The low-chrome "where this happened" chip for an entry with a logged
+  /// location — tapping jumps to the map. Null when the entry has none.
+  Widget? _placeChip(JournalEntry e) {
+    final loc = e.location;
+    if (loc == null) return null;
+    final tk = context.juice;
+    return InkWell(
+      key: Key('entry-loc-${e.id}'),
+      onTap: () => _openLocation(loc),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.place_outlined, size: 12, color: tk.inkMuted),
+          const SizedBox(width: 2),
+          Text(
+            _placeLabel(loc),
+            style: tk.uiLabel.copyWith(
+              fontSize: 11,
+              color: tk.inkMuted,
+              decoration: TextDecoration.underline,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   /// Rolls an inline dice token tapped in journal prose and logs it as a
   /// rerollable `dice` entry (same pipeline as the dice-roller reroll).

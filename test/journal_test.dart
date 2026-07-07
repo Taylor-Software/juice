@@ -221,6 +221,54 @@ void main() {
     expect(entries.first.kind, JournalKind.result);
   });
 
+  group('JournalNotifier auto-stamps the active location', () {
+    test('addText/addResult/addScene pick up the spine location', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(journalProvider.future);
+      final n = container.read(journalProvider.notifier);
+      await n.addText('note');
+      await n.addResult('R', 'body');
+      await n.addScene('Scene');
+      final entries = await container.read(journalProvider.future);
+      expect(entries.every((e) => e.location?.roomId == 'r1'), isTrue);
+    });
+
+    test('addSessionBreak and addSketch do NOT get stamped', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+        'juice.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(journalProvider.future);
+      final n = container.read(journalProvider.notifier);
+      await n.addSessionBreak('Session 2');
+      await n.addSketch(const SketchData(canvasWidth: 10, canvasHeight: 10));
+      final entries = await container.read(journalProvider.future);
+      expect(entries.every((e) => e.location == null), isTrue);
+    });
+
+    test('no active location leaves entries unstamped', () async {
+      SharedPreferences.setMockInitialValues({
+        'juice.sessions.v1':
+            '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      });
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(journalProvider.future);
+      await container.read(journalProvider.notifier).addText('note');
+      final entries = await container.read(journalProvider.future);
+      expect(entries.single.location, isNull);
+    });
+  });
+
   test('JournalKind.sketch round-trips', () {
     final e = JournalEntry(
         id: 's1',
@@ -244,6 +292,104 @@ void main() {
         payload: const {'a': 1});
     expect(e.copyWith(payload: const {'b': 2}).payload, const {'b': 2});
     expect(e.copyWith(title: 'X').payload, const {'a': 1});
+  });
+
+  group('JournalEntry location', () {
+    test('round-trips a room ref through JSON', () {
+      final e = JournalEntry(
+        id: '1',
+        timestamp: DateTime.utc(2026),
+        title: 't',
+        body: 'b',
+        location: const LocationRef(roomId: 'room-1'),
+      );
+      final back = JournalEntry.fromJson(e.toJson());
+      expect(back.location?.roomId, 'room-1');
+      expect(e.toJson()['loc'], {'roomId': 'room-1'});
+    });
+
+    test('round-trips a hex ref through JSON', () {
+      final e = JournalEntry(
+        id: '1',
+        timestamp: DateTime.utc(2026),
+        title: 't',
+        body: 'b',
+        location: const LocationRef(hexCol: 3, hexRow: 4),
+      );
+      final back = JournalEntry.fromJson(e.toJson());
+      expect(back.location?.hexCol, 3);
+      expect(back.location?.hexRow, 4);
+    });
+
+    test('missing loc key parses to null (legacy entries)', () {
+      final e = JournalEntry.fromJson({
+        'id': '1',
+        'timestamp': '2026-01-01T00:00:00Z',
+        'title': 't',
+        'body': 'b',
+      });
+      expect(e.location, isNull);
+    });
+
+    test('garbage loc value is dropped, not thrown', () {
+      final e = JournalEntry.fromJson({
+        'id': '1',
+        'timestamp': '2026-01-01T00:00:00Z',
+        'title': 't',
+        'body': 'b',
+        'loc': 'not a map',
+      });
+      expect(e.location, isNull);
+    });
+
+    test('copyWith can set and clear the location', () {
+      final e = JournalEntry(
+          id: '1', timestamp: DateTime.utc(2026), title: 't', body: 'b');
+      final linked = e.copyWith(location: const LocationRef(roomId: 'r1'));
+      expect(linked.location?.roomId, 'r1');
+      expect(linked.copyWith(clearLocation: true).location, isNull);
+      expect(linked.copyWith(body: 'edited').location?.roomId, 'r1');
+    });
+  });
+
+  group('entriesAtLocation', () {
+    JournalEntry mk(String id, {LocationRef? loc}) => JournalEntry(
+        id: id,
+        timestamp: DateTime.utc(2026),
+        title: id,
+        body: 'b',
+        location: loc);
+
+    test('matches by room id', () {
+      final entries = [
+        mk('a', loc: const LocationRef(roomId: 'r1')),
+        mk('b', loc: const LocationRef(roomId: 'r2')),
+        mk('c'),
+      ];
+      final hits = entriesAtLocation(entries, const LocationRef(roomId: 'r1'));
+      expect(hits.map((e) => e.id), ['a']);
+    });
+
+    test('matches by hex col+row', () {
+      final entries = [
+        mk('a', loc: const LocationRef(hexCol: 1, hexRow: 2)),
+        mk('b', loc: const LocationRef(hexCol: 1, hexRow: 3)),
+      ];
+      final hits =
+          entriesAtLocation(entries, const LocationRef(hexCol: 1, hexRow: 2));
+      expect(hits.map((e) => e.id), ['a']);
+    });
+
+    test('empty query location matches nothing', () {
+      final entries = [mk('a', loc: const LocationRef(roomId: 'r1'))];
+      expect(entriesAtLocation(entries, const LocationRef()), isEmpty);
+    });
+
+    test('no matches returns an empty list', () {
+      final entries = [mk('a', loc: const LocationRef(roomId: 'r1'))];
+      expect(entriesAtLocation(entries, const LocationRef(roomId: 'other')),
+          isEmpty);
+    });
   });
 
   test('addSketch creates a sketch entry with payload', () async {

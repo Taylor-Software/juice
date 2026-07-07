@@ -161,6 +161,60 @@ Widget encounterJumpButton({
           )
         : const SizedBox.shrink();
 
+/// "What happened here" backlink chip: shows a count of journal entries
+/// logged at this place, tapping opens a bottom sheet listing them. Renders
+/// nothing when there are none. Shared by the hex and dungeon-room detail
+/// cards (mirrors the character-card `mentions-` chip in tracker_screen.dart).
+Widget locationEntriesChip({
+  required BuildContext context,
+  required Key key,
+  required List<JournalEntry> entries,
+  required String placeLabel,
+}) {
+  if (entries.isEmpty) return const SizedBox.shrink();
+  return ActionChip(
+    key: key,
+    avatar: const Icon(Icons.link, size: 16),
+    label: Text('${entries.length} entr${entries.length == 1 ? 'y' : 'ies'}'),
+    visualDensity: VisualDensity.compact,
+    onPressed: () => _showLocationEntries(context, placeLabel, entries),
+  );
+}
+
+Future<void> _showLocationEntries(
+    BuildContext context, String placeLabel, List<JournalEntry> entries) {
+  return showModalBottomSheet<void>(
+    context: context,
+    builder: (_) => SafeArea(
+      child: ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          ListTile(
+            title: Text(
+                '$placeLabel — ${entries.length} journal entr'
+                '${entries.length == 1 ? 'y' : 'ies'}',
+                style: Theme.of(context).textTheme.titleMedium),
+          ),
+          for (final e in entries)
+            ListTile(
+              dense: true,
+              leading: const Icon(Icons.notes_outlined),
+              title: Text(
+                e.title.isEmpty ? e.body : e.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              subtitle: e.title.isEmpty
+                  ? null
+                  : Text(e.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
 // -- Dungeon ----------------------------------------------------------------
 class DungeonMapPane extends ConsumerStatefulWidget {
   const DungeonMapPane({super.key, required this.oracle});
@@ -176,7 +230,32 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
   @override
+  void initState() {
+    super.initState();
+    // Preselect the PlayContext spine's active room (e.g. arriving via a
+    // journal place-chip) if it isn't already the map's current room.
+    final roomId =
+        ref.read(playContextProvider).valueOrNull?.activeLocation?.roomId;
+    final current = ref.read(mapProvider).valueOrNull?.currentRoomId;
+    if (roomId != null && roomId != current) {
+      ref.read(mapProvider.notifier).selectRoom(roomId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Whenever the active level's current room changes (tap-select,
+    // explore-door, new-room, classic-enter/descend all funnel through
+    // MapState.currentRoomId), point the PlayContext spine at it — "where
+    // the party is" for auto-stamping new journal entries.
+    ref.listen(mapProvider, (prev, next) {
+      final id = next.valueOrNull?.currentRoomId;
+      if (id != null && id != prev?.valueOrNull?.currentRoomId) {
+        ref
+            .read(playContextProvider.notifier)
+            .setActiveLocation(LocationRef(roomId: id));
+      }
+    });
     final async = ref.watch(mapProvider);
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -615,6 +694,18 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                         .goTo(Destination.track, subtab: 'encounter'),
                   );
                 }),
+                Builder(builder: (context) {
+                  final all = ref.watch(journalProvider).valueOrNull ??
+                      const <JournalEntry>[];
+                  final entries =
+                      entriesAtLocation(all, LocationRef(roomId: room.id));
+                  return locationEntriesChip(
+                    context: context,
+                    key: Key('loc-entries-${room.id}'),
+                    entries: entries,
+                    placeLabel: room.title,
+                  );
+                }),
               ],
             ),
           ],
@@ -999,6 +1090,18 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
   int? _selCol, _selRow; // selected revealed hex (null = none)
   _HexZoom _zoom = _HexZoom.region;
 
+  @override
+  void initState() {
+    super.initState();
+    // Preselect the PlayContext spine's active location if it's a hex, so
+    // arriving at this pane (e.g. via a journal place-chip) shows its card.
+    final loc = ref.read(playContextProvider).valueOrNull?.activeLocation;
+    if (loc?.hexCol != null) {
+      _selCol = loc!.hexCol;
+      _selRow = loc.hexRow;
+    }
+  }
+
   HexCell? _selectedHex(MapState s) => _selCol == null
       ? null
       : s.hexes.where((h) => h.col == _selCol && h.row == _selRow).firstOrNull;
@@ -1239,6 +1342,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                 _selRow = hit.row;
                 _zoom = _HexZoom.region;
               });
+              ref.read(playContextProvider.notifier).setActiveLocation(
+                  LocationRef(hexCol: hit.col, hexRow: hit.row));
               return;
             }
             _manualReveal(hit.col, hit.row);
@@ -1423,6 +1528,18 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   onJump: () => ref
                       .read(shellRouteProvider.notifier)
                       .goTo(Destination.track, subtab: 'encounter'),
+                );
+              }),
+              Builder(builder: (context) {
+                final all = ref.watch(journalProvider).valueOrNull ??
+                    const <JournalEntry>[];
+                final entries = entriesAtLocation(
+                    all, LocationRef(hexCol: h.col, hexRow: h.row));
+                return locationEntriesChip(
+                  context: context,
+                  key: Key('loc-entries-${h.col}-${h.row}'),
+                  entries: entries,
+                  placeLabel: 'Hex (${h.col}, ${h.row})',
                 );
               }),
             ]),
