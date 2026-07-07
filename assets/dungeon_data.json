@@ -1,0 +1,1113 @@
+{
+  "_license": "Roll 4 Ruin: Classic Dungeon Generator (c) Nocturnal Peacock, CC-BY-NC-SA-4.0.",
+  "A1": [
+    "In a magical archway portal",
+    "Under weird alienlike ruins",
+    "In overgrown formations",
+    "Under temple ruins",
+    "Under tower ruins",
+    "Between ruined archways",
+    "Between rocks",
+    "At the bottom of a crater",
+    "Stairs under a big statue",
+    "In fortress ruins",
+    "In the side of a hill",
+    "Roll again"
+  ],
+  "A2": {
+    "2": {
+      "name": "Vault",
+      "stock_double": true,
+      "note": "Monsters & treasure doubled."
+    },
+    "3": {
+      "name": "Arcane lair",
+      "note": "Halls transformed by arcane effects. If a 6 is rolled on C2, roll on I2."
+    },
+    "4": {
+      "name": "Forgotten ruins",
+      "note": "Roll a D12 for monster stocking instead of a D20."
+    },
+    "5": {
+      "name": "Overgrown ruins",
+      "note": "If you roll a 6 on B2 or C2, the room contains D4 flora {ref:I6} & fauna {ref:G7}."
+    },
+    "6": {
+      "name": "Catacombs",
+      "note": "If you roll a 6 on B2 or C2, the room contains D4 burial alcoves {ref:H1}."
+    },
+    "7": {
+      "name": "Ruins",
+      "note": "A former community, now in ruins."
+    },
+    "8": {
+      "name": "Stronghold",
+      "note": "If you roll a 6 for stocking, the room contains a barricade."
+    },
+    "9": {
+      "name": "Temple",
+      "note": "If you roll a 6 on C2 stocking, there is a 1/6 chance for a shrine {ref:H6}."
+    },
+    "10": {
+      "name": "Cursed ruins",
+      "tier_bump": 1,
+      "treasure_bonus": 3,
+      "note": "Monster stocking begins at {ref:G3} instead of {ref:G2}. Treasure roll {ref:H8} +3."
+    },
+    "11": {
+      "name": "Transformed ruins",
+      "note": "If you roll a 6 on C2 for stocking, roll an obstacle {ref:E4} for the room."
+    },
+    "12": {
+      "name": "Ancient ruin",
+      "leads_to_caves": true,
+      "note": "If you roll a 6 on B2, the openings of the chamber lead to cave rooms D-F."
+    }
+  },
+  "B2": [
+    "Monster + (2/6) Feature {ref:B3}",
+    "Feature {ref:B3}",
+    "Trap {ref:B4}",
+    "Change of door type {ref:B5}",
+    "Nothing",
+    "Nothing (or Type effect)"
+  ],
+  "B3": [
+    "Reroll + Trap {ref:B4}",
+    "Already activated trap {ref:B4}",
+    "Floor full of mud",
+    "Piles of rubbish or rubble",
+    "Puddle of {ref:I7}",
+    "Chest {ref:H5}",
+    "Barricades",
+    "Collapsed corridor {ref:E4}",
+    "Small Hole (D6 ft. deep)",
+    "D4 Flora {ref:I6}",
+    "Wall fountain with {ref:I7}",
+    "Small stairs",
+    "Wall shrine {ref:H6} (2/6 intact)",
+    "D4 Burial alcoves {ref:H1}",
+    "Fresco {ref:H7}",
+    "Nonsense graffiti",
+    "Fauna {ref:I6}",
+    "D4 Containers {ref:H4}",
+    "D6 Carcasses of {ref:G2}",
+    "Secret Room {ref:H3}"
+  ],
+  "B4": {
+    "triggers": [
+      "Pressure Plate ...",
+      "Tripwire ...",
+      "False treasure ...",
+      "Detection Glyph ...",
+      "Light detecting crystals ...",
+      "Lever ...",
+      "Fake Corridor feature ...",
+      "Touch sensitive walls ..."
+    ],
+    "effects": [
+      "...Lightning Bolt",
+      "...Frostbolt",
+      "...Arrow trap",
+      "...Sinkhole",
+      "...Spike trap",
+      "...Falling rubble",
+      "...Sawing Blades",
+      "...Flames",
+      "...Poison Cloud",
+      "...Acid-Blast",
+      "...Spear pit",
+      "... gas {ref:I8}"
+    ]
+  },
+  "B5": [
+    "Wooden",
+    "Rusty metal",
+    "Smooth stone",
+    "Metal plates",
+    "Portcullis",
+    "Grating",
+    "Rotting wood",
+    "Engraved metal",
+    "Engraved stone",
+    "Ironbound wooden"
+  ],
+  "C2": [
+    "Feature {ref:C3} + Monster",
+    "Feature {ref:C3} + Monster + Treasure {ref:H8}",
+    "Feature {ref:C3} + Treasure {ref:H8}",
+    "Feature {ref:C3}",
+    "Feature {ref:C3} + Special {ref:C4}",
+    "Nothing (or Type effect)"
+  ],
+  "C3": [
+    "Roll Twice",
+    "Campsite",
+    "D10 carcasses of {ref:G2}",
+    "Fresco {ref:H7}",
+    "D4 Burial alcoves {ref:H1}",
+    "D4 Chests {ref:H5}",
+    "D6 Barricades",
+    "D8 Columns",
+    "D4 Statues {ref:H2}",
+    "D6 Flora {ref:I6}",
+    "D4 Tables + benches",
+    "Trap {ref:B4}",
+    "D8 containers of {ref:H4}",
+    "Garbage dump",
+    "Nest of fauna {ref:I6}",
+    "D6 Beds",
+    "Stairs (1-5. -1 lvl, 6. +1 lvl)",
+    "Fountain filled with {ref:I7}",
+    "Altar {ref:H6}",
+    "Secret room {ref:H3}"
+  ],
+  "C4": [
+    "(Mini-) Bossroom {ref:G6}",
+    "Magical corrupted with {ref:I2}",
+    "D6 Traps {ref:B4}",
+    "Arcane Laboratory",
+    "D4 Dungeon cells with {ref:G2}",
+    "Hole (-D4 levels)",
+    "Bookshelves & D20 books",
+    "Big pool with liquid {ref:I7}",
+    "Armory with D20 weapons",
+    "Torture chamber",
+    "Ritual site",
+    "Alchemy laboratory",
+    "D8 Armor stands",
+    "Door to cave-system D-F",
+    "D8 Flora {ref:I6} & fauna {ref:G7}",
+    "D6 Chests {ref:H5} & throne",
+    "D10 Coffins {ref:H1} & obelisk",
+    "Floor mosaic of {ref:H7}",
+    "Workshop",
+    "Blacksmith forge"
+  ],
+  "C5": [
+    "Monster+Treasure D7",
+    "Monster",
+    "Natural Deterioration",
+    "Nothing",
+    "Nothing",
+    "Nothing"
+  ],
+  "G1": {
+    "2": "Immediate ambush",
+    "3": "Hostile/Engage",
+    "4": "Hostile/Alert",
+    "5": "Hostile/Threaten",
+    "6": "Uncertain/Threaten",
+    "7": "Uncertain/Suspicious",
+    "8": "Uncertain/Confused",
+    "9": "Neutral/Curious",
+    "10": "Neutral/Unaware",
+    "11": "Interested/Unaware",
+    "12": "Friendly/Inactive"
+  },
+  "G2": [
+    {
+      "text": "Insect Swarm",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Giant Rat",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Bats",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Stirges",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Centipede",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Beetle",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Wolves",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Spiders",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Slime",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Snakes",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Yellow Mold",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Cave Locusts",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Zombies",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Animated Skeletons",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Goblins",
+      "count": "3D6",
+      "organized": true
+    },
+    {
+      "text": "Bandits",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Kobolds",
+      "count": "3D6",
+      "organized": true
+    },
+    {
+      "text": "Adventurers",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Hobgoblins",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Berserkers",
+      "count": "2D6",
+      "organized": true
+    }
+  ],
+  "G3": [
+    {
+      "text": "Roll on G2 (Dice x2)",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Gelatinous Cubes",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Shadows",
+      "count": "D8",
+      "organized": false
+    },
+    {
+      "text": "Insect Hulker",
+      "count": "D8",
+      "organized": false
+    },
+    {
+      "text": "Carcass Crawler",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Ghouls",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Lizard",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Flail snail",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Giant insect",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Giant cave toad",
+      "count": "D8",
+      "organized": false
+    },
+    {
+      "text": "Bear",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Giant Snake",
+      "count": "2D4",
+      "organized": false
+    },
+    {
+      "text": "Pixies",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Wights",
+      "count": "D8",
+      "organized": false
+    },
+    {
+      "text": "Harpys",
+      "count": "2D4",
+      "organized": false
+    },
+    {
+      "text": "Gnolls",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Troglodytes",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Bugbears",
+      "count": "3D6",
+      "organized": true
+    },
+    {
+      "text": "Orcs",
+      "count": "3D6",
+      "organized": true
+    },
+    {
+      "text": "Cultists",
+      "count": "2D6",
+      "organized": true
+    }
+  ],
+  "G4": [
+    {
+      "text": "Roll on G3 (Dice x2)",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Roll on G2 (Dice x3)",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Roll on G2 (Dice x3)",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Roll on G5",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Rust Monsters",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Giant Insect",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Black Puddings",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Giant Weasel",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Leeches",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Huge lizard",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Giant Scorpions",
+      "count": "D6",
+      "organized": false
+    },
+    {
+      "text": "Spectres",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Elementals",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Ghosts",
+      "count": "2D4",
+      "organized": false
+    },
+    {
+      "text": "Mummies",
+      "count": "2D4",
+      "organized": false
+    },
+    {
+      "text": "Ettercaps",
+      "count": "2D4",
+      "organized": false
+    },
+    {
+      "text": "Ogres",
+      "count": "D8",
+      "organized": true
+    },
+    {
+      "text": "Lizardmen",
+      "count": "2D6",
+      "organized": true
+    },
+    {
+      "text": "Doppelgangers",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Vampires",
+      "count": "D4",
+      "organized": false
+    }
+  ],
+  "G5": [
+    {
+      "text": "Weaker version of G6",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Owlbear",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Cockatrice",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Manticore",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Werewolves",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Invisible stalker",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Panther beast",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Wyvern",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Basilisk",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Griffon",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Troll",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Djinni",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Minotaur",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Ettin",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Golem",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Warlock & Cultists",
+      "count": "D4",
+      "organized": true
+    },
+    {
+      "text": "Gargoyle",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Wraith",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Giant ...",
+      "count": "D12 on G2",
+      "organized": false
+    },
+    {
+      "text": "Chief of ...",
+      "count": "D8+12 on G2",
+      "organized": true
+    }
+  ],
+  "G6": [
+    {
+      "text": "Ancient ... G5",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Chimera",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Kraken",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Leviathan",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Dragon",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Mushroom Treant",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Hydra",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Giant",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Giant worm",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Arch-Hag",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Medusa",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Flying Eye Tyrant",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Cyclops",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Ancient vampire",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Ancient sorcerer/*ess",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "King of...",
+      "count": "D8+12 on G3",
+      "organized": true
+    },
+    {
+      "text": "Brain-Eating Alien",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Demon",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Chaos Spawn",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Lich",
+      "count": "",
+      "organized": false
+    }
+  ],
+  "G7": [
+    {
+      "text": "Small cave worms",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Ant Colony",
+      "count": "Nest",
+      "organized": false
+    },
+    {
+      "text": "Larvae",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Scorpions",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Living Spore clouds",
+      "count": "D4",
+      "organized": false
+    },
+    {
+      "text": "Bats",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Slugs or snails",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Hornet or wasps",
+      "count": "Nest",
+      "organized": false
+    },
+    {
+      "text": "Crustaceans",
+      "count": "",
+      "organized": false
+    },
+    {
+      "text": "Salamanders",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Glowworms",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Moths",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Cave crickets",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Frogs or toads",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Rats or mice",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Hares",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Spiders",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Beetles",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Weasels or lemures",
+      "count": "2D6",
+      "organized": false
+    },
+    {
+      "text": "Pseudodragon",
+      "count": "D4",
+      "organized": false
+    }
+  ],
+  "H1": {
+    "contains_d4": {
+      "1": "Dust",
+      "2": "Dust",
+      "3": "Carcass",
+      "4": "Carcass"
+    },
+    "d8_2d8": [
+      "2x Treasures {ref:H8}",
+      "Statue {ref:H2}",
+      "A container {ref:H4}",
+      "Treasure {ref:H8}",
+      "Rusty Treasure {ref:H8} (/2 gp)",
+      "Overgrown Vegetation {ref:I6}",
+      "Rusty armor",
+      "Rotting clothes",
+      "Miasma of {ref:I8}",
+      "Cocoons and Eggs",
+      "Fauna {ref:G7}",
+      "Useable Armor",
+      "Useable Weapon",
+      "Filled with liquid {ref:I7}",
+      "Mimic"
+    ]
+  },
+  "H2": {
+    "depicts_d4": {
+      "1": "{ref:G3}",
+      "2": "{ref:G4}",
+      "3": "{ref:G5}",
+      "4": "{ref:G6}"
+    },
+    "d2d8": [
+      "Connected secret room {ref:H3}",
+      "Hidden compartment {ref:H5}",
+      "Engraved random spell",
+      "Close to crumbling to dust",
+      "Gem Eyes, D6*50 GP",
+      "Obscure pose",
+      "Gem Encrusted D6*10 GP",
+      "Simple Statue",
+      "Half Destroyed",
+      "Destroyed",
+      "Trapped {ref:B4}",
+      "Releases Gas {ref:I8}",
+      "Shrine {ref:H6}",
+      "Filled with liquid {ref:I7}",
+      "Upon touch activates {ref:I2}"
+    ]
+  },
+  "H3": {
+    "opens_d8": [
+      "Visible Lever ....",
+      "Hidden Lever ....",
+      "Hidden button ...",
+      "Behind Illusion ...",
+      "Hidden Magic Glyph ...",
+      "Pattern on Wall ...",
+      "Shifting Feature or Wall ...",
+      "Pressure Plate ..."
+    ],
+    "reveals_d10": [
+      "... Useless effect",
+      "... Hidden room feature",
+      "... Corridor",
+      "... Chamber",
+      "... Chamber + Treasure {ref:H8}",
+      "... Stairs down a level",
+      "... Stairs to surface",
+      "... Treasure {ref:H8}",
+      "... 2x treasures {ref:H8}",
+      "... 3x treasures {ref:H8}"
+    ]
+  },
+  "H4": [
+    "Barrels (Alcohol)",
+    "Barrel (Oil)",
+    "Urns (1/6 treasure {ref:H8})",
+    "Urns (D4 Spell-Scrolls)",
+    "Crates (2/6 Equipment)",
+    "Barrel (with liquid {ref:I7})",
+    "Crates  (1/6 treasure {ref:H8})",
+    "Crate (2/6 weapon)",
+    "Barrel (Building material)",
+    "Sacks (4/6 edible food)",
+    "Sacks (Sand)",
+    "Sack (3/6 Cave Curio {ref:I4})",
+    "Wardrobe (2/6 clothing)",
+    "Vase (filled with Gas {ref:I8})",
+    "Vase (1/6 treasure {ref:H8})",
+    "Urns (with liquid {ref:I7})",
+    "Cabinet (3/6 Clothing)",
+    "Pouches (Vegetation {ref:I6})",
+    "Cabinet (D4 potions)",
+    "Cage with Fauna {ref:G7}"
+  ],
+  "H5": [
+    "D6 mundane items",
+    "(3/6) Locked, Treasure D7",
+    "(3/6) Locked, 2D6 Food",
+    "(3/6) Locked, D4 Armor",
+    "(3/6) Locked, D4 weapons",
+    "Collected Curios {ref:I4}",
+    "D12 Bottles alcohol",
+    "D6 Equipment",
+    "D1000 GP",
+    "Empty",
+    "Useless personal stuff",
+    "Trapped {ref:B4}, Potion, Scroll",
+    "Locked, 2x Treasures {ref:H8}",
+    "Treasure {ref:H8}",
+    "Minor magic item",
+    "D4 bandages & salves",
+    "D4 harvested {ref:I3}",
+    "(3/6) Locked, D4 potions",
+    "(3/6) Locked, D4 S. Scrolls",
+    "Mimic"
+  ],
+  "H6": {
+    "demands_d8": [
+      "Virtue, Oath of Virtue ...",
+      "Sin, Sinful Act ...",
+      "Death, Blood ...",
+      "Fertility, Food ...",
+      "Environmentalism ...",
+      "Trickery, Entertainment ...",
+      "Greed, Gold ...",
+      "Cosmos, magic..."
+    ],
+    "offers_d10": [
+      "... Healing (Instant)",
+      "... Attribute buff (D6 hours)",
+      "... Protection (D6 hours)",
+      "... Damage (D6 hours)",
+      "... Spellcasting(d6 hours)",
+      "... Luck (1x Reroll)",
+      "... Foresight (Dungeon Info)",
+      "... Minor Artifact",
+      "... Treasure {ref:H8}",
+      "... Nothing, but curses adventurers if ignored"
+    ]
+  },
+  "H7": [
+    "Weird nonsense",
+    "Abstract mural",
+    "Obscure old knowledge",
+    "Warning mural",
+    "Image of a battle",
+    "Image of a humanoid",
+    "Image of god + prayer",
+    "Image of monster {ref:G6}",
+    "Geometric mosaic",
+    "Occult mural",
+    "Historical chronicle",
+    "Extravagant Art",
+    "Ritual mural",
+    "Disfigured mural",
+    "Image hides treasure {ref:H8}",
+    "Carved Holes Emit {ref:I8}",
+    "Pattern D10 gems (50 GP)",
+    "Random spell engraved",
+    "Riddle to secret room {ref:H3}",
+    "Brass relief D10*100 GP"
+  ],
+  "H8": {
+    "form_d4": {
+      "1": "Coins",
+      "2": "Coins",
+      "3": "D6 items",
+      "4": "D4 gems"
+    },
+    "d10_plus_level": [
+      "D6 SP",
+      "2D6 SP",
+      "D6 GP",
+      "D6*5 GP",
+      "D6*10 GP",
+      "2D6*10 GP",
+      "D6*25 GP",
+      "2D6*25 GP",
+      "D6*50 GP",
+      "Artifact +1 & 2D6*50 GP",
+      "D6*100 GP",
+      "Artifact +1 & D6*100 GP",
+      "2D6*100 GP",
+      "Artifact +2 & D6*250 GP",
+      "2D6*250 GP",
+      "Artifact +2 & D6*500 GP",
+      "2D6*500 GP",
+      "Artifact +3 &D6*5000 GP"
+    ]
+  },
+  "faction_names": [
+    "Rotfangs",
+    "Ashclaw Pack",
+    "The Gloomwardens",
+    "Bonepickers",
+    "Iron Maw",
+    "The Hollow Court",
+    "Grislefolk",
+    "The Ninth Tally",
+    "Murkeye Clan",
+    "The Sundered Hand",
+    "Cinder Kin",
+    "The Pale Circle"
+  ],
+  "corridor_families": {
+    "straight": [
+      [
+        11,
+        22
+      ]
+    ],
+    "l-bend": [
+      [
+        23,
+        34
+      ]
+    ],
+    "t-junction": [
+      [
+        35,
+        44
+      ]
+    ],
+    "cross": [
+      [
+        45,
+        52
+      ]
+    ],
+    "offset": [
+      [
+        53,
+        62
+      ]
+    ],
+    "long": [
+      [
+        63,
+        66
+      ]
+    ]
+  },
+  "chamber_families": {
+    "small": [
+      [
+        11,
+        22
+      ]
+    ],
+    "medium": [
+      [
+        23,
+        36
+      ]
+    ],
+    "large": [
+      [
+        41,
+        52
+      ]
+    ],
+    "round": [
+      [
+        53,
+        56
+      ]
+    ],
+    "cross": [
+      [
+        61,
+        64
+      ]
+    ],
+    "l-room": [
+      [
+        65,
+        66
+      ]
+    ]
+  },
+  "label_fallbacks": {
+    "I6": "flora",
+    "I7": "liquid",
+    "I8": "gas",
+    "I3": "vein",
+    "E4": "obstacle",
+    "E5": "cavestone",
+    "G7": "fauna",
+    "I4": "cave curio",
+    "I2": "magical effect"
+  }
+}
