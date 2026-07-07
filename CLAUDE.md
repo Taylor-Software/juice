@@ -813,6 +813,25 @@ Working rules for this repo:
   `docs/superpowers/specs/2026-06-28-creation-wizard-design.md`, plus the prior
   redesign specs at `docs/superpowers/specs/2026-06-24-campaign-creation-redesign-design.md`
   and `docs/superpowers/plans/2026-06-24-campaign-wizard.md`.
+- **World trackers (People + Places, 2026-07-07).** Two lightweight
+  session-scoped entity trackers on the Track verb, distinct from the roster
+  (which holds PCs + hirelings/companions with sheets). `Place {id,name,
+  PlaceKind,note,LocationRef?}` and `Npc {id,name,role,NpcDisposition,note,
+  placeId?}` (pure, in models.dart; JSON omits defaults; Place `loc` pins to a
+  map cell). Providers `placesProvider`/`npcsProvider` (keys `juice.places.v1`/
+  `juice.npcs.v1`, in `sessionScopedKeys` → exported; `add`/`replace`/`upsert`/
+  `remove`). Panes `lib/features/places_pane.dart` + `people_pane.dart` (Track
+  subtabs `people`+`places`, after Threads): cards + add/edit dialogs +
+  **Generate** (Places → `oracle.settlement()`, People → `oracle.npc()`+
+  `generateName()`). A Place shows an **On map** chip (navigates via the spine)
+  + a **journal backlink** ("N entries here" via `entriesAtLocation`, reusing
+  the #253 pin + #259 `showEntryPreview`); pin via the edit dialog from the
+  spine's `activeLocation`. An Npc links to a Place (`placeId`) and can be
+  **promoted to a companion** `Character` (`CharacterNotifier.addCompanion`) when
+  it joins the party. Both entities join `searchCampaign`
+  (`SearchResultKind.place`/`npc`). Deferred: `@[place]`/`@[npc]` journal
+  mentions (composer autocomplete is char/thread only), NPC↔NPC relationships,
+  reverse hex-card "places here" list.
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs
   (empty groups hidden; the active PC `playContextProvider.activeCharacterId` is

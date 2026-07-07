@@ -106,6 +106,14 @@ CampaignImport parseCampaign(String raw) {
         (value as List)
             .map((e) => Rumor.fromJson(e as Map<String, dynamic>))
             .toList();
+      } else if (key == 'juice.places.v1') {
+        (value as List)
+            .map((e) => Place.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } else if (key == 'juice.npcs.v1') {
+        (value as List)
+            .map((e) => Npc.fromJson(e as Map<String, dynamic>))
+            .toList();
       } else if (key == 'juice.tracks.v1') {
         (value as List)
             .map((e) => Track.fromJson(e as Map<String, dynamic>))

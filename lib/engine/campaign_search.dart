@@ -9,7 +9,15 @@ import 'models.dart';
 enum SearchDestination { journal, track, sheet }
 
 /// Which entity type produced a hit.
-enum SearchResultKind { journalEntry, thread, rumor, track, character }
+enum SearchResultKind {
+  journalEntry,
+  thread,
+  rumor,
+  track,
+  character,
+  place,
+  npc
+}
 
 /// A single search hit with the display text, a snippet, and where to navigate.
 class CampaignSearchResult {
@@ -48,6 +56,8 @@ List<CampaignSearchResult> searchCampaign(
   List<Rumor> rumors = const [],
   List<Track> tracks = const [],
   List<Character> characters = const [],
+  List<Place> places = const [],
+  List<Npc> npcs = const [],
 }) {
   final terms = query
       .toLowerCase()
@@ -122,6 +132,32 @@ List<CampaignSearchResult> searchCampaign(
         snippet: c.note.length > 80 ? '${c.note.substring(0, 80)}…' : c.note,
         destination: SearchDestination.sheet,
         subtab: 'characters',
+      ));
+    }
+  }
+
+  for (final p in places) {
+    if (matches('${p.name}\n${p.note}')) {
+      results.add(CampaignSearchResult(
+        kind: SearchResultKind.place,
+        id: p.id,
+        title: p.name.isEmpty ? '(unnamed place)' : p.name,
+        snippet: p.note.length > 80 ? '${p.note.substring(0, 80)}…' : p.note,
+        destination: SearchDestination.track,
+        subtab: 'places',
+      ));
+    }
+  }
+
+  for (final n in npcs) {
+    if (matches('${n.name}\n${n.role}\n${n.note}')) {
+      results.add(CampaignSearchResult(
+        kind: SearchResultKind.npc,
+        id: n.id,
+        title: n.name.isEmpty ? '(unnamed NPC)' : n.name,
+        snippet: n.role.isNotEmpty ? n.role : n.note,
+        destination: SearchDestination.track,
+        subtab: 'people',
       ));
     }
   }
