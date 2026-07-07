@@ -117,7 +117,8 @@ void main() {
       const d66 = {'word_action', 'word_descriptor', 'word_subject'};
       for (final key in data.allTableKeys) {
         if (d66.contains(key)) {
-          expect(data.table(key).length, 36, reason: '$key should have 36 rows');
+          expect(data.table(key).length, 36,
+              reason: '$key should have 36 rows');
         } else {
           expect(data.table(key).length, 10,
               reason: '$key should have 10 rows');
@@ -262,6 +263,20 @@ void main() {
         seen.add(r.asset);
       }
       expect(seen.length, 60); // every icon reachable
+    });
+
+    test('abstractIcons rolls N independent icons in the same grid', () {
+      final oracle = Oracle(data);
+      for (final n in [1, 3, 5]) {
+        final icons = oracle.abstractIcons(n);
+        expect(icons.length, n);
+        for (final r in icons) {
+          expect(r.asset,
+              matches(RegExp(r'^assets/abstract_icons/[0-9]_[1-6]\.png$')));
+          expect(r.d10, inInclusiveRange(1, 10));
+          expect(r.d6, inInclusiveRange(1, 6));
+        }
+      }
     });
   });
 

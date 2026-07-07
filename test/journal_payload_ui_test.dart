@@ -130,6 +130,35 @@ void main() {
     expect(find.byType(CardImage), findsOneWidget);
   });
 
+  testWidgets('a story-dice entry renders its icon strip only when expanded',
+      (tester) async {
+    const iconEntryJson = '{'
+        '"id":"i1","timestamp":"2026-06-12T10:00:00.000Z",'
+        '"title":"Story Dice (2)","body":"Icon 1: d10 3, d6 2",'
+        '"kind":"result","tags":[],"sourceTool":"gen-story",'
+        '"payload":{"v":1,'
+        '"rolls":[{"label":"Icon 1","display":"d10 3, d6 2"},'
+        '{"label":"Icon 2","display":"d10 0, d6 6"}],'
+        '"icons":["assets/abstract_icons/3_2.png",'
+        '"assets/abstract_icons/0_6.png"]}}';
+    await pumpJournal(tester, _journalPrefs(iconEntryJson));
+
+    // Collapsed: no images.
+    expect(find.byType(Image), findsNothing);
+
+    await tester.tap(find.byKey(const Key('payload-expand-i1')));
+    await tester.pumpAndSettle();
+
+    final images = tester
+        .widgetList<Image>(find.byType(Image))
+        .map((w) => (w.image as AssetImage).assetName)
+        .toList();
+    expect(images, [
+      'assets/abstract_icons/3_2.png',
+      'assets/abstract_icons/0_6.png',
+    ]);
+  });
+
   testWidgets(
       'payload entry collapses by default: one-line answer, no roll rows or actions',
       (tester) async {

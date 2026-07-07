@@ -478,6 +478,10 @@ class Oracle {
     );
   }
 
+  /// Story dice: [count] independent abstract-icon picks in one throw.
+  List<({String asset, int d10, int d6})> abstractIcons(int count) =>
+      [for (var i = 0; i < count; i++) abstractIcon()];
+
   GenResult detail({int skew = 0}) => GenResult(title: 'Detail', rolls: [
         Roll(label: 'Detail', value: _pick('detail', skew: skew)),
       ]);

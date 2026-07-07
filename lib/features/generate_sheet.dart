@@ -10,6 +10,7 @@ import '../engine/oracle_data.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
 import 'custom_table_editor.dart';
+import 'dice_roll_animation.dart';
 
 /// Opens the flavor-generator sheet from the journal composer.
 Future<void> showGenerateSheet(BuildContext context) =>
@@ -32,12 +33,14 @@ class GenerateSheet extends ConsumerStatefulWidget {
 
 class _GenerateSheetState extends ConsumerState<GenerateSheet> {
   LocationResult? _lastLocation;
-  ({String asset, int d10, int d6})? _lastIcon;
+  List<({String asset, int d10, int d6})>? _lastIcons;
+  int _iconCount = 1;
+  int _iconRollId = 0;
   GenResult? _lastDialog;
 
   void _clearPreviews() {
     _lastLocation = null;
-    _lastIcon = null;
+    _lastIcons = null;
     _lastDialog = null;
   }
 
@@ -48,8 +51,35 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
 
   void _rollAbstractIcon(Oracle oracle) => setState(() {
         _clearPreviews();
-        _lastIcon = oracle.abstractIcon();
+        _lastIcons = oracle.abstractIcons(_iconCount);
+        _iconRollId++;
       });
+
+  /// Logs the current story-dice throw: rolls carry the d10/d6 pairs, the
+  /// payload carries the icon asset paths so the journal renders the strip.
+  void _logIcons() {
+    final icons = _lastIcons!;
+    final g = GenResult(
+      title:
+          icons.length == 1 ? 'Abstract Icon' : 'Story Dice (${icons.length})',
+      rolls: [
+        for (var i = 0; i < icons.length; i++)
+          Roll(
+            label: icons.length == 1 ? 'Icon' : 'Icon ${i + 1}',
+            value: 'd10 ${d10Label(icons[i].d10)}, d6 ${icons[i].d6}',
+          ),
+      ],
+    );
+    ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+        sourceTool: sourceToolFor(GenSection.story),
+        payload: {
+          ...g.toPayload(),
+          'icons': [for (final i in icons) i.asset],
+        });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Added to journal')),
+    );
+  }
 
   Future<void> _rollNpcDialog(Oracle oracle) async {
     final s = await ref.read(crawlProvider.future);
@@ -122,17 +152,40 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
               ),
               const SizedBox(height: 12),
             ],
-            if (_lastIcon != null) ...[
+            if (_lastIcons != null) ...[
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      Image.asset(_lastIcon!.asset, width: 160, height: 160),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _lastIcons!.length == 1
+                                ? 'Abstract Icon'
+                                : 'Story Dice',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          IconButton(
+                            key: const Key('icon-dice-log'),
+                            tooltip: 'Add to journal',
+                            icon: const Icon(Icons.bookmark_add_outlined),
+                            onPressed: _logIcons,
+                          ),
+                        ],
+                      ),
+                      IconDiceRollAnimation(
+                        assets: [for (final i in _lastIcons!) i.asset],
+                        rollId: _iconRollId,
+                        size: _lastIcons!.length == 1 ? 160 : 96,
+                      ),
                       const SizedBox(height: 8),
                       Text(
-                        'Abstract Icon (d10 ${d10Label(_lastIcon!.d10)}, '
-                        'd6 ${_lastIcon!.d6})',
+                        [
+                          for (final i in _lastIcons!)
+                            'd10 ${d10Label(i.d10)}, d6 ${i.d6}'
+                        ].join(' · '),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -194,9 +247,17 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
                 ),
                 ActionChip(
                   key: const Key('gen-abstract-icon'),
-                  label: const Text('Abstract Icon'),
+                  label: const Text('Story Dice'),
                   onPressed: () => _rollAbstractIcon(oracle),
                 ),
+                // How many story dice the next throw rolls.
+                for (var n = 1; n <= 5; n++)
+                  ChoiceChip(
+                    key: Key('icon-dice-count-$n'),
+                    label: Text('$n'),
+                    selected: _iconCount == n,
+                    onSelected: (_) => setState(() => _iconCount = n),
+                  ),
               ],
             ),
             for (final section in GenSection.values)
@@ -310,4 +371,3 @@ class _LocationCard extends StatelessWidget {
     );
   }
 }
-
