@@ -26,13 +26,13 @@ import 'enter_campaign.dart';
 class LauncherScreen extends ConsumerWidget {
   const LauncherScreen({super.key});
 
-  /// Lands on the campaign's mode home — or its in-progress encounter, if any —
-  /// then dismisses the launcher gate.
-  Future<void> _enter(WidgetRef ref, CampaignMode mode) async {
+  /// Lands on the Journal — or the in-progress encounter, if any — then
+  /// dismisses the launcher gate.
+  Future<void> _enter(WidgetRef ref) async {
     final enc = await ref.read(encounterProvider.future);
     ref
         .read(shellRouteProvider.notifier)
-        .landFor(mode, hasEncounter: enc.combatants.isNotEmpty);
+        .land(hasEncounter: enc.combatants.isNotEmpty);
     ref.read(launcherGateProvider.notifier).dismiss();
   }
 
@@ -41,8 +41,7 @@ class LauncherScreen extends ConsumerWidget {
   /// data) WHILE STILL MOUNTED, then dismiss the gate and navigate via those
   /// captured handles. Dismissing the gate disposes this widget's context/ref,
   /// so we must not touch them afterward — only the pre-captured `nav`/notifier.
-  Future<void> _resume(
-      BuildContext context, WidgetRef ref, CampaignMode mode) async {
+  Future<void> _resume(BuildContext context, WidgetRef ref) async {
     final nav = Navigator.of(context, rootNavigator: true);
     final shellRoute = ref.read(shellRouteProvider.notifier);
     final entries = await ref.read(journalProvider.future);
@@ -55,7 +54,6 @@ class LauncherScreen extends ConsumerWidget {
     await enterCampaignWith(
       nav: nav,
       shellRoute: shellRoute,
-      mode: mode,
       entries: entries,
       hasEncounter: enc.combatants.isNotEmpty,
     );
@@ -82,7 +80,6 @@ class LauncherScreen extends ConsumerWidget {
     await enterCampaignWith(
       nav: nav,
       shellRoute: shellRoute,
-      mode: m.mode,
       entries: entries,
       hasEncounter: enc.combatants.isNotEmpty,
     );
@@ -96,10 +93,7 @@ class LauncherScreen extends ConsumerWidget {
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
-        systems: result.systems,
-        mode: result.mode,
-        genre: result.genre,
-        tone: result.tone);
+        systems: result.systems, genre: result.genre, tone: result.tone);
     if (result.start == 'funnel') {
       // Seed the funnel into the new (now-active) campaign, then land on the
       // roster where it lives + dismiss the launcher.
@@ -110,7 +104,7 @@ class LauncherScreen extends ConsumerWidget {
       if (result.start == 'kit' && result.kit != null) {
         await applyLoopKit(ref, result.kit!);
       }
-      unawaited(_enter(ref, result.mode));
+      unawaited(_enter(ref));
     }
   }
 
@@ -138,11 +132,7 @@ class LauncherScreen extends ConsumerWidget {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
-      // Land on the imported campaign's restored mode.
-      unawaited(_enter(
-          ref,
-          ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
-              CampaignMode.party));
+      unawaited(_enter(ref));
     } on FormatException catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -259,7 +249,7 @@ class LauncherScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   key: const Key('launcher-continue'),
-                  onPressed: () => _resume(context, ref, active.mode),
+                  onPressed: () => _resume(context, ref),
                   icon: const Icon(Icons.play_arrow),
                   label: Text('Continue · ${active.name}'),
                 ),

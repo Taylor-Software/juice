@@ -81,12 +81,11 @@ void main() {
       }
     });
 
-    test('solo-* presets are party mode with juice + party', () {
+    test('solo-* presets include juice + party', () {
       final soloPresets =
           kCampaignPresets.where((p) => p.id.startsWith('solo-'));
       expect(soloPresets.length, 13);
       for (final p in soloPresets) {
-        expect(p.mode, CampaignMode.party, reason: p.id);
         expect(p.systems.contains('juice'), isTrue, reason: p.id);
         expect(p.systems.contains('party'), isTrue, reason: p.id);
       }
@@ -102,15 +101,6 @@ void main() {
       }
     });
 
-    test('shape presets: oracle (party) and gm-toolkit (gm)', () {
-      final oracle = kCampaignPresets.firstWhere((p) => p.id == 'oracle');
-      expect(oracle.mode, CampaignMode.party);
-      expect(oracle.systems, {'juice', 'mythic', 'cards', 'party'});
-      final gm = kCampaignPresets.firstWhere((p) => p.id == 'gm-toolkit');
-      expect(gm.mode, CampaignMode.gm);
-      expect(gm.systems, {'juice', 'mythic'});
-    });
-
     test('preset ids are unique', () {
       final ids = kCampaignPresets.map((p) => p.id).toList();
       expect(ids.toSet().length, ids.length);
@@ -123,10 +113,9 @@ void main() {
       }
     });
 
-    test('presetConfig returns the preset mode + systems', () {
+    test('presetConfig returns the preset systems', () {
       final p = kCampaignPresets.firstWhere((p) => p.id == 'solo-cairn');
-      final (mode, systems) = presetConfig(p);
-      expect(mode, CampaignMode.party);
+      final systems = presetConfig(p);
       expect(systems, {'cairn', 'juice', 'party'});
     });
   });

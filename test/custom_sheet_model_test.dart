@@ -103,8 +103,7 @@ void main() {
       expect(c.custom!.blocks, isEmpty);
     });
     test('copyWith clearCustom drops the sheet', () {
-      const c = Character(
-          id: 'c1', name: 'X', custom: CustomSheet(blocks: []));
+      const c = Character(id: 'c1', name: 'X', custom: CustomSheet(blocks: []));
       expect(c.copyWith(clearCustom: true).custom, isNull);
     });
     // TEST C — multi-block round-trip through Character JSON
@@ -315,8 +314,8 @@ void main() {
     });
     test('every block type/formula referenced is valid (round-trips)', () {
       for (final t in kCustomTemplates) {
-        final back = CustomSheet.maybeFromJson(
-            CustomSheet(blocks: t.blocks).toJson())!;
+        final back =
+            CustomSheet.maybeFromJson(CustomSheet(blocks: t.blocks).toJson())!;
         expect(back.blocks.length, t.blocks.length, reason: t.id);
       }
     });
@@ -324,26 +323,28 @@ void main() {
 
   test('solo-custom preset resolves to the custom ruleset', () {
     final p = kCampaignPresets.firstWhere((p) => p.id == 'solo-custom');
-    final (mode, systems) = presetConfig(p);
+    final systems = presetConfig(p);
     expect(systems.contains('custom'), isTrue);
-    expect(mode, CampaignMode.party);
   });
 
   test('custom lights up a Sheet surface', () {
-    final sheet = surfacesFor({'custom'})
-        .firstWhere((v) => v.verb == 'Sheet');
+    final sheet = surfacesFor({'custom'}).firstWhere((v) => v.verb == 'Sheet');
     expect(sheet.rows.any((r) => r.on && r.requiresSystem == 'custom'), isTrue);
   });
 
   group('resolveComputed', () {
     const blocks = [
-      CustomBlock(id: 's1', type: CustomBlockType.stat, label: 'Abilities', config: {
-        'stats': [
-          {'key': 'con', 'label': 'CON'}
-        ],
-        'min': 3,
-        'max': 18,
-      }),
+      CustomBlock(
+          id: 's1',
+          type: CustomBlockType.stat,
+          label: 'Abilities',
+          config: {
+            'stats': [
+              {'key': 'con', 'label': 'CON'}
+            ],
+            'min': 3,
+            'max': 18,
+          }),
       CustomBlock(id: 'h1', type: CustomBlockType.hp, label: 'HP'),
       CustomBlock(id: 'c1', type: CustomBlockType.counter, label: 'AC'),
     ];
@@ -365,12 +366,16 @@ void main() {
     });
     test('cur*2 <= max → flag (true then false)', () {
       const cfg = ComputedConfig(
-        a: ComputedOperand(isConst: false, blockId: 'h1', subKey: 'cur', coeff: 2),
+        a: ComputedOperand(
+            isConst: false, blockId: 'h1', subKey: 'cur', coeff: 2),
         op: ComputedOp.le,
         b: ComputedOperand(isConst: false, blockId: 'h1', subKey: 'max'),
       );
       expect(resolveComputed(blocks, values, cfg).flag, true);
-      final hi = {...values, 'h1': {'cur': 6, 'max': 10}};
+      final hi = {
+        ...values,
+        'h1': {'cur': 6, 'max': 10}
+      };
       expect(resolveComputed(blocks, hi, cfg).flag, false);
     });
     test('counter ref + arithmetic ops', () {
@@ -380,13 +385,19 @@ void main() {
           b: ComputedOperand(constant: k));
       expect(resolveComputed(blocks, values, c(ComputedOp.sub, 5)).number, 10);
       expect(resolveComputed(blocks, values, c(ComputedOp.mul, 2)).number, 30);
-      expect(resolveComputed(blocks, values, c(ComputedOp.divFloor, 4)).number, 3);
-      expect(resolveComputed(blocks, values, c(ComputedOp.divFloor, 0)).number, 0);
+      expect(
+          resolveComputed(blocks, values, c(ComputedOp.divFloor, 4)).number, 3);
+      expect(
+          resolveComputed(blocks, values, c(ComputedOp.divFloor, 0)).number, 0);
     });
     test('comparison ops over constants', () {
-      ({int? number, bool? flag}) r(ComputedOp op) => resolveComputed(blocks, values,
+      ({int? number, bool? flag}) r(ComputedOp op) => resolveComputed(
+          blocks,
+          values,
           ComputedConfig(
-              a: const ComputedOperand(constant: 5), op: op, b: const ComputedOperand(constant: 5)));
+              a: const ComputedOperand(constant: 5),
+              op: op,
+              b: const ComputedOperand(constant: 5)));
       expect(r(ComputedOp.eq).flag, true);
       expect(r(ComputedOp.lt).flag, false);
       expect(r(ComputedOp.ge).flag, true);
@@ -406,7 +417,8 @@ void main() {
     });
     test('ComputedConfig JSON round-trips; fromJson tolerant', () {
       const cfg = ComputedConfig(
-        a: ComputedOperand(isConst: false, blockId: 's1', subKey: 'con', coeff: 2),
+        a: ComputedOperand(
+            isConst: false, blockId: 's1', subKey: 'con', coeff: 2),
         op: ComputedOp.ge,
         b: ComputedOperand(constant: 12),
       );

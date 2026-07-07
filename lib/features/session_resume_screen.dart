@@ -15,7 +15,7 @@ import '../state/providers.dart';
 ///
 /// Reads the [PlayContext] spine like [CampaignHeader]: the scene follows
 /// `activeSceneId` (falling back to the newest scene entry). Pushed as a route
-/// over the shell; [Continue] lands on the campaign's mode home and pops.
+/// over the shell; [Continue] lands on the Journal and pops.
 class SessionResumeScreen extends ConsumerWidget {
   const SessionResumeScreen({super.key});
 
@@ -28,7 +28,6 @@ class SessionResumeScreen extends ConsumerWidget {
         .toList();
     final crawl = ref.watch(crawlProvider).valueOrNull;
     final light = ref.watch(lightProvider).valueOrNull ?? 0;
-    final mode = ref.watch(modeProvider);
     final meta = ref.watch(sessionsProvider).valueOrNull?.activeMeta;
     final systems = meta?.enabledSystems ?? kAllSystems;
     final usesMythic = systems.contains('mythic');
@@ -84,11 +83,11 @@ class SessionResumeScreen extends ConsumerWidget {
                   ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                  child: _continueButton(context, ref, mode, tk),
+                  child: _continueButton(context, ref, tk),
                 ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                  child: _secondaryRow(context, ref, tk, mode),
+                  child: _secondaryRow(context, ref, tk),
                 ),
               ],
             ),
@@ -300,8 +299,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _continueButton(
-      BuildContext context, WidgetRef ref, CampaignMode mode, JuiceTokens tk) {
+  Widget _continueButton(BuildContext context, WidgetRef ref, JuiceTokens tk) {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
@@ -314,14 +312,13 @@ class SessionResumeScreen extends ConsumerWidget {
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        onPressed: () => _continue(context, ref, mode),
+        onPressed: () => _continue(context, ref),
         child: const Text('Continue the story  →'),
       ),
     );
   }
 
-  Widget _secondaryRow(
-      BuildContext context, WidgetRef ref, JuiceTokens tk, CampaignMode mode) {
+  Widget _secondaryRow(BuildContext context, WidgetRef ref, JuiceTokens tk) {
     final style = OutlinedButton.styleFrom(
       foregroundColor: tk.terracotta,
       side: BorderSide(color: tk.borderInput),
@@ -343,7 +340,7 @@ class SessionResumeScreen extends ConsumerWidget {
           child: OutlinedButton(
             key: const Key('resume-new-scene'),
             style: style,
-            onPressed: () => _newScene(context, ref, mode),
+            onPressed: () => _newScene(context, ref),
             child: const Text('New scene'),
           ),
         ),
@@ -363,14 +360,13 @@ class SessionResumeScreen extends ConsumerWidget {
 
   // -- Actions ----------------------------------------------------------------
 
-  /// Lands on the campaign's mode home (or its in-progress encounter) and pops
+  /// Lands on the Journal (or the in-progress encounter) and pops
   /// the resume screen.
-  Future<void> _continue(
-      BuildContext context, WidgetRef ref, CampaignMode mode) async {
+  Future<void> _continue(BuildContext context, WidgetRef ref) async {
     final enc = await ref.read(encounterProvider.future);
     ref
         .read(shellRouteProvider.notifier)
-        .landFor(mode, hasEncounter: enc.combatants.isNotEmpty);
+        .land(hasEncounter: enc.combatants.isNotEmpty);
     if (context.mounted && Navigator.of(context).canPop()) {
       Navigator.of(context).pop();
     }
@@ -415,8 +411,7 @@ class SessionResumeScreen extends ConsumerWidget {
   /// Creates a new scene (reusing [JournalNotifier.addScene] +
   /// [PlayContextNotifier.setActiveScene], the same flow the journal uses), then
   /// continues.
-  Future<void> _newScene(
-      BuildContext context, WidgetRef ref, CampaignMode mode) async {
+  Future<void> _newScene(BuildContext context, WidgetRef ref) async {
     final title = await showDialog<String>(
       context: context,
       builder: (_) => const _ResumeSceneDialog(),
@@ -427,7 +422,7 @@ class SessionResumeScreen extends ConsumerWidget {
           chaosFactor: ref.read(crawlProvider).valueOrNull?.chaosFactor,
         );
     await ref.read(playContextProvider.notifier).setActiveScene(id);
-    if (context.mounted) await _continue(context, ref, mode);
+    if (context.mounted) await _continue(context, ref);
   }
 
   /// Entry texts since the last scene divider, for the AI summarizer (mirrors

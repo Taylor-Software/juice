@@ -90,15 +90,12 @@ void main() {
       expect(hues.length, greaterThan(1));
     });
 
-    test('identityIconKeyFor picks the ruleset icon, else a mode default', () {
-      expect(identityIconKeyFor({'dnd', 'juice', 'party'}, CampaignMode.party),
-          'castle');
-      expect(identityIconKeyFor({'shadowdark', 'juice'}, CampaignMode.party),
-          'dark_mode');
+    test('identityIconKeyFor picks the ruleset icon, else the oracle default',
+        () {
+      expect(identityIconKeyFor({'dnd', 'juice', 'party'}), 'castle');
+      expect(identityIconKeyFor({'shadowdark', 'juice'}), 'dark_mode');
       // No ruleset → casino (party) / book (gm).
-      expect(identityIconKeyFor({'juice', 'mythic'}, CampaignMode.party),
-          'casino');
-      expect(identityIconKeyFor({'juice', 'mythic'}, CampaignMode.gm), 'book');
+      expect(identityIconKeyFor({'juice', 'mythic'}), 'casino');
     });
 
     test('SessionsState json round-trip and activeMeta lookup', () {

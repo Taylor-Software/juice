@@ -2075,22 +2075,18 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   }
 
   Future<void> create(String name,
-      {Set<String>? systems,
-      CampaignMode mode = CampaignMode.party,
-      String genre = '',
-      String tone = ''}) async {
+      {Set<String>? systems, String genre = '', String tone = ''}) async {
     final s = state.valueOrNull;
     if (s == null) return;
     final id = _newId();
-    // Derive a per-campaign identity: a varied hue + the ruleset/mode icon.
+    // Derive a per-campaign identity: a varied hue + the ruleset icon.
     final resolvedSystems = systems ?? kAllSystems;
     final meta = SessionMeta(
       id: id,
       name: name,
       systems: systems?.toList(),
-      mode: mode,
       identityColor: identityHueFor(id, s.sessions.length),
-      identityIcon: identityIconKeyFor(resolvedSystems, mode),
+      identityIcon: identityIconKeyFor(resolvedSystems),
       genre: genre.isEmpty ? null : genre,
     );
     if (genre.isNotEmpty || tone.isNotEmpty) {
@@ -2120,17 +2116,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final updated = [
       for (final m in s.sessions)
         if (m.id == id) m.copyWith(systems: systems.toList()) else m,
-    ];
-    await _save(SessionsState(active: s.active, sessions: updated));
-  }
-
-  /// Set the player-focus mode for session [id]. Preserves systems.
-  Future<void> setMode(String id, CampaignMode mode) async {
-    final s = state.valueOrNull;
-    if (s == null) return;
-    final updated = [
-      for (final m in s.sessions)
-        if (m.id == id) m.copyWith(mode: mode) else m,
     ];
     await _save(SessionsState(active: s.active, sessions: updated));
   }
@@ -2172,7 +2157,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       savedAt: DateTime.now(),
       rawByKey: rawByKey,
       systems: s.activeMeta.systems,
-      mode: s.activeMeta.mode,
     );
   }
 
@@ -2225,13 +2209,12 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   Future<void> importCampaign(String fileContent) async {
     final parsed = parseCampaign(fileContent);
     final s = state.valueOrNull ?? await future;
-    // Restore the campaign profile (enabled systems + GM/Party mode) from the
-    // file; older files without these default to all-systems + party.
+    // Restore the campaign profile (enabled systems) from the file; older
+    // files without it default to all-systems.
     final meta = SessionMeta(
       id: _newId(),
       name: parsed.name,
       systems: parsed.systems,
-      mode: parsed.mode,
       genre: (parsed.genre?.isEmpty ?? true) ? null : parsed.genre,
     );
     final prefs = await SharedPreferences.getInstance();
@@ -2338,10 +2321,6 @@ final launcherGateProvider =
 
 final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
     SessionsNotifier.new);
-
-final modeProvider = Provider<CampaignMode>((ref) =>
-    ref.watch(sessionsProvider).valueOrNull?.activeMeta.mode ??
-    CampaignMode.party);
 
 // -- Enabled rulesets (global, not session-scoped) ---------------------------
 class RulesetsNotifier extends AsyncNotifier<Set<String>> {

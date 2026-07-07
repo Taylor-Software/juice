@@ -4524,21 +4524,14 @@ String formatSystems(Set<String> systems) {
   return labels.join(' · ');
 }
 
-/// The player's current focus for a campaign: running the world (gm) or
-/// playing their character(s) (party). Declutters role-specific sub-options.
-enum CampaignMode { gm, party }
-
-CampaignMode _modeFromName(String? n) =>
-    // Unknown/absent → party (forward-compat default).
-    n == 'gm' ? CampaignMode.gm : CampaignMode.party;
-
 /// A campaign/session: an isolated journal, threads, characters, crawl.
+/// (The old CampaignMode gm/party split was retired with the solo-only
+/// refocus — legacy JSON `mode` keys are ignored on parse.)
 class SessionMeta {
   const SessionMeta(
       {required this.id,
       required this.name,
       this.systems,
-      this.mode = CampaignMode.party,
       this.identityColor,
       this.identityIcon,
       this.genre,
@@ -4548,9 +4541,6 @@ class SessionMeta {
 
   /// Enabled optional systems; null means all (legacy campaigns).
   final List<String>? systems;
-
-  /// Player focus mode (default party; legacy campaigns → party).
-  final CampaignMode mode;
 
   /// Per-campaign identity accent (ARGB int); null falls back to terracotta.
   final int? identityColor;
@@ -4574,7 +4564,6 @@ class SessionMeta {
         'id': id,
         'name': name,
         if (systems != null) 'systems': systems,
-        if (mode != CampaignMode.party) 'mode': mode.name,
         if (identityColor != null) 'identityColor': identityColor,
         if (identityIcon != null) 'identityIcon': identityIcon,
         if (genre != null) 'genre': genre,
@@ -4585,7 +4574,6 @@ class SessionMeta {
   SessionMeta copyWith({
     String? name,
     List<String>? systems,
-    CampaignMode? mode,
     int? identityColor,
     String? identityIcon,
     String? genre,
@@ -4595,7 +4583,6 @@ class SessionMeta {
         id: id,
         name: name ?? this.name,
         systems: systems ?? this.systems,
-        mode: mode ?? this.mode,
         identityColor: identityColor ?? this.identityColor,
         identityIcon: identityIcon ?? this.identityIcon,
         genre: genre ?? this.genre,
@@ -4606,7 +4593,6 @@ class SessionMeta {
         id: j['id'] as String,
         name: j['name'] as String,
         systems: (j['systems'] as List?)?.whereType<String>().toList(),
-        mode: _modeFromName(j['mode'] as String?),
         identityColor: (j['identityColor'] as num?)?.toInt(),
         identityIcon: j['identityIcon'] as String?,
         genre: j['genre'] as String?,
@@ -4649,13 +4635,12 @@ const _kRulesetIconKey = <String, String>{
 };
 
 /// Derives a default identity-icon key from a campaign's [systems]: the
-/// ruleset's icon if one is enabled, else an oracle/book fallback by mode. Pure.
-String identityIconKeyFor(Set<String> systems, CampaignMode mode) {
+/// ruleset's icon if one is enabled, else the oracle fallback. Pure.
+String identityIconKeyFor(Set<String> systems) {
   for (final s in systems) {
     final k = _kRulesetIconKey[s];
     if (k != null) return k;
   }
-  if (mode == CampaignMode.gm) return 'book';
   return 'casino';
 }
 

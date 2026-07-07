@@ -130,9 +130,8 @@ void main() {
     });
     test('solo-dcc preset resolves to dcc ruleset', () {
       final preset = kCampaignPresets.firstWhere((p) => p.id == 'solo-dcc');
-      final (mode, systems) = presetConfig(preset);
+      final systems = presetConfig(preset);
       expect(systems, contains('dcc'));
-      expect(mode, CampaignMode.party);
     });
     test('kSystemBlurbs dcc carries the non-affiliation note', () {
       final blurb = kSystemBlurbs['dcc'] ?? '';

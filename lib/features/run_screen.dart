@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -31,18 +29,7 @@ TextStyle _dimStyle(BuildContext context) =>
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         );
 
-/// Formats a duration in seconds as `M:SS` (or `H:MM:SS` past an hour).
-/// Negative clamps to `0:00`.
-String formatDuration(int seconds) {
-  final s = seconds < 0 ? 0 : seconds;
-  final h = s ~/ 3600;
-  final m = (s % 3600) ~/ 60;
-  final ss = (s % 60).toString().padLeft(2, '0');
-  if (h > 0) return '$h:${m.toString().padLeft(2, '0')}:$ss';
-  return '$m:$ss';
-}
-
-/// The live GM run-screen: a read-and-act dashboard composing initiative,
+/// The solo session dashboard: a read-and-act view composing initiative,
 /// party HP, the active scene, and quick dice/oracle over existing providers.
 class RunScreen extends ConsumerWidget {
   const RunScreen({super.key});
@@ -53,7 +40,6 @@ class RunScreen extends ConsumerWidget {
       key: const Key('run-screen'),
       builder: (context, c) {
         final wide = c.maxWidth >= kRunWideBreakpoint;
-        const timers = _TimersPanel();
         const initiative = _InitiativePanel();
         const quickref = _QuickRefPanel();
         const party = _PartyPanel();
@@ -70,8 +56,6 @@ class RunScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Column(children: [
-                    timers,
-                    SizedBox(height: 12),
                     initiative,
                     SizedBox(height: 12),
                     quickref,
@@ -100,8 +84,6 @@ class RunScreen extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.all(12),
           children: const [
-            timers,
-            SizedBox(height: 12),
             initiative,
             SizedBox(height: 12),
             quickref,
@@ -120,91 +102,6 @@ class RunScreen extends ConsumerWidget {
           ],
         );
       },
-    );
-  }
-}
-
-/// Real-time pacing: a turn stopwatch (resets each Next-turn) + a session
-/// stopwatch, ticking only while an encounter is active. Widget-local +
-/// ephemeral; the timer is cancelled on dispose.
-class _TimersPanel extends ConsumerStatefulWidget {
-  const _TimersPanel();
-  @override
-  ConsumerState<_TimersPanel> createState() => _TimersPanelState();
-}
-
-class _TimersPanelState extends ConsumerState<_TimersPanel> {
-  Timer? _timer;
-  int _session = 0;
-  int _turn = 0;
-  int? _lastRound;
-  int? _lastTurnIndex;
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _ensureTicking() {
-    _timer ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
-      setState(() {
-        _session++;
-        _turn++;
-      });
-    });
-  }
-
-  void _stopTicking() {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final enc =
-        ref.watch(encounterProvider).valueOrNull ?? const EncounterState();
-    final active = enc.combatants.isNotEmpty;
-
-    if (!active) {
-      _stopTicking();
-      _session = 0;
-      _turn = 0;
-      _lastRound = null;
-      _lastTurnIndex = null;
-      return _Panel(
-        k: const Key('run-panel-timers'),
-        title: 'Timers',
-        child: Text(
-          'No active encounter',
-          key: const Key('run-timers-idle'),
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall!
-              .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
-        ),
-      );
-    }
-
-    // Reset the turn stopwatch when the turn pointer / round changes.
-    if (_lastRound != enc.round || _lastTurnIndex != enc.turnIndex) {
-      _turn = 0;
-      _lastRound = enc.round;
-      _lastTurnIndex = enc.turnIndex;
-    }
-    // Start ticking after the frame (can't setState during build).
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _ensureTicking();
-    });
-
-    return _Panel(
-      k: const Key('run-panel-timers'),
-      title: 'Timers',
-      child: Text(
-        'Turn ${formatDuration(_turn)} · Session ${formatDuration(_session)}',
-        key: const Key('run-timers-readout'),
-      ),
     );
   }
 }
@@ -574,12 +471,9 @@ class _ThreadsRumorsPanel extends ConsumerWidget {
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
         .toList();
-    final gm = ref.watch(modeProvider) == CampaignMode.gm;
-    final rumors = gm
-        ? (ref.watch(rumorsProvider).valueOrNull ?? const <Rumor>[])
-            .where((r) => !r.resolved)
-            .toList()
-        : const <Rumor>[];
+    final rumors = (ref.watch(rumorsProvider).valueOrNull ?? const <Rumor>[])
+        .where((r) => !r.resolved)
+        .toList();
     final nav = ref.read(shellRouteProvider.notifier);
 
     if (threads.isEmpty && rumors.isEmpty) {

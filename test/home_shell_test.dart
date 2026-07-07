@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/engine/verdant_data.dart';
@@ -211,11 +210,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Step 0: wizard is shown; enter a name and proceed.
-    expect(find.byKey(const Key('new-stance-gm')), findsOneWidget);
+    expect(find.byKey(const Key('new-campaign-name')), findsOneWidget);
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'No Party');
     await tester.pump(); // flush onChanged before checking Next's enabled state
-    // Default stance (solo-member) is already selected; tap Next.
     await tester.tap(find.byKey(const Key('wizard-next')));
     await tester.pumpAndSettle();
 
@@ -383,33 +381,6 @@ void main() {
     // The identity spine + the resolved castle icon render in the row.
     expect(find.byKey(const Key('campaign-spine')), findsWidgets);
     expect(find.widgetWithIcon(SizedBox, Icons.castle), findsWidgets);
-  });
-
-  testWidgets('mode toggle flips and persists the campaign mode',
-      (tester) async {
-    SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
-          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    });
-    await tester.pumpWidget(ProviderScope(
-        overrides: [_verdantOverride, _emulatorOverride],
-        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
-    await tester.pumpAndSettle();
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
-    // The toggle is now a labeled segmented control with both modes shown.
-    final toggle = find.byKey(const Key('mode-toggle'));
-    expect(toggle, findsOneWidget);
-    expect(find.descendant(of: toggle, matching: find.text('Party')),
-        findsOneWidget);
-    expect(
-        find.descendant(of: toggle, matching: find.text('GM')), findsOneWidget);
-    // Default mode is party.
-    expect(container.read(modeProvider), CampaignMode.party);
-    // Selecting the GM segment flips and persists the mode.
-    await tester.tap(find.descendant(of: toggle, matching: find.text('GM')));
-    await tester.pumpAndSettle();
-    expect(container.read(modeProvider), CampaignMode.gm);
   });
 
   testWidgets(

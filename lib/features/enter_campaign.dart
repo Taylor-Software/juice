@@ -6,10 +6,10 @@ import '../shared/shell_route.dart';
 import '../state/providers.dart';
 import 'session_resume_screen.dart';
 
-/// Enters [mode]'s campaign. When the campaign has prior session state (≥1
+/// Enters the active campaign. When the campaign has prior session state (≥1
 /// journal entry) it shows the [SessionResumeScreen] "where did I leave off?"
 /// ritual — pushed over the shell — instead of dropping straight onto the last
-/// verb; the resume screen's Continue then calls [ShellRouteNotifier.landFor]
+/// verb; the resume screen's Continue then calls [ShellRouteNotifier.land]
 /// and pops. A fresh campaign (no entries) lands directly, as before.
 ///
 /// Use this on the in-shell-switch path, where [context]/[ref] survive the call
@@ -17,20 +17,15 @@ import 'session_resume_screen.dart';
 /// — dismissing the launcher gate disposes their context/ref before the resume
 /// route would push — so they call [enterCampaignWith] with handles captured
 /// while the launcher is still mounted. The New-campaign path keeps calling
-/// [ShellRouteNotifier.landFor] directly (a brand-new campaign has nothing to
+/// [ShellRouteNotifier.land] directly (a brand-new campaign has nothing to
 /// resume).
-Future<void> enterCampaign(
-  BuildContext context,
-  WidgetRef ref,
-  CampaignMode mode,
-) async {
+Future<void> enterCampaign(BuildContext context, WidgetRef ref) async {
   final entries = await ref.read(journalProvider.future);
   final enc = await ref.read(encounterProvider.future);
   if (!context.mounted) return;
   await enterCampaignWith(
     nav: Navigator.of(context, rootNavigator: true),
     shellRoute: ref.read(shellRouteProvider.notifier),
-    mode: mode,
     entries: entries,
     hasEncounter: enc.combatants.isNotEmpty,
   );
@@ -44,12 +39,11 @@ Future<void> enterCampaign(
 Future<void> enterCampaignWith({
   required NavigatorState nav,
   required ShellRouteNotifier shellRoute,
-  required CampaignMode mode,
   required List<JournalEntry> entries,
   required bool hasEncounter,
 }) async {
   if (entries.isEmpty) {
-    shellRoute.landFor(mode, hasEncounter: hasEncounter);
+    shellRoute.land(hasEncounter: hasEncounter);
     return;
   }
   await nav.push(

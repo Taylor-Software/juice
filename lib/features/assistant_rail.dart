@@ -206,7 +206,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                   ),
                 if (aiReady) ...[
                   const SizedBox(height: 8),
-                  const AiBadge(label: 'Ask the GM'),
+                  const AiBadge(label: 'Ask the Oracle'),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -215,7 +215,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                           key: const Key('ask-gm-field'),
                           controller: _controller,
                           decoration: const InputDecoration(
-                            hintText: 'Ask the GM…',
+                            hintText: 'Ask the Oracle…',
                             border: OutlineInputBorder(),
                             isDense: true,
                           ),
@@ -226,7 +226,7 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
                       IconButton(
                         key: const Key('ask-gm-send'),
                         icon: const Icon(Icons.send),
-                        tooltip: 'Ask the GM',
+                        tooltip: 'Ask the Oracle',
                         onPressed: _ask,
                       ),
                     ],

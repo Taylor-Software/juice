@@ -743,26 +743,20 @@ Working rules for this repo:
   thread. No new model/persistence (rides on `threadsProvider` + `Tally`);
   complementary to the Loop pane's read-only task step
   (`docs/superpowers/plans/2026-06-30-standalone-tasks-pane.md`).
-- **GM/Party mode** (`CampaignMode {gm, party}` on `SessionMeta`, default
-  `party`; legacy campaigns → party). `modeProvider` exposes the active
-  campaign's mode; `SessionsNotifier.setMode` persists it. `SessionMeta` now has
-  a `copyWith` and `rename`/`editSystems`/`setMode` all route through it (so no
-  field-drop). **Mode no longer gates tool/subtab visibility** — `lib/engine/
-  role_tags.dart` (`visibleForMode`/`kSubtabRoles`/`SubtabRole`) was deleted
-  (PR refactor(modes)); tools and subtabs follow the enabled `systems` set only
-  (`TrackingTab` shows Rumors always; Moves shows whenever the ironsworn family
-  is non-empty; party tools show when `party` system is enabled; `suggestionsFor`
-  emits `develop-rumor`/`seed-npc` unconditionally and `make-move` on
-  ironsworn-family + focus character). An app-bar `mode-toggle` flips it.
-  Mode now drives ONLY: (1) **landing** — each campaign lands on its mode home
-  when entered: pure `landingDestination(mode)` (gm→Run, party→Sheet) drives
-  `ShellRouteNotifier.landFor`, called from every entry point (launcher
-  Continue/New/switch/import + in-shell switch/New). `build()` stays `journal` —
-  landing only applies on explicit entry, so toggling mode mid-session doesn't
-  re-land. (2) **framing** — the mode-toggle chip in the app-bar. The mode is
-  chosen at campaign creation (wizard step 0 stance cards set `_mode` → gm or
-  party; `SessionsNotifier.create` takes a `mode` param).
-  See `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md`.
+- **Solo-only (GM/Party mode RETIRED, 2026-07-07).** `CampaignMode`,
+  `SessionMeta.mode`, `modeProvider`, `SessionsNotifier.setMode`, the app-bar
+  `mode-toggle`, `landingDestination`, the wizard stance cards, and the
+  `gm-toolkit` preset were all deleted — the app is a solo-play tool, not a GM
+  session manager. Legacy JSON/campaign-file `mode` keys are ignored on parse.
+  Every entry point lands on Journal via `ShellRouteNotifier.land()` (or
+  Track→Encounter when a fight is in progress). Tools/subtabs follow the
+  enabled `systems` set only. The Run verb stays as a **solo session dashboard**
+  (its `_TimersPanel` live-table stopwatches were removed; its rumors section
+  shows unresolved rumors unconditionally). "Ask the GM" is now **"Ask the
+  Oracle"** in all user-facing strings (internal `gm_chat`/`GmChat*` ids, the
+  `juice.gmchat.v1` key, the `gm-chat` sourceTool, and engine prompt cues are
+  unchanged for stability). The old design doc
+  `docs/superpowers/specs/2026-06-18-gm-party-mode-design.md` is historical.
 - **Campaign creation is a 3-step wizard** (`NewCampaignDialog` in
   `lib/shared/home_shell.dart`, `_NewCampaignDialogState`). The 16 systems are
   categorized by `kSystemCategory` (`SystemCategory {ruleset, oracle, exploration,
@@ -770,30 +764,28 @@ Working rules for this repo:
   (5 ids) is UNCHANGED** — it remains the legacy-null fallback
   (`SessionMeta.enabledSystems` + ~17 widget defaults), NOT the creation seed.
   The wizard uses `int _step` (0–2) with a 3-dot indicator + Back/Next/Create
-  navigation; Next is gated until a stance is chosen on step 0.
-  - **Step 0 — Stance:** campaign name field + 3 tappable stance cards
-    (`new-stance-gm` → `mode=gm`; `new-stance-solo-gm` + `new-stance-solo-member`
-    → `mode=party`). Default: solo-member. `soloLead` is framing only (not
-    persisted). **`wizard-next` is gated on a non-blank name** (`_nextEnabled`),
-    with a "Required to continue" helper on the field — the name is required to
-    create (both create callers already refuse a blank name), and gating at
-    step 0 puts the block AT the field instead of stranding the out-of-view
-    step-2 `wizard-create` disabled with no feedback (the "Create never becomes
-    clickable" bug). Tests must `enterText` a name + `pump()` before the first
-    `wizard-next`.
+  navigation.
+  - **Step 0 — Name:** campaign name field only (the stance cards were removed
+    with the solo-only refocus). **`wizard-next` is gated on a non-blank name**
+    (`_nextEnabled`), with a "Required to continue" helper on the field — the
+    name is required to create (both create callers already refuse a blank
+    name), and gating at step 0 puts the block AT the field instead of
+    stranding the out-of-view step-2 `wizard-create` disabled with no feedback
+    (the "Create never becomes clickable" bug). Tests must `enterText` a name +
+    `pump()` before the first `wizard-next`.
   - **Step 1 — System + tools:** ruleset `ChoiceChip`s (incl. `ruleset-none`,
     single-select) + addon `FilterChip`s grouped by category (`cat-<id>`) + live
-    `CampaignPreviewPane`. No mode toggle (stance set it). Default addons:
-    `{juice, party}`.
+    `CampaignPreviewPane`. Default addons: `{juice, party}`.
   - **Step 2 — Start:** genre + tone optional fields; funnel-vs-roster choice
     (`new-start-roster` always; `new-start-funnel` shown only when
     `funnelProfileFor(_ruleset) != null`). Create button (enabled when name
     non-blank).
-  The dialog returns `({name, systems, mode, genre, tone, start, seedSystem})`;
-  `start ∈ {'roster', 'funnel'}`. When `start=='funnel'`, `systems` auto-includes
-  `'funnel'` and `seedSystem` is the ruleset id (or `'dcc'` fallback). The
-  `_createSession` caller wires up: after `create(...)` + `landFor(mode)`, if
-  `start=='funnel'` → `addFunnel(seedSystem)` then `goTo(Destination.sheet)`.
+  The dialog returns `({name, systems, genre, tone, start, seedSystem, kit})`;
+  `start ∈ {'roster', 'funnel', 'kit'}`. When `start=='funnel'`, `systems`
+  auto-includes `'funnel'` and `seedSystem` is the ruleset id (or `'dcc'`
+  fallback). The `_createSession` caller wires up: after `create(...)` +
+  `land()`, if `start=='funnel'` → `addFunnel(seedSystem)` then
+  `goTo(Destination.sheet)`.
   The old preset grid (`_PresetRow`/`_BrowseAllRow`) was removed from the dialog;
   `kCampaignPresets`/`presetConfig` data lives on in `campaign_presets.dart`
   (still referenced by other code). `_EditSystemsDialog` is grouped by the same

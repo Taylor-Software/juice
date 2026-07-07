@@ -47,18 +47,4 @@ void main() {
     final id2 = c.read(sessionsProvider).value!.active;
     expect(prefs.getString('juice.settings.v1.$id2'), isNull);
   });
-
-  test('create persists the chosen mode (default party)', () async {
-    SharedPreferences.setMockInitialValues({});
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
-    final n = c.read(sessionsProvider.notifier);
-    await c.read(sessionsProvider.future);
-
-    await n.create('GM game', mode: CampaignMode.gm);
-    expect(c.read(sessionsProvider).value!.activeMeta.mode, CampaignMode.gm);
-
-    await n.create('Default game');
-    expect(c.read(sessionsProvider).value!.activeMeta.mode, CampaignMode.party);
-  });
 }

@@ -35,12 +35,10 @@ Map<String, Object> _prefs({
   String? contextJson,
   String? threadsJson,
   String? rumorsJson,
-  bool gm = false,
 }) =>
     {
       'juice.sessions.v1':
-          '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"'
-              '${gm ? ',"mode":"gm"' : ''}}]}',
+          '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
       if (journalJson != null) 'juice.journal.v2.$_sid': journalJson,
       if (charsJson != null) 'juice.characters.v1.$_sid': charsJson,
       if (encounterJson != null) 'juice.encounter.v1.$_sid': encounterJson,
@@ -80,8 +78,7 @@ Future<ProviderContainer> _pump(
   await tester.pumpWidget(UncontrolledProviderScope(
     container: container,
     child: MaterialApp(
-        theme: AppTheme.light(),
-        home: const Scaffold(body: RunScreen())),
+        theme: AppTheme.light(), home: const Scaffold(body: RunScreen())),
   ));
   await tester.pumpAndSettle();
   return container;
@@ -90,37 +87,6 @@ Future<ProviderContainer> _pump(
 void main() {
   late OracleData data;
   setUpAll(() => data = _loadData());
-
-  test('formatDuration', () {
-    expect(formatDuration(0), '0:00');
-    expect(formatDuration(5), '0:05');
-    expect(formatDuration(65), '1:05');
-    expect(formatDuration(600), '10:00');
-    expect(formatDuration(3661), '1:01:01');
-    expect(formatDuration(-5), '0:00');
-  });
-
-  testWidgets('timers: idle with no encounter, ticks + resets on turn change',
-      (tester) async {
-    await _pump(tester, data, _prefs());
-    expect(find.byKey(const Key('run-timers-idle')), findsOneWidget);
-
-    const enc =
-        '{"combatants":[{"id":"a","name":"A","initiative":15,"track":{"current":5,"max":5},"tags":[],"defeated":false},{"id":"b","name":"B","initiative":10,"track":{"current":5,"max":5},"tags":[],"defeated":false}],"turnIndex":0,"round":1}';
-    final c = await _pump(tester, data, _prefs(encounterJson: enc));
-    expect(find.byKey(const Key('run-timers-readout')), findsOneWidget);
-    // Discrete 1s pumps each fire the periodic timer exactly once.
-    await tester.pump(const Duration(seconds: 1));
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('Turn 0:02'), findsOneWidget);
-    // Advance the turn: rebuild resets the turn stopwatch, session keeps going.
-    await c.read(encounterProvider.notifier).nextTurn();
-    await tester.pump(); // process the provider rebuild (turn reset)
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.textContaining('Turn 0:01 · Session 0:03'), findsOneWidget);
-    // Dispose the tree so the periodic timer is cancelled (no pending timer).
-    await tester.pumpWidget(const SizedBox());
-  });
 
   testWidgets('run-screen renders the four panel headers', (tester) async {
     await _pump(tester, data, _prefs());
@@ -132,7 +98,8 @@ void main() {
     expect(find.byKey(const Key('run-panel-capture')), findsOneWidget);
   });
 
-  testWidgets('initiative: next turn advances; roll-all fills unset', (tester) async {
+  testWidgets('initiative: next turn advances; roll-all fills unset',
+      (tester) async {
     const enc =
         '{"combatants":[{"id":"a","name":"Ash","initiative":15,"track":{"current":5,"max":5},"tags":[],"defeated":false},{"id":"b","name":"Bog","initiative":0,"track":{"current":4,"max":4},"tags":[],"defeated":false}],"turnIndex":0,"round":1}';
     final c = await _pump(tester, data, _prefs(encounterJson: enc));
@@ -145,8 +112,12 @@ void main() {
 
     await tester.tap(find.byKey(const Key('run-init-roll-all')));
     await tester.pumpAndSettle();
-    expect((await c.read(encounterProvider.future))
-        .combatants.firstWhere((x) => x.id == 'b').initiative, greaterThan(0));
+    expect(
+        (await c.read(encounterProvider.future))
+            .combatants
+            .firstWhere((x) => x.id == 'b')
+            .initiative,
+        greaterThan(0));
   });
 
   testWidgets('initiative: empty state when no combatants', (tester) async {
@@ -154,7 +125,8 @@ void main() {
     expect(find.byKey(const Key('run-init-empty')), findsOneWidget);
   });
 
-  testWidgets('party: shows PCs with HP and applies inline damage', (tester) async {
+  testWidgets('party: shows PCs with HP and applies inline damage',
+      (tester) async {
     const chars =
         '[{"id":"p1","name":"Vex","stats":[],"tracks":[{"label":"HP","current":10,"max":10}],"tags":[],"role":"pc"},{"id":"n1","name":"Goon","stats":[],"tracks":[],"tags":[],"role":"npc"}]';
     final c = await _pump(tester, data, _prefs(charsJson: chars));
@@ -288,27 +260,22 @@ void main() {
     expect(sceneN.dy, greaterThan(initN.dy));
   });
 
-  testWidgets('threads panel: shows open threads; rumors GM-only; routes',
+  testWidgets('threads panel: shows open threads and unresolved rumors; routes',
       (tester) async {
     const threads =
         '[{"id":"t1","title":"Find the Relic","open":true,"pinned":false,"progress":3,"progressMax":8}]';
     const rumors = '[{"id":"r1","text":"The mayor lies","resolved":false}]';
-    // Party mode: thread shows, rumor hidden.
-    final c = await _pump(tester, data,
-        _prefs(threadsJson: threads, rumorsJson: rumors));
+    final c = await _pump(
+        tester, data, _prefs(threadsJson: threads, rumorsJson: rumors));
     expect(find.byKey(const Key('run-thread-t1')), findsOneWidget);
     expect(find.text('Find the Relic'), findsOneWidget);
-    expect(find.byKey(const Key('run-rumor-r1')), findsNothing);
+    // Rumors show without any mode gate (solo-only).
+    expect(find.byKey(const Key('run-rumor-r1')), findsOneWidget);
     // Tap a thread → routes to Track/threads.
     await tester.tap(find.byKey(const Key('run-thread-t1')));
     await tester.pumpAndSettle();
     expect(c.read(shellRouteProvider).destination, Destination.track);
     expect(c.read(shellRouteProvider).subtab, 'threads');
-
-    // GM mode: rumor shows too.
-    await _pump(tester, data,
-        _prefs(threadsJson: threads, rumorsJson: rumors, gm: true));
-    expect(find.byKey(const Key('run-rumor-r1')), findsOneWidget);
   });
 
   testWidgets('threads panel: empty state', (tester) async {

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../engine/models.dart';
 import 'destination.dart';
 
 class ShellRoute {
@@ -18,15 +17,14 @@ class ShellRouteNotifier extends Notifier<ShellRoute> {
     state = ShellRoute(destination, subtab);
   }
 
-  /// Lands on the mode's home verb (gm→Track, party→Sheet). Called when a
-  /// campaign is entered (launcher Continue/New/switch/import, in-shell switch/
-  /// New) so each campaign opens on the surface its mode is about. When
-  /// [hasEncounter] is true (combatants in progress), lands on Track→Encounter
-  /// regardless of mode so an in-progress fight isn't buried behind a tab.
-  void landFor(CampaignMode mode, {bool hasEncounter = false}) {
+  /// Lands on the Journal — the solo play loop's home. Called when a campaign
+  /// is entered (launcher Continue/New/switch/import, in-shell switch/New).
+  /// When [hasEncounter] is true (combatants in progress), lands on
+  /// Track→Encounter instead so an in-progress fight isn't buried behind a tab.
+  void land({bool hasEncounter = false}) {
     state = hasEncounter
         ? const ShellRoute(Destination.track, 'encounter')
-        : ShellRoute(landingDestination(mode), '');
+        : const ShellRoute(Destination.journal, '');
   }
 
   /// Navigates to the tool's home. Returns false (no-op) for ids with no tab

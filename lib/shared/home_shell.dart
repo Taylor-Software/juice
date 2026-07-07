@@ -125,7 +125,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                     // Show the Session Resume ritual when the switched-to
                     // campaign has prior state, else land directly.
                     if (shellContext.mounted) {
-                      await enterCampaign(shellContext, ref, s.mode);
+                      await enterCampaign(shellContext, ref);
                     }
                   },
                 ),
@@ -233,11 +233,8 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
-        systems: result.systems,
-        mode: result.mode,
-        genre: result.genre,
-        tone: result.tone);
-    ref.read(shellRouteProvider.notifier).landFor(result.mode);
+        systems: result.systems, genre: result.genre, tone: result.tone);
+    ref.read(shellRouteProvider.notifier).land();
     if (result.start == 'funnel') {
       await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
       ref.read(shellRouteProvider.notifier).goTo(Destination.sheet);
@@ -331,12 +328,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (bytes == null) return; // user cancelled
     try {
       await ref.read(sessionsProvider.notifier).importCampaignData(bytes);
-      // Land on the imported campaign's restored mode (or its encounter, if any).
+      // Land on the imported campaign (or its encounter, if any).
       final enc = await ref.read(encounterProvider.future);
-      ref.read(shellRouteProvider.notifier).landFor(
-          ref.read(sessionsProvider).valueOrNull?.activeMeta.mode ??
-              CampaignMode.party,
-          hasEncounter: enc.combatants.isNotEmpty);
+      ref
+          .read(shellRouteProvider.notifier)
+          .land(hasEncounter: enc.combatants.isNotEmpty);
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
@@ -374,8 +370,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       await ref
           .read(sessionsProvider.notifier)
           .importLonelog(utf8.decode(bytes));
-      // Imported campaigns are always party (files carry no mode).
-      ref.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
+      ref.read(shellRouteProvider.notifier).land();
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     } on FormatException catch (e) {
       if (!mounted) return;
@@ -822,7 +817,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final systems =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    final mode = ref.watch(modeProvider);
     final family = !systems.contains('ironsworn')
         ? const <String>[]
         : [
@@ -943,41 +937,6 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               tooltip: split ? 'Single pane' : 'Split with journal',
               onPressed: () => ref.read(splitViewProvider.notifier).toggle(),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: SegmentedButton<CampaignMode>(
-              key: const Key('mode-toggle'),
-              showSelectedIcon: false,
-              style: ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                textStyle: WidgetStatePropertyAll(
-                    Theme.of(context).textTheme.labelMedium),
-              ),
-              segments: const [
-                ButtonSegment(
-                  value: CampaignMode.party,
-                  icon: Icon(Icons.groups_outlined, size: 18),
-                  label: Text('Party'),
-                ),
-                ButtonSegment(
-                  value: CampaignMode.gm,
-                  icon: Icon(Icons.castle_outlined, size: 18),
-                  label: Text('GM'),
-                ),
-              ],
-              selected: {mode},
-              onSelectionChanged: (selected) {
-                final sessions = ref.read(sessionsProvider).valueOrNull;
-                if (sessions == null) return;
-                final next = selected.first;
-                if (next == mode) return;
-                ref
-                    .read(sessionsProvider.notifier)
-                    .setMode(sessions.active, next);
-              },
-            ),
-          ),
           IconButton(
             icon: const Icon(Icons.folder_copy_outlined),
             tooltip: 'Campaigns',
@@ -1115,7 +1074,6 @@ const kSystemShortName = <String, String>{
 typedef NewCampaignResult = ({
   String name,
   Set<String> systems,
-  CampaignMode mode,
   String genre,
   String tone,
   String start,
@@ -1138,11 +1096,6 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
 
   // Wizard state
   int _step = 0;
-
-  // Step 0
-  // null = no stance chosen yet; default to solo-member on first build
-  String? _stance = 'new-stance-solo-member'; // key of selected stance card
-  CampaignMode _mode = CampaignMode.party;
 
   // Step 1 (system + tools)
   String? _ruleset; // single-select ruleset id, or null for None
@@ -1185,15 +1138,8 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   }
 
   bool get _nextEnabled {
-    if (_step == 0) return _stance != null && _nameCtrl.text.trim().isNotEmpty;
+    if (_step == 0) return _nameCtrl.text.trim().isNotEmpty;
     return true; // step 1 is always satisfiable
-  }
-
-  void _selectStance(String key, CampaignMode mode) {
-    setState(() {
-      _stance = key;
-      _mode = mode;
-    });
   }
 
   void _submit() {
@@ -1204,7 +1150,6 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
     Navigator.of(context).pop((
       name: _nameCtrl.text,
       systems: systemsForSubmit,
-      mode: _mode,
       genre: _genreCtrl.text.trim(),
       tone: _toneCtrl.text.trim(),
       start: _start,
@@ -1315,37 +1260,6 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
                 _nameCtrl.text.trim().isEmpty ? 'Required to continue' : null,
           ),
           onChanged: (_) => setState(() {}), // refresh Next button state
-        ),
-        const SizedBox(height: 16),
-        const Text('Who are you at the table?',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 8),
-        _StanceCard(
-          key: const Key('new-stance-gm'),
-          title: 'GM, live table',
-          subtitle: 'Running a game for others',
-          icon: Icons.table_bar,
-          selected: _stance == 'new-stance-gm',
-          onTap: () => _selectStance('new-stance-gm', CampaignMode.gm),
-        ),
-        const SizedBox(height: 6),
-        _StanceCard(
-          key: const Key('new-stance-solo-gm'),
-          title: 'Solo, as GM',
-          subtitle: 'You run the world and play characters',
-          icon: Icons.psychology,
-          selected: _stance == 'new-stance-solo-gm',
-          onTap: () => _selectStance('new-stance-solo-gm', CampaignMode.party),
-        ),
-        const SizedBox(height: 6),
-        _StanceCard(
-          key: const Key('new-stance-solo-member'),
-          title: 'Solo, as a member',
-          subtitle: 'You play a character; the oracle acts as GM',
-          icon: Icons.person,
-          selected: _stance == 'new-stance-solo-member',
-          onTap: () =>
-              _selectStance('new-stance-solo-member', CampaignMode.party),
         ),
       ],
     );
@@ -1577,73 +1491,6 @@ class _StepDot extends StatelessWidget {
       width: active ? 12 : 8,
       height: active ? 12 : 8,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-    );
-  }
-}
-
-/// A tappable stance selection card for step 0.
-class _StanceCard extends StatelessWidget {
-  const _StanceCard({
-    super.key,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: selected
-          ? colorScheme.primaryContainer
-          : colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color:
-                  selected ? colorScheme.primary : colorScheme.outlineVariant,
-              width: selected ? 1.5 : 1,
-            ),
-          ),
-          child: Row(children: [
-            Icon(icon,
-                size: 22,
-                color: selected ? colorScheme.primary : colorScheme.onSurface),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          color: selected
-                              ? colorScheme.onPrimaryContainer
-                              : colorScheme.onSurface)),
-                  Text(subtitle,
-                      style: TextStyle(
-                          fontSize: 12, color: colorScheme.onSurfaceVariant)),
-                ],
-              ),
-            ),
-          ]),
-        ),
-      ),
     );
   }
 }

@@ -11,17 +11,15 @@ import 'package:juice_oracle/state/providers.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('Campaign file encode/parse', () {
-    test('round-trip preserves the campaign profile (systems + mode)', () {
+    test('round-trip preserves the campaign profile (systems)', () {
       final encoded = encodeCampaign(
         name: 'Dungeon Run',
         savedAt: DateTime.utc(2026, 6, 21),
         rawByKey: const {},
         systems: ['dnd', 'mythic'],
-        mode: CampaignMode.gm,
       );
       final parsed = parseCampaign(encoded);
       expect(parsed.systems, ['dnd', 'mythic']);
-      expect(parsed.mode, CampaignMode.gm);
     });
 
     test('null systems round-trips as null (the all-systems default)', () {
@@ -44,19 +42,19 @@ void main() {
       expect(parseCampaign(bare).systems, isEmpty);
     });
 
-    test('a file without systems/mode keys defaults to all-systems + party',
-        () {
-      // An older (pre-profile) file omits these keys entirely.
+    test('a file without a systems key (or with a legacy mode key) parses', () {
+      // An older (pre-profile) file omits systems; legacy files may carry a
+      // retired 'mode' key — both parse, mode is ignored.
       final raw = jsonEncode({
         'app': 'juice-oracle',
         'schemaVersion': 3,
         'name': 'Legacy',
+        'mode': 'gm',
         'data': <String, dynamic>{},
       });
       final parsed = parseCampaign(raw);
-      // mode defaults to party; systems null → consumer falls back to all.
-      expect(parsed.mode, CampaignMode.party);
       expect(parsed.systems, isNull);
+      expect(parsed.name, 'Legacy');
     });
 
     test('round-trip preserves name and per-key payloads', () {
@@ -328,23 +326,21 @@ void main() {
       expect(await container.read(threadsProvider.future), isEmpty);
     });
 
-    test('export/import preserves the campaign profile (systems + mode)',
-        () async {
+    test('export/import preserves the campaign profile (systems)', () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
       await container.read(sessionsProvider.future);
-      // A GM campaign with a non-default system set.
+      // A campaign with a non-default system set.
       await container
           .read(sessionsProvider.notifier)
-          .create('Delve', systems: {'dnd', 'mythic'}, mode: CampaignMode.gm);
+          .create('Delve', systems: {'dnd', 'mythic'});
       final file =
           await container.read(sessionsProvider.notifier).exportActive();
 
       await container.read(sessionsProvider.notifier).importCampaign(file);
       final s = await container.read(sessionsProvider.future);
       expect(s.activeMeta.enabledSystems, {'dnd', 'mythic'});
-      expect(s.activeMeta.mode, CampaignMode.gm);
     });
   });
 }
