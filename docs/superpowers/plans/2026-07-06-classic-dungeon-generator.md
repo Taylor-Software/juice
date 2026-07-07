@@ -976,20 +976,40 @@ class RoomResult {
 
 int _d66(Dice dice) => dice.dN(6) * 10 + dice.dN(6);
 
-/// Expand {ref:XX} tokens in [text]. Recurses into referenced tables up to
-/// [budget] levels; a P2-only or unknown ref becomes its fallback label. A
-/// ref to a list-table rolls one row; a self-referential ref stops at budget.
+/// Human labels for the dict-shaped build-element tables (H1/H2/H3/H6/H8), which
+/// carry nested sub-tables rather than a flat row list. P1 renders these as a
+/// word rather than expanding their internal structure.
+const _dictRefLabels = <String, String>{
+  'H1': 'a coffin', 'H2': 'a statue', 'H3': 'a secret room',
+  'H6': 'a shrine', 'H8': 'treasure',
+};
+
+/// Expand {ref:XX} tokens in [text]. Recurses into list-shaped tables up to
+/// [budget] levels; B4 (a `{triggers,effects}` dict) renders one "trigger ->
+/// effect" trap; other dict tables render a `_dictRefLabels`/`labelFallbacks`
+/// word; a P2-only or unknown ref becomes its fallback label; a self-referential
+/// ref stops at [budget].
 String _expand(String text, DungeonTables t, Dice dice, {int budget = 4}) {
   final re = RegExp(r'\{ref:([A-Z]\d+)\}');
   return text.replaceAllMapped(re, (m) {
     final id = m.group(1)!;
-    if (budget <= 0) return t.labelFallbacks[id] ?? id;
-    final rows = (t.raw[id] as List?);
-    if (rows == null) return t.labelFallbacks[id] ?? id;
-    final row = rows[dice.dN(rows.length) - 1].toString();
-    return _expand(row, t, dice, budget: budget - 1);
+    if (budget <= 0) return _label(t, id);
+    final table = t.raw[id];
+    if (table is List) {
+      final row = table[dice.dN(table.length) - 1].toString();
+      return _expand(row, t, dice, budget: budget - 1);
+    }
+    if (table is Map && table['triggers'] is List && table['effects'] is List) {
+      final trig = (table['triggers'] as List);
+      final eff = (table['effects'] as List);
+      return '${trig[dice.dN(trig.length) - 1]} -> ${eff[dice.dN(eff.length) - 1]}';
+    }
+    return _label(t, id); // dict build-element or unknown -> a plain label
   });
 }
+
+String _label(DungeonTables t, String id) =>
+    _dictRefLabels[id] ?? t.labelFallbacks[id] ?? id;
 
 RoomResult generateRoom(DungeonGenContext ctx, Dice dice) {
   final t = ctx.tables;
