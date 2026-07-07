@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/custom_table.dart';
@@ -230,7 +231,30 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
             onTap: () => showCustomTableDialog(context, ref, null),
           ),
         ),
+        // One-tap import of the bundled starter set (original authored
+        // tables); hidden once any starter-sourced table is in the library.
+        if (!all.any((t) => t.source == kStarterTableSource))
+          Card(
+            child: ListTile(
+              key: const Key('tables-starter-pack'),
+              leading: const Icon(Icons.auto_awesome_outlined),
+              title: const Text('Add starter tables'),
+              subtitle: const Text(
+                  'A general-play core set: NPCs, places, hooks, rumors…'),
+              onTap: _importStarterPack,
+            ),
+          ),
       ],
+    );
+  }
+
+  Future<void> _importStarterPack() async {
+    final raw = await rootBundle.loadString('assets/starter_tables.json');
+    final tables = decodeTablePack(raw);
+    await ref.read(customTablesProvider.notifier).addAll(tables);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Added ${tables.length} starter tables')),
     );
   }
 

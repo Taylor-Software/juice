@@ -46,6 +46,7 @@ flutter:
         - asset: assets/fonts/hanken/HankenGrotesk.ttf
   assets:
     - assets/oracle_data.json
+    - assets/starter_tables.json
     - assets/emulator_data.json
     - assets/help_data.json
     - assets/verdant_data.json

@@ -1756,6 +1756,9 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
           mode: incoming[i].mode,
           dice: incoming[i].dice,
           rows: incoming[i].rows,
+          genre: incoming[i].genre,
+          category: incoming[i].category,
+          source: incoming[i].source,
         ),
     ];
     await _save([...await _ready, ...fresh]);
