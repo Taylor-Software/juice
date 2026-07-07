@@ -403,8 +403,13 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   Widget _levelHeader(BuildContext context, MapState s) {
     final theme = Theme.of(context);
     final lvl = s.levels[s.activeLevel.clamp(0, s.levels.length - 1)];
-    final label = 'Depth ${lvl.depth} · ${lvl.typeName}'
-        '${lvl.stone.isEmpty ? '' : ' · ${lvl.stone}'}';
+    // Join only the non-empty parts — a legacy-lifted level has no typeName,
+    // and "Depth 1 ·" with a dangling separator reads broken.
+    final label = [
+      'Depth ${lvl.depth}',
+      if (lvl.typeName.isNotEmpty) lvl.typeName,
+      if (lvl.stone.isNotEmpty) lvl.stone,
+    ].join(' · ');
     return Padding(
       key: const Key('classic-level-header'),
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
