@@ -61,19 +61,19 @@ Creature foeEntryToCreature(FoeEntry e) {
     id: e.id,
     name: e.name,
     maxHp: e.rank * 10,
-    statBlock:
-        noteParts.isNotEmpty ? StatBlock(notes: noteParts.join('\n')) : const StatBlock(),
+    statBlock: noteParts.isNotEmpty
+        ? StatBlock(notes: noteParts.join('\n'))
+        : const StatBlock(),
   );
 }
 
 /// System -> attribution/license line, shown in the reference footer + settings.
 /// Only systems with bundled content appear.
 const kContentAttributions = <String, String>{
-  'dnd':
-      'Includes material from the System Reference Documents 5.1 and 5.2 '
-          '("SRD 5.1", "SRD 5.2") by Wizards of the Coast LLC, available under '
-          'the Creative Commons Attribution 4.0 International License '
-          '(CC-BY-4.0).',
+  'dnd': 'Includes material from the System Reference Documents 5.1 and 5.2 '
+      '("SRD 5.1", "SRD 5.2") by Wizards of the Coast LLC, available under '
+      'the Creative Commons Attribution 4.0 International License '
+      '(CC-BY-4.0).',
   'cairn': 'Cairn © Yochai Gal, licensed under CC-BY-SA-4.0.',
   'ose':
       'Compatible with Old-School Essentials (Necrotic Gnome). B/X mechanics; '
@@ -84,4 +84,7 @@ const kContentAttributions = <String, String>{
       'under CC-BY-4.0.',
   'dcc': 'Dungeon Crawl Classics mechanics used under the Open Game License '
       '1.0a. Not affiliated with Goodman Games.',
+  'classic-dungeon':
+      'Roll 4 Ruin: Classic Dungeon Generator © Nocturnal Peacock, licensed '
+          'under CC-BY-NC-SA-4.0.',
 };

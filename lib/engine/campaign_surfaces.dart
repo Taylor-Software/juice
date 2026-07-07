@@ -53,6 +53,7 @@ const _table = <String, List<SurfaceRow>>{
     SurfaceRow('Region / dungeon map'),
     SurfaceRow('Verdant Journey', requiresSystem: 'verdant'),
     SurfaceRow('Hexcrawl toolkit', requiresSystem: 'hexcrawl'),
+    SurfaceRow('Classic dungeon crawl', requiresSystem: 'classic-dungeon'),
   ],
   'Track': [
     SurfaceRow('Scenes / threads / tracks'),
