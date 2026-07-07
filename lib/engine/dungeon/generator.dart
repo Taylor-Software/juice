@@ -70,11 +70,17 @@ const _dictRefLabels = <String, String>{
 String _label(DungeonTables t, String id) =>
     _dictRefLabels[id] ?? t.labelFallbacks[id] ?? id;
 
+/// Strips the zine's "..." continuation decorations off a B4 trigger/effect
+/// fragment (e.g. "Pressure Plate ..." / "...Frostbolt") for clean display.
+String _trimDots(String s) =>
+    s.replaceAll(RegExp(r'^\s*\.+\s*|\s*\.+\s*$'), '');
+
 /// Expand {ref:XX} tokens in [text]. Recurses into list-shaped tables up to
 /// [budget] levels; B4 (a `{triggers,effects}` dict) renders one "trigger ->
-/// effect" trap; other dict tables render a `_dictRefLabels`/`labelFallbacks`
-/// word; a P2-only or unknown ref becomes its fallback label; a self-referential
-/// ref stops at [budget].
+/// effect" trap (each side recursively expanded — effect rows can carry their
+/// own refs, e.g. "gas {ref:I8}"); other dict tables render a
+/// `_dictRefLabels`/`labelFallbacks` word; a P2-only or unknown ref becomes its
+/// fallback label; a self-referential ref stops at [budget].
 String _expand(String text, DungeonTables t, Dice dice, {int budget = 4}) {
   final re = RegExp(r'\{ref:([A-Z]\d+)\}');
   return text.replaceAllMapped(re, (m) {
@@ -82,17 +88,30 @@ String _expand(String text, DungeonTables t, Dice dice, {int budget = 4}) {
     if (budget <= 0) return _label(t, id);
     final table = t.raw[id];
     if (table is List) {
-      final row = table[dice.dN(table.length) - 1].toString();
+      final rolled = table[dice.dN(table.length) - 1];
+      // Monster tables (G2..G7) hold {text,count,organized} rows — render the
+      // name, never the raw map.
+      final row = rolled is Map
+          ? (rolled['text']?.toString() ?? '')
+          : rolled.toString();
       return _expand(row, t, dice, budget: budget - 1);
     }
     if (table is Map && table['triggers'] is List && table['effects'] is List) {
       final trig = (table['triggers'] as List);
       final eff = (table['effects'] as List);
-      return '${trig[dice.dN(trig.length) - 1]} -> ${eff[dice.dN(eff.length) - 1]}';
+      final trigText = _trimDots(trig[dice.dN(trig.length) - 1].toString());
+      final effText = _trimDots(eff[dice.dN(eff.length) - 1].toString());
+      return _expand('$trigText -> $effText', t, dice, budget: budget - 1);
     }
     return _label(t, id);
   });
 }
+
+/// De-tokenize a descriptive string for display: `{ref:XX}` -> `XX`. The A2
+/// dungeon-type notes reference tables BY NAME ("stocking begins at G3") — they
+/// must read as names, not roll an entry.
+String stripRefTokens(String text) =>
+    text.replaceAllMapped(RegExp(r'\{ref:([A-Z]\d+)\}'), (m) => m.group(1)!);
 
 RoomResult generateRoom(DungeonGenContext ctx, Dice dice) {
   final t = ctx.tables;

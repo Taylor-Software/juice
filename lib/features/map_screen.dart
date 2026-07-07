@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dungeon/footprint.dart';
+import '../engine/dungeon/generator.dart' show stripRefTokens;
 import '../engine/dungeon/tables.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
@@ -376,8 +377,9 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     final s = ref.read(mapProvider).valueOrNull;
     final entrance = s?.rooms.lastOrNull;
     if (entrance != null) {
-      await notifier.appendRoomDetail(
-          entrance.id, 'Entrance: $a1\nDungeon type: ${a2.name} — ${a2.note}');
+      // A2 notes reference tables by name ({ref:G3} etc.) — de-tokenize.
+      await notifier.appendRoomDetail(entrance.id,
+          'Entrance: $a1\nDungeon type: ${a2.name} — ${stripRefTokens(a2.note)}');
     }
   }
 
