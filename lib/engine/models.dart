@@ -3367,29 +3367,44 @@ class HexCell {
 /// A reference to a place on the session's single map: a dungeon room id,
 /// or a hex by (col,row). Empty when none set.
 class LocationRef {
-  const LocationRef({this.roomId, this.hexCol, this.hexRow});
+  const LocationRef(
+      {this.roomId, this.hexCol, this.hexRow, this.sketchEntryId});
   final String? roomId;
   final int? hexCol;
   final int? hexRow;
 
-  bool get isEmpty => roomId == null && hexCol == null && hexRow == null;
+  /// A sketch-map place: the id of a [JournalKind.sketch] entry (free-drawn
+  /// map, PDF page, or map snapshot) acting as the party's current map.
+  final String? sketchEntryId;
+
+  bool get isEmpty =>
+      roomId == null &&
+      hexCol == null &&
+      hexRow == null &&
+      sketchEntryId == null;
 
   Map<String, dynamic> toJson() => {
         if (roomId != null) 'roomId': roomId,
         if (hexCol != null) 'hexCol': hexCol,
         if (hexRow != null) 'hexRow': hexRow,
+        if (sketchEntryId != null) 'sketch': sketchEntryId,
       };
 
   factory LocationRef.fromJson(Map<String, dynamic> j) => LocationRef(
         roomId: j['roomId'] as String?,
         hexCol: (j['hexCol'] as num?)?.toInt(),
         hexRow: (j['hexRow'] as num?)?.toInt(),
+        sketchEntryId: j['sketch'] as String?,
       );
 
-  /// True when [other] refers to the same place (room id match, or matching
-  /// hex col+row). Two empty refs do NOT match (nothing to link on).
+  /// True when [other] refers to the same place (sketch-entry or room id
+  /// match, or matching hex col+row). Two empty refs do NOT match (nothing to
+  /// link on); refs of different kinds never match.
   bool matches(LocationRef? other) {
     if (other == null || isEmpty || other.isEmpty) return false;
+    if (sketchEntryId != null || other.sketchEntryId != null) {
+      return sketchEntryId == other.sketchEntryId;
+    }
     if (roomId != null || other.roomId != null) return roomId == other.roomId;
     return hexCol == other.hexCol && hexRow == other.hexRow;
   }

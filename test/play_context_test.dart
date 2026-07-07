@@ -59,6 +59,35 @@ void main() {
         expect(const LocationRef().matches(const LocationRef()), isFalse);
         expect(const LocationRef(roomId: 'r1').matches(null), isFalse);
       });
+      test('same sketch entry id matches', () {
+        expect(
+            const LocationRef(sketchEntryId: 's1')
+                .matches(const LocationRef(sketchEntryId: 's1')),
+            isTrue);
+        expect(
+            const LocationRef(sketchEntryId: 's1')
+                .matches(const LocationRef(sketchEntryId: 's2')),
+            isFalse);
+      });
+      test('sketch ref never matches a room or hex ref', () {
+        expect(
+            const LocationRef(sketchEntryId: 's1')
+                .matches(const LocationRef(roomId: 's1')),
+            isFalse);
+        expect(
+            const LocationRef(sketchEntryId: 's1')
+                .matches(const LocationRef(hexCol: 1, hexRow: 2)),
+            isFalse);
+      });
+    });
+
+    test('sketch ref round-trips through JSON', () {
+      const ref = LocationRef(sketchEntryId: 's1');
+      final back = LocationRef.fromJson(ref.toJson());
+      expect(back.sketchEntryId, 's1');
+      expect(back.isEmpty, isFalse);
+      expect(back.roomId, isNull);
+      expect(back.hexCol, isNull);
     });
   });
 
