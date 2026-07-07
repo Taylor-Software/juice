@@ -1,7 +1,7 @@
 # Classic Dungeon Generator (Roll 4 Ruin) — Design
 
 **Date:** 2026-07-06
-**Status:** Approved (brainstorm) → writing plan
+**Status:** Shipped (P1 PR #250). P2 (caves/effects/multi-level) shipped — see `2026-07-07-classic-dungeon-p2-caves-design.md`.
 **System id:** `classic-dungeon` (opt-in, `SystemCategory.exploration`, NOT in `kAllSystems`)
 
 ## Summary
