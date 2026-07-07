@@ -5,6 +5,7 @@ import '../engine/suggestions.dart';
 import '../shared/design_tokens.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
+import 'ask_oracle_dialog.dart';
 import 'generate_sheet.dart';
 
 /// Always-visible horizontal strip of quick-roll chips, pinned directly above
@@ -91,14 +92,18 @@ class InlineRollDock extends ConsumerWidget {
                 fg: tk.terracottaDeep,
                 onTap: () => _roll(ref, sceneEvent),
               ),
-            // Ask yes/no — direct one-tap d10 solo oracle (even odds).
+            // Ask yes/no — question-first d10 solo oracle (the dialog captures
+            // the question so the journal entry stays meaningful; audit S1).
             if (askYesNo != null)
               chip(
                 key: const Key('dock-ask-yes-no'),
                 label: '? Yes/No',
                 bg: tk.selected,
                 fg: tk.terracottaDeep,
-                onTap: () => _roll(ref, askYesNo),
+                onTap: () async {
+                  final r = await showAskOracleDialog(context, ref);
+                  if (r != null) onRolled?.call();
+                },
               ),
             // Inspire — always present; reuses the composer-inspire generator
             // sheet (no roll, no journal write here).

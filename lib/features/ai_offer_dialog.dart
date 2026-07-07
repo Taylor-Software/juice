@@ -33,7 +33,8 @@ Future<void> showAiFirstRunOffer(BuildContext context, WidgetRef ref) async {
         children: [
           const Text(
             'Optional AI enhancements interpret your oracle rolls, voice NPCs, '
-            'and recap your story — all on-device, private, and offline.',
+            'and recap your story — all on-device, private, and offline. '
+            'You still narrate; the AI only adds flavor to answers you roll.',
           ),
           const SizedBox(height: 12),
           Text(

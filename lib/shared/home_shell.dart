@@ -1341,7 +1341,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         _StanceCard(
           key: const Key('new-stance-solo-member'),
           title: 'Solo, as a member',
-          subtitle: 'You play a character in the story',
+          subtitle: 'You play a character; the oracle acts as GM',
           icon: Icons.person,
           selected: _stance == 'new-stance-solo-member',
           onTap: () =>
@@ -1428,6 +1428,16 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
         ]) ...[
           Text(_categoryLabel(cat),
               style: const TextStyle(fontWeight: FontWeight.w600)),
+          // One-line differentiation for the oracle jargon (audit S6): a
+          // stranger can't otherwise tell Juice from Mythic from Cards.
+          if (cat == SystemCategory.oracle) ...[
+            const SizedBox(height: 2),
+            Text(
+              'Juice: one-roll fate check + events · Mythic: fate chart with '
+              'chaos factor · Cards: draw decks',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: 4),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final id in addonIds.where((i) => kSystemCategory[i] == cat))

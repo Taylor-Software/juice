@@ -238,7 +238,8 @@ class LauncherScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               shrinkWrap: true,
               children: [
-                Text('Juice', style: theme.textTheme.headlineMedium),
+                Text("Solo Adventurer's Journal",
+                    style: theme.textTheme.headlineMedium),
                 Text('Solo TTRPG toolkit',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
@@ -377,9 +378,9 @@ class _WelcomeCard extends StatelessWidget {
             Text('Welcome', style: theme.textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(
-              "Solo Adventurer's Journal is a solo-TTRPG toolkit: roll oracle "
-              'tables, journal your sessions, track characters and threads, and '
-              'manage maps and encounters.',
+              "Solo Adventurer's Journal is a solo-TTRPG toolkit. There's no "
+              'DM — you narrate, and oracle rolls answer the questions you '
+              'ask. Journal sessions, track threads, run maps and encounters.',
               style: theme.textTheme.bodySmall?.copyWith(color: muted),
             ),
             const SizedBox(height: 8),

@@ -15,7 +15,6 @@ import '../engine/journal_export.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
-import '../engine/suggestions.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_spreads.dart';
@@ -33,7 +32,7 @@ import '../state/interpreter.dart';
 import '../state/pdf_rasterizer.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
-import '../state/suggestions_provider.dart';
+import 'ask_oracle_dialog.dart';
 import 'assistant_rail.dart';
 import 'generate_sheet.dart';
 import 'inline_roll_dock.dart';
@@ -79,6 +78,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Timer? _searchDebounce;
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
   final ScrollController _entryScroll = ScrollController();
+  final ScrollController _headerScroll = ScrollController();
   bool _slashActive = false;
 
   // Active @-mention query (text from the last '@' to the caret), or null.
@@ -555,6 +555,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     _composerFocus.dispose();
     _search.dispose();
     _entryScroll.dispose();
+    _headerScroll.dispose();
     super.dispose();
   }
 
@@ -573,27 +574,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     });
   }
 
-  /// Fallback for the (loading) empty-suggestions frame — suggestionsFor always
-  /// emits `roll-oracle`, so this only covers the first render. Mirrors the
-  /// inline dock's belt-and-braces.
-  static const Suggestion _fallbackRollOracle =
-      Suggestion('roll-oracle', 'Roll the oracle', SuggestionAction.inline);
-
-  /// Rolls the oracle through the shared [rollInlineSuggestion] pipeline (the
-  /// same path the inline dock + assistant rail use). Drives the empty-state
-  /// primary. Resolves the `roll-oracle` Suggestion from [suggestionsProvider]
-  /// (falling back to a const) and reveals the new newest entry on completion.
-  Future<void> _rollOracle() async {
-    final oracle = ref.read(oracleProvider).valueOrNull;
-    if (oracle == null) return; // oracle data still loading: skip safely
-    final s = ref
-            .read(suggestionsProvider)
-            .where((s) => s.id == 'roll-oracle')
-            .firstOrNull ??
-        _fallbackRollOracle;
-    await rollInlineSuggestion(ref, oracle, s);
-    _revealNewest();
-  }
+  // (The old empty-state blind-roll path + its fallback Suggestion were
+  // retired by the stranger-test audit S1/S2 — the primary now opens the
+  // ask-first oracle dialog; the dock keeps its own roll-oracle chip through
+  // rollInlineSuggestion.)
 
   /// Opens a tool by id: dice gets its sheet, everything else navigates to its
   /// tab home (snackbar when the tool has no tab).
@@ -672,9 +656,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 child: EmptyState(
                   icon: Icons.menu_book_outlined,
                   title: 'A blank page.',
-                  body: 'Roll the oracle or write your first line.',
-                  primaryLabel: 'Roll oracle',
-                  onPrimary: _rollOracle,
+                  // The premise, stated once, where a newcomer actually looks
+                  // (stranger-test audit S5): no DM, you narrate, the oracle
+                  // answers your questions.
+                  body: "There's no DM here — you narrate. Ask a yes/no "
+                      'question, roll, then write what happens.',
+                  primaryLabel: 'Ask the oracle',
+                  onPrimary: () => showAskOracleDialog(context, ref),
                   secondaryLabel: 'Write a line',
                   onSecondary: () => _composerFocus.requestFocus(),
                 ),
@@ -723,18 +711,27 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             children: [
               ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      _aiNudge(),
-                      _recapBanner(entries),
-                      if (threads.isNotEmpty ||
-                          tags.isNotEmpty ||
-                          chars.isNotEmpty)
-                        _filterChips(threads, tags, chars),
-                      _journalActions(),
-                      if (_searching) _searchField(),
-                    ],
+                // The visible thumb is what tells a first-time user the header
+                // group (Solo Loop steps etc.) continues past the fold — the
+                // expanded Steps panel used to clip with no affordance at all
+                // (stranger-test audit S3).
+                child: Scrollbar(
+                  controller: _headerScroll,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _headerScroll,
+                    child: Column(
+                      children: [
+                        _aiNudge(),
+                        _recapBanner(entries),
+                        if (threads.isNotEmpty ||
+                            tags.isNotEmpty ||
+                            chars.isNotEmpty)
+                          _filterChips(threads, tags, chars),
+                        _journalActions(),
+                        if (_searching) _searchField(),
+                      ],
+                    ),
                   ),
                 ),
               ),
