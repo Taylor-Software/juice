@@ -20,8 +20,12 @@ void main() {
     test('copyWith replaces fields', () {
       const p = FunnelPeasant();
       final p2 = p.copyWith(
-          name: 'Bob', hp: 4, alive: false, graduated: true,
-          stats: {'str': 12}, flavor: {'occupation': 'Farmer'});
+          name: 'Bob',
+          hp: 4,
+          alive: false,
+          graduated: true,
+          stats: {'str': 12},
+          flavor: {'occupation': 'Farmer'});
       expect(p2.name, 'Bob');
       expect(p2.hp, 4);
       expect(p2.alive, false);
@@ -77,7 +81,9 @@ void main() {
       expect(FunnelSheet.maybeFromJson(null), isNull);
       expect(FunnelSheet.maybeFromJson('x'), isNull);
     });
-    test('maybeFromJson defaults a missing seedSystem to empty + tolerates no peasants', () {
+    test(
+        'maybeFromJson defaults a missing seedSystem to empty + tolerates no peasants',
+        () {
       final s = FunnelSheet.maybeFromJson(const {})!;
       expect(s.seedSystem, '');
       expect(s.peasants, isEmpty);
@@ -121,7 +127,8 @@ void main() {
         stats: {'str': 16, 'agi': 12, 'sta': 14, 'per': 9, 'int': 8, 'lck': 11},
         flavor: {'occupation': 'Blacksmith'},
       );
-      final hero = p.graduate('h1', peasant, {'className': 'Warrior', 'alignment': 'Lawful'}, '');
+      final hero = p.graduate(
+          'h1', peasant, {'className': 'Warrior', 'alignment': 'Lawful'}, '');
       expect(hero.id, 'h1');
       expect(hero.name, 'Survivor');
       expect(hero.dcc, isNotNull);
@@ -182,15 +189,15 @@ void main() {
     });
     test('solo-funnel preset resolves', () {
       final p = kCampaignPresets.firstWhere((x) => x.id == 'solo-funnel');
-      final (mode, systems) = presetConfig(p);
+      final systems = presetConfig(p);
       expect(systems, contains('funnel'));
-      expect(mode, CampaignMode.party);
     });
   });
 
   group('profiles: map-stat hp systems', () {
     const peasant = FunnelPeasant(
-      name: 'Hero', hp: 7,
+      name: 'Hero',
+      hp: 7,
       stats: {'str': 15, 'dex': 13, 'con': 14, 'int': 8, 'wis': 9, 'cha': 11},
     );
     test('dnd', () {
@@ -204,37 +211,43 @@ void main() {
       expect(h.name, 'Hero');
     });
     test('shadowdark', () {
-      final h = funnelProfileFor('shadowdark')!.graduate('h', peasant,
-          {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'}, '');
+      final h = funnelProfileFor('shadowdark')!.graduate(
+          'h',
+          peasant,
+          {'className': 'Wizard', 'ancestry': 'Human', 'alignment': 'Neutral'},
+          '');
       expect(h.shadowdark!.abilities['str'], 15);
       expect(h.shadowdark!.currentHp, 7);
       expect(h.shadowdark!.maxHp, 7);
       expect(h.shadowdark!.className, 'Wizard');
-      expect(h.shadowdark!.ancestry, 'Human');     // ancestry pick lands
-      expect(h.shadowdark!.alignment, 'Neutral');  // alignment pick lands
+      expect(h.shadowdark!.ancestry, 'Human'); // ancestry pick lands
+      expect(h.shadowdark!.alignment, 'Neutral'); // alignment pick lands
     });
     test('argosa', () {
-      final cls = funnelProfileFor('argosa')!.graduateChoices.first.options.first;
-      final h = funnelProfileFor('argosa')!.graduate('h', peasant, {'className': cls}, '');
+      final cls =
+          funnelProfileFor('argosa')!.graduateChoices.first.options.first;
+      final h = funnelProfileFor('argosa')!
+          .graduate('h', peasant, {'className': cls}, '');
       expect(h.argosa!.stats['str'], 15);
       expect(h.argosa!.currentHp, 7);
       expect(h.argosa!.maxHp, 7);
       expect(h.argosa!.className, cls); // class pick lands
     });
     test('ose', () {
-      final h = funnelProfileFor('ose')!.graduate('h', peasant,
-          {'className': 'Fighter', 'alignment': 'Lawful'}, '');
+      final h = funnelProfileFor('ose')!.graduate(
+          'h', peasant, {'className': 'Fighter', 'alignment': 'Lawful'}, '');
       expect(h.ose!.stats['str'], 15);
       expect(h.ose!.currentHp, 7);
       expect(h.ose!.maxHp, 7);
       expect(h.ose!.className, 'Fighter');
-      expect(h.ose!.alignment, 'Lawful');  // alignment pick lands
+      expect(h.ose!.alignment, 'Lawful'); // alignment pick lands
     });
   });
 
   group('profiles: modifier-stat systems', () {
     test('nimble', () {
-      const peasant = FunnelPeasant(hp: 12, stats: {'str': 2, 'dex': 1, 'int': 0, 'wis': -1});
+      const peasant = FunnelPeasant(
+          hp: 12, stats: {'str': 2, 'dex': 1, 'int': 0, 'wis': -1});
       final h = funnelProfileFor('nimble')!
           .graduate('h', peasant, {'className': kNimbleClasses.first}, '');
       expect(h.nimble!.stats['str'], 2);
@@ -244,8 +257,13 @@ void main() {
       expect(funnelProfileFor('nimble')!.statDefault, 0);
     });
     test('draw-steel maps stamina', () {
-      const peasant = FunnelPeasant(hp: 20,
-          stats: {'might': 2, 'agility': 1, 'reason': 0, 'intuition': 0, 'presence': -1});
+      const peasant = FunnelPeasant(hp: 20, stats: {
+        'might': 2,
+        'agility': 1,
+        'reason': 0,
+        'intuition': 0,
+        'presence': -1
+      });
       final h = funnelProfileFor('draw-steel')!
           .graduate('h', peasant, {'className': kDrawSteelClasses.first}, '');
       expect(h.drawSteel!.characteristics['might'], 2);
@@ -262,9 +280,16 @@ void main() {
       expect(h.knave!.maxHp, 6);
     });
     test('kal-arath', () {
-      const peasant = FunnelPeasant(hp: 8, stats: {'str': 3, 'tou': 2, 'agi': 1, 'int': 0, 'pre': -1});
-      final h = funnelProfileFor('kal-arath')!.graduate('h', peasant,
-          {'archetype': kKalArathArchetypes.first, 'pact': kKalArathPacts.first}, '');
+      const peasant = FunnelPeasant(
+          hp: 8, stats: {'str': 3, 'tou': 2, 'agi': 1, 'int': 0, 'pre': -1});
+      final h = funnelProfileFor('kal-arath')!.graduate(
+          'h',
+          peasant,
+          {
+            'archetype': kKalArathArchetypes.first,
+            'pact': kKalArathPacts.first
+          },
+          '');
       expect(h.kalArath!.stats['str'], 3);
       expect(h.kalArath!.currentHp, 8);
       expect(h.kalArath!.maxHp, 8);
@@ -275,9 +300,10 @@ void main() {
 
   group('profiles: individual-field + meter systems', () {
     test('cairn maps individual stats + hp + background', () {
-      const peasant = FunnelPeasant(hp: 5, stats: {'str': 12, 'dex': 9, 'wil': 14});
-      final h = funnelProfileFor('cairn')!.graduate('h', peasant,
-          {'background': kCairnBackgrounds.first}, '');
+      const peasant =
+          FunnelPeasant(hp: 5, stats: {'str': 12, 'dex': 9, 'wil': 14});
+      final h = funnelProfileFor('cairn')!
+          .graduate('h', peasant, {'background': kCairnBackgrounds.first}, '');
       expect(h.cairn!.str, 12);
       expect(h.cairn!.dex, 9);
       expect(h.cairn!.wil, 14);
@@ -285,8 +311,11 @@ void main() {
       expect(h.cairn!.maxHp, 5);
       expect(h.cairn!.background, kCairnBackgrounds.first);
     });
-    test('ironsworn maps individual stats via variant choice, ignores hp (no pool)', () {
-      const peasant = FunnelPeasant(hp: 4,
+    test(
+        'ironsworn maps individual stats via variant choice, ignores hp (no pool)',
+        () {
+      const peasant = FunnelPeasant(
+          hp: 4,
           stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
       final h = funnelProfileFor('ironsworn')!
           .graduate('h', peasant, {'variant': 'ironsworn'}, '');
@@ -296,7 +325,8 @@ void main() {
   });
 
   group('ironsworn family graduation', () {
-    const peasant = FunnelPeasant(hp: 3,
+    const peasant = FunnelPeasant(
+        hp: 3,
         stats: {'edge': 2, 'heart': 1, 'iron': 3, 'shadow': 1, 'wits': 2});
     test('ironsworn profile offers a variant choice', () {
       final p = funnelProfileFor('ironsworn')!;
@@ -473,8 +503,14 @@ void main() {
       expect(peasant.stats.keys, containsAll(['str', 'dex', 'wil']));
     });
     test('graduate builds the template blocks + injects stats and hp', () {
-      const peasant = FunnelPeasant(name: 'Reaper', hp: 6,
-          stats: {'str': 15, 'dex': 13, 'con': 14, 'int': 8, 'wis': 9, 'cha': 11});
+      const peasant = FunnelPeasant(name: 'Reaper', hp: 6, stats: {
+        'str': 15,
+        'dex': 13,
+        'con': 14,
+        'int': 8,
+        'wis': 9,
+        'cha': 11
+      });
       final h = funnelProfileFor('custom')!
           .graduate('h', peasant, const {}, 'generic-d20');
       expect(h.custom, isNotNull);
@@ -485,8 +521,8 @@ void main() {
     });
     test('graduate into blank template yields an empty custom sheet', () {
       const peasant = FunnelPeasant(name: 'Nobody', hp: 4);
-      final h = funnelProfileFor('custom')!
-          .graduate('h', peasant, const {}, 'blank');
+      final h =
+          funnelProfileFor('custom')!.graduate('h', peasant, const {}, 'blank');
       expect(h.custom, isNotNull);
       expect(h.custom!.blocks, isEmpty);
       expect(h.name, 'Nobody');

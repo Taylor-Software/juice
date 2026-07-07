@@ -74,7 +74,8 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('The GM did not answer — try again.')),
+          const SnackBar(
+              content: Text('The Oracle did not answer — try again.')),
         );
       }
     } finally {
@@ -87,7 +88,7 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Clear chat'),
-        content: const Text('Clear this GM conversation?'),
+        content: const Text('Clear this Oracle conversation?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -112,11 +113,11 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     final gm = turns[i];
     final prior = i > 0 ? turns[i - 1] : null;
     final body = prior != null && prior.role == ChatRole.player
-        ? 'Player: ${prior.text}\n\nGM: ${gm.text}'
-        : 'GM: ${gm.text}';
+        ? 'Player: ${prior.text}\n\nOracle: ${gm.text}'
+        : 'Oracle: ${gm.text}';
     ref
         .read(journalProvider.notifier)
-        .addResult('GM chat', body, sourceTool: 'gm-chat');
+        .addResult('Oracle chat', body, sourceTool: 'gm-chat');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Saved to journal')),
     );
@@ -129,7 +130,7 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
     final aiReady = ref.watch(aiReadyProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GM chat'),
+        title: const Text('Oracle chat'),
         actions: [
           if (turns.isNotEmpty)
             IconButton(
@@ -145,7 +146,7 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
           Expanded(
             child: turns.isEmpty
                 ? Center(
-                    child: Text('Ask the GM anything.',
+                    child: Text('Ask the Oracle anything.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant)))
                 : ListView.builder(
@@ -176,7 +177,7 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
                       onSubmitted: _send,
                       decoration: InputDecoration(
                         hintText: aiReady
-                            ? 'Message the GM…'
+                            ? 'Message the Oracle…'
                             : 'Enable AI in Settings',
                         border: const OutlineInputBorder(),
                       ),

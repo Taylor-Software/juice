@@ -17,7 +17,6 @@ class CampaignImport {
     required this.name,
     required this.rawByKey,
     this.systems,
-    this.mode = CampaignMode.party,
     this.genre,
   });
   final String name;
@@ -25,7 +24,6 @@ class CampaignImport {
 
   /// Enabled optional systems; null means "all" (the default profile).
   final List<String>? systems;
-  final CampaignMode mode;
 
   /// Display genre/mood mirrored from the campaign's settings store; null/empty
   /// when absent. The interpreter's source of truth stays CampaignSettings.
@@ -34,14 +32,14 @@ class CampaignImport {
 
 /// Encode a campaign to the .juice.json file content.
 /// [rawByKey] holds the stores' persisted JSON strings by base key;
-/// null/absent stores are omitted. [systems]/[mode] carry the campaign
-/// profile so an import restores it (additive keys — older readers ignore them).
+/// null/absent stores are omitted. [systems] carries the campaign profile so
+/// an import restores it (additive keys — older readers ignore them; legacy
+/// files' `mode` key is ignored since the solo-only refocus).
 String encodeCampaign({
   required String name,
   required DateTime savedAt,
   required Map<String, String> rawByKey,
   List<String>? systems,
-  CampaignMode mode = CampaignMode.party,
 }) {
   return const JsonEncoder.withIndent('  ').convert({
     'app': _appMarker,
@@ -49,7 +47,6 @@ String encodeCampaign({
     'savedAt': savedAt.toIso8601String(),
     'name': name,
     if (systems != null) 'systems': systems,
-    'mode': mode.name,
     'data': {
       for (final e in rawByKey.entries) e.key: jsonDecode(e.value),
     },
@@ -151,7 +148,6 @@ CampaignImport parseCampaign(String raw) {
     rawByKey: rawByKey,
     systems:
         rawSystems is List ? rawSystems.whereType<String>().toList() : null,
-    mode: decoded['mode'] == 'gm' ? CampaignMode.gm : CampaignMode.party,
     genre: genre,
   );
 }

@@ -1,16 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../engine/models.dart';
-
 /// Top-level verbs of the home shell.
 enum Destination { journal, sheet, ask, map, track, run }
-
-/// The verb a campaign lands on when entered, by player-focus mode: GM runs the
-/// world (Run = live table dashboard), Party starts the solo play loop (Play =
-/// LoopBar + journal feed). Applied at campaign entry via
-/// `ShellRouteNotifier.landFor`.
-Destination landingDestination(CampaignMode mode) =>
-    mode == CampaignMode.gm ? Destination.run : Destination.journal;
 
 class DestinationMeta {
   const DestinationMeta(this.label, this.icon);

@@ -16,7 +16,7 @@ import 'fake_interpreter.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('empty entries — landFor called, no push', (t) async {
+  testWidgets('empty entries — land called, no push', (t) async {
     final container = ProviderContainer(overrides: [
       interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
     ]);
@@ -33,12 +33,11 @@ void main() {
     await enterCampaignWith(
       nav: nav,
       shellRoute: shellRoute,
-      mode: CampaignMode.party,
       entries: const [],
       hasEncounter: false,
     );
 
-    // party mode without encounter → Play (journal) destination
+    // no encounter → Play (journal) destination
     expect(
       container.read(shellRouteProvider).destination,
       Destination.journal,
@@ -65,7 +64,6 @@ void main() {
     await enterCampaignWith(
       nav: nav,
       shellRoute: shellRoute,
-      mode: CampaignMode.party,
       entries: const [],
       hasEncounter: true,
     );
@@ -102,7 +100,6 @@ void main() {
     unawaited(enterCampaignWith(
       nav: nav,
       shellRoute: shellRoute,
-      mode: CampaignMode.party,
       entries: [entry],
       hasEncounter: false,
     ));
@@ -110,7 +107,7 @@ void main() {
     await t.pumpAndSettle();
 
     expect(find.byType(SessionResumeScreen), findsOneWidget);
-    // shellRoute not changed — landFor not called
+    // shellRoute not changed — land not called
     expect(
       container.read(shellRouteProvider).destination,
       Destination.journal,

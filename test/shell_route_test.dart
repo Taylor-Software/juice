@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/destination.dart';
 import 'package:juice_oracle/shared/shell_route.dart';
 
@@ -11,28 +10,20 @@ void main() {
     expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
-  test('landFor lands on the mode home verb (gm→run, party→journal)', () {
+  test('land lands on the Journal', () {
     final c = ProviderContainer();
     addTearDown(c.dispose);
-    c.read(shellRouteProvider.notifier).landFor(CampaignMode.gm);
-    expect(c.read(shellRouteProvider).destination, Destination.run);
-    expect(c.read(shellRouteProvider).subtab, '');
-    c.read(shellRouteProvider.notifier).landFor(CampaignMode.party);
+    c.read(shellRouteProvider.notifier).goTo(Destination.map);
+    c.read(shellRouteProvider.notifier).land();
     expect(c.read(shellRouteProvider).destination, Destination.journal);
+    expect(c.read(shellRouteProvider).subtab, '');
   });
 
-  test('landFor with an in-progress encounter lands on Track→Encounter', () {
+  test('land with an in-progress encounter lands on Track→Encounter', () {
     final c = ProviderContainer();
     addTearDown(c.dispose);
-    // Overrides the mode home regardless of mode.
-    c
-        .read(shellRouteProvider.notifier)
-        .landFor(CampaignMode.party, hasEncounter: true);
+    c.read(shellRouteProvider.notifier).land(hasEncounter: true);
     expect(c.read(shellRouteProvider).destination, Destination.track);
-    expect(c.read(shellRouteProvider).subtab, 'encounter');
-    c
-        .read(shellRouteProvider.notifier)
-        .landFor(CampaignMode.gm, hasEncounter: true);
     expect(c.read(shellRouteProvider).subtab, 'encounter');
   });
 

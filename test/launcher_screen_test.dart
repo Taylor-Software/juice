@@ -75,11 +75,7 @@ void main() {
       sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
             active: 'a',
             sessions: [
-              SessionMeta(
-                  id: 'a',
-                  name: 'Delve',
-                  systems: ['dnd', 'mythic'],
-                  mode: CampaignMode.gm),
+              SessionMeta(id: 'a', name: 'Delve', systems: ['dnd', 'mythic']),
             ],
           ))),
     ]);
@@ -100,26 +96,25 @@ void main() {
       sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
             active: 'a',
             sessions: [
-              SessionMeta(id: 'a', name: 'Alpha', mode: CampaignMode.gm),
-              SessionMeta(id: 'b', name: 'Beta'), // party (default)
+              SessionMeta(id: 'a', name: 'Alpha'),
+              SessionMeta(id: 'b', name: 'Beta'),
             ],
           ))),
     ]);
   }
 
-  testWidgets('Continue lands on the active campaign mode home (gm→run)',
-      (t) async {
+  testWidgets('Continue lands on the Journal', (t) async {
     final c = modedContainer();
     addTearDown(c.dispose);
     await _pump(t, c);
-    // Before entry the route is the bare default.
-    expect(c.read(shellRouteProvider).destination, Destination.journal);
+    // Point the route elsewhere so the landing is observable.
+    c.read(shellRouteProvider.notifier).goTo(Destination.map);
     await t.tap(find.byKey(const Key('launcher-continue')));
     await t.pumpAndSettle();
-    expect(c.read(shellRouteProvider).destination, Destination.run);
+    expect(c.read(shellRouteProvider).destination, Destination.journal);
   });
 
-  testWidgets('switching to a party campaign lands on Play', (t) async {
+  testWidgets('switching campaigns lands on Play', (t) async {
     final c = modedContainer();
     addTearDown(c.dispose);
     await _pump(t, c);
@@ -183,7 +178,6 @@ void main() {
     await t.pumpAndSettle();
     await t.enterText(
         find.byKey(const Key('new-campaign-name')), 'Wizard Funnel');
-    await t.tap(find.byKey(const Key('new-stance-solo-gm')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
     await t.pumpAndSettle();
@@ -246,7 +240,6 @@ void main() {
     await t.tap(find.byKey(const Key('launcher-new')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('new-campaign-name')), 'Wizard Kit');
-    await t.tap(find.byKey(const Key('new-stance-solo-gm')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
     await t.pumpAndSettle();
@@ -277,7 +270,6 @@ void main() {
     await t.tap(find.byKey(const Key('launcher-new')));
     await t.pumpAndSettle();
     // No name entered — only a stance pick.
-    await t.tap(find.byKey(const Key('new-stance-solo-member')));
     await t.pumpAndSettle();
 
     expect(
@@ -303,7 +295,6 @@ void main() {
     await t.pumpAndSettle();
     await t.enterText(
         find.byKey(const Key('new-campaign-name')), 'Wizard Roster');
-    await t.tap(find.byKey(const Key('new-stance-solo-member')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
     await t.pumpAndSettle();
@@ -349,7 +340,6 @@ void main() {
     await t.pumpAndSettle();
     await t.enterText(
         find.byKey(const Key('new-campaign-name')), 'First Run Roster');
-    await t.tap(find.byKey(const Key('new-stance-solo-member')));
     await t.pumpAndSettle();
     await t.tap(find.byKey(const Key('wizard-next'))); // -> system + tools
     await t.pumpAndSettle();

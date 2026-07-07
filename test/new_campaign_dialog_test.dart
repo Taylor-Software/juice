@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/shared/home_shell.dart';
 
 typedef NewCampaignResult = ({
   String name,
   Set<String> systems,
-  CampaignMode mode,
   String genre,
   String tone,
   String start,
@@ -60,17 +58,9 @@ Future<void> _walkToCreate(WidgetTester tester) async {
 }
 
 void main() {
-  // ── Step 0: stance cards ──────────────────────────────────────────────────
+  // ── Step 0: name ─────────────────────────────────────────────────────────
 
-  testWidgets('step 0 shows all three stance keys', (tester) async {
-    await _open(tester);
-    expect(find.byKey(const Key('new-stance-gm')), findsOneWidget);
-    expect(find.byKey(const Key('new-stance-solo-gm')), findsOneWidget);
-    expect(find.byKey(const Key('new-stance-solo-member')), findsOneWidget);
-  });
-
-  testWidgets('selecting GM stance + walking to Create yields mode=gm',
-      (tester) async {
+  testWidgets('walking to Create yields the entered name', (tester) async {
     NewCampaignResult? result;
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
@@ -87,91 +77,18 @@ void main() {
     ));
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
-    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
-    // onward isn't blocked. Tests that assert a specific name re-enter it below.
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
-    await tester.pump();
-
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'GM Run');
-    await tester.tap(find.byKey(const Key('new-stance-gm')));
-    await tester.pumpAndSettle();
-    await _walkToCreate(tester);
-
-    expect(result!.mode, CampaignMode.gm);
-    expect(result!.name, 'GM Run');
-  });
-
-  testWidgets('solo-gm stance yields mode=party', (tester) async {
-    NewCampaignResult? result;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: Builder(builder: (context) {
-        return ElevatedButton(
-          onPressed: () async {
-            result = await showDialog<NewCampaignResult>(
-              context: context,
-              builder: (_) => const NewCampaignDialog(),
-            );
-          },
-          child: const Text('open'),
-        );
-      })),
-    ));
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
-    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
-    // onward isn't blocked. Tests that assert a specific name re-enter it below.
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
-    await tester.pump();
-
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'Solo GM');
-    await tester.tap(find.byKey(const Key('new-stance-solo-gm')));
-    await tester.pumpAndSettle();
-    await _walkToCreate(tester);
-
-    expect(result!.mode, CampaignMode.party);
-  });
-
-  testWidgets(
-      'default stance is solo-member; walking straight to Create yields mode=party',
-      (tester) async {
-    NewCampaignResult? result;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: Builder(builder: (context) {
-        return ElevatedButton(
-          onPressed: () async {
-            result = await showDialog<NewCampaignResult>(
-              context: context,
-              builder: (_) => const NewCampaignDialog(),
-            );
-          },
-          child: const Text('open'),
-        );
-      })),
-    ));
-    await tester.tap(find.text('open'));
-    await tester.pumpAndSettle();
-    // Step-0 Next is gated on a non-blank campaign name; set one so the walk
-    // onward isn't blocked. Tests that assert a specific name re-enter it below.
-    await tester.enterText(
-        find.byKey(const Key('new-campaign-name')), 'Test Campaign');
-    await tester.pump();
-
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Solo Member');
-    // solo-member is default — no tap needed
+    await tester.pump();
     await _walkToCreate(tester);
 
-    expect(result!.mode, CampaignMode.party);
+    expect(result!.name, 'Solo Member');
   });
 
   // ── Navigation gating ─────────────────────────────────────────────────────
 
   testWidgets(
-      'step 0 Next requires a name: disabled while blank (even with a stance), '
+      'step 0 Next requires a name: disabled while blank, '
       'enabled once named', (tester) async {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: Builder(builder: (context) {
@@ -234,7 +151,6 @@ void main() {
     // Back → 0
     await tester.tap(find.byKey(const Key('wizard-back')));
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('new-stance-gm')), findsOneWidget);
   });
 
   testWidgets('Create button is only on step 2', (tester) async {
@@ -689,7 +605,6 @@ void main() {
 
     await tester.enterText(
         find.byKey(const Key('new-campaign-name')), 'Kit Test');
-    await tester.tap(find.byKey(const Key('new-stance-solo-member')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('wizard-next'))); // step 0 -> 1
     await tester.pumpAndSettle();

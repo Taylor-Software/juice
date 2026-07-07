@@ -119,7 +119,7 @@ void main() {
     await tester.tap(find.byKey(const Key('gm-chat-clear')));
     await tester.pumpAndSettle();
     // Confirm dialog is up; the thread is untouched until "Clear".
-    expect(find.text('Clear this GM conversation?'), findsOneWidget);
+    expect(find.text('Clear this Oracle conversation?'), findsOneWidget);
     expect(container.read(gmChatProvider).valueOrNull!.turns, isNotEmpty);
     await tester.tap(find.widgetWithText(FilledButton, 'Clear'));
     await tester.pumpAndSettle();
