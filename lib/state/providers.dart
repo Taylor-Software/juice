@@ -51,7 +51,7 @@ final oracleProvider = FutureProvider<Oracle>((ref) async {
   return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
 });
 
-/// Loads the Roll 4 Ruin dungeon-branch tables asset once.
+/// Loads the Roll 4 Ruin tables asset (dungeon + cave branches) once.
 final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
   final raw = await rootBundle.loadString('assets/dungeon_data.json');
   return DungeonTables.fromJson(jsonDecode(raw) as Map<String, dynamic>);
@@ -1013,6 +1013,16 @@ class MapNotifier extends AsyncNotifier<MapState> {
     return room;
   }
 
+  /// The type effect of [lvl]: its persisted typeName looked up in the A2
+  /// (dungeon) / D2 (cave) tables; a name-only neutral effect when absent.
+  A2Type _effectOfLevel(DungeonLevel lvl, DungeonTables tables) {
+    final values = lvl.branch == 'cave' ? tables.d2.values : tables.a2.values;
+    for (final t in values) {
+      if (t.name == lvl.typeName) return t;
+    }
+    return A2Type(name: lvl.typeName);
+  }
+
   /// Generate + place one classic-dungeon room mated to [doorEdge] on room
   /// [fromRoomId] (null/null = the entrance at (0,0)). Persists the faction
   /// registry when the generator extended it. Returns false when no footprint
@@ -1021,10 +1031,39 @@ class MapNotifier extends AsyncNotifier<MapState> {
     required String? fromRoomId,
     required ({(int, int) cell, Side side})? doorEdge,
     required DungeonTables tables,
-    required A2Type effect,
+    required Dice dice,
+  }) =>
+      _placeClassicRoom(
+          fromRoomId: fromRoomId,
+          doorEdge: doorEdge,
+          tables: tables,
+          dice: dice);
+
+  /// Generate + place one classic room on the ACTIVE level, deriving the
+  /// branch (parent crossover > parent roomType > level branch), depth and
+  /// type effect from the level. Returns false when there is no level yet or
+  /// no footprint fits the chosen door (state unchanged).
+  Future<bool> _placeClassicRoom({
+    required String? fromRoomId,
+    required ({(int, int) cell, Side side})? doorEdge,
+    required DungeonTables tables,
     required Dice dice,
   }) async {
     final s = await _ready;
+    if (s.levels.isEmpty) return false;
+    final level = s.levels[s.activeLevel.clamp(0, s.levels.length - 1)];
+    final DungeonBranch branch;
+    final parent = fromRoomId == null
+        ? null
+        : s.rooms.where((r) => r.id == fromRoomId).firstOrNull;
+    if (parent?.crossTo != null) {
+      // A crossover room opens into the OTHER branch.
+      branch = DungeonBranch.values.byName(parent!.crossTo!);
+    } else if (parent != null) {
+      branch = branchOfRoomType(parent.roomType);
+    } else {
+      branch = DungeonBranch.values.byName(level.branch);
+    }
     final factions = ref.read(dungeonFactionsProvider).valueOrNull ??
         const FactionRegistry();
     // The id is minted BEFORE generating so a faction assigned inside
@@ -1032,14 +1071,17 @@ class MapNotifier extends AsyncNotifier<MapState> {
     final id = _newId();
     final gen = generateRoom(
         DungeonGenContext(
-            level: 1,
-            effect: effect,
+            branch: branch,
+            depth: level.depth,
+            stone: level.stone,
+            effect: _effectOfLevel(level, tables),
             tables: tables,
             factions: factions,
             roomId: id),
         dice);
-    final catalog =
-        gen.type == RoomType.corridor ? kCorridorShapes : kChamberShapes;
+    final catalog = gen.type == RoomType.corridor || gen.type == RoomType.tunnel
+        ? kCorridorShapes
+        : kChamberShapes;
     final candidates = catalog[gen.shapeFamily]!;
 
     final List<(int, int)> footprintOffsets;
@@ -1091,7 +1133,9 @@ class MapNotifier extends AsyncNotifier<MapState> {
       detail: gen.detail,
       footprint: footprintOffsets,
       doors: doors,
-      roomType: gen.type == RoomType.corridor ? 'corridor' : 'chamber',
+      roomType: gen.type.name,
+      levelDelta: gen.levelDelta,
+      crossTo: gen.crossoverTo?.name,
     );
 
     if (!identical(gen.factions, factions)) {
@@ -1109,6 +1153,122 @@ class MapNotifier extends AsyncNotifier<MapState> {
       currentRoomId: room.id,
     ));
     return true;
+  }
+
+  /// Roll a d12 surroundings row (A1/D1), rerolling 12 ("Roll again") until a
+  /// concrete row lands.
+  String _rollSurroundings(List<String> rows, Dice dice) {
+    var n = dice.dN(12);
+    while (n == 12) {
+      n = dice.dN(12);
+    }
+    return rows[(n - 1).clamp(0, rows.length - 1)];
+  }
+
+  /// Start a fresh classic dungeon/cave: rolls the entrance surroundings
+  /// (A1/D1) + level type (A2/D2) (+ cavestone E5 for caves), replaces the
+  /// level stack with one depth-1 level, places the entrance room, and
+  /// records the rolled context on it.
+  Future<void> enterClassicDungeon({
+    required DungeonBranch branch,
+    required DungeonTables tables,
+    required Dice dice,
+  }) async {
+    final s = await _ready;
+    final isCave = branch == DungeonBranch.cave;
+    final surroundings =
+        _rollSurroundings(isCave ? tables.d1 : tables.a1, dice);
+    final typeTable = isCave ? tables.d2 : tables.a2;
+    final type =
+        typeTable['${dice.dN(6) + dice.dN(6)}'] ?? const A2Type(name: '');
+    final stone = isCave && tables.cavestone.isNotEmpty
+        ? tables.cavestone[dice.dN(tables.cavestone.length) - 1]
+        : '';
+    final level = DungeonLevel(
+        depth: 1,
+        branch: branch.name,
+        typeName: type.name,
+        note: stripRefTokens(type.note),
+        stone: stone);
+    await save(s.copyWith(levels: [level], activeLevel: 0));
+    await _placeClassicRoom(
+        fromRoomId: null, doorEdge: null, tables: tables, dice: dice);
+    final entrance = (state.valueOrNull ?? s).rooms.lastOrNull;
+    if (entrance != null) {
+      // A2/D2 notes reference tables by name ({ref:G3} etc.) — de-tokenize.
+      await appendRoomDetail(
+          entrance.id,
+          'Entrance: $surroundings\n'
+          'Type: ${type.name} — ${stripRefTokens(type.note)}'
+          '${stone.isEmpty ? '' : '\nStone: $stone'}');
+    }
+  }
+
+  /// Follow a level-transition room: `levelDelta` is the zine's signed level
+  /// notation (down = -1, chasm = -1..-4, up = +1), so the target depth is
+  /// `level.depth - delta` (delta -1 at depth 1 descends to depth 2; delta +1
+  /// at depth 2 returns to depth 1). Switches to an existing level at that
+  /// depth, else creates it (same branch/type; caves re-roll their stone) and
+  /// places its entrance room. No-op for delta 0 / unknown room.
+  Future<void> descendFrom(String roomId,
+      {required DungeonTables tables, required Dice dice}) async {
+    final s = await _ready;
+    DungeonLevel? level;
+    DungeonRoom? room;
+    for (final l in s.levels) {
+      for (final r in l.rooms) {
+        if (r.id == roomId) {
+          level = l;
+          room = r;
+          break;
+        }
+      }
+      if (room != null) break;
+    }
+    if (level == null || room == null || room.levelDelta == 0) return;
+    final target = (level.depth - room.levelDelta).clamp(1, 1 << 30);
+    final existing = s.levelAt(target);
+    if (existing != null) {
+      await save(s.copyWith(activeLevel: s.levels.indexOf(existing)));
+      return;
+    }
+    // The new level's branch follows the transition ROOM (a chasm in a
+    // crossover cave room descends into caves even inside a dungeon level);
+    // legacy null roomType falls back to the level's branch.
+    final branch = room.roomType == null
+        ? level.branch
+        : branchOfRoomType(room.roomType).name;
+    // Same-branch descent stays in the same complex (type inherited); a
+    // cross-branch descent enters a NEW one — roll its type fresh.
+    var typeName = level.typeName;
+    var note = level.note;
+    if (branch != level.branch) {
+      final types = branch == 'cave' ? tables.d2 : tables.a2;
+      final type = types['${dice.dN(6) + dice.dN(6)}'];
+      typeName = type?.name ?? '';
+      note = stripRefTokens(type?.note ?? '');
+    }
+    final stone = branch == 'cave' && tables.cavestone.isNotEmpty
+        ? tables.cavestone[dice.dN(tables.cavestone.length) - 1]
+        : '';
+    final next = DungeonLevel(
+        depth: target,
+        branch: branch,
+        typeName: typeName,
+        note: note,
+        stone: stone);
+    await save(
+        s.copyWith(levels: [...s.levels, next], activeLevel: s.levels.length));
+    await _placeClassicRoom(
+        fromRoomId: null, doorEdge: null, tables: tables, dice: dice);
+  }
+
+  /// Make the level at [depth] active; no-op when none exists.
+  Future<void> switchLevel(int depth) async {
+    final s = await _ready;
+    final level = s.levelAt(depth);
+    if (level == null) return;
+    await save(s.copyWith(activeLevel: s.levels.indexOf(level)));
   }
 
   /// Hexcrawl crawl: add one dungeon room with generic content.
@@ -1350,11 +1510,10 @@ class MapNotifier extends AsyncNotifier<MapState> {
             pois: h.pois.contains(poiN) ? h.pois : [...h.pois, poiN]));
   }
 
-  /// Clear the dungeon graph, keeping the hex field.
+  /// Clear the dungeon graph (all levels), keeping the hex field.
   Future<void> resetDungeon() async {
     final s = await _ready;
-    await save(s.copyWith(
-        rooms: const [], corridors: const [], clearCurrentRoomId: true));
+    await save(s.copyWith(levels: const [], activeLevel: 0));
   }
 
   /// Clear the hex field, keeping the dungeon graph.

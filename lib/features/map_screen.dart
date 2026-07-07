@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dungeon/footprint.dart';
-import '../engine/dungeon/generator.dart' show stripRefTokens;
-import '../engine/dungeon/tables.dart';
+import '../engine/dungeon/generator.dart' show DungeonBranch;
+import '../engine/dungeon/organic.dart';
 import '../engine/map_builder.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
@@ -175,11 +175,6 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
   final GlobalKey _dungeonSnapKey = GlobalKey();
   int _hcDungeonCount = 8; // hexcrawl "Generate dungeon" room count
 
-  /// Classic-dungeon A2 effect for this run, rolled by Enter. Ephemeral: on
-  /// restart an existing classic dungeon continues under a neutral effect
-  /// (the rolled type is recorded in the entrance room's detail).
-  A2Type _a2 = const A2Type(name: '');
-
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(mapProvider);
@@ -193,6 +188,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         return Column(
           children: [
             _controls(context, s),
+            if (_classicOn() && s.levels.isNotEmpty) _levelHeader(context, s),
             if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
             Expanded(child: s.rooms.isEmpty ? _empty(context) : _canvas(s)),
             if (selected != null) _detailCard(context, selected),
@@ -224,10 +220,30 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
           // tab's layout (blank tool / hung release web).
           if (classic && s.rooms.isEmpty)
             Flexible(
-              child: FilledButton.tonal(
-                key: const Key('classic-enter'),
-                onPressed: _enterDungeon,
-                child: const Text('Enter the dungeon'),
+              // Wrap under the Flexible's bounded width, so the two buttons
+              // stack on narrow screens instead of overflowing the Row. The
+              // theme's full-width FilledButton minimumSize is pinned finite
+              // so they can sit side by side (the loop_bar pattern).
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  FilledButton.tonal(
+                    key: const Key('classic-enter'),
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: _enterDungeon,
+                    child: const Text('Enter the dungeon'),
+                  ),
+                  FilledButton.tonalIcon(
+                    key: const Key('classic-enter-cave'),
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: _enterCave,
+                    icon: const Icon(Icons.landscape_outlined),
+                    label: const Text('Enter a cave'),
+                  ),
+                ],
               ),
             )
           else if (!classic)
@@ -355,32 +371,79 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               kAllSystems)
           .contains('classic-dungeon');
 
-  /// Roll the classic entrance: A1 surroundings + A2 dungeon type (kept for
-  /// this run's effect), then place the entrance chamber/corridor at (0,0).
+  /// Enter a fresh classic dungeon: the notifier rolls the entrance
+  /// surroundings + level type and places the entrance room.
   Future<void> _enterDungeon() async {
     // Await the asset (a cold read of an unwatched FutureProvider is
     // AsyncLoading on first tap — the repo's Run-screen gotcha).
     final tables = await ref.read(dungeonDataProvider.future);
-    final dice = widget.oracle.dice;
-    final a1 = tables.a1[dice.dN(tables.a1.length) - 1];
-    final a2 =
-        tables.a2['${dice.dN(6) + dice.dN(6)}'] ?? const A2Type(name: '');
-    setState(() => _a2 = a2);
-    final notifier = ref.read(mapProvider.notifier);
-    await notifier.addClassicRoom(
-        fromRoomId: null,
-        doorEdge: null,
+    await ref.read(mapProvider.notifier).enterClassicDungeon(
+        branch: DungeonBranch.dungeon,
         tables: tables,
-        effect: a2,
-        dice: dice);
-    // Record the rolled context on the entrance room.
-    final s = ref.read(mapProvider).valueOrNull;
-    final entrance = s?.rooms.lastOrNull;
-    if (entrance != null) {
-      // A2 notes reference tables by name ({ref:G3} etc.) — de-tokenize.
-      await notifier.appendRoomDetail(entrance.id,
-          'Entrance: $a1\nDungeon type: ${a2.name} — ${stripRefTokens(a2.note)}');
-    }
+        dice: widget.oracle.dice);
+  }
+
+  /// Enter a fresh classic cave (D-branch) the same way.
+  Future<void> _enterCave() async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    await ref.read(mapProvider.notifier).enterClassicDungeon(
+        branch: DungeonBranch.cave, tables: tables, dice: widget.oracle.dice);
+  }
+
+  /// Follow the selected level-transition room down/up a level.
+  Future<void> _descend(DungeonRoom room) async {
+    final tables = await ref.read(dungeonDataProvider.future);
+    await ref
+        .read(mapProvider.notifier)
+        .descendFrom(room.id, tables: tables, dice: widget.oracle.dice);
+  }
+
+  /// Active-level readout (depth · type · stone) + a level switcher once
+  /// more than one level exists.
+  Widget _levelHeader(BuildContext context, MapState s) {
+    final theme = Theme.of(context);
+    final lvl = s.levels[s.activeLevel.clamp(0, s.levels.length - 1)];
+    // Join only the non-empty parts — a legacy-lifted level has no typeName,
+    // and "Depth 1 ·" with a dangling separator reads broken.
+    final label = [
+      'Depth ${lvl.depth}',
+      if (lvl.typeName.isNotEmpty) lvl.typeName,
+      if (lvl.stone.isNotEmpty) lvl.stone,
+    ].join(' · ');
+    return Padding(
+      key: const Key('classic-level-header'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label,
+                style: theme.textTheme.labelLarge
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            if (s.levels.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    for (final l in s.levels)
+                      ChoiceChip(
+                        key: Key('classic-level-chip-${l.depth}'),
+                        label: Text('D${l.depth}'),
+                        visualDensity: VisualDensity.compact,
+                        selected: l.depth == lvl.depth,
+                        onSelected: (_) =>
+                            ref.read(mapProvider.notifier).switchLevel(l.depth),
+                      ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Explore through an open door: generate + place the next room mated there.
@@ -395,7 +458,6 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         fromRoomId: hit.roomId,
         doorEdge: world,
         tables: tables,
-        effect: _a2,
         dice: widget.oracle.dice);
     if (!ok && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -475,6 +537,15 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                 child: Text(room.detail, style: theme.textTheme.bodyMedium),
               ),
             ),
+            if (room.crossTo != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                'Openings lead to the '
+                '${room.crossTo == 'cave' ? 'caves' : 'dungeon'}',
+                style:
+                    const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+              ),
+            ],
             const SizedBox(height: 8),
             if (_lonelogOn()) ...[
               Wrap(
@@ -503,6 +574,17 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                   onPressed: () => _linger(room),
                   child: const Text('Linger'),
                 ),
+                if (room.levelDelta != 0)
+                  FilledButton.tonalIcon(
+                    key: const Key('classic-descend'),
+                    // Finite minimumSize: the theme's full-width default would
+                    // put this on its own Wrap line (loop_bar pattern).
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+                    onPressed: () => _descend(room),
+                    icon: const Icon(Icons.stairs_outlined),
+                    label: Text(room.levelDelta < 0 ? 'Descend' : 'Ascend'),
+                  ),
                 if (ref.watch(aiReadyProvider))
                   OutlinedButton.icon(
                     key: const Key('flesh-out-room'),
@@ -658,10 +740,43 @@ class _DungeonPainter extends CustomPainter {
         ..color = isCurrent
             ? scheme.primaryContainer
             : scheme.surfaceContainerHighest;
-      // Multi-cell footprints draw as the union of their cell rects (slightly
-      // over-inset seams bridged by a full-bleed body per cell); a legacy
-      // single-cell room keeps its rounded-square look exactly.
-      if (r.footprint.length == 1) {
+      // Cave/tunnel rooms paint as an organic wobbly blob around the fused
+      // footprint instead of the P1 rounded-rect look; dungeon rooms
+      // (corridor/chamber/legacy null) keep the P1 code path verbatim.
+      if (r.roomType == 'tunnel' || r.roomType == 'cave') {
+        final pts = organicPerimeter(r.footprint,
+            seed: r.id.hashCode, cellSize: _cell, jitter: _cell * 0.12);
+        final origin = Offset((r.x - _minX) * _cell + _cell / 2,
+            (r.y - _minY) * _cell + _cell / 2);
+        final path = Path()
+          ..moveTo(pts.first.$1 + origin.dx, pts.first.$2 + origin.dy);
+        for (final p in pts.skip(1)) {
+          path.lineTo(p.$1 + origin.dx, p.$2 + origin.dy);
+        }
+        path.close();
+        final caveFill = Paint()
+          ..color = Color.lerp(scheme.surfaceContainerHighest,
+              scheme.tertiaryContainer, isCurrent ? 0.9 : 0.5)!;
+        canvas.drawPath(path, caveFill);
+        if (isCurrent) {
+          canvas.drawPath(
+              path,
+              Paint()
+                ..color = scheme.primary
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        } else {
+          canvas.drawPath(
+              path,
+              Paint()
+                ..color = scheme.outlineVariant
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2);
+        }
+      } else if (r.footprint.length == 1) {
+        // Multi-cell footprints draw as the union of their cell rects
+        // (slightly over-inset seams bridged by a full-bleed body per cell);
+        // a legacy single-cell room keeps its rounded-square look exactly.
         final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
         canvas.drawRRect(rrect, fill);
         if (isCurrent) {

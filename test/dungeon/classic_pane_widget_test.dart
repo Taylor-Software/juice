@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dungeon/faction.dart';
 import 'package:juice_oracle/engine/dungeon/footprint.dart';
 import 'package:juice_oracle/engine/dungeon/tables.dart';
+import 'package:juice_oracle/engine/models.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/map_screen.dart';
@@ -58,6 +59,64 @@ void main() {
     await pump(tester, classic: false);
     expect(find.byKey(const Key('new-room')), findsOneWidget);
     expect(find.byKey(const Key('classic-enter')), findsNothing);
+    expect(find.byKey(const Key('classic-enter-cave')), findsNothing);
+  });
+
+  testWidgets(
+      'enter cave: classic-enter-cave creates a cave level with an '
+      'entrance room', (tester) async {
+    final container = await pump(tester);
+    expect(find.byKey(const Key('classic-enter')), findsOneWidget);
+    expect(find.byKey(const Key('classic-enter-cave')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('classic-enter-cave')));
+    await tester.pumpAndSettle();
+    final map = container.read(mapProvider).requireValue;
+    expect(map.levels.single.branch, 'cave');
+    expect(map.rooms, hasLength(1));
+    expect(map.rooms.single.roomType, anyOf('tunnel', 'cave'));
+    expect(find.byKey(const Key('classic-level-header')), findsOneWidget);
+    expect(find.textContaining('Depth 1'), findsOneWidget);
+  });
+
+  testWidgets('descend button creates and switches to depth 2', (tester) async {
+    final container = await pump(tester);
+    await tester.tap(find.byKey(const Key('classic-enter')));
+    await tester.pumpAndSettle();
+    final notifier = container.read(mapProvider.notifier);
+    final s = container.read(mapProvider).requireValue;
+    await notifier.save(s.copyWith(rooms: [
+      ...s.rooms,
+      const DungeonRoom(id: 'st', x: 7, y: 7, title: 'Stairs', levelDelta: -1),
+    ], currentRoomId: 'st'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('classic-descend')), findsOneWidget);
+    expect(find.text('Descend'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('classic-descend')));
+    await tester.pumpAndSettle();
+    var map = container.read(mapProvider).requireValue;
+    expect(map.levels, hasLength(2));
+    expect(map.levels[map.activeLevel].depth, 2);
+    expect(find.byKey(const Key('classic-level-chip-1')), findsOneWidget);
+    expect(find.byKey(const Key('classic-level-chip-2')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('classic-level-chip-1')));
+    await tester.pumpAndSettle();
+    map = container.read(mapProvider).requireValue;
+    expect(map.levels[map.activeLevel].depth, 1);
+  });
+
+  testWidgets('crossover caption shows', (tester) async {
+    final container = await pump(tester);
+    await tester.tap(find.byKey(const Key('classic-enter')));
+    await tester.pumpAndSettle();
+    final notifier = container.read(mapProvider.notifier);
+    final s = container.read(mapProvider).requireValue;
+    await notifier.save(s.copyWith(rooms: [
+      ...s.rooms,
+      const DungeonRoom(
+          id: 'xr', x: 7, y: 7, title: 'Sinkhole', crossTo: 'cave'),
+    ], currentRoomId: 'xr'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('lead to the caves'), findsOneWidget);
   });
 
   testWidgets('Enter creates an entrance room with open doors', (tester) async {

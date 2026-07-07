@@ -4,6 +4,7 @@
 /// getter remain reachable through [raw] for the generator's ref-expansion.
 library;
 
+/// Shared shape for both A2 (dungeon room types) and D2 (cave types) rolls.
 class A2Type {
   const A2Type(
       {required this.name,
@@ -11,13 +12,23 @@ class A2Type {
       this.tierBump = 0,
       this.treasureBonus = 0,
       this.stockDouble = false,
-      this.leadsToCaves = false});
+      this.leadsToCaves = false,
+      this.onStock6 = '',
+      this.veinBonus = 0,
+      this.veinBonusDie = 0,
+      this.leadsToDungeon = false,
+      this.monsterDie = 0});
   final String name;
   final String note;
   final int tierBump;
   final int treasureBonus;
   final bool stockDouble;
   final bool leadsToCaves;
+  final String onStock6;
+  final int veinBonus;
+  final int veinBonusDie;
+  final bool leadsToDungeon;
+  final int monsterDie;
 
   factory A2Type.fromJson(Map<String, dynamic> j) => A2Type(
         name: j['name'] as String? ?? '',
@@ -26,6 +37,11 @@ class A2Type {
         treasureBonus: (j['treasure_bonus'] as num?)?.toInt() ?? 0,
         stockDouble: j['stock_double'] as bool? ?? false,
         leadsToCaves: j['leads_to_caves'] as bool? ?? false,
+        onStock6: j['on_stock_6'] as String? ?? '',
+        veinBonus: (j['vein_bonus'] as num?)?.toInt() ?? 0,
+        veinBonusDie: (j['vein_bonus_die'] as num?)?.toInt() ?? 0,
+        leadsToDungeon: j['leads_to_dungeon'] as bool? ?? false,
+        monsterDie: (j['monster_die'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -54,6 +70,15 @@ class DungeonTables {
     required this.corridorFamilies,
     required this.chamberFamilies,
     required this.labelFallbacks,
+    required this.d1,
+    required this.d2,
+    required this.e2,
+    required this.f2,
+    required this.cavestone,
+    required this.tunnelFamilies,
+    required this.caveFamilies,
+    required this.centralMonsters,
+    required this.deepMonsters,
     required this.raw,
   });
 
@@ -68,6 +93,15 @@ class DungeonTables {
   final Map<String, List<List<int>>> corridorFamilies;
   final Map<String, List<List<int>>> chamberFamilies;
   final Map<String, String> labelFallbacks;
+  final List<String> d1;
+  final Map<String, A2Type> d2;
+  final List<String> e2;
+  final List<String> f2;
+  final List<String> cavestone;
+  final Map<String, List<List<int>>> tunnelFamilies;
+  final Map<String, List<List<int>>> caveFamilies;
+  final List<MonsterRow> centralMonsters;
+  final List<MonsterRow> deepMonsters;
   final Map<String, dynamic> raw;
 
   static List<String> _strs(dynamic v) =>
@@ -101,6 +135,25 @@ class DungeonTables {
         chamberFamilies: _fam(j['chamber_families']),
         labelFallbacks: (j['label_fallbacks'] as Map? ?? const {})
             .map((k, v) => MapEntry(k as String, v.toString())),
+        d1: _strs(j['D1']),
+        d2: {
+          for (final e in (j['D2'] as Map? ?? const {}).entries)
+            e.key as String:
+                A2Type.fromJson((e.value as Map).cast<String, dynamic>())
+        },
+        e2: _strs(j['E2']),
+        f2: _strs(j['F2']),
+        cavestone: _strs(j['E5']),
+        tunnelFamilies: _fam(j['tunnel_families']),
+        caveFamilies: _fam(j['cave_families']),
+        centralMonsters: [
+          for (final r in (j['G3'] as List? ?? const []))
+            MonsterRow.fromJson((r as Map).cast<String, dynamic>())
+        ],
+        deepMonsters: [
+          for (final r in (j['G4'] as List? ?? const []))
+            MonsterRow.fromJson((r as Map).cast<String, dynamic>())
+        ],
         raw: j,
       );
 }

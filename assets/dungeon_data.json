@@ -26,14 +26,17 @@
     },
     "4": {
       "name": "Forgotten ruins",
+      "monster_die": 12,
       "note": "Roll a D12 for monster stocking instead of a D20."
     },
     "5": {
       "name": "Overgrown ruins",
+      "on_stock_6": "D4 Flora {ref:I6} & fauna {ref:G7}",
       "note": "If you roll a 6 on B2 or C2, the room contains D4 flora {ref:I6} & fauna {ref:G7}."
     },
     "6": {
       "name": "Catacombs",
+      "on_stock_6": "D4 Burial alcoves {ref:H1}",
       "note": "If you roll a 6 on B2 or C2, the room contains D4 burial alcoves {ref:H1}."
     },
     "7": {
@@ -42,10 +45,12 @@
     },
     "8": {
       "name": "Stronghold",
+      "on_stock_6": "A barricade",
       "note": "If you roll a 6 for stocking, the room contains a barricade."
     },
     "9": {
       "name": "Temple",
+      "on_stock_6": "Shrine {ref:H6} (1/6 intact)",
       "note": "If you roll a 6 on C2 stocking, there is a 1/6 chance for a shrine {ref:H6}."
     },
     "10": {
@@ -57,10 +62,12 @@
     "11": {
       "name": "Transformed ruins",
       "leads_to_caves": true,
+      "on_stock_6": "{lvl:cross}Openings lead to cave rooms",
       "note": "If you roll a 6 on C2 for stocking, the openings of the chamber lead to cave rooms D-F."
     },
     "12": {
       "name": "Ancient ruin",
+      "on_stock_6": "An obstacle {ref:E4}",
       "note": "If you roll a 6 on B2, roll an obstacle {ref:E4} for the room."
     }
   },
@@ -157,7 +164,7 @@
     "Garbage dump",
     "Nest of fauna {ref:I6}",
     "D6 Beds",
-    "Stairs (1-5. -1 lvl, 6. +1 lvl)",
+    "Stairs (1-5. -1 lvl, 6. +1 lvl) {lvl:updown}",
     "Fountain filled with {ref:I7}",
     "Altar {ref:H6}",
     "Secret room {ref:H3}"
@@ -168,7 +175,7 @@
     "D6 Traps {ref:B4}",
     "Arcane Laboratory",
     "D4 Dungeon cells with {ref:G2}",
-    "Hole (-D4 levels)",
+    "Hole (-D4 levels) {lvl:chasm}",
     "Bookshelves & D20 books",
     "Big pool with liquid {ref:I7}",
     "Armory with D20 weapons",
@@ -176,7 +183,7 @@
     "Ritual site",
     "Alchemy laboratory",
     "D8 Armor stands",
-    "Door to cave-system D-F",
+    "Door to cave-system D-F {lvl:cross}",
     "D8 Flora {ref:I6} & fauna {ref:G7}",
     "D6 Chests {ref:H5} & throne",
     "D10 Coffins {ref:H1} & obelisk",
@@ -188,6 +195,202 @@
     "Monster+Treasure D7",
     "Monster",
     "Natural Deterioration",
+    "Nothing",
+    "Nothing",
+    "Nothing"
+  ],
+  "D1": [
+    "Narrow crack in hillside",
+    "Bottom of a sinkhole",
+    "In ruined mineshaft",
+    "Bottom of a pit",
+    "Side of a canyon",
+    "In overgrown formations",
+    "In hollow tree",
+    "In hollow stone",
+    "Between rocks",
+    "Next to a standing stones",
+    "Half-submerged in lake",
+    "Roll again"
+  ],
+  "D2": {
+    "2": {
+      "name": "Crystal Caves",
+      "on_stock_6": "D6 giant crystals",
+      "note": "On a roll of 6 on F2 the room contains D6 giant crystals."
+    },
+    "3": {
+      "name": "Icy tubes",
+      "on_stock_6": "A solid formation of {ref:I7}",
+      "note": "On a roll of 6 on F2 the room contains a solid formation of {ref:I7}."
+    },
+    "4": {
+      "name": "Dungeon Entrance",
+      "leads_to_dungeon": true,
+      "on_stock_6": "{lvl:cross}Openings lead to dungeon rooms",
+      "note": "On a roll of 6 on F2 the room openings lead to dungeon rooms A-C."
+    },
+    "5": {
+      "name": "Old Mine",
+      "vein_bonus_die": 6,
+      "note": "Veins contain +D6 units."
+    },
+    "6": {
+      "name": "Grotto",
+      "on_stock_6": "A D6 ft. deep pool of {ref:I7}",
+      "note": "On a roll of 6 on F2 the room contains a D6 ft. deep pool of {ref:I7}."
+    },
+    "7": {
+      "name": "Natural Cave",
+      "note": "A natural cave formed by water."
+    },
+    "8": {
+      "name": "Blooming Cavern",
+      "on_stock_6": "D4 flora {ref:I6}",
+      "note": "On a roll of 6 on E2 or F2 the room contains D4 flora {ref:I6}."
+    },
+    "9": {
+      "name": "Outpost",
+      "monster_die": 20,
+      "note": "Roll a D20 for monster stocking instead of a D12."
+    },
+    "10": {
+      "name": "Beast Lair",
+      "tier_bump": 1,
+      "vein_bonus": 3,
+      "note": "Monster stocking begins at G3 instead of G2. Vein roll I3 +3."
+    },
+    "11": {
+      "name": "Magma Tubes",
+      "on_stock_6": "A D6 ft. deep pool of lava",
+      "note": "On a roll of 6 on F2 the room contains a D6 ft. deep pool of lava."
+    },
+    "12": {
+      "name": "Alien Hive",
+      "combine_rolls": true,
+      "note": "If you roll on monster, flora, gas & liquid tables, roll twice and combine both: e.g. Stirge-Headed zombies."
+    }
+  },
+  "E2": [
+    "Monster + (2/6) Feature {ref:E3}",
+    "Feature {ref:F3}",
+    "Feature {ref:E3} + Obstacle {ref:E4}",
+    "Obstacle {ref:E4}",
+    "Nothing",
+    "Nothing (or Type effect)"
+  ],
+  "E3": [
+    "Roll twice",
+    "Cloud of gas {ref:I8}",
+    "Glasslike smooth walls",
+    "Overgrown with moss",
+    "Small vein of D4 units {ref:I3}",
+    "D6 obstacles {ref:E4}",
+    "Cave curio {ref:I4}",
+    "Central hole (-3D6 ft.)",
+    "D4 Solid ice vein of {ref:I7}",
+    "D4 Flora {ref:I6}",
+    "Territorial claw markings",
+    "Extremely bad smell",
+    "Change of cavestone {ref:E5}",
+    "Puddle of {ref:I7}",
+    "Full of pebbles of {ref:E5}",
+    "Fossil mural walls",
+    "Fauna {ref:G7}",
+    "D6 Dung piles",
+    "D6 Bone piles",
+    "Secret Cave {ref:H3}"
+  ],
+  "E4": [
+    "Thermic vents (really hot)",
+    "Sloping (-5 ft.)",
+    "Steep (+5 ft.)",
+    "Submerged in {ref:I7} (-5 ft.)",
+    "Crumbly (falling rocks)",
+    "Soot deposit (absorb light)",
+    "Wind holes (really cold)",
+    "Narrow (easy squeeze only)",
+    "Sharp walls (might cut)",
+    "Small (crawl only)",
+    "Slippery (danger of fall)",
+    "Windy (extinguish fire)",
+    "Muddy (clings & dries fast)",
+    "Sand floor (hard to move)",
+    "Vertical offset is 2d6 ft. {ref:E1}",
+    "Webbed (might get stuck)",
+    "Blocking pile of rubble",
+    "Dripping ceiling of {ref:I7}",
+    "Chokepoint (squeeze only)",
+    "Blocking growth of D6 {ref:I6}"
+  ],
+  "E5": [
+    "Limestone (grey, fossil-rich)",
+    "Basalt (dark, absorb sound)",
+    "Sandstone (brown, crumbly)",
+    "Granite (grey, cold)",
+    "Marble (light, smooth)",
+    "Starstone (blue, echoes)",
+    "Chalk (pale, soft)",
+    "Obsidian (black, hard)",
+    "Serpentine (Green, magical)",
+    "Gloamstone (red, warm)"
+  ],
+  "F2": [
+    "Feature {ref:F3} + D6 Vein {ref:I3}",
+    "Feature {ref:F3} + Monster",
+    "Feature {ref:F3} + Monster",
+    "Feature {ref:F3} + Special {ref:F4}",
+    "Feature {ref:F3}",
+    "Nothing (or type effect)"
+  ],
+  "F3": [
+    "Roll twice",
+    "Fossilized {ref:G4}",
+    "Solid formations of {ref:I7}",
+    "D20 Stalagmites/ctits",
+    "D8 Fungitrees",
+    "Basalt columns",
+    "Flowstone formations",
+    "Coral stone formations",
+    "D6 Big boulders of {ref:E5}",
+    "D6 Flora {ref:I6}",
+    "Cave Curio {ref:I4}",
+    "Vein 3D6 {ref:I3}",
+    "Geothermal vents of {ref:I8}",
+    "Fauna {ref:G7}",
+    "Chasm (-D4 levels) {lvl:chasm}",
+    "D4 obstacles {ref:E4}",
+    "Slope (1-5.-1 lvl; 6.+1 lvl) {lvl:updown}",
+    "Small lake filled with {ref:I7}",
+    "D6 Piles of dirt",
+    "Secret cave {ref:I1}"
+  ],
+  "F4": [
+    "(Mini-) Bossroom G5-G6",
+    "Geyser spraying {ref:I8}",
+    "Doors to dungeon A-C {lvl:cross}",
+    "Lake & -fall of {ref:I7}",
+    "Fauna {ref:G7} & D6 flora {ref:I6}",
+    "D8 Uranium (radioactive)",
+    "D8 Sulfur vein (explosive)",
+    "Strong echo cave",
+    "Big central fossil of {ref:G5}",
+    "Aquifer formations",
+    "Intervention {ref:I5}",
+    "D4 Cave curios {ref:I4}",
+    "Bubbeling spring of {ref:I7}",
+    "Central river of {ref:I7}",
+    "D6 giant cocoons of {ref:H1}",
+    "Chasm (-D4 levels) {lvl:chasm}",
+    "6D6 Vein of {ref:I3}",
+    "D6 Obstacles {ref:E4}",
+    "D20 Giant crystal clusters",
+    "Chasm to the deep dark {lvl:chasm}"
+  ],
+  "F5": [
+    "Monster",
+    "Natural Deterioration",
+    "Natural Growth",
     "Nothing",
     "Nothing",
     "Nothing"
@@ -1009,6 +1212,185 @@
       "Artifact +3 &D6*5000 GP"
     ]
   },
+  "I1": {
+    "hides_d6": [
+      "Opening in shade ...",
+      "Crumbling wall ....",
+      "Opening D6 ft. above ...",
+      "In a hole D6 ft. below ...",
+      "Narrow & small opening ...",
+      "Hole overgrown by D6 {ref:I6} ..."
+    ],
+    "leads_d10": [
+      "... Hidden cave feature {ref:D3}",
+      "... Tunnel",
+      "... Cave",
+      "... Vein 2D6 {ref:I3}",
+      "... Way down a floor {lvl:down}",
+      "... Way to surface",
+      "... Vein 4D6 {ref:I3}",
+      "... 3x treasures {ref:H8}",
+      "... Crystal worth D1000",
+      "... Corridor"
+    ]
+  },
+  "I2": {
+    "source_d4": {
+      "1": "Periodic tremors ...",
+      "2": "Hidden gems ...",
+      "3": "Magical winds ...",
+      "4": "Arcane veins in the walls ..."
+    },
+    "creates_d12": [
+      "Slowly regain magic",
+      "Disort light",
+      "Pulsating magical energy",
+      "Spirit world whispers",
+      "Magnetic surfaces",
+      "Subsonic numbing hum",
+      "Shifting gravity",
+      "Stone \"sweats\" {ref:I7}",
+      "Slowly melting stone",
+      "Cave fata morgana",
+      "Melodic wind",
+      "Fluctuation of {ref:I8}"
+    ]
+  },
+  "I3": [
+    "Salt (1 gp)",
+    "Iron ore (3 gp)",
+    "Tin ore (5 gp)",
+    "Copper ore (8 gp)",
+    "Lesser gems (10 gp)",
+    "Silver ore (25 gp)",
+    "Common gems (35 gp)",
+    "Gold ore (50 gp)",
+    "Uncommon gems (75 gp)",
+    "Crystals (100 gp)",
+    "Mithril ore (150 gp)",
+    "Adamantine ore (250 gp)",
+    "Rare gems (350 gp)",
+    "Amber (500 gp)",
+    "Obsidian ore (750 gp)",
+    "Diamonds (1000 gp)",
+    "Very rare gems (2500 gp)",
+    "Rare crystals (5000 gp)"
+  ],
+  "I4": [
+    "D6 mushroom water tank",
+    "D6 edible fungi pods",
+    "D6 biomass piles",
+    "D6 hanging egg sacs",
+    "D6 chalk deposit vein",
+    "D6 guano piles",
+    "D6 clay vein",
+    "D6 coal vein",
+    "D6 shells (1/6 pearl 100 gp)",
+    "D6 smooth stones of {ref:E5}",
+    "D6 hardened pods",
+    "D6 hands of gem dust",
+    "D6 cave-driftwood sticks",
+    "D6 skulls of {ref:G3}",
+    "2D6 heavy bones",
+    "D6 resin blocks",
+    "D6 carcasses of fauna {ref:G7}",
+    "D6 dried flora {ref:I6}",
+    "D6 Fossils of {ref:G7}",
+    "D6 arcane crystal vein"
+  ],
+  "I5": [
+    "Broken pottery, scraps",
+    "Campsite (D6 tents)",
+    "D6 Containers {ref:H4}",
+    "Obsidian Portal & {ref:I2}",
+    "Trap {ref:B4}",
+    "Ruins & Secret Room {ref:H3}",
+    "Ancient cave painting",
+    "D6 Barrels (3/6 explosive)",
+    "D6 Alien geometric blocks",
+    "Carved Statue H2",
+    "Farm of 3D6 {ref:I6}",
+    "Burial Site with D6 {ref:H1}",
+    "Skeleton + D6 equipment",
+    "D8 Mining Tools",
+    "Broken carts & tracks",
+    "Abandoned campsite",
+    "Carved symbols of {ref:H7}",
+    "Totem shrine {ref:H6}",
+    "Special chamber {ref:C4}",
+    "Carved steps down to A3"
+  ],
+  "I6": [
+    "Mushroom | Edible",
+    "Crystals | Bitter",
+    "Corals | Bioluminescent",
+    "Moss | Toxic",
+    "Roots | Healing",
+    "Herbs | Poisonous",
+    "Mold | Magic refilling",
+    "Fern | Boosting",
+    "Algae | Debuffing",
+    "Shrubs | Sweet",
+    "Lianas | Good smell",
+    "Lichen | Thorny",
+    "Cave-Reed | Salty",
+    "Sprouts | Sickening",
+    "Pods | Carnivorous",
+    "Minerals | Sticky",
+    "Tendrils | Numbing",
+    "Mud | Highly flammable",
+    "Tufts | Hallucinogenic",
+    "Sapling | Antiseptic"
+  ],
+  "I7": {
+    "condition_d6": [
+      "Clear",
+      "Clear",
+      "Clear",
+      "Filled with parasites",
+      "With fish-like beings in it",
+      "With coral-like formation"
+    ],
+    "liquid": [
+      "Lava (Ignore condition)",
+      "Liquid form of {ref:I8}",
+      "Toxic",
+      "Acid",
+      "Freshwater",
+      "Sulfurous",
+      "Mud",
+      "Rotten Water",
+      "Saltwater",
+      "Halucinogenic substance",
+      "Poison",
+      "Oil",
+      "Alcoholic residue",
+      "Mana residue",
+      "Healing nektar"
+    ]
+  },
+  "I8": [
+    "Weird smelling air (None)",
+    "Carbon Monoxide (Deadly)",
+    "Spores (Halucinogenic)",
+    "Thin air (Dizziness)",
+    "Chlorine fog (Burns acidic)",
+    "Hydrogen (flameable)",
+    "Nitrogen (Paralysis)",
+    "Miasma (Illnesses)",
+    "Water vapor (Dampens)",
+    "Helium (Lifts pitch)",
+    "Methane (Flameable)",
+    "Sulfur (Poisonous)",
+    "Radon (Slow radiation)",
+    "Wraithfog (Silence sound)",
+    "Ash vapor (Dizziness)",
+    "Ethylene (Sleeping)",
+    "Argon (Slow suffocation)",
+    "Ammonia (Burns acidic)",
+    "Dragonfume (Glows red)",
+    "Isobutane (Corrodes)"
+  ],
   "faction_names": [
     "Rotfangs",
     "Ashclaw Pack",
@@ -1099,15 +1481,84 @@
       ]
     ]
   },
+  "tunnel_families": {
+    "straight": [
+      [
+        11,
+        16
+      ]
+    ],
+    "l-bend": [
+      [
+        21,
+        26
+      ]
+    ],
+    "t-junction": [
+      [
+        31,
+        36
+      ]
+    ],
+    "cross": [
+      [
+        41,
+        45
+      ]
+    ],
+    "offset": [
+      [
+        46,
+        56
+      ]
+    ],
+    "long": [
+      [
+        61,
+        66
+      ]
+    ]
+  },
+  "cave_families": {
+    "small": [
+      [
+        11,
+        16
+      ]
+    ],
+    "medium": [
+      [
+        21,
+        32
+      ]
+    ],
+    "large": [
+      [
+        33,
+        46
+      ]
+    ],
+    "round": [
+      [
+        51,
+        54
+      ]
+    ],
+    "cross": [
+      [
+        55,
+        61
+      ]
+    ],
+    "l-room": [
+      [
+        62,
+        66
+      ]
+    ]
+  },
   "label_fallbacks": {
-    "I6": "flora",
-    "I7": "liquid",
-    "I8": "gas",
-    "I3": "vein",
-    "E4": "obstacle",
-    "E5": "cavestone",
-    "G7": "fauna",
-    "I4": "cave curio",
-    "I2": "magical effect"
+    "D3": "cave feature",
+    "E1": "tunnel shape"
   }
 }

@@ -893,14 +893,45 @@ Working rules for this repo:
   (`doorEdgeAt` hit-test; snackbar when nothing fits); multi-cell footprints
   paint as fused cell rects with outward-edge outlines + door glyphs
   (open=triangle, door=bar, locked=crossed bar); the base pane is visually
-  unchanged (single-cell rooms keep the rounded-square path). The A2 effect is
-  held in pane state for the run (ephemeral; recorded in the entrance detail).
+  unchanged (single-cell rooms keep the rounded-square path).
   GOTCHA: handlers must `await ref.read(dungeonDataProvider.future)` — a cold
   `.valueOrNull` read is AsyncLoading on first tap (same as the Run-screen
-  oracle gotcha). P2 deferred: caves D–F/I, multi-level descent, interactive
-  traps, key-gated locked doors. See
+  oracle gotcha). See
   `docs/superpowers/specs/2026-07-06-classic-dungeon-generator-design.md` +
   `docs/superpowers/plans/2026-07-06-classic-dungeon-generator.md`.
+  **P2 (caves + effects + multi-level) is SHIPPED:** the cave branch (tables
+  D1/D2, E2–E5, F2–F5, natural elements I1–I8) rides the same rail with
+  `{lvl:down|updown|chasm|cross}` machine tokens on level-transition/crossover
+  rows and `on_stock_6` structured type effects (a stocking 6 expands the
+  A2/D2 effect row — how leads_to_caves/dungeon act). Engine: `DungeonBranch`
+  {dungeon,cave} (`RoomType` gained tunnel/cave; tunnels reuse the corridor
+  footprint catalog, caves the chamber one via `tunnel_families`/
+  `cave_families` JSON range maps), depth→tier monster selection (depth 1-2
+  G2 / 3-4 G3 / 5+ G4 + `tier_bump`, cap G4), real H8 treasure rolls
+  (`treasure.dart` `rollTreasure` — d10+depth−1+bonus ladder, resolves
+  `NdX*k` notation; H8's `form_d4` is a DICT keyed "1".."4", not a list),
+  `RoomResult.levelDelta`/`crossoverTo`, ref-expansion refactored into a
+  per-call `_Expander{tables,dice,depth,bonus}`. Model: `DungeonLevel`
+  {depth,branch,typeName,note,stone,rooms,corridors,currentRoomId};
+  `MapState.levels`+`activeLevel` with `rooms`/`corridors`/`currentRoomId` as
+  ACTIVE-LEVEL VIEW GETTERS and a compatibility `copyWith` (room edits apply
+  to the active level, seeding depth-1 when empty; legacy bare-`rooms` JSON
+  lifts to one level) — this also fixed P1's ephemeral-A2 gap (type/effect/
+  stone persist on the level). `DungeonRoom` grew `levelDelta` (`ld`) +
+  `crossTo` (`xt`). Notifier: `enterClassicDungeon(branch:…)` (A1/D1 + A2/D2
+  + E5 stone), `descendFrom(roomId)` — SIGN CONVENTION: `levelDelta` is the
+  zine's "−1 lvl" notation, target depth = `level.depth − delta` (−1 at depth
+  1 → depth 2; chasm −D4 lands directly, intermediates not materialized),
+  `switchLevel(depth)`; child rooms inherit the parent's branch unless the
+  parent carries `crossTo`; factions stay dungeon-wide. UI: `classic-enter` +
+  `classic-enter-cave`, `classic-level-header` + `classic-level-chip-<depth>`
+  switcher, `classic-descend` on stair/chasm rooms, crossover caption;
+  cave/tunnel rooms paint as organic blobs (`organic.dart`
+  `organicPerimeter` — deterministic seeded wobbly perimeter, seed =
+  room-id hash). P3 deferred: interactive traps/vein harvesting (expression
+  parser), Alien-Hive combo monsters, key-gated doors. See
+  `docs/superpowers/specs/2026-07-07-classic-dungeon-p2-caves-design.md` +
+  `docs/superpowers/plans/2026-07-07-classic-dungeon-p2-caves.md`.
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card

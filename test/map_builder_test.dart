@@ -26,14 +26,20 @@ void main() {
   group('Map models', () {
     test('full MapState round-trips through JSON', () {
       const s = MapState(
-        rooms: [
-          DungeonRoom(id: 'r0', x: 0, y: 0, title: 'Entry', detail: 'Dusty'),
-          DungeonRoom(id: 'r1', x: 1, y: 0, title: 'Hall'),
+        levels: [
+          DungeonLevel(
+            depth: 1,
+            rooms: [
+              DungeonRoom(
+                  id: 'r0', x: 0, y: 0, title: 'Entry', detail: 'Dusty'),
+              DungeonRoom(id: 'r1', x: 1, y: 0, title: 'Hall'),
+            ],
+            corridors: [
+              ['r0', 'r1'],
+            ],
+            currentRoomId: 'r1',
+          ),
         ],
-        corridors: [
-          ['r0', 'r1'],
-        ],
-        currentRoomId: 'r1',
         hexes: [
           HexCell(col: 0, row: 0, envRow: 3),
           HexCell(col: 1, row: 0, envRow: 7, lost: true),
@@ -228,8 +234,7 @@ void main() {
       int? curCol, curRow;
       for (var i = 0; i < 20; i++) {
         final pos = nextHexPosition(hexes, curCol, curRow, dice);
-        final existing =
-            hexes.any((h) => h.col == pos.col && h.row == pos.row);
+        final existing = hexes.any((h) => h.col == pos.col && h.row == pos.row);
         if (pos.alreadyRevealed) {
           expect(existing, isTrue); // re-entry returns a known cell
         } else {
@@ -296,8 +301,8 @@ void main() {
       final container = _container();
       addTearDown(container.dispose);
       final n = container.read(mapProvider.notifier);
-      final r0 = await n.addRoom(
-          title: 'A', detail: 'base', dice: Dice(Random(11)));
+      final r0 =
+          await n.addRoom(title: 'A', detail: 'base', dice: Dice(Random(11)));
       await n.appendRoomDetail(r0.id, 'linger line');
       final s = await container.read(mapProvider.future);
       expect(s.rooms.single.detail, 'base\nlinger line');
@@ -305,8 +310,7 @@ void main() {
   });
 
   group('MapNotifier hexes', () {
-    test('revealHex seeds the origin then moves to an adjacent cell',
-        () async {
+    test('revealHex seeds the origin then moves to an adjacent cell', () async {
       final container = _container();
       addTearDown(container.dispose);
       final n = container.read(mapProvider.notifier);
@@ -414,8 +418,13 @@ void main() {
   group('Campaign file map key', () {
     test('round-trips through encode/parse and rejects wrong shape', () {
       const s = MapState(
-        rooms: [DungeonRoom(id: 'r0', x: 0, y: 0, title: 'Entry')],
-        currentRoomId: 'r0',
+        levels: [
+          DungeonLevel(
+            depth: 1,
+            rooms: [DungeonRoom(id: 'r0', x: 0, y: 0, title: 'Entry')],
+            currentRoomId: 'r0',
+          ),
+        ],
         hexes: [HexCell(col: 0, row: 0, envRow: 6)],
         currentHexCol: 0,
         currentHexRow: 0,

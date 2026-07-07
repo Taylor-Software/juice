@@ -3134,6 +3134,8 @@ class DungeonRoom {
     this.footprint = const [(0, 0)],
     this.doors = const [],
     this.roomType,
+    this.levelDelta = 0,
+    this.crossTo,
   });
   final String id;
   final int x;
@@ -3144,6 +3146,8 @@ class DungeonRoom {
   final List<(int, int)> footprint; // cell offsets from (x,y); default [(0,0)]
   final List<DoorEdge> doors; // door edges, cells are offsets from (x,y)
   final String? roomType; // 'corridor' | 'chamber' | null (legacy)
+  final int levelDelta; // -1 down / +1 up transition room; 0 = none
+  final String? crossTo; // branch crossover: 'dungeon' | 'cave'; null = none
 
   DungeonRoom copyWith({
     String? title,
@@ -3152,6 +3156,8 @@ class DungeonRoom {
     List<(int, int)>? footprint,
     List<DoorEdge>? doors,
     String? roomType,
+    int? levelDelta,
+    String? crossTo,
   }) =>
       DungeonRoom(
         id: id,
@@ -3163,6 +3169,8 @@ class DungeonRoom {
         footprint: footprint ?? this.footprint,
         doors: doors ?? this.doors,
         roomType: roomType ?? this.roomType,
+        levelDelta: levelDelta ?? this.levelDelta,
+        crossTo: crossTo ?? this.crossTo,
       );
 
   Map<String, dynamic> toJson() => {
@@ -3178,7 +3186,12 @@ class DungeonRoom {
           ],
         if (doors.isNotEmpty) 'dr': [for (final d in doors) d.toJson()],
         if (roomType != null) 'rt': roomType,
+        if (levelDelta != 0) 'ld': levelDelta,
+        if (crossTo != null) 'xt': crossTo,
       };
+
+  /// Strict parse for known-good JSON (round-trips [toJson]).
+  factory DungeonRoom.fromJson(Map<String, dynamic> j) => maybeFromJson(j)!;
 
   /// Parses one room entry; null for anything without a map shape and id
   /// (mirrors CharStat.maybeFromJson tolerance).
@@ -3201,6 +3214,8 @@ class DungeonRoom {
               .toList() ??
           const [],
       roomType: j['rt'] as String?,
+      levelDelta: (j['ld'] as int?) ?? 0,
+      crossTo: j['xt'] as String?,
     );
   }
 }
@@ -3387,26 +3402,129 @@ class PlayContext {
       );
 }
 
-/// Persisted map state: dungeon graph + revealed hex field.
-class MapState {
-  const MapState({
+/// One dungeon/cave level of the classic crawler. [branch] is 'dungeon' or
+/// 'cave'; [typeName]/[note] carry the rolled A2/D2 type; [stone] the E5
+/// cavestone (cave levels only, '' otherwise).
+class DungeonLevel {
+  const DungeonLevel({
+    required this.depth,
+    this.branch = 'dungeon',
+    this.typeName = '',
+    this.note = '',
+    this.stone = '',
     this.rooms = const [],
     this.corridors = const [],
     this.currentRoomId,
+  });
+  final int depth;
+  final String branch;
+  final String typeName;
+  final String note;
+  final String stone;
+  final List<DungeonRoom> rooms;
+  final List<List<String>> corridors; // [idA, idB] pairs
+  final String? currentRoomId;
+
+  DungeonLevel copyWith({
+    List<DungeonRoom>? rooms,
+    List<List<String>>? corridors,
+    String? currentRoomId,
+    bool clearCurrentRoomId = false,
+  }) =>
+      DungeonLevel(
+        depth: depth,
+        branch: branch,
+        typeName: typeName,
+        note: note,
+        stone: stone,
+        rooms: rooms ?? this.rooms,
+        corridors: corridors ?? this.corridors,
+        currentRoomId:
+            clearCurrentRoomId ? null : (currentRoomId ?? this.currentRoomId),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'depth': depth,
+        if (branch != 'dungeon') 'branch': branch,
+        if (typeName.isNotEmpty) 'type': typeName,
+        if (note.isNotEmpty) 'note': note,
+        if (stone.isNotEmpty) 'stone': stone,
+        if (rooms.isNotEmpty) 'rooms': rooms.map((r) => r.toJson()).toList(),
+        if (corridors.isNotEmpty) 'corridors': corridors,
+        if (currentRoomId != null) 'currentRoomId': currentRoomId,
+      };
+
+  /// Parses one level entry; null for anything without a map shape.
+  /// Tolerant: malformed room entries are skipped; corridor entries must
+  /// be 2-string lists, else skipped.
+  static DungeonLevel? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    return DungeonLevel(
+      depth: (j['depth'] as int?) ?? 1,
+      branch: (j['branch'] as String?) ?? 'dungeon',
+      typeName: (j['type'] as String?) ?? '',
+      note: (j['note'] as String?) ?? '',
+      stone: (j['stone'] as String?) ?? '',
+      rooms: ((j['rooms'] as List?) ?? const [])
+          .map(DungeonRoom.maybeFromJson)
+          .whereType<DungeonRoom>()
+          .toList(),
+      corridors: [
+        for (final e in (j['corridors'] as List?) ?? const [])
+          if (e is List && e.length == 2 && e.every((id) => id is String))
+            List<String>.from(e),
+      ],
+      currentRoomId: j['currentRoomId'] as String?,
+    );
+  }
+}
+
+/// Persisted map state: dungeon levels + revealed hex field. The dungeon
+/// graph lives on [levels]; [rooms]/[corridors]/[currentRoomId] are views
+/// over the [activeLevel] so existing consumers keep working.
+class MapState {
+  const MapState({
+    this.levels = const [],
+    this.activeLevel = 0,
     this.hexes = const [],
     this.currentHexCol,
     this.currentHexRow,
   });
-  final List<DungeonRoom> rooms;
-  final List<List<String>> corridors; // [idA, idB] pairs
-  final String? currentRoomId;
+  final List<DungeonLevel> levels;
+  final int activeLevel; // index into [levels]
   final List<HexCell> hexes;
   final int? currentHexCol;
   final int? currentHexRow;
 
+  DungeonLevel? get _active =>
+      levels.isEmpty ? null : levels[activeLevel.clamp(0, levels.length - 1)];
+
+  /// Rooms of the active level (compat view; empty when no levels).
+  List<DungeonRoom> get rooms => _active?.rooms ?? const [];
+
+  /// Corridors of the active level (compat view).
+  List<List<String>> get corridors => _active?.corridors ?? const [];
+
+  /// Current room of the active level (compat view).
+  String? get currentRoomId => _active?.currentRoomId;
+
+  /// The level at [depth], or null when none exists.
+  DungeonLevel? levelAt(int depth) {
+    for (final l in levels) {
+      if (l.depth == depth) return l;
+    }
+    return null;
+  }
+
   /// [clearCurrentRoomId] / [clearCurrentHex] null out the nullable trio
   /// (the hex current is one position, so its col/row clear together).
+  /// Room-field edits ([rooms]/[corridors]/[currentRoomId]) apply to the
+  /// ACTIVE level — seeding a default depth-1 dungeon level when [levels]
+  /// is empty. When [levels]/[activeLevel] are also passed, they apply
+  /// first, then the room-field edits hit the new active level.
   MapState copyWith({
+    List<DungeonLevel>? levels,
+    int? activeLevel,
     List<DungeonRoom>? rooms,
     List<List<String>>? corridors,
     String? currentRoomId,
@@ -3415,48 +3533,94 @@ class MapState {
     int? currentHexCol,
     int? currentHexRow,
     bool clearCurrentHex = false,
-  }) =>
-      MapState(
-        rooms: rooms ?? this.rooms,
-        corridors: corridors ?? this.corridors,
-        currentRoomId:
-            clearCurrentRoomId ? null : (currentRoomId ?? this.currentRoomId),
-        hexes: hexes ?? this.hexes,
-        currentHexCol:
-            clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
-        currentHexRow:
-            clearCurrentHex ? null : (currentHexRow ?? this.currentHexRow),
-      );
+  }) {
+    var newLevels = levels ?? this.levels;
+    final newActive = activeLevel ?? this.activeLevel;
+    final hasRoomEdit = rooms != null ||
+        corridors != null ||
+        currentRoomId != null ||
+        clearCurrentRoomId;
+    if (hasRoomEdit) {
+      if (newLevels.isEmpty) {
+        newLevels = const [DungeonLevel(depth: 1)];
+      }
+      final i = newActive.clamp(0, newLevels.length - 1);
+      newLevels = [
+        for (var k = 0; k < newLevels.length; k++)
+          k == i
+              ? newLevels[k].copyWith(
+                  rooms: rooms,
+                  corridors: corridors,
+                  currentRoomId: currentRoomId,
+                  clearCurrentRoomId: clearCurrentRoomId,
+                )
+              : newLevels[k],
+      ];
+    }
+    return MapState(
+      levels: newLevels,
+      activeLevel: newActive,
+      hexes: hexes ?? this.hexes,
+      currentHexCol:
+          clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
+      currentHexRow:
+          clearCurrentHex ? null : (currentHexRow ?? this.currentHexRow),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
-        'rooms': rooms.map((r) => r.toJson()).toList(),
-        'corridors': corridors,
-        'currentRoomId': currentRoomId,
+        if (levels.isNotEmpty) 'levels': levels.map((l) => l.toJson()).toList(),
+        if (activeLevel != 0) 'activeLevel': activeLevel,
         'hexes': hexes.map((h) => h.toJson()).toList(),
         'currentHexCol': currentHexCol,
         'currentHexRow': currentHexRow,
       };
 
-  /// Tolerant: malformed room/hex entries are skipped; corridor entries
-  /// must be 2-string lists, else skipped.
-  factory MapState.fromJson(Map<String, dynamic> j) => MapState(
-        rooms: ((j['rooms'] as List?) ?? const [])
-            .map(DungeonRoom.maybeFromJson)
-            .whereType<DungeonRoom>()
-            .toList(),
-        corridors: [
-          for (final e in (j['corridors'] as List?) ?? const [])
-            if (e is List && e.length == 2 && e.every((id) => id is String))
-              List<String>.from(e),
-        ],
-        currentRoomId: j['currentRoomId'] as String?,
-        hexes: ((j['hexes'] as List?) ?? const [])
-            .map(HexCell.maybeFromJson)
-            .whereType<HexCell>()
-            .toList(),
-        currentHexCol: j['currentHexCol'] as int?,
-        currentHexRow: j['currentHexRow'] as int?,
-      );
+  /// Tolerant: malformed level/hex entries are skipped. Legacy single-level
+  /// JSON (bare `rooms`/`corridors`/`currentRoomId`) lifts into one depth-1
+  /// dungeon level.
+  factory MapState.fromJson(Map<String, dynamic> j) {
+    List<DungeonLevel> levels;
+    var activeLevel = 0;
+    if (j['levels'] is List) {
+      levels = (j['levels'] as List)
+          .map(DungeonLevel.maybeFromJson)
+          .whereType<DungeonLevel>()
+          .toList();
+      activeLevel = (j['activeLevel'] as int?) ?? 0;
+    } else {
+      final rooms = ((j['rooms'] as List?) ?? const [])
+          .map(DungeonRoom.maybeFromJson)
+          .whereType<DungeonRoom>()
+          .toList();
+      levels = rooms.isEmpty
+          ? const []
+          : [
+              DungeonLevel(
+                depth: 1,
+                rooms: rooms,
+                corridors: [
+                  for (final e in (j['corridors'] as List?) ?? const [])
+                    if (e is List &&
+                        e.length == 2 &&
+                        e.every((id) => id is String))
+                      List<String>.from(e),
+                ],
+                currentRoomId: j['currentRoomId'] as String?,
+              ),
+            ];
+    }
+    return MapState(
+      levels: levels,
+      activeLevel: activeLevel,
+      hexes: ((j['hexes'] as List?) ?? const [])
+          .map(HexCell.maybeFromJson)
+          .whereType<HexCell>()
+          .toList(),
+      currentHexCol: j['currentHexCol'] as int?,
+      currentHexRow: j['currentHexRow'] as int?,
+    );
+  }
 }
 
 /// Party-emulator state on a character (PET agenda/focus/tokens, Triple-O

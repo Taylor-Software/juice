@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/dungeon/footprint.dart';
+import 'package:juice_oracle/engine/dungeon/generator.dart';
 import 'package:juice_oracle/engine/dungeon/tables.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,18 +37,12 @@ void main() {
     await container.read(sessionsProvider.future);
 
     final t = _tables();
-    const effect = A2Type(name: 'Ruins');
     final notifier = container.read(mapProvider.notifier);
     await container.read(mapProvider.future);
 
     // entrance (no fromDoor)
-    final ok1 = await notifier.addClassicRoom(
-        fromRoomId: null,
-        doorEdge: null,
-        tables: t,
-        effect: effect,
-        dice: Dice(Random(1)));
-    expect(ok1, isTrue);
+    await notifier.enterClassicDungeon(
+        branch: DungeonBranch.dungeon, tables: t, dice: Dice(Random(1)));
     var map = container.read(mapProvider).requireValue;
     expect(map.rooms, hasLength(1));
     expect(map.rooms.single.doors, isNotEmpty);
@@ -60,11 +55,7 @@ void main() {
     final d0 = r0.doors.first;
     final world = (cell: (r0.x + d0.cell.$1, r0.y + d0.cell.$2), side: d0.side);
     final ok2 = await notifier.addClassicRoom(
-        fromRoomId: r0.id,
-        doorEdge: world,
-        tables: t,
-        effect: effect,
-        dice: Dice(Random(2)));
+        fromRoomId: r0.id, doorEdge: world, tables: t, dice: Dice(Random(2)));
     expect(ok2, isTrue);
     map = container.read(mapProvider).requireValue;
     expect(map.rooms, hasLength(2));
@@ -87,7 +78,6 @@ void main() {
     await container.read(sessionsProvider.future);
 
     final t = _tables();
-    const effect = A2Type(name: 'Ruins');
     final notifier = container.read(mapProvider.notifier);
     await container.read(mapProvider.future);
     await container.read(dungeonFactionsProvider.future);
@@ -96,12 +86,8 @@ void main() {
     // Goblins (C2 row 1; type die 4-6 = chamber). Bounded seed loop.
     var found = false;
     for (var s = 0; s < 60 && !found; s++) {
-      await notifier.addClassicRoom(
-          fromRoomId: null,
-          doorEdge: null,
-          tables: t,
-          effect: effect,
-          dice: Dice(Random(s)));
+      await notifier.enterClassicDungeon(
+          branch: DungeonBranch.dungeon, tables: t, dice: Dice(Random(s)));
       final reg = container.read(dungeonFactionsProvider).requireValue;
       if (reg.factions.isNotEmpty) {
         found = true;
