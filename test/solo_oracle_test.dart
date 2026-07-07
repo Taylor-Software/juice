@@ -40,4 +40,14 @@ void main() {
       expect(g.asText.toLowerCase(), contains('boon'));
     });
   });
+
+  test('toGenResult uses the asked question as the entry title', () {
+    final r = classifyYesNo(SoloLikelihood.even, 2); // plain Yes
+    final g = r.toGenResult(question: '  Is the bridge guarded?  ');
+    expect(g.title, 'Is the bridge guarded?');
+    expect(g.summary, 'Yes');
+    expect(g.asText, contains('Odds: Even'));
+    // No question -> the P1 title survives unchanged.
+    expect(r.toGenResult().title, 'Yes/No — Even');
+  });
 }

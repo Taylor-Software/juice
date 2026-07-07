@@ -21,6 +21,7 @@ import 'journal_screen.dart';
 final _loopOddsProvider =
     StateProvider<SoloLikelihood>((_) => SoloLikelihood.even);
 final _loopLastProvider = StateProvider<SoloYesNo?>((_) => null);
+final _loopQuestionProvider = StateProvider<String>((_) => '');
 final _loopCaptureProvider = StateProvider<String>((_) => '');
 final _loopTallyRollProvider = StateProvider<String?>((_) => null);
 final _loopBeatOpenProvider = StateProvider<bool>((_) => false);
@@ -38,21 +39,24 @@ class LoopBar extends ConsumerStatefulWidget {
 class _LoopBarState extends ConsumerState<LoopBar> {
   final _capture = TextEditingController();
   final _taskName = TextEditingController();
+  final _question = TextEditingController();
   final _captureFocus = FocusNode();
   (String, int, int) _preset = kTallyPresets[1]; // Minor challenge 3(6)
 
   @override
   void initState() {
     super.initState();
-    // Re-seed the controller from the nav-surviving provider (the State is
-    // disposed/recreated on tab switch, the provider persists the text).
+    // Re-seed the controllers from the nav-surviving providers (the State is
+    // disposed/recreated on tab switch, the providers persist the text).
     _capture.text = ref.read(_loopCaptureProvider);
+    _question.text = ref.read(_loopQuestionProvider);
   }
 
   @override
   void dispose() {
     _capture.dispose();
     _taskName.dispose();
+    _question.dispose();
     _captureFocus.dispose();
     super.dispose();
   }
@@ -91,9 +95,19 @@ class _LoopBarState extends ConsumerState<LoopBar> {
           child: FilledButton.icon(
             key: const Key('loop-next-beat'),
             icon: const Icon(Icons.bolt),
-            label: const Text('Next beat'),
-            onPressed: () =>
-                ref.read(_loopBeatOpenProvider.notifier).update((v) => !v),
+            // Surfaces the top recommended action so the button never reads
+            // as a no-op (stranger-test audit S4): first tap reveals the
+            // action row, subsequent taps RUN the leading action.
+            label: Text(beatOpen && actions.isNotEmpty
+                ? 'Next beat — ${_beatLabel(actions.first)}'
+                : 'Next beat'),
+            onPressed: () {
+              if (!beatOpen) {
+                ref.read(_loopBeatOpenProvider.notifier).state = true;
+              } else if (actions.isNotEmpty) {
+                _runBeat(actions.first);
+              }
+            },
           ),
         ),
         if (beatOpen)
@@ -140,7 +154,22 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                 onPressed: _newScene,
               ),
             ]),
-            _step(context, '2 · Ask a question', 'Roll a d10 yes/no.', [
+            _step(context, '2 · Ask a question',
+                'Type your question, pick the odds, roll a d10.', [
+              SizedBox(
+                width: 360,
+                child: TextField(
+                  key: const Key('loop-ask-question'),
+                  controller: _question,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    hintText: 'e.g. Is the bridge guarded?',
+                  ),
+                  onChanged: (v) =>
+                      ref.read(_loopQuestionProvider.notifier).state = v,
+                  onSubmitted: (_) => _ask(),
+                ),
+              ),
               SegmentedButton<SoloLikelihood>(
                 segments: const [
                   ButtonSegment(
@@ -402,13 +431,16 @@ class _LoopBarState extends ConsumerState<LoopBar> {
   Future<void> _ask() async {
     final result = soloYesNo(ref.read(_loopOddsProvider), Dice());
     ref.read(_loopLastProvider.notifier).state = result;
-    final g = result.toGenResult();
+    final g = result.toGenResult(question: _question.text);
     await ref.read(journalProvider.notifier).addResult(
           g.title,
           g.asText,
           sourceTool: 'solo-loop',
           payload: g.toPayload(),
         );
+    // The question was answered — clear the field for the next beat.
+    _question.clear();
+    ref.read(_loopQuestionProvider.notifier).state = '';
   }
 
   /// Seed the inline interpret card from the last yes/no roll.

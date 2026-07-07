@@ -59,28 +59,36 @@ void main() {
 
     expect(find.byKey(const Key('empty-state-primary')), findsOneWidget);
     expect(find.text('A blank page.'), findsOneWidget);
-    expect(
-        find.text('Roll the oracle or write your first line.'), findsOneWidget);
+    // The premise line (stranger-test audit S5).
+    expect(find.textContaining("There's no DM here"), findsOneWidget);
     // The dock + composer stay visible beneath the empty state.
     expect(find.byKey(const Key('dock-roll-oracle')), findsOneWidget);
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 
-  testWidgets('tapping the primary rolls through the shared pipeline',
+  testWidgets('tapping the primary opens the ask-first oracle dialog',
       (tester) async {
     await pumpJournal(tester, _emptyPrefs);
 
     await tester.tap(find.byKey(const Key('empty-state-primary')));
     await tester.pumpAndSettle();
 
+    // Ask-first (stranger-test audit S1/S2): the primary captures a question
+    // instead of firing a blind fate check.
+    expect(find.byKey(const Key('ask-oracle-dialog')), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('ask-oracle-question')), 'Is anyone here?');
+    await tester.tap(find.byKey(const Key('ask-oracle-roll')));
+    await tester.pumpAndSettle();
+
     final container =
         ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
     final entries = await container.read(journalProvider.future);
-    // A single result entry was appended via rollInlineSuggestion.
     expect(entries.length, 1);
     final e = entries.single;
     expect(e.kind, JournalKind.result);
-    expect(e.sourceTool, 'fate-check');
+    expect(e.sourceTool, 'solo-loop');
+    expect(e.title, 'Is anyone here?');
   });
 
   testWidgets('a non-empty journal does not show the empty state',

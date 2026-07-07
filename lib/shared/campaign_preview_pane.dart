@@ -23,7 +23,7 @@ class CampaignPreviewPane extends StatelessWidget {
         Row(children: [
           Text('Preview', style: theme.textTheme.labelLarge),
           const SizedBox(width: 8),
-          Text('$activeCount surfaces active',
+          Text('$activeCount tools enabled',
               key: const Key('campaign-preview-count'),
               style: theme.textTheme.bodySmall),
         ]),

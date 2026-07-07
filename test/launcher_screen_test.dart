@@ -85,6 +85,11 @@ void main() {
     ]);
     addTearDown(c.dispose);
     await _pump(t, c);
+    // The welcome card (single fresh campaign) can push the list below the
+    // fold in the test viewport — scroll the badge into view rather than
+    // depending on card height.
+    await t.scrollUntilVisible(find.text('D&D · Mythic'), 100,
+        scrollable: find.byType(Scrollable).first);
     expect(find.text('D&D · Mythic'), findsOneWidget);
   });
 

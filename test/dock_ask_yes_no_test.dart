@@ -54,10 +54,18 @@ void main() {
     await tester.tap(chip);
     await tester.pumpAndSettle();
 
+    // The chip is now ask-first (stranger-test audit S1): a dialog captures
+    // the question, and the logged entry is titled with it.
+    expect(find.byKey(const Key('ask-oracle-dialog')), findsOneWidget);
+    await tester.enterText(
+        find.byKey(const Key('ask-oracle-question')), 'Is the bridge guarded?');
+    await tester.tap(find.byKey(const Key('ask-oracle-roll')));
+    await tester.pumpAndSettle();
+
     final container =
         ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
     final journal = await container.read(journalProvider.future);
     expect(journal.where((e) => e.sourceTool == 'solo-loop'), hasLength(1));
-    expect(journal.first.title, contains('Yes/No'));
+    expect(journal.first.title, 'Is the bridge guarded?');
   });
 }
