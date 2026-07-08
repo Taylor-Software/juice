@@ -98,7 +98,7 @@ class CampaignHeader extends ConsumerWidget {
             IconButton(
               key: const Key('hdr-quick-roll'),
               visualDensity: VisualDensity.compact,
-              icon: const Icon(Icons.casino_outlined),
+              icon: Icon(_quickRollIcon(settings.defaultOracle)),
               tooltip:
                   'Quick roll (${_oracleLabel(settings.defaultOracle, oracles)})',
               onPressed: oracle == null
@@ -116,18 +116,6 @@ class CampaignHeader extends ConsumerWidget {
                       }
                     },
             ),
-            // One-tap tarot draw (art + meaning, logged) when the cards system
-            // is on — the rich card oracle reachable from any verb.
-            if (systems.contains('cards'))
-              IconButton(
-                key: const Key('hdr-quick-draw'),
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.style_outlined),
-                tooltip: 'Draw tarot',
-                onPressed: oracle == null
-                    ? null
-                    : () => _quickDraw(context, ref, oracle),
-              ),
             IconButton(
               key: const Key('hdr-collapse'),
               visualDensity: VisualDensity.compact,
@@ -268,17 +256,12 @@ class CampaignHeader extends ConsumerWidget {
     };
   }
 
-  /// Rolls the campaign's default oracle with sensible neutral odds (50/50 /
-  /// Unknown) and logs it — a quick yes/no without opening the Ask verb.
-  Future<void> _quickDraw(
-      BuildContext context, WidgetRef ref, Oracle oracle) async {
-    final g =
-        await ref.read(decksProvider.notifier).drawAndLog(oracle, tarot: true);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
-    }
-  }
+  /// Icon reflecting the current default oracle: a card glyph for cards/tarot,
+  /// dice otherwise (icons/juice/mythic/custom/constructed).
+  static IconData _quickRollIcon(String defaultOracle) =>
+      const {'cards', 'tarot'}.contains(defaultOracle)
+          ? Icons.style_outlined
+          : Icons.casino_outlined;
 
   Future<void> _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle,
       int chaos, String defaultOracle) async {
