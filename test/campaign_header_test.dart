@@ -273,33 +273,19 @@ void main() {
     expect(entries.first.title, 'Grim Fate');
   });
 
-  testWidgets('default oracle Icons: quick-roll logs an abstract-icon entry',
+  testWidgets(
+      'draw-style default oracles open the roll sheet instead of rolling once',
       (tester) async {
     await _pump(tester, data, {
       ..._prefs(journalJson: '[]'),
       'juice.settings.v1.$_sid': '{"defaultOracle":"icons"}',
     });
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
     await tester.tap(find.byKey(const Key('hdr-quick-roll')));
     await tester.pumpAndSettle();
-    final entries = await container.read(journalProvider.future);
-    final e = entries.singleWhere((x) => x.sourceTool == 'gen-abstract-icon');
-    expect((e.payload?['icons'] as List), hasLength(1));
-  });
-
-  testWidgets('default oracle Cards: quick-roll draws + logs a cards entry',
-      (tester) async {
-    await _pump(tester, data, {
-      ..._prefs(journalJson: '[]'),
-      'juice.settings.v1.$_sid': '{"defaultOracle":"cards"}',
-    });
-    final container =
-        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
-    await tester.tap(find.byKey(const Key('hdr-quick-roll')));
-    await tester.pumpAndSettle();
-    final entries = await container.read(journalProvider.future);
-    expect(entries.where((x) => x.sourceTool == 'cards'), hasLength(1));
+    // The sheet's icon count picker is present (the roll controls live there
+    // now, not an instant single roll). See oracle_roll_sheet_test for the
+    // roll/draw/spread behavior.
+    expect(find.byKey(const Key('oracle-roll-icon-count-3')), findsOneWidget);
   });
 
   testWidgets('oracle picker offers the standard set (Icons/Cards/Tarot)',

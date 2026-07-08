@@ -661,7 +661,14 @@ Working rules for this repo:
   (mythic→mythic, cards/tarot→cards), and both create call sites
   (`home_shell._createSession`, `launcher._new`) `setDefaultOracle` after
   create. Icons/cards "draw for you to read" — the meaning/verb interpretation
-  tables live in the random-tables sets, not the oracle.
+  tables live in the random-tables sets, not the oracle. **Draw-oracle roll
+  sheet (2026-07-08):** `hdr-quick-roll` for `icons`/`cards`/`tarot` opens
+  `showOracleRollSheet` (`lib/features/oracle_roll_sheet.dart`) instead of a
+  fixed single roll — icons: count 1–5 chips + `IconDiceRollAnimation` + log;
+  cards: Standard/Tarot deck toggle, Single vs Spread (spreads tarot-only via
+  `kTarotSpreads`), drawing through `decksProvider.drawAndLog`/
+  `drawSpreadAndLog` + a `CardImage` of the single draw. Juice/Mythic/Custom
+  stay instant (`_quickRoll`).
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
