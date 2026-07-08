@@ -673,7 +673,14 @@ Working rules for this repo:
   {position,shown} list in its payload (routing to `PayloadCard`) and returns
   the drawn cards; the journal shows tarot images in the collapsed row + a
   labelled strip when expanded (single-card draws show their image collapsed
-  too).
+  too). **Tarot labels + meaning popup (2026-07-08):** `CardImage` takes an
+  optional `showLabel` (card-name caption) and, for tarot cards (any with a
+  `kTarotMeanings` entry), is tappable — `showTarotCardInfo` opens an
+  `AlertDialog` with the name, drawn orientation + its short authored meaning
+  (other orientation dimmed), plus a hover `Tooltip`; standard/playing cards
+  (no meaning) are unaffected. Labels wired into the roll sheet (single +
+  spread), journal tile (single + spread strip), and the fate-screen Cards
+  draw. Meanings are the existing authored, non-vendored `kTarotMeanings`.
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
