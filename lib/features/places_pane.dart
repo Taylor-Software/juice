@@ -117,6 +117,10 @@ class _PlaceCard extends ConsumerWidget {
     final here = place.location == null
         ? const []
         : entriesAtLocation(entries, place.location!);
+    // Place → People: NPCs the party met here.
+    final people = (ref.watch(npcsProvider).valueOrNull ?? const <Npc>[])
+        .where((n) => n.placeId == place.id)
+        .toList();
     return Card(
       child: ListTile(
         key: Key('place-${place.id}'),
@@ -130,10 +134,21 @@ class _PlaceCard extends ConsumerWidget {
                     ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
             if (place.note.isNotEmpty)
               Text(place.note, maxLines: 2, overflow: TextOverflow.ellipsis),
-            if (place.location != null || here.isNotEmpty)
+            if (place.location != null || here.isNotEmpty || people.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Wrap(spacing: 8, children: [
+                  if (people.isNotEmpty)
+                    ActionChip(
+                      key: Key('place-people-${place.id}'),
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(Icons.groups_outlined, size: 16),
+                      label: Text(
+                          '${people.length} ${people.length == 1 ? 'person' : 'people'}'),
+                      onPressed: () => ref
+                          .read(shellRouteProvider.notifier)
+                          .goTo(Destination.track, subtab: 'people'),
+                    ),
                   if (place.location != null)
                     ActionChip(
                       key: Key('place-map-${place.id}'),

@@ -107,6 +107,24 @@ void main() {
     });
   });
 
+  test('placesAtLocation matches pinned places by map cell', () {
+    const places = [
+      Place(id: 'a', name: 'Tower', location: LocationRef(hexCol: 3, hexRow: 4)),
+      Place(id: 'b', name: 'Cave', location: LocationRef(roomId: 'r1')),
+      Place(id: 'c', name: 'Floating'), // no pin
+    ];
+    expect(
+        placesAtLocation(places, const LocationRef(hexCol: 3, hexRow: 4))
+            .map((p) => p.id),
+        ['a']);
+    expect(
+        placesAtLocation(places, const LocationRef(roomId: 'r1'))
+            .single.name,
+        'Cave');
+    expect(placesAtLocation(places, const LocationRef(hexCol: 9, hexRow: 9)),
+        isEmpty);
+  });
+
   test('searchCampaign includes places and npcs', () {
     final results = searchCampaign(
       'crimson',

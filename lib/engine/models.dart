@@ -3429,6 +3429,11 @@ List<JournalEntry> entriesAtLocation(
         List<JournalEntry> entries, LocationRef loc) =>
     entries.where((e) => loc.matches(e.location)).toList(growable: false);
 
+/// Tracked [Place]s pinned to [loc] (map-cell match via [LocationRef.matches]).
+/// The map detail cards' "places here" list.
+List<Place> placesAtLocation(List<Place> places, LocationRef loc) =>
+    places.where((p) => loc.matches(p.location)).toList(growable: false);
+
 /// The play-state spine: what's "current" in the active campaign. Pointers
 /// are nullable; null means no focus (consumers fall back to defaults).
 class PlayContext {

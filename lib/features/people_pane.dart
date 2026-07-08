@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../shared/destination.dart';
+import '../shared/shell_route.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
 
 String _dispositionLabel(NpcDisposition d) => switch (d) {
@@ -125,11 +128,35 @@ class _NpcCard extends ConsumerWidget {
             if (place != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.place_outlined, size: 14),
-                  const SizedBox(width: 2),
-                  Text(place.name.isEmpty ? '(place)' : place.name,
-                      style: theme.textTheme.labelSmall),
+                child: Wrap(spacing: 6, children: [
+                  // NPC → Place: tap jumps to the Places tracker.
+                  ActionChip(
+                    key: Key('npc-place-${npc.id}'),
+                    visualDensity: VisualDensity.compact,
+                    avatar: const Icon(Icons.place_outlined, size: 14),
+                    label: Text(place.name.isEmpty ? '(place)' : place.name),
+                    onPressed: () => ref
+                        .read(shellRouteProvider.notifier)
+                        .goTo(Destination.track, subtab: 'places'),
+                  ),
+                  // NPC → map, via the linked place's pin.
+                  if (place.location != null)
+                    ActionChip(
+                      key: Key('npc-map-${npc.id}'),
+                      visualDensity: VisualDensity.compact,
+                      avatar: const Icon(Icons.map_outlined, size: 14),
+                      label: const Text('On map'),
+                      onPressed: () {
+                        ref
+                            .read(playContextProvider.notifier)
+                            .setActiveLocation(place.location);
+                        ref.read(shellRouteProvider.notifier).goTo(
+                            Destination.map,
+                            subtab: place.location!.roomId != null
+                                ? 'dungeon'
+                                : 'world');
+                      },
+                    ),
                 ]),
               ),
           ],

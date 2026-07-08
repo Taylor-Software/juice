@@ -184,6 +184,32 @@ Widget locationEntriesChip({
   );
 }
 
+/// "Places here" chip: the tracked [Place]s pinned to this map cell. Tapping
+/// jumps to the Places tracker. Renders nothing when there are none. Shared by
+/// the hex + dungeon-room detail cards (companion to [locationEntriesChip]).
+Widget placesHereChip({
+  required WidgetRef ref,
+  required Key key,
+  required LocationRef loc,
+}) {
+  final places = placesAtLocation(
+      ref.watch(placesProvider).valueOrNull ?? const <Place>[], loc);
+  if (places.isEmpty) return const SizedBox.shrink();
+  return ActionChip(
+    key: key,
+    avatar: const Icon(Icons.place_outlined, size: 16),
+    label: Text(places.length == 1
+        ? places.first.name.isEmpty
+            ? '1 place'
+            : places.first.name
+        : '${places.length} places'),
+    visualDensity: VisualDensity.compact,
+    onPressed: () => ref
+        .read(shellRouteProvider.notifier)
+        .goTo(Destination.track, subtab: 'places'),
+  );
+}
+
 Future<void> _showLocationEntries(BuildContext context, WidgetRef ref,
     String placeLabel, List<JournalEntry> entries) {
   return showModalBottomSheet<void>(
@@ -291,9 +317,8 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                         key: Key('dungeon-site-chip-${d.id}'),
                         label: Text(d.name),
                         selected: d.id == s.activeDungeon?.id,
-                        onSelected: (_) => ref
-                            .read(mapProvider.notifier)
-                            .switchDungeon(d.id),
+                        onSelected: (_) =>
+                            ref.read(mapProvider.notifier).switchDungeon(d.id),
                       ),
                     ActionChip(
                       key: const Key('dungeon-new-site'),
@@ -767,6 +792,13 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                     key: Key('loc-entries-${room.id}'),
                     entries: entries,
                     placeLabel: room.title,
+                  );
+                }),
+                Builder(builder: (context) {
+                  return placesHereChip(
+                    ref: ref,
+                    key: Key('loc-places-${room.id}'),
+                    loc: LocationRef(roomId: room.id),
                   );
                 }),
               ],
@@ -1606,6 +1638,11 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                   placeLabel: 'Hex (${h.col}, ${h.row})',
                 );
               }),
+              placesHereChip(
+                ref: ref,
+                key: Key('loc-places-${h.col}-${h.row}'),
+                loc: LocationRef(hexCol: h.col, hexRow: h.row),
+              ),
               // Map-layer hierarchy: dungeons anchor to hexes — "Enter"
               // switches to the anchored dungeon, the link-off chip
               // un-anchors, "Dungeon here" anchors the active dungeon or
@@ -1653,9 +1690,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                 final entries = ref.watch(journalProvider).valueOrNull ??
                     const <JournalEntry>[];
                 if (h.sketchEntryId != null) {
-                  final e = entries
-                      .where((x) => x.id == h.sketchEntryId)
-                      .firstOrNull;
+                  final e =
+                      entries.where((x) => x.id == h.sketchEntryId).firstOrNull;
                   final title = e?.title.trim();
                   return Wrap(spacing: 4, children: [
                     ActionChip(
@@ -1679,9 +1715,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
                     ),
                   ]);
                 }
-                final sketches = entries
-                    .where((x) => x.kind == JournalKind.sketch)
-                    .toList();
+                final sketches =
+                    entries.where((x) => x.kind == JournalKind.sketch).toList();
                 if (sketches.isEmpty) return const SizedBox.shrink();
                 return ActionChip(
                   key: const Key('hex-link-sketch'),
