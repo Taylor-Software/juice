@@ -654,7 +654,10 @@ Working rules for this repo:
   the built-ins (`hdr-oracle-pick-<id>`) + constructed oracles; `hdr-quick-roll`
   (`_quickRoll`, now async) rolls each — icons build+log a `gen-abstract-icon`
   entry (payload `icons`), cards/tarot `decksProvider.drawAndLog` (which logs
-  itself), juice/mythic/custom give a literal Yes/No. The creation wizard (step
+  itself), juice/mythic/custom give a literal Yes/No. Its icon reflects the
+  default oracle (`_quickRollIcon`: card glyph for cards/tarot, die otherwise);
+  the separate always-tarot "Draw tarot" button (`hdr-quick-draw`) was removed
+  as redundant once quick-roll itself opens the card/tarot roll sheet. The creation wizard (step
   1, `NewCampaignDialog`, +`oracles` param) has a **Default oracle** ChoiceChip
   row (`oracle-choice-<id>` / `oracle-choice-co-<id>`); the result record gains
   `defaultOracle`, the chosen oracle pulls its backing system into `systems`
