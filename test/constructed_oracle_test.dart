@@ -257,6 +257,44 @@ void main() {
     });
   });
 
+  group('oracle packs', () {
+    test('encode/decode round-trips oracles; tolerant of foreign payloads', () {
+      const oracles = [
+        ConstructedOracle(id: 'a', name: 'Grim', notation: '2dF+2'),
+        ConstructedOracle(
+            id: 'b',
+            name: 'Edge',
+            notation: '2d20',
+            mode: RollMode.advantage,
+            bands: {OutcomeBand.yes, OutcomeBand.no}),
+      ];
+      final back = decodeOraclePack(encodeOraclePack(oracles));
+      expect(back.map((o) => o.name), ['Grim', 'Edge']);
+      expect(back[0].notation, '2dF+2');
+      expect(back[1].mode, RollMode.advantage);
+      // Not an oracle pack → empty; garbage JSON → throws.
+      expect(decodeOraclePack('{"kind":"other","oracles":[]}'), isEmpty);
+      expect(() => decodeOraclePack('nope'), throwsFormatException);
+    });
+
+    test('addAll appends with fresh ids, preserving fields', () async {
+      SharedPreferences.setMockInitialValues({});
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      final n = c.read(constructedOraclesProvider.notifier);
+      await c.read(constructedOraclesProvider.future);
+      await n.add(const ConstructedOracle(id: 'x', name: 'Existing'));
+      await n.addAll(const [
+        ConstructedOracle(id: 'x', name: 'Imported', notation: '2d6'),
+      ]);
+      final saved = c.read(constructedOraclesProvider).value!;
+      expect(saved.length, 2); // no clobber despite the shared id
+      expect(saved.last.id, isNot('x'));
+      expect(saved.last.name, 'Imported');
+      expect(saved.last.notation, '2d6');
+    });
+  });
+
   test('provider add/upsert/remove persist (app-global)', () async {
     SharedPreferences.setMockInitialValues({});
     final c = ProviderContainer();

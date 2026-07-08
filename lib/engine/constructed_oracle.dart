@@ -8,6 +8,8 @@
 /// chosen live at roll time.
 library;
 
+import 'dart:convert';
+
 import 'dice.dart';
 import 'models.dart';
 
@@ -463,4 +465,29 @@ GenResult oracleGenResult(ConstructedOracle o, OracleLikelihood l, Dice dice) {
         detail: '${r.notation}: ${r.roll}'),
     Roll(label: 'Likelihood', value: l.label),
   ]);
+}
+
+/// Stable marker for an exported oracle pack file.
+const kOraclePackKind = 'juice-oracle-pack';
+
+/// Serialize [oracles] to a portable pack JSON string.
+String encodeOraclePack(List<ConstructedOracle> oracles) => jsonEncode({
+      'kind': kOraclePackKind,
+      'v': 1,
+      'oracles': oracles.map((o) => o.toJson()).toList(),
+    });
+
+/// Decode a pack JSON string into oracles. Tolerant: returns an empty list when
+/// the payload is not a recognizable pack; drops individual malformed oracles.
+/// Throws [FormatException] only when the top-level JSON itself is unparseable.
+List<ConstructedOracle> decodeOraclePack(String raw) {
+  final dynamic root = jsonDecode(raw);
+  if (root is! Map) return const [];
+  if (root['kind'] != kOraclePackKind) return const [];
+  final list = root['oracles'];
+  if (list is! List) return const [];
+  return list
+      .map(ConstructedOracle.maybeFromJson)
+      .whereType<ConstructedOracle>()
+      .toList();
 }

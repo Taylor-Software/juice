@@ -248,6 +248,31 @@ void main() {
     expect((await container.read(crawlProvider.future)).chaosFactor, 5);
   });
 
+  testWidgets(
+      'default oracle can be a constructed oracle: label + quick-roll log',
+      (tester) async {
+    await _pump(tester, data, {
+      ..._prefs(journalJson: '[]'),
+      'juice.oracles.v1': '[{"id":"o1","name":"Grim Fate","notation":"d6"}]',
+      'juice.settings.v1.$_sid': '{"defaultOracle":"co:o1"}',
+    });
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
+    await container.read(constructedOraclesProvider.future);
+    await tester.pumpAndSettle();
+
+    // The oracle chip shows the constructed oracle's name.
+    expect(find.text('Grim Fate'), findsWidgets);
+
+    // Quick-roll logs a constructed-oracle entry.
+    await tester.tap(find.byKey(const Key('hdr-quick-roll')));
+    await tester.pumpAndSettle();
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'constructed-oracle'),
+        hasLength(1));
+    expect(entries.first.title, 'Grim Fate');
+  });
+
   testWidgets('collapse toggle hides detail row and persists', (tester) async {
     await _pump(
       tester,

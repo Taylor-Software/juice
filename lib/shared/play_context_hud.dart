@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/constructed_oracle.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
@@ -35,6 +36,8 @@ class CampaignHeader extends ConsumerWidget {
             .toList();
     final crawl = ref.watch(crawlProvider).valueOrNull;
     final oracle = ref.watch(oracleProvider).valueOrNull;
+    final oracles =
+        ref.watch(constructedOraclesProvider).valueOrNull ?? const [];
     // Current scene: prefer the spine's active pointer, fall back to the latest
     // scene entry (storage newest-first).
     final scene = activeSceneEntry(
@@ -94,7 +97,8 @@ class CampaignHeader extends ConsumerWidget {
               key: const Key('hdr-quick-roll'),
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.casino_outlined),
-              tooltip: 'Quick roll (${_oracleLabel(settings.defaultOracle)})',
+              tooltip:
+                  'Quick roll (${_oracleLabel(settings.defaultOracle, oracles)})',
               onPressed: oracle == null
                   ? null
                   : () => _quickRoll(context, ref, oracle,
@@ -192,7 +196,7 @@ class CampaignHeader extends ConsumerWidget {
                     side: BorderSide.none,
                     avatar: Icon(Icons.casino_outlined,
                         size: 16, color: tk.inkMuted),
-                    label: Text(_oracleLabel(settings.defaultOracle),
+                    label: Text(_oracleLabel(settings.defaultOracle, oracles),
                         style: TextStyle(color: tk.inkMuted)),
                     onPressed: () => _pickOracle(context, ref, settings),
                   ),
@@ -233,11 +237,21 @@ class CampaignHeader extends ConsumerWidget {
     );
   }
 
-  static String _oracleLabel(String id) => switch (id) {
-        'mythic' => 'Mythic',
-        'roll-high' => 'Roll High',
-        _ => 'Juice',
-      };
+  /// Prefix marking a constructed-oracle id in `settings.defaultOracle`.
+  static const _coPrefix = 'co:';
+
+  static String _oracleLabel(String id, List<ConstructedOracle> oracles) {
+    if (id.startsWith(_coPrefix)) {
+      final oid = id.substring(_coPrefix.length);
+      final o = oracles.where((x) => x.id == oid).firstOrNull;
+      return o == null ? 'Oracle' : (o.name.isEmpty ? 'Oracle' : o.name);
+    }
+    return switch (id) {
+      'mythic' => 'Mythic',
+      'roll-high' => 'Roll High',
+      _ => 'Juice',
+    };
+  }
 
   /// Rolls the campaign's default oracle with sensible neutral odds (50/50 /
   /// Unknown) and logs it — a quick yes/no without opening the Ask verb.
@@ -255,16 +269,31 @@ class CampaignHeader extends ConsumerWidget {
       String defaultOracle) {
     final GenResult g;
     final String tool;
-    switch (defaultOracle) {
-      case 'mythic':
-        g = oracle.mythicFate(4, chaos); // 50/50 odds
-        tool = 'mythic';
-      case 'roll-high':
-        g = oracle.rollHigh('d100', 3); // Unknown odds
-        tool = 'roll-high';
-      default:
+    if (defaultOracle.startsWith(_coPrefix)) {
+      final oid = defaultOracle.substring(_coPrefix.length);
+      final oracles =
+          ref.read(constructedOraclesProvider).valueOrNull ?? const [];
+      final o = oracles.where((x) => x.id == oid).firstOrNull;
+      if (o == null) {
+        // The default points at a deleted oracle — fall back to Juice.
         g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
         tool = 'fate-check';
+      } else {
+        g = oracleGenResult(o, OracleLikelihood.fiftyFifty, oracle.dice);
+        tool = 'constructed-oracle';
+      }
+    } else {
+      switch (defaultOracle) {
+        case 'mythic':
+          g = oracle.mythicFate(4, chaos); // 50/50 odds
+          tool = 'mythic';
+        case 'roll-high':
+          g = oracle.rollHigh('d100', 3); // Unknown odds
+          tool = 'roll-high';
+        default:
+          g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
+          tool = 'fate-check';
+      }
     }
     ref
         .read(journalProvider.notifier)
@@ -275,6 +304,8 @@ class CampaignHeader extends ConsumerWidget {
 
   Future<void> _pickOracle(
       BuildContext context, WidgetRef ref, CampaignSettings s) async {
+    final oracles =
+        ref.read(constructedOraclesProvider).valueOrNull ?? const [];
     final picked = await showDialog<String>(
       context: context,
       builder: (_) => SimpleDialog(
@@ -283,7 +314,13 @@ class CampaignHeader extends ConsumerWidget {
           for (final o in const ['juice', 'mythic', 'roll-high'])
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, o),
-              child: Text(_oracleLabel(o)),
+              child: Text(_oracleLabel(o, oracles)),
+            ),
+          for (final o in oracles)
+            SimpleDialogOption(
+              key: Key('hdr-oracle-pick-${o.id}'),
+              onPressed: () => Navigator.pop(context, '$_coPrefix${o.id}'),
+              child: Text(o.name.isEmpty ? '(unnamed oracle)' : o.name),
             ),
         ],
       ),

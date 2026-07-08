@@ -80,6 +80,45 @@ void main() {
         '"name":"C1","systems":["cards"]}]}',
   };
 
+  const oraclePrefs = {
+    ..._sessionPrefs,
+    'juice.oracles.v1': '[{"id":"o1","name":"Grim","notation":"d6"}]',
+  };
+
+  testWidgets('/oracle row hidden with no oracles', (tester) async {
+    await pumpPalette(tester, data);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/or');
+    await tester.pump();
+    expect(find.byKey(const Key('slash-cmd-oracle')), findsNothing);
+  });
+
+  testWidgets('/oracle row appears once an oracle exists', (tester) async {
+    await pumpPalette(tester, data, prefs: oraclePrefs);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    await container.read(constructedOraclesProvider.future);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/or');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('slash-cmd-oracle')), findsOneWidget);
+  });
+
+  testWidgets('tapping the /oracle row rolls the oracle and logs an entry',
+      (tester) async {
+    await pumpPalette(tester, data, prefs: oraclePrefs);
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(JournalScreen)));
+    // Warm the app-global oracle provider so the palette row renders.
+    await container.read(constructedOraclesProvider.future);
+    await tester.enterText(find.byKey(const Key('journal-composer')), '/or');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('slash-cmd-oracle')));
+    await tester.pumpAndSettle();
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((e) => e.sourceTool == 'constructed-oracle'),
+        hasLength(1));
+    expect(entries.first.title, 'Grim');
+  });
+
   testWidgets('/card suggestion hidden when cards is off', (tester) async {
     await pumpPalette(tester, data); // default: cards off (not in kAllSystems)
     await tester.enterText(find.byKey(const Key('journal-composer')), '/car');
