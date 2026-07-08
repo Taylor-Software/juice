@@ -668,7 +668,12 @@ Working rules for this repo:
   cards: Standard/Tarot deck toggle, Single vs Spread (spreads tarot-only via
   `kTarotSpreads`), drawing through `decksProvider.drawAndLog`/
   `drawSpreadAndLog` + a `CardImage` of the single draw. Juice/Mythic/Custom
-  stay instant (`_quickRoll`).
+  stay instant (`_quickRoll`). Spreads render each card as a `CardImage` in the
+  roller + journal: `drawSpreadAndLog` carries the result rolls + a `cards`
+  {position,shown} list in its payload (routing to `PayloadCard`) and returns
+  the drawn cards; the journal shows tarot images in the collapsed row + a
+  labelled strip when expanded (single-card draws show their image collapsed
+  too).
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
