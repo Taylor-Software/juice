@@ -266,7 +266,9 @@ class _PayloadCardState extends State<PayloadCard> {
                           child: Builder(builder: (_) {
                             final r = readTarot(summary);
                             return CardImage(r.name,
-                                reversed: r.reversed, height: 120);
+                                reversed: r.reversed,
+                                height: 120,
+                                showLabel: true);
                           }),
                         ),
                       ),
@@ -279,14 +281,17 @@ class _PayloadCardState extends State<PayloadCard> {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            for (final c in cards.whereType<Map<dynamic, dynamic>>())
+                            for (final c
+                                in cards.whereType<Map<dynamic, dynamic>>())
                               Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Builder(builder: (_) {
                                     final r = readTarot('${c['shown'] ?? ''}');
                                     return CardImage(r.name,
-                                        reversed: r.reversed, height: 96);
+                                        reversed: r.reversed,
+                                        height: 96,
+                                        showLabel: true);
                                   }),
                                   SizedBox(
                                     width: 64,
@@ -491,7 +496,8 @@ class _PayloadCardState extends State<PayloadCard> {
     // Drawn cards: a spread's card list, or a single card's summary.
     final shownStrings = <String>[
       if (p?['cards'] case final List<dynamic> cards)
-        for (final c in cards.whereType<Map<dynamic, dynamic>>()) '${c['shown'] ?? ''}'
+        for (final c in cards.whereType<Map<dynamic, dynamic>>())
+          '${c['shown'] ?? ''}'
       else if (entry.sourceTool == 'cards' &&
           (entry.payload?['summary'] as String?)?.isNotEmpty == true)
         entry.payload!['summary'] as String,

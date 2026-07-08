@@ -521,7 +521,8 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                         padding: const EdgeInsets.only(top: 8),
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: CardImage(r.name, reversed: r.reversed),
+                          child: CardImage(r.name,
+                              reversed: r.reversed, showLabel: true),
                         ),
                       );
                     }),

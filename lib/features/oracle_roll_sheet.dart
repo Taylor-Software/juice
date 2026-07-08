@@ -181,7 +181,8 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
                 Column(mainAxisSize: MainAxisSize.min, children: [
                   Builder(builder: (_) {
                     final r = readTarot(c.shown);
-                    return CardImage(r.name, reversed: r.reversed, height: 110);
+                    return CardImage(r.name,
+                        reversed: r.reversed, height: 110, showLabel: true);
                   }),
                   SizedBox(
                     width: 76,
@@ -196,7 +197,8 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
           Center(
             child: Builder(builder: (_) {
               final r = readTarot(_lastCard!);
-              return CardImage(r.name, reversed: r.reversed, height: 160);
+              return CardImage(r.name,
+                  reversed: r.reversed, height: 160, showLabel: true);
             }),
           ),
         const SizedBox(height: 12),
