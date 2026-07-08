@@ -31,6 +31,7 @@ import '../engine/tarot_spreads.dart';
 import '../engine/sketch.dart';
 import '../engine/oracle_data.dart';
 import '../engine/custom_sheet.dart';
+import '../engine/constructed_oracle.dart';
 import '../engine/custom_table.dart';
 import '../engine/system_primer.dart';
 import '../engine/quick_ref.dart';
@@ -1865,6 +1866,53 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
 final customTablesProvider =
     AsyncNotifierProvider<CustomTablesNotifier, List<CustomTable>>(
         CustomTablesNotifier.new);
+
+/// App-global user-constructed oracles (reusable across campaigns; NOT
+/// session-scoped, NOT in campaign export — mirrors [customTablesProvider]).
+class ConstructedOraclesNotifier
+    extends AsyncNotifier<List<ConstructedOracle>> {
+  static const _key = 'juice.oracles.v1';
+
+  @override
+  Future<List<ConstructedOracle>> build() async {
+    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return (jsonDecode(raw) as List)
+        .map(ConstructedOracle.maybeFromJson)
+        .whereType<ConstructedOracle>()
+        .toList();
+  }
+
+  Future<List<ConstructedOracle>> get _ready async =>
+      state.valueOrNull ?? await future;
+
+  Future<void> _save(List<ConstructedOracle> list) async {
+    await (await SharedPreferences.getInstance())
+        .setString(_key, jsonEncode(list.map((o) => o.toJson()).toList()));
+    state = AsyncData(list);
+  }
+
+  Future<void> add(ConstructedOracle o) async => _save([...await _ready, o]);
+  Future<void> replace(ConstructedOracle o) async =>
+      _save((await _ready).map((e) => e.id == o.id ? o : e).toList());
+  Future<void> remove(String id) async =>
+      _save((await _ready).where((o) => o.id != id).toList());
+
+  /// Insert (new id) or replace (existing id) — the constructor builds a whole
+  /// oracle either way.
+  Future<void> upsert(ConstructedOracle o) async {
+    final list = await _ready;
+    if (list.any((e) => e.id == o.id)) {
+      await replace(o);
+    } else {
+      await _save([...list, o]);
+    }
+  }
+}
+
+final constructedOraclesProvider =
+    AsyncNotifierProvider<ConstructedOraclesNotifier, List<ConstructedOracle>>(
+        ConstructedOraclesNotifier.new);
 
 /// App-global user-authored ref cards (reusable across campaigns; NOT
 /// session-scoped, NOT in campaign export — mirrors [customTablesProvider]).

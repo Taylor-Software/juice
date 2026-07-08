@@ -972,6 +972,25 @@ Working rules for this repo:
   `docs/superpowers/plans/2026-07-07-classic-dungeon-p2-caves.md`.
 - The Dart Fate Check map in `lib/engine/oracle.dart` mirrors the verified
   Python `FATE_MAP`. If you change one, change and re-verify both.
+- **Constructed oracles (oracle constructor).** A player-built generalization
+  of the Roll High oracle: `lib/engine/constructed_oracle.dart` (pure) —
+  `ConstructedOracle {id,name,notation,OracleDirection,Set<OutcomeBand>,int?
+  chaos}` (bands = any subset of the 6 yes/no bands, >=2 to be `valid`; chaos
+  1-9 optional). Instead of a hand-authored range matrix, ranges are COMPUTED:
+  `parseOracleDice` (NdM+/-k), `oracleDicePmf` (convolved sum distribution),
+  `_bandWeights` (likelihood yes-prob + chaos nudge; disabled bands hand mass to
+  enabled bands in their yes/no zone), `resolveOracle(o, OracleLikelihood)` tiles
+  contiguous ranges honoring direction + the curve, `rollOracle`/`oracleGenResult`
+  roll real dice + locate the band. Likelihood is a LIVE axis (7 tiers, chosen at
+  roll time — NOT stored). App-global `constructedOraclesProvider`
+  (`juice.oracles.v1`, reusable across campaigns, NOT session-scoped/exported —
+  mirrors `customTablesProvider`). UI: `lib/features/oracle_constructor.dart`
+  (`showOracleConstructor` — name, die chips + count via formula, formula bar,
+  direction, band FilterChips w/ >=2 guard, chaos, live range preview) + a
+  **My Oracles** section on the Ask → Oracle tab (`fate_screen.dart`) listing
+  saved oracles w/ per-oracle likelihood dropdown + Roll → ResultCard → log
+  (`sourceTool: 'constructed-oracle'`). Deferred: HUD default-oracle picker
+  integration, `/oracle <name>` command, pack export/import.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
   deck (`kPlayingDeck`, opt-in 54 with the two name-only jokers via
   `kPlayingDeckWithJokers` + the `cards-jokers-toggle` / `DecksState.jokers`

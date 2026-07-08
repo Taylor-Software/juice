@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/constructed_oracle.dart';
+import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/tarot_meanings.dart';
@@ -8,6 +10,7 @@ import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
+import 'oracle_constructor.dart';
 import 'tarot_reference.dart';
 
 /// A scroll target within the Fate screen, for launcher deep links.
@@ -33,6 +36,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   String _rhDie = 'd100';
   int _rhOdds = 3; // Unknown
   GenResult? _rhLast;
+  // Per constructed-oracle live state: chosen likelihood + last rolled result.
+  final Map<String, OracleLikelihood> _ocLikelihood = {};
+  final Map<String, GenResult> _ocLast = {};
   GenResult? _cardLast;
   TarotSpread _spread = kTarotSpreads.first;
   // The drawn spread + its cards, captured together so logging uses the spread
@@ -251,6 +257,9 @@ class _FateScreenState extends ConsumerState<FateScreen> {
             icon: const Icon(Icons.casino_outlined),
             label: const Text('Roll Oracle'),
           ),
+          const SizedBox(height: 24),
+          const Divider(),
+          _myOraclesSection(theme),
           const SizedBox(height: 24),
           const Divider(),
           Text('Mythic GME',
@@ -617,6 +626,123 @@ class _FateScreenState extends ConsumerState<FateScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
           content: Text('${g.title}: ${g.summary ?? g.rolls.first.value}')),
+    );
+  }
+
+  /// "My Oracles": player-constructed yes/no oracles. Each rolls at a live
+  /// likelihood and logs a `constructed-oracle` journal entry.
+  Widget _myOraclesSection(ThemeData theme) {
+    final oracles =
+        ref.watch(constructedOraclesProvider).valueOrNull ?? const [];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Expanded(
+            child: Text('My Oracles', style: theme.textTheme.headlineSmall),
+          ),
+          Flexible(
+            child: FilledButton.tonalIcon(
+              key: const Key('oracle-new'),
+              icon: const Icon(Icons.add),
+              label: const Text('New'),
+              onPressed: () => showOracleConstructor(context, ref, null),
+            ),
+          ),
+        ]),
+        Text(
+          'Build your own dice, direction, outcomes, and odds.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        if (oracles.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('No custom oracles yet.',
+                style: theme.textTheme.bodySmall),
+          )
+        else
+          for (final o in oracles) _oracleCard(theme, o),
+      ],
+    );
+  }
+
+  Widget _oracleCard(ThemeData theme, ConstructedOracle o) {
+    final likelihood = _ocLikelihood[o.id] ?? OracleLikelihood.likely;
+    final last = _ocLast[o.id];
+    return Card(
+      key: Key('oracle-card-${o.id}'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 4, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Expanded(
+              child: Text(o.name.isEmpty ? '(unnamed oracle)' : o.name,
+                  style: theme.textTheme.titleMedium),
+            ),
+            IconButton(
+              key: Key('oracle-edit-${o.id}'),
+              tooltip: 'Edit',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => showOracleConstructor(context, ref, o),
+            ),
+            IconButton(
+              key: Key('oracle-delete-${o.id}'),
+              tooltip: 'Delete',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () {
+                // Drop this oracle's ephemeral roll/likelihood state so a
+                // later id can't inherit it.
+                _ocLikelihood.remove(o.id);
+                _ocLast.remove(o.id);
+                ref.read(constructedOraclesProvider.notifier).remove(o.id);
+              },
+            ),
+          ]),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: DropdownButton<OracleLikelihood>(
+              key: Key('oracle-likelihood-${o.id}'),
+              value: likelihood,
+              isExpanded: true,
+              isDense: true,
+              onChanged: (v) =>
+                  setState(() => _ocLikelihood[o.id] = v ?? likelihood),
+              items: [
+                for (final l in OracleLikelihood.values)
+                  DropdownMenuItem(value: l, child: Text(l.label)),
+              ],
+            ),
+          ),
+          if (last != null) ...[
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ResultCard(
+                result: last,
+                onLog: () {
+                  ref.read(journalProvider.notifier).addResult(
+                      last.title, last.asText,
+                      sourceTool: 'constructed-oracle',
+                      payload: last.toPayload());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Added to journal')),
+                  );
+                },
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            key: Key('oracle-roll-${o.id}'),
+            icon: const Icon(Icons.casino_outlined),
+            label: const Text('Roll'),
+            onPressed: () => setState(
+                () => _ocLast[o.id] = oracleGenResult(o, likelihood, Dice())),
+          ),
+        ]),
+      ),
     );
   }
 }
