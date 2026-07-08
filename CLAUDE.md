@@ -681,6 +681,16 @@ Working rules for this repo:
   (no meaning) are unaffected. Labels wired into the roll sheet (single +
   spread), journal tile (single + spread strip), and the fate-screen Cards
   draw. Meanings are the existing authored, non-vendored `kTarotMeanings`.
+  **Spread geometry (2026-07-08):** each `TarotSpread` carries a parallel
+  `cells` layout (`SpreadCell {col,row,crossing}`, integer grid, one per
+  position — non-copyrightable spread shape); the shared `TarotSpreadLayout`
+  (`lib/features/tarot_spread_layout.dart`) renders the proper shape — 3-card
+  row, Five-card Cross plus, Celtic Cross wheel (1-6, crossing card rotated a
+  quarter turn over centre via a `Stack`) + vertical staff (7-10). Used by all
+  three spread surfaces (oracle roll sheet, journal tile via the `spreadForLog`
+  name+count resolver, fate-screen Cards section with `detail:true` meaning
+  lines); falls back to a plain wrap when the spread can't be resolved, scrolls
+  horizontally for the wide Celtic Cross.
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
