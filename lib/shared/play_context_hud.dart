@@ -6,6 +6,7 @@ import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
+import '../features/oracle_roll_sheet.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'design_tokens.dart';
@@ -102,8 +103,18 @@ class CampaignHeader extends ConsumerWidget {
                   'Quick roll (${_oracleLabel(settings.defaultOracle, oracles)})',
               onPressed: oracle == null
                   ? null
-                  : () => _quickRoll(context, ref, oracle,
-                      crawl?.chaosFactor ?? 5, settings.defaultOracle),
+                  : () {
+                      // Draw-style oracles open a roll sheet (count / deck /
+                      // spread + animation); yes/no oracles roll instantly.
+                      const drawKinds = {'icons', 'cards', 'tarot'};
+                      if (drawKinds.contains(settings.defaultOracle)) {
+                        showOracleRollSheet(
+                            context, oracle, settings.defaultOracle);
+                      } else {
+                        _quickRoll(context, ref, oracle,
+                            crawl?.chaosFactor ?? 5, settings.defaultOracle);
+                      }
+                    },
             ),
             // One-tap tarot draw (art + meaning, logged) when the cards system
             // is on — the rich card oracle reachable from any verb.
