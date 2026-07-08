@@ -43,6 +43,7 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
   TarotSpread _spreadPick = kTarotSpreads.first;
   String? _lastCard; // shown string of the last single draw
   String? _lastSpreadName;
+  List<({String position, String shown})> _lastSpreadCards = const [];
 
   bool get _isIcons => widget.defaultOracle == 'icons';
 
@@ -170,9 +171,27 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
             ),
         ],
         const SizedBox(height: 12),
-        if (_lastSpreadName != null)
-          Text('Drew the $_lastSpreadName spread — see the journal.',
-              style: theme.textTheme.bodyMedium)
+        if (_lastSpreadCards.isNotEmpty)
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final c in _lastSpreadCards)
+                Column(mainAxisSize: MainAxisSize.min, children: [
+                  Builder(builder: (_) {
+                    final r = readTarot(c.shown);
+                    return CardImage(r.name, reversed: r.reversed, height: 110);
+                  }),
+                  SizedBox(
+                    width: 76,
+                    child: Text(c.position,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.labelSmall),
+                  ),
+                ]),
+            ],
+          )
         else if (_lastCard != null)
           Center(
             child: Builder(builder: (_) {
@@ -197,9 +216,10 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
   Future<void> _drawCards() async {
     final decks = ref.read(decksProvider.notifier);
     if (_tarot && _spread) {
-      await decks.drawSpreadAndLog(widget.oracle, _spreadPick);
+      final cards = await decks.drawSpreadAndLog(widget.oracle, _spreadPick);
       setState(() {
         _lastSpreadName = _spreadPick.name;
+        _lastSpreadCards = cards;
         _lastCard = null;
       });
     } else {
@@ -207,6 +227,7 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
       setState(() {
         _lastCard = g.summary;
         _lastSpreadName = null;
+        _lastSpreadCards = const [];
       });
     }
   }

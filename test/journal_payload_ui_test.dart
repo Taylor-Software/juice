@@ -119,15 +119,31 @@ void main() {
   testWidgets('a logged tarot card entry renders its bundled image',
       (tester) async {
     await pumpJournal(tester, _journalPrefs(cardEntryJson));
-    // Collapsed row shows the card name; no image until expanded.
-    expect(find.text('The Tower (reversed)'), findsOneWidget);
-    expect(find.byType(CardImage), findsNothing);
+    // The card IS the result — its image shows in the collapsed row.
+    expect(find.byType(CardImage), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('payload-expand-c1')));
     await tester.pumpAndSettle();
 
     expect(find.text('The Tower (reversed)'), findsWidgets); // summary + body
     expect(find.byType(CardImage), findsOneWidget);
+  });
+
+  testWidgets('a tarot spread entry renders a card image per position',
+      (tester) async {
+    const spreadJson = '{'
+        '"id":"s1","timestamp":"2026-06-12T10:00:00.000Z","title":"Tarot Spread",'
+        '"body":"Past: The Fool","kind":"result","tags":[],"sourceTool":"cards",'
+        '"payload":{"v":1,"summary":"Three-card","spread":"Three-card",'
+        '"rolls":[{"label":"Past","display":"The Fool"},'
+        '{"label":"Present","display":"The Tower (reversed)"},'
+        '{"label":"Future","display":"The Sun"}],'
+        '"cards":[{"position":"Past","shown":"The Fool"},'
+        '{"position":"Present","shown":"The Tower (reversed)"},'
+        '{"position":"Future","shown":"The Sun"}]}}';
+    await pumpJournal(tester, _journalPrefs(spreadJson));
+    // Three card images (one per position) in the collapsed row.
+    expect(find.byType(CardImage), findsNWidgets(3));
   });
 
   testWidgets('a story-dice entry shows its icon images in the collapsed row',

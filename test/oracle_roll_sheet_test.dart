@@ -9,6 +9,7 @@ import 'package:juice_oracle/engine/dice.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/oracle_roll_sheet.dart';
+import 'package:juice_oracle/shared/card_image.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -89,8 +90,13 @@ void main() {
     await tester.tap(find.byKey(const Key('oracle-roll-cards')));
     await tester.pumpAndSettle();
     final entries = await c.read(journalProvider.future);
-    final spreads = entries
-        .where((x) => x.sourceTool == 'cards' && x.title == 'Tarot Spread');
-    expect(spreads, hasLength(1));
+    final spread = entries.singleWhere(
+        (x) => x.sourceTool == 'cards' && x.title == 'Tarot Spread');
+    // The logged entry carries the drawn cards so the journal can show images.
+    final cards = spread.payload?['cards'] as List;
+    expect(cards, hasLength(3)); // three-card spread
+    expect((cards.first as Map).containsKey('shown'), isTrue);
+    // The sheet renders the spread as card images (one per position).
+    expect(find.byType(CardImage), findsNWidgets(3));
   });
 }
