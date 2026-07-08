@@ -456,33 +456,46 @@ class _PayloadCardState extends State<PayloadCard> {
               key: Key('payload-expand-${entry.id}'),
               behavior: HitTestBehavior.opaque,
               onTap: () => setState(() => _expanded = true),
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      oneLiner,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tk.narrative.copyWith(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        color: tk.ink,
-                      ),
-                    ),
+              // Icon-oracle / story-dice entries ARE their images — show the
+              // rolled icons in the collapsed row instead of a text summary.
+              child: switch (entry.payload?['icons']) {
+                final List<dynamic> icons when icons.isNotEmpty => Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      for (final a in icons.whereType<String>())
+                        Image.asset(a, width: 40, height: 40),
+                    ],
                   ),
-                  if (rollSummary != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: Text(
-                        rollSummary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tk.uiLabel
-                            .copyWith(fontSize: 11, color: tk.inkMuted),
+                _ => Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          oneLiner,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tk.narrative.copyWith(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: tk.ink,
+                          ),
+                        ),
                       ),
-                    ),
-                ],
-              ),
+                      if (rollSummary != null)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            rollSummary,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tk.uiLabel
+                                .copyWith(fontSize: 11, color: tk.inkMuted),
+                          ),
+                        ),
+                    ],
+                  ),
+              },
             ),
           ),
           if (widget.onReroll != null)
