@@ -1115,6 +1115,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       ),
                       onCharacterTap: _openCharacter,
                       onThreadTap: _openThread,
+                      onNpcTap: _openNpc,
+                      onPlaceTap: _openPlace,
                       onDiceTap: _rollDice,
                       lonelog: lonelog,
                     ),
@@ -1175,6 +1177,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 ref.read(journalProvider.notifier).togglePin(e.id),
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
+                      onNpcTap: _openNpc,
+                      onPlaceTap: _openPlace,
             onDiceTap: _rollDice,
             lonelog: lonelog,
             placeChip: _placeChip(e),
@@ -1191,6 +1195,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   [e.body, ...extras].join('\n'),
                   onCharacterTap: _openCharacter,
                   onThreadTap: _openThread,
+                      onNpcTap: _openNpc,
+                      onPlaceTap: _openPlace,
                   onDiceTap: _rollDice,
                   lonelog: lonelog,
                 ),
@@ -1629,7 +1635,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open && t.title.toLowerCase().contains(lower))
         .toList();
-    if (chars.isEmpty && threads.isEmpty) return const SizedBox.shrink();
+    final places = (ref.watch(placesProvider).valueOrNull ?? const <Place>[])
+        .where((p) => p.name.toLowerCase().contains(lower))
+        .toList();
+    final npcs = (ref.watch(npcsProvider).valueOrNull ?? const <Npc>[])
+        .where((n) => n.name.toLowerCase().contains(lower))
+        .toList();
+    if (chars.isEmpty && threads.isEmpty && places.isEmpty && npcs.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final theme = Theme.of(context);
     return Material(
       key: const Key('mention-panel'),
@@ -1674,6 +1688,38 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   title: Text(t.title),
                   onTap: () =>
                       _insertMention(t.title, MentionKind.thread, t.id),
+                ),
+            ],
+            if (npcs.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('People',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final n in npcs)
+                ListTile(
+                  key: Key('mention-npc-${n.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.groups_outlined, size: 18),
+                  title: Text(n.name.isEmpty ? '(unnamed)' : n.name),
+                  onTap: () => _insertMention(n.name, MentionKind.npc, n.id),
+                ),
+            ],
+            if (places.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 2),
+                child: Text('Places',
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              ),
+              for (final p in places)
+                ListTile(
+                  key: Key('mention-place-${p.id}'),
+                  dense: true,
+                  leading: const Icon(Icons.place_outlined, size: 18),
+                  title: Text(p.name.isEmpty ? '(unnamed)' : p.name),
+                  onTap: () => _insertMention(p.name, MentionKind.place, p.id),
                 ),
             ],
           ],
@@ -2240,6 +2286,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   void _openThread(String id) => setState(() => _filterThreadId = id);
+
+  void _openNpc(String id) => ref
+      .read(shellRouteProvider.notifier)
+      .goTo(Destination.track, subtab: 'people');
+
+  void _openPlace(String id) => ref
+      .read(shellRouteProvider.notifier)
+      .goTo(Destination.track, subtab: 'places');
 
   /// Lists the entries stamped with a sketch-map location ("what happened
   /// here" for a drawn/PDF map).

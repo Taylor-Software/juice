@@ -120,6 +120,8 @@ class PayloadCard extends StatefulWidget {
     this.onTogglePin,
     this.onCharacterTap,
     this.onThreadTap,
+    this.onNpcTap,
+    this.onPlaceTap,
     this.onDiceTap,
     this.lonelog = false,
     this.placeChip,
@@ -135,6 +137,8 @@ class PayloadCard extends StatefulWidget {
   final VoidCallback? onTogglePin;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
+  final void Function(String id)? onNpcTap;
+  final void Function(String id)? onPlaceTap;
   final void Function(String notation)? onDiceTap;
   final bool lonelog;
 
@@ -312,6 +316,8 @@ class _PayloadCardState extends State<PayloadCard> {
                             .copyWith(fontSize: 14, color: tk.inkBody),
                         onCharacterTap: widget.onCharacterTap,
                         onThreadTap: widget.onThreadTap,
+                        onNpcTap: widget.onNpcTap,
+                        onPlaceTap: widget.onPlaceTap,
                         onDiceTap: widget.onDiceTap,
                         lonelog: widget.lonelog,
                       ),

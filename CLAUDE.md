@@ -852,8 +852,9 @@ Working rules for this repo:
   spine's `activeLocation`. An Npc links to a Place (`placeId`) and can be
   **promoted to a companion** `Character` (`CharacterNotifier.addCompanion`) when
   it joins the party. Both entities join `searchCampaign`
-  (`SearchResultKind.place`/`npc`). Deferred: `@[place]`/`@[npc]` journal
-  mentions (composer autocomplete is char/thread only), NPC↔NPC relationships,
+  (`SearchResultKind.place`/`npc`). Journal `@[place]`/`@[npc]`
+  mentions supported (`MentionKind.place`/`npc`, composer autocomplete +
+  tap-to-navigate). Deferred: NPC↔NPC relationships,
   reverse hex-card "places here" list. **Bidirectional NPC↔place↔map links
   (2026-07-08):** NPC cards show a tappable place chip (`npc-place-<id>` →
   Places) + an `npc-map-<id>` "On map" chip when the linked place is pinned
