@@ -115,15 +115,48 @@ void main() {
     final place = c.read(placesProvider).value!.single;
     await c.read(placesProvider.notifier).upsert(
         place.copyWith(location: const LocationRef(hexCol: 2, hexRow: 3)));
-    await c
-        .read(npcsProvider.notifier)
-        .add('Sal', role: 'Dockhand');
+    await c.read(npcsProvider.notifier).add('Sal', role: 'Dockhand');
     final npc = c.read(npcsProvider).value!.single;
     await c.read(npcsProvider.notifier).upsert(npc.copyWith(placeId: place.id));
 
     await _pump(t, c, const PeoplePane());
     expect(find.byKey(Key('npc-place-${npc.id}')), findsOneWidget);
     expect(find.byKey(Key('npc-map-${npc.id}')), findsOneWidget);
+  });
+
+  testWidgets('People: add a relationship in the editor; card shows the tie',
+      (t) async {
+    final c = await _container();
+    await c.read(npcsProvider.notifier).add('Bram', role: 'Innkeeper');
+    await c.read(npcsProvider.notifier).add('Sela', role: 'Guard');
+    await _pump(t, c, const PeoplePane());
+
+    final bram =
+        c.read(npcsProvider).value!.firstWhere((n) => n.name == 'Bram');
+    final sela =
+        c.read(npcsProvider).value!.firstWhere((n) => n.name == 'Sela');
+
+    await t.tap(find.byKey(Key('npc-edit-${bram.id}')));
+    await t.pumpAndSettle();
+    // Pick Sela as the relation target + label it.
+    await t.tap(find.byKey(const Key('npc-rel-target')));
+    await t.pumpAndSettle();
+    await t.tap(find.text('Sela').last);
+    await t.pumpAndSettle();
+    await t.enterText(find.byKey(const Key('npc-rel-label')), 'rival');
+    await t.tap(find.byKey(const Key('npc-rel-add')));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('npc-save')));
+    await t.pumpAndSettle();
+
+    // Stored on Bram.
+    final saved =
+        c.read(npcsProvider).value!.firstWhere((n) => n.id == bram.id);
+    expect(saved.relations.single.npcId, sela.id);
+    expect(saved.relations.single.label, 'rival');
+    // Bram's card shows the outgoing tie; Sela's card shows the incoming tie.
+    expect(find.byKey(Key('npc-rel-${bram.id}-${sela.id}')), findsOneWidget);
+    expect(find.byKey(Key('npc-rel-${sela.id}-${bram.id}')), findsOneWidget);
   });
 
   testWidgets('Place card shows a people-here backlink chip', (t) async {
