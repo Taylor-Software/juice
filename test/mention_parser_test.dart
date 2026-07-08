@@ -60,6 +60,23 @@ void main() {
         mentionToken('Mara', MentionKind.character, 'c1'), '@[Mara](char:c1)');
     expect(mentionToken('The Vow', MentionKind.thread, 't9'),
         '@[The Vow](thread:t9)');
+    expect(
+        mentionToken('Harbor', MentionKind.place, 'p1'), '@[Harbor](place:p1)');
+    expect(mentionToken('Bram', MentionKind.npc, 'n1'), '@[Bram](npc:n1)');
+  });
+
+  test('parses place + npc mentions and round-trips', () {
+    final segs = parseMentions('at @[Harbor](place:p1) met @[Bram](npc:n1)');
+    expect(segs.map((s) => s.kind), [
+      MentionKind.text,
+      MentionKind.place,
+      MentionKind.text,
+      MentionKind.npc,
+    ]);
+    expect(segs.where((s) => s.kind == MentionKind.place).single.id, 'p1');
+    expect(segs.where((s) => s.kind == MentionKind.npc).single.id, 'n1');
+    expect(mentionsToPlain('at @[Harbor](place:p1) met @[Bram](npc:n1)'),
+        'at Harbor met Bram');
   });
 
   test('mentionsToPlain strips tokens to display names', () {

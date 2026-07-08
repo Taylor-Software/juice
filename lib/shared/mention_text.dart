@@ -17,6 +17,8 @@ class MentionText extends StatefulWidget {
     this.style,
     this.onCharacterTap,
     this.onThreadTap,
+    this.onPlaceTap,
+    this.onNpcTap,
     this.onDiceTap,
     this.lonelog = false,
   });
@@ -24,6 +26,8 @@ class MentionText extends StatefulWidget {
   final TextStyle? style;
   final void Function(String id)? onCharacterTap;
   final void Function(String id)? onThreadTap;
+  final void Function(String id)? onPlaceTap;
+  final void Function(String id)? onNpcTap;
 
   /// Called with the dice notation when a player taps an inline dice token
   /// (e.g. `2d6+3`) in non-lonelog prose. Null disables dice detection.
@@ -126,10 +130,17 @@ class _MentionTextState extends State<MentionText> {
       } else {
         final rec = TapGestureRecognizer()
           ..onTap = () {
-            if (seg.kind == MentionKind.character) {
-              widget.onCharacterTap?.call(seg.id!);
-            } else {
-              widget.onThreadTap?.call(seg.id!);
+            switch (seg.kind) {
+              case MentionKind.character:
+                widget.onCharacterTap?.call(seg.id!);
+              case MentionKind.thread:
+                widget.onThreadTap?.call(seg.id!);
+              case MentionKind.place:
+                widget.onPlaceTap?.call(seg.id!);
+              case MentionKind.npc:
+                widget.onNpcTap?.call(seg.id!);
+              case MentionKind.text:
+                break;
             }
           };
         _recognizers.add(rec);

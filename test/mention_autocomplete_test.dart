@@ -120,6 +120,32 @@ void main() {
     expect(find.byKey(const Key('mention-thread-t9')), findsOneWidget);
   });
 
+  testWidgets('@ suggests places and npcs; tapping inserts their tokens',
+      (tester) async {
+    await pumpComposer(tester, data, prefs: {
+      ..._prefsWithEntities(),
+      'juice.npcs.v1.$_sid': '[{"id":"n1","name":"Bram","role":"Innkeeper"}]',
+      'juice.places.v1.$_sid': '[{"id":"p1","name":"Harbor"}]',
+    });
+
+    await tester.enterText(find.byKey(const Key('journal-composer')), '@bram');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mention-npc-n1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mention-npc-n1')));
+    await tester.pump();
+    var field =
+        tester.widget<TextField>(find.byKey(const Key('journal-composer')));
+    expect(field.controller?.text, '@[Bram](npc:n1) ');
+
+    await tester.enterText(find.byKey(const Key('journal-composer')), '@harb');
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('mention-place-p1')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('mention-place-p1')));
+    await tester.pump();
+    field = tester.widget<TextField>(find.byKey(const Key('journal-composer')));
+    expect(field.controller?.text, '@[Harbor](place:p1) ');
+  });
+
   testWidgets('slash still works after @ test (no duplication)',
       (tester) async {
     await pumpComposer(tester, data);

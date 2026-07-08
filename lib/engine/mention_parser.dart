@@ -1,17 +1,34 @@
 /// Entity-mention markup for journal prose (spec: cycle4 §4).
-/// Token form: `@[Display Name](char:ID)` or `@[Title](thread:ID)`.
+/// Token form: `@[Display Name](char:ID)`, `@[Title](thread:ID)`,
+/// `@[Place](place:ID)`, or `@[Name](npc:ID)`.
 library;
 
-enum MentionKind { text, character, thread }
+enum MentionKind { text, character, thread, place, npc }
 
 class MentionSegment {
   const MentionSegment(this.text, this.kind, [this.id]);
   final String text;
   final MentionKind kind;
-  final String? id; // entity id for character/thread; null for text
+  final String? id; // entity id for a mention; null for text
 }
 
-final _mentionRe = RegExp(r'@\[([^\]]+)\]\((char|thread):([^)]+)\)');
+final _mentionRe = RegExp(r'@\[([^\]]+)\]\((char|thread|place|npc):([^)]+)\)');
+
+MentionKind _kindFromTag(String tag) => switch (tag) {
+      'char' => MentionKind.character,
+      'thread' => MentionKind.thread,
+      'place' => MentionKind.place,
+      'npc' => MentionKind.npc,
+      _ => MentionKind.text,
+    };
+
+String _tagFromKind(MentionKind kind) => switch (kind) {
+      MentionKind.character => 'char',
+      MentionKind.thread => 'thread',
+      MentionKind.place => 'place',
+      MentionKind.npc => 'npc',
+      MentionKind.text => 'char', // never tokenized; safe fallback
+    };
 
 /// Splits [body] into text and mention segments in order.
 List<MentionSegment> parseMentions(String body) {
@@ -21,9 +38,7 @@ List<MentionSegment> parseMentions(String body) {
     if (m.start > last) {
       out.add(MentionSegment(body.substring(last, m.start), MentionKind.text));
     }
-    final kind =
-        m.group(2) == 'char' ? MentionKind.character : MentionKind.thread;
-    out.add(MentionSegment(m.group(1)!, kind, m.group(3)));
+    out.add(MentionSegment(m.group(1)!, _kindFromTag(m.group(2)!), m.group(3)));
     last = m.end;
   }
   if (last < body.length) {
@@ -33,7 +48,7 @@ List<MentionSegment> parseMentions(String body) {
 }
 
 String mentionToken(String display, MentionKind kind, String id) =>
-    '@[$display](${kind == MentionKind.character ? 'char' : 'thread'}:$id)';
+    '@[$display](${_tagFromKind(kind)}:$id)';
 
 /// Replaces every mention token with its display name (export / search).
 String mentionsToPlain(String body) =>
@@ -62,9 +77,7 @@ Set<String> mentionedCharIds(String body) => {
     }
   }
   final trimmed = text.trim();
-  final question = !slash &&
-      mention == null &&
-      trimmed.endsWith('?') &&
-      trimmed.length > 1;
+  final question =
+      !slash && mention == null && trimmed.endsWith('?') && trimmed.length > 1;
   return (slash: slash, mention: mention, question: question);
 }
