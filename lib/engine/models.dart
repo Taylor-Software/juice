@@ -5081,6 +5081,22 @@ NpcDisposition _dispositionFromName(String? n) => switch (n) {
 /// distinct from a roster [Character] (PCs + hirelings/companions, which carry
 /// sheets/HP); an Npc can be promoted into a companion Character when it joins
 /// the party. Optionally tied to a [Place] via [placeId] (where it was met).
+/// A directed tie from one [Npc] to another: "[label] → [npcId]" (e.g.
+/// "brother", "rival", "employer").
+class NpcRelation {
+  const NpcRelation(this.npcId, this.label);
+  final String npcId;
+  final String label;
+
+  Map<String, dynamic> toJson() =>
+      {'npc': npcId, if (label.isNotEmpty) 'label': label};
+
+  static NpcRelation? maybeFromJson(Object? raw) {
+    if (raw is! Map || raw['npc'] is! String) return null;
+    return NpcRelation(raw['npc'] as String, (raw['label'] as String?) ?? '');
+  }
+}
+
 class Npc {
   const Npc({
     required this.id,
@@ -5089,6 +5105,7 @@ class Npc {
     this.disposition = NpcDisposition.neutral,
     this.note = '',
     this.placeId,
+    this.relations = const [],
   });
   final String id;
   final String name;
@@ -5101,6 +5118,9 @@ class Npc {
   /// Id of the [Place] this NPC is associated with; null when unplaced.
   final String? placeId;
 
+  /// Directed ties to other NPCs (this NPC's "brother", "rival", …).
+  final List<NpcRelation> relations;
+
   Npc copyWith({
     String? name,
     String? role,
@@ -5108,6 +5128,7 @@ class Npc {
     String? note,
     String? placeId,
     bool clearPlace = false,
+    List<NpcRelation>? relations,
   }) =>
       Npc(
         id: id,
@@ -5116,6 +5137,7 @@ class Npc {
         disposition: disposition ?? this.disposition,
         note: note ?? this.note,
         placeId: clearPlace ? null : (placeId ?? this.placeId),
+        relations: relations ?? this.relations,
       );
 
   Map<String, dynamic> toJson() => {
@@ -5125,6 +5147,8 @@ class Npc {
         if (disposition != NpcDisposition.neutral) 'disp': disposition.name,
         if (note.isNotEmpty) 'note': note,
         if (placeId != null) 'placeId': placeId,
+        if (relations.isNotEmpty)
+          'rel': relations.map((r) => r.toJson()).toList(),
       };
 
   factory Npc.fromJson(Map<String, dynamic> j) => Npc(
@@ -5134,6 +5158,10 @@ class Npc {
         disposition: _dispositionFromName(j['disp'] as String?),
         note: (j['note'] as String?) ?? '',
         placeId: j['placeId'] as String?,
+        relations: ((j['rel'] as List?) ?? const [])
+            .map(NpcRelation.maybeFromJson)
+            .whereType<NpcRelation>()
+            .toList(),
       );
 }
 

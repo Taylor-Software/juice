@@ -65,6 +65,30 @@ void main() {
       const n = Npc(id: 'n1', name: 'Y', placeId: 'p1');
       expect(n.copyWith(clearPlace: true).placeId, isNull);
     });
+
+    test('relations round-trip through JSON; omitted when empty', () {
+      const n = Npc(id: 'n1', name: 'Bram', relations: [
+        NpcRelation('n2', 'brother'),
+        NpcRelation('n3', ''),
+      ]);
+      final back = Npc.fromJson(n.toJson());
+      expect(back.relations.map((r) => r.npcId), ['n2', 'n3']);
+      expect(back.relations.first.label, 'brother');
+      expect(back.relations.last.label, '');
+      expect(
+          const Npc(id: 'x', name: 'Y').toJson().containsKey('rel'), isFalse);
+      // Malformed relation entries are dropped.
+      final tolerant = Npc.fromJson({
+        'id': 'z',
+        'name': 'Z',
+        'rel': [
+          'garbage',
+          {'label': 'no-npc-id'},
+          {'npc': 'ok'}
+        ],
+      });
+      expect(tolerant.relations.map((r) => r.npcId), ['ok']);
+    });
   });
 
   group('providers', () {
@@ -109,7 +133,8 @@ void main() {
 
   test('placesAtLocation matches pinned places by map cell', () {
     const places = [
-      Place(id: 'a', name: 'Tower', location: LocationRef(hexCol: 3, hexRow: 4)),
+      Place(
+          id: 'a', name: 'Tower', location: LocationRef(hexCol: 3, hexRow: 4)),
       Place(id: 'b', name: 'Cave', location: LocationRef(roomId: 'r1')),
       Place(id: 'c', name: 'Floating'), // no pin
     ];
@@ -118,8 +143,7 @@ void main() {
             .map((p) => p.id),
         ['a']);
     expect(
-        placesAtLocation(places, const LocationRef(roomId: 'r1'))
-            .single.name,
+        placesAtLocation(places, const LocationRef(roomId: 'r1')).single.name,
         'Cave');
     expect(placesAtLocation(places, const LocationRef(hexCol: 9, hexRow: 9)),
         isEmpty);

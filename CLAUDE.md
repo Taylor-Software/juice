@@ -854,7 +854,10 @@ Working rules for this repo:
   it joins the party. Both entities join `searchCampaign`
   (`SearchResultKind.place`/`npc`). Journal `@[place]`/`@[npc]`
   mentions supported (`MentionKind.place`/`npc`, composer autocomplete +
-  tap-to-navigate). Deferred: NPC↔NPC relationships,
+  tap-to-navigate). NPC↔NPC relationships
+  supported (`NpcRelation {npcId,label}` on `Npc.relations`, JSON `rel`; edited
+  in the People dialog, shown as outgoing + incoming chips on the card).
+  Deferred:
   reverse hex-card "places here" list. **Bidirectional NPC↔place↔map links
   (2026-07-08):** NPC cards show a tappable place chip (`npc-place-<id>` →
   Places) + an `npc-map-<id>` "On map" chip when the linked place is pinned
