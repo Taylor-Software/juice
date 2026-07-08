@@ -9,6 +9,7 @@ import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../state/providers.dart';
 import 'dice_roll_animation.dart';
+import 'tarot_spread_layout.dart';
 
 /// Opens the roll sheet for a draw-style default oracle (`icons`/`cards`/
 /// `tarot`) — the controls the HUD quick-roll can't fit: icon count + tumble
@@ -43,6 +44,7 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
   TarotSpread _spreadPick = kTarotSpreads.first;
   String? _lastCard; // shown string of the last single draw
   String? _lastSpreadName;
+  TarotSpread? _lastSpread;
   List<({String position, String shown})> _lastSpreadCards = const [];
 
   bool get _isIcons => widget.defaultOracle == 'icons';
@@ -171,28 +173,9 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
             ),
         ],
         const SizedBox(height: 12),
-        if (_lastSpreadCards.isNotEmpty)
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            alignment: WrapAlignment.center,
-            children: [
-              for (final c in _lastSpreadCards)
-                Column(mainAxisSize: MainAxisSize.min, children: [
-                  Builder(builder: (_) {
-                    final r = readTarot(c.shown);
-                    return CardImage(r.name,
-                        reversed: r.reversed, height: 110, showLabel: true);
-                  }),
-                  SizedBox(
-                    width: 76,
-                    child: Text(c.position,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.labelSmall),
-                  ),
-                ]),
-            ],
-          )
+        if (_lastSpreadCards.isNotEmpty && _lastSpread != null)
+          TarotSpreadLayout(
+              spread: _lastSpread!, cards: _lastSpreadCards, cardHeight: 104)
         else if (_lastCard != null)
           Center(
             child: Builder(builder: (_) {
@@ -221,6 +204,7 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
       final cards = await decks.drawSpreadAndLog(widget.oracle, _spreadPick);
       setState(() {
         _lastSpreadName = _spreadPick.name;
+        _lastSpread = _spreadPick;
         _lastSpreadCards = cards;
         _lastCard = null;
       });
