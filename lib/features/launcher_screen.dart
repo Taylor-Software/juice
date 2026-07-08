@@ -87,13 +87,18 @@ class LauncherScreen extends ConsumerWidget {
 
   Future<void> _new(BuildContext context, WidgetRef ref) async {
     final kits = ref.read(kitsProvider).valueOrNull ?? const <LoopKit>[];
+    final oracles =
+        ref.read(constructedOraclesProvider).valueOrNull ?? const [];
     final result = await showDialog<NewCampaignResult>(
       context: context,
-      builder: (context) => NewCampaignDialog(kits: kits),
+      builder: (context) => NewCampaignDialog(kits: kits, oracles: oracles),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
         systems: result.systems, genre: result.genre, tone: result.tone);
+    await ref
+        .read(settingsProvider.notifier)
+        .setDefaultOracle(result.defaultOracle);
     if (result.start == 'funnel') {
       // Seed the funnel into the new (now-active) campaign, then land on the
       // roster where it lives + dismiss the launcher.

@@ -11,6 +11,7 @@ typedef NewCampaignResult = ({
   String start,
   String seedSystem,
   LoopKit? kit,
+  String defaultOracle,
 });
 
 // Helper: open the dialog and return a reference to the future result.
@@ -267,6 +268,63 @@ void main() {
 
     expect(result!.systems, containsAll(['dnd', 'cards']));
     expect(result!.systems, isNot(contains('ironsworn')));
+  });
+
+  testWidgets('default oracle defaults to juice', (tester) async {
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Oracle Default');
+    await _walkToCreate(tester);
+    expect(result!.defaultOracle, 'juice');
+  });
+
+  testWidgets('picking the Tarot oracle sets it + pulls in the cards system',
+      (tester) async {
+    NewCampaignResult? result;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: Builder(builder: (context) {
+        return ElevatedButton(
+          onPressed: () async {
+            result = await showDialog<NewCampaignResult>(
+              context: context,
+              builder: (_) => const NewCampaignDialog(),
+            );
+          },
+          child: const Text('open'),
+        );
+      })),
+    ));
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('new-campaign-name')), 'Tarot Game');
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('oracle-choice-tarot')));
+    await tester.tap(find.byKey(const Key('oracle-choice-tarot')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-next')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('wizard-create')));
+    await tester.pumpAndSettle();
+    expect(result!.defaultOracle, 'tarot');
+    expect(result!.systems, contains('cards'));
   });
 
   // ── Step 2: funnel gating ─────────────────────────────────────────────────

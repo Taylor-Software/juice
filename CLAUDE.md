@@ -646,6 +646,22 @@ Working rules for this repo:
   `@[Name](char:ID)` mention system) and thread mentions (`@[Title](thread:ID)`)
   were already shipped — Phase 3 closed the one remaining gap (thread→journal
   backlinks). See `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
+- **Standard oracle set (2026-07-08).** The yes/no oracle offered app-wide is
+  **Juice, Mythic, Custom (constructed), Icons, Cards, Tarot** — Roll High was
+  dropped from what's OFFERED (still handled for legacy `defaultOracle` values).
+  `settings.defaultOracle` values: `'juice'|'mythic'|'icons'|'cards'|'tarot'|
+  'co:<id>'` (`'roll-high'` legacy-only). The HUD picker (`hdr-oracle`) lists
+  the built-ins (`hdr-oracle-pick-<id>`) + constructed oracles; `hdr-quick-roll`
+  (`_quickRoll`, now async) rolls each — icons build+log a `gen-abstract-icon`
+  entry (payload `icons`), cards/tarot `decksProvider.drawAndLog` (which logs
+  itself), juice/mythic/custom give a literal Yes/No. The creation wizard (step
+  1, `NewCampaignDialog`, +`oracles` param) has a **Default oracle** ChoiceChip
+  row (`oracle-choice-<id>` / `oracle-choice-co-<id>`); the result record gains
+  `defaultOracle`, the chosen oracle pulls its backing system into `systems`
+  (mythic→mythic, cards/tarot→cards), and both create call sites
+  (`home_shell._createSession`, `launcher._new`) `setDefaultOracle` after
+  create. Icons/cards "draw for you to read" — the meaning/verb interpretation
+  tables live in the random-tables sets, not the oracle.
 - **Campaign-wide search** (Streamline epic Phase 2) — a `shell-search-campaign`
   `IconButton` (`Icons.manage_search`, tooltip "Search campaign") in the shell
   app-bar opens `CampaignSearchSheet` (`lib/features/campaign_search_sheet.dart`):
