@@ -854,7 +854,13 @@ Working rules for this repo:
   it joins the party. Both entities join `searchCampaign`
   (`SearchResultKind.place`/`npc`). Deferred: `@[place]`/`@[npc]` journal
   mentions (composer autocomplete is char/thread only), NPC↔NPC relationships,
-  reverse hex-card "places here" list.
+  reverse hex-card "places here" list. **Bidirectional NPC↔place↔map links
+  (2026-07-08):** NPC cards show a tappable place chip (`npc-place-<id>` →
+  Places) + an `npc-map-<id>` "On map" chip when the linked place is pinned
+  (jumps via the spine); Place cards show a `place-people-<id>` "N people"
+  backlink → People; and both map detail cards (hex + room) carry a
+  `loc-places-<key>` "places here" chip via the pure `placesAtLocation` +
+  shared `placesHereChip`.
 - **Party roles + conditions.** `Character.role` (`CharacterRole {pc, companion,
   npc}`, default pc) groups the Sheet roster into Party / Companions / NPCs
   (empty groups hidden; the active PC `playContextProvider.activeCharacterId` is

@@ -106,4 +106,37 @@ void main() {
     // The card shows the linked place name.
     expect(find.text('Harbor'), findsWidgets);
   });
+
+  testWidgets('NPC card shows a tappable place chip + On-map when pinned',
+      (t) async {
+    final c = await _container();
+    // A place pinned to a hex + an NPC linked to it.
+    await c.read(placesProvider.notifier).add('Harbor');
+    final place = c.read(placesProvider).value!.single;
+    await c.read(placesProvider.notifier).upsert(
+        place.copyWith(location: const LocationRef(hexCol: 2, hexRow: 3)));
+    await c
+        .read(npcsProvider.notifier)
+        .add('Sal', role: 'Dockhand');
+    final npc = c.read(npcsProvider).value!.single;
+    await c.read(npcsProvider.notifier).upsert(npc.copyWith(placeId: place.id));
+
+    await _pump(t, c, const PeoplePane());
+    expect(find.byKey(Key('npc-place-${npc.id}')), findsOneWidget);
+    expect(find.byKey(Key('npc-map-${npc.id}')), findsOneWidget);
+  });
+
+  testWidgets('Place card shows a people-here backlink chip', (t) async {
+    final c = await _container();
+    await c.read(placesProvider.notifier).add('Harbor');
+    final place = c.read(placesProvider).value!.single;
+    await c.read(npcsProvider.notifier).add('Sal');
+    final npc = c.read(npcsProvider).value!.single;
+    await c.read(npcsProvider.notifier).upsert(npc.copyWith(placeId: place.id));
+
+    await _pump(t, c, const PlacesPane());
+    final chip = find.byKey(Key('place-people-${place.id}'));
+    expect(chip, findsOneWidget);
+    expect(find.text('1 person'), findsOneWidget);
+  });
 }
