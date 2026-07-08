@@ -7,32 +7,38 @@ import 'dart:convert';
 import 'dice.dart';
 import 'models.dart';
 
-/// A parsed `NdM` dice expression (count·dSides). [count]>=1, [sides]>=2.
+/// A parsed dice expression: `NdM(+/-k)` or Fate dice `NdF(+/-k)`. [count]>=1;
+/// ordinary dice have [sides]>=2, [fate] dice roll three faces (-1, 0, +1).
 class DiceNotation {
-  const DiceNotation(this.count, this.sides);
+  const DiceNotation(this.count, this.sides, {this.mod = 0, this.fate = false});
   final int count;
   final int sides;
+  final int mod;
+  final bool fate;
 }
 
-final _diceRe = RegExp(r'^(\d*)d(\d+)$');
+final _diceRe = RegExp(r'^(\d*)d(f|\d+)([+-]\d+)?$');
 
-/// Parse `d6`/`2d6`/`d100` (whitespace + case tolerant). Returns null on garbage
-/// or out-of-range (count 1..100, sides 2..1000).
+/// Parse `d6`/`2d6`/`d100`/`2d6+1`/`dF`/`2dF+2` (whitespace + case tolerant).
+/// Returns null on garbage or out-of-range (count 1..100, sides 2..1000).
 DiceNotation? parseDiceNotation(String raw) {
   final s = raw.toLowerCase().replaceAll(RegExp(r'\s+'), '');
   final m = _diceRe.firstMatch(s);
   if (m == null) return null;
   final count = m.group(1)!.isEmpty ? 1 : int.parse(m.group(1)!);
+  final mod = m.group(3) == null ? 0 : int.parse(m.group(3)!);
+  if (count < 1 || count > 100) return null;
+  if (m.group(2) == 'f') return DiceNotation(count, 0, mod: mod, fate: true);
   final sides = int.parse(m.group(2)!);
-  if (count < 1 || count > 100 || sides < 2 || sides > 1000) return null;
-  return DiceNotation(count, sides);
+  if (sides < 2 || sides > 1000) return null;
+  return DiceNotation(count, sides, mod: mod);
 }
 
-/// Sum [n.count] rolls of d[n.sides].
+/// Sum [n.count] rolls (d[n.sides], or Fate faces -1/0/+1) plus [n.mod].
 int rollNotation(DiceNotation n, Dice dice) {
-  var total = 0;
+  var total = n.mod;
   for (var i = 0; i < n.count; i++) {
-    total += dice.dN(n.sides);
+    total += n.fate ? dice.dN(3) - 2 : dice.dN(n.sides);
   }
   return total;
 }
@@ -197,15 +203,13 @@ String encodeTablePack(List<CustomTable> tables) => jsonEncode({
 /// the payload is not a recognizable pack; drops individual malformed tables.
 /// Throws [FormatException] only when the top-level JSON itself is unparseable.
 List<CustomTable> decodeTablePack(String raw) {
-  final dynamic root = jsonDecode(raw); // may throw FormatException — caller handles
+  final dynamic root =
+      jsonDecode(raw); // may throw FormatException — caller handles
   if (root is! Map) return const [];
   if (root['kind'] != kTablePackKind) return const [];
   final list = root['tables'];
   if (list is! List) return const [];
-  return list
-      .map(CustomTable.maybeFromJson)
-      .whereType<CustomTable>()
-      .toList();
+  return list.map(CustomTable.maybeFromJson).whereType<CustomTable>().toList();
 }
 
 /// Roll [table] per its [CustomTable.mode]. An empty table yields a placeholder

@@ -53,6 +53,36 @@ void main() {
     expect(saved.single.notation, '2d6');
   });
 
+  testWidgets(
+      'advantage/disadvantage control appears only for 2+ dice; dF chip sets '
+      'fate; mode persists', (t) async {
+    final c = await _container();
+    await _pumpOpener(t, c);
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+
+    // Single die → no adv/disadv control.
+    expect(find.byKey(const Key('oracle-mode')), findsNothing);
+
+    // dF chip sets a fate formula.
+    await t.tap(find.byKey(const Key('oracle-die-F')));
+    await t.pumpAndSettle();
+    // 2+ dice → the mode control shows; pick Advantage.
+    await t.enterText(find.byKey(const Key('oracle-formula')), '2d20');
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('oracle-mode')), findsOneWidget);
+    await t.tap(find.text('Advantage'));
+    await t.pumpAndSettle();
+
+    await t.enterText(find.byKey(const Key('oracle-name')), 'Edge');
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('oracle-save')));
+    await t.pumpAndSettle();
+    final saved = c.read(constructedOraclesProvider).value!.single;
+    expect(saved.notation, '2d20');
+    expect(saved.mode.name, 'advantage');
+  });
+
   testWidgets('save is disabled without a name and blocked below 2 bands',
       (t) async {
     final c = await _container();
