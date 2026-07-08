@@ -1895,6 +1895,26 @@ class ConstructedOraclesNotifier
   Future<void> add(ConstructedOracle o) async => _save([...await _ready, o]);
   Future<void> replace(ConstructedOracle o) async =>
       _save((await _ready).map((e) => e.id == o.id ? o : e).toList());
+
+  /// Append [incoming] oracles with fresh ids (import never clobbers existing).
+  Future<void> addAll(List<ConstructedOracle> incoming) async {
+    if (incoming.isEmpty) return;
+    final base = DateTime.now().microsecondsSinceEpoch;
+    final fresh = [
+      for (var i = 0; i < incoming.length; i++)
+        ConstructedOracle(
+          id: '${base + i}',
+          name: incoming[i].name,
+          notation: incoming[i].notation,
+          direction: incoming[i].direction,
+          bands: incoming[i].bands,
+          chaos: incoming[i].chaos,
+          mode: incoming[i].mode,
+        ),
+    ];
+    await _save([...await _ready, ...fresh]);
+  }
+
   Future<void> remove(String id) async =>
       _save((await _ready).where((o) => o.id != id).toList());
 

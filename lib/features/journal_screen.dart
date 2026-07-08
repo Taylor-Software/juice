@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/command_registry.dart';
+import '../engine/constructed_oracle.dart';
+import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
 import '../engine/entity_suggestions.dart';
 import '../engine/journal_export.dart';
@@ -115,6 +117,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   static const _builtinSpell = 'spell';
   static const _builtinMonster = 'monster';
   static const _builtinRules = 'rules';
+  static const _builtinOracle = 'oracle';
 
   @override
   void initState() {
@@ -351,6 +354,38 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Drew ${spread.name}')));
+    }
+  }
+
+  /// /oracle <name>: rolls the named constructed oracle at even (50/50) odds
+  /// and logs it. Matches by exact name first, else the first name that starts
+  /// with [arg]; empty [arg] rolls the only oracle when there's just one.
+  Future<void> _oracleCmd(String arg) async {
+    final oracles =
+        ref.read(constructedOraclesProvider).valueOrNull ?? const [];
+    final q = arg.trim().toLowerCase();
+    ConstructedOracle? pick;
+    if (q.isEmpty) {
+      if (oracles.length == 1) pick = oracles.first;
+    } else {
+      pick = oracles.where((o) => o.name.toLowerCase() == q).firstOrNull ??
+          oracles.where((o) => o.name.toLowerCase().startsWith(q)).firstOrNull;
+    }
+    if (pick == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(oracles.isEmpty
+                ? 'No custom oracles yet — build one in Ask → Oracle.'
+                : 'No oracle matches "$arg".')));
+      }
+      return;
+    }
+    final g = oracleGenResult(pick, OracleLikelihood.fiftyFifty, Dice());
+    await ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+        sourceTool: 'constructed-oracle', payload: g.toPayload());
+    if (mounted) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('${g.title}: ${g.summary}')));
     }
   }
 
@@ -1328,6 +1363,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showTarot = _builtinTarot.startsWith(tok) && cardsOn;
     final showSpread = _builtinSpread.startsWith(tok) && cardsOn;
     final showRoll = _builtinRoll.startsWith(tok);
+    final hasOracles =
+        (ref.watch(constructedOraclesProvider).valueOrNull ?? const [])
+            .isNotEmpty;
+    final showOracle = _builtinOracle.startsWith(tok) && hasOracles;
     final showInspire = _builtinInspire.startsWith(tok);
     final showThread = _builtinThread.startsWith(tok);
     final showLookup = _builtinLookup.startsWith(tok);
@@ -1473,6 +1512,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 onTap: () {
                   _composer.clear();
                   _drawSpreadCmd('');
+                },
+              ),
+            if (showOracle)
+              _BuiltinSlashRow(
+                rowKey: const Key('slash-cmd-oracle'),
+                icon: Icons.casino_outlined,
+                command: '/oracle',
+                description: 'Roll one of your oracles by name',
+                onTap: () {
+                  _composer.clear();
+                  _oracleCmd('');
                 },
               ),
             if (showLookup)
@@ -1921,6 +1971,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         await _rollCmd(parsed.rest);
         return;
       }
+      if (_builtinOracle == tok) {
+        _composer.clear();
+        await _oracleCmd(parsed.rest);
+        return;
+      }
       if (_builtinInspire == tok) {
         _composer.clear();
         _inspireCmd(parsed.rest);
@@ -2199,11 +2254,10 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               ListTile(
                 key: Key('loc-entry-row-${x.id}'),
                 dense: true,
-                title: Text(x.title.isEmpty
-                    ? (x.body.split('\n').first)
-                    : x.title),
-                subtitle: Text(
-                    x.timestamp.toLocal().toString().split('.').first),
+                title: Text(
+                    x.title.isEmpty ? (x.body.split('\n').first) : x.title),
+                subtitle:
+                    Text(x.timestamp.toLocal().toString().split('.').first),
                 onTap: () async {
                   final navigated =
                       await showEntryPreview(sheetContext, ref, x);

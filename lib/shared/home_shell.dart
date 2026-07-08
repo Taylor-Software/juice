@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../engine/constructed_oracle.dart';
 import '../engine/custom_table.dart';
 import '../engine/funnel.dart';
 import '../engine/journal_export.dart';
@@ -169,6 +170,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 leading: const Icon(Icons.table_view_outlined),
                 title: const Text('Import table pack'),
                 onTap: () => _importTablePack(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-export-oracles'),
+                leading: const Icon(Icons.casino_outlined),
+                title: const Text('Export oracle pack'),
+                onTap: () => _exportOraclePack(dialogContext),
+              ),
+              ListTile(
+                key: const Key('menu-import-oracles'),
+                leading: const Icon(Icons.casino_outlined),
+                title: const Text('Import oracle pack'),
+                onTap: () => _importOraclePack(dialogContext),
               ),
               ListTile(
                 key: const Key('menu-export-loopkit'),
@@ -459,6 +472,85 @@ class _HomeShellState extends ConsumerState<HomeShell> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Not a valid table pack.')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _exportOraclePack(BuildContext dialogContext) async {
+    final oracles =
+        ref.read(constructedOraclesProvider).valueOrNull ?? const [];
+    if (oracles.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No custom oracles to export.')),
+        );
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    try {
+      await FilePicker.saveFile(
+        dialogTitle: 'Export oracle pack',
+        fileName: 'oracles.oracles.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: Uint8List.fromList(utf8.encode(encodeOraclePack(oracles))),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    }
+  }
+
+  Future<void> _importOraclePack(BuildContext dialogContext) async {
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.pickFiles(
+        dialogTitle: 'Import oracle pack',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not access files: ${e.message}')),
+      );
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+      return;
+    }
+    final bytes = (result == null || result.files.isEmpty)
+        ? null
+        : result.files.first.bytes;
+    if (bytes == null) return; // user cancelled
+    try {
+      final decoded = decodeOraclePack(utf8.decode(bytes));
+      if (decoded.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No oracles found in file.')),
+          );
+        }
+      } else {
+        await ref.read(constructedOraclesProvider.notifier).addAll(decoded);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Imported ${decoded.length} oracle${decoded.length == 1 ? '' : 's'}.')),
+          );
+        }
+      }
+      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
+    } on FormatException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not a valid oracle pack.')),
       );
       if (dialogContext.mounted) Navigator.of(dialogContext).pop();
     }

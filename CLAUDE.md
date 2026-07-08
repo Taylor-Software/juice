@@ -1000,7 +1000,15 @@ Working rules for this repo:
   **custom tables** (`custom_table.dart` `DiceNotation` gained `mod`+`fate`;
   `parseDiceNotation`/`rollNotation` accept `NdF(+/-k)` — ranges-mode tables can
   roll `2dF+2`). Deferred: HUD default-oracle picker integration, `/oracle
-  <name>` command, pack export/import.
+  <name>` command, pack export/import. **Surfacing (2026-07-07):** the HUD
+  default-oracle picker (`hdr-oracle`) + quick-roll (`hdr-quick-roll`) accept
+  constructed oracles via a `co:<id>` value in `settings.defaultOracle` (rolls
+  at 50/50, tool `constructed-oracle`); a `/oracle <name>` slash command
+  (`slash-cmd-oracle`, shown when any oracle exists — exact-then-prefix name
+  match, single-oracle default); and portable **oracle packs**
+  (`encodeOraclePack`/`decodeOraclePack` over `{kind:'juice-oracle-pack',v,
+  oracles}`, `ConstructedOraclesNotifier.addAll` fresh-id append) via the
+  campaigns drawer `menu-export-oracles`/`menu-import-oracles`.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
   deck (`kPlayingDeck`, opt-in 54 with the two name-only jokers via
   `kPlayingDeckWithJokers` + the `cards-jokers-toggle` / `DecksState.jokers`
