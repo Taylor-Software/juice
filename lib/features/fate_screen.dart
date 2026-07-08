@@ -12,6 +12,7 @@ import '../shared/result_card.dart';
 import '../state/providers.dart';
 import 'oracle_constructor.dart';
 import 'tarot_reference.dart';
+import 'tarot_spread_layout.dart';
 
 /// A scroll target within the Fate screen, for launcher deep links.
 enum FateSection { fateCheck, rollHigh, mythic, cards }
@@ -95,36 +96,6 @@ class _FateScreenState extends ConsumerState<FateScreen> {
   /// present, so the reading is preserved without the AI.
   String _cardBody(GenResult g) =>
       g.asText + tarotMeaningSuffix(g.summary ?? '');
-
-  /// One position tile in the spread grid: label, card art, name + orientation,
-  /// and the authored meaning line. Uniform across all spreads.
-  Widget _spreadTile(ThemeData theme, ({String position, String shown}) c) {
-    final r = readTarot(c.shown);
-    final meaning = r.meaning == null
-        ? null
-        : (r.reversed ? r.meaning!.reversed : r.meaning!.upright);
-    return SizedBox(
-      width: 130,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(c.position,
-              style: theme.textTheme.labelLarge,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 4),
-          CardImage(r.name, reversed: r.reversed, height: 120),
-          const SizedBox(height: 4),
-          Text('${r.name}${r.reversed ? ' (rev)' : ''}',
-              style: theme.textTheme.bodySmall),
-          if (meaning != null)
-            Text(meaning,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
 
   @override
   void initState() {
@@ -572,13 +543,11 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                   ),
                   if (_spreadLast != null) ...[
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        for (final c in _spreadLast!.cards)
-                          _spreadTile(theme, c),
-                      ],
+                    TarotSpreadLayout(
+                      spread: _spreadLast!.spread,
+                      cards: _spreadLast!.cards,
+                      cardHeight: 110,
+                      detail: true,
                     ),
                     const SizedBox(height: 8),
                     Align(

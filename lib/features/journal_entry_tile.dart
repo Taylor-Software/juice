@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../engine/sketch.dart';
 import '../engine/tarot_meanings.dart';
+import '../engine/tarot_spreads.dart';
 import 'sketch_editor.dart';
+import 'tarot_spread_layout.dart';
 import '../shared/ai_badge.dart';
 import '../shared/card_image.dart';
 import '../shared/design_tokens.dart';
@@ -272,39 +274,56 @@ class _PayloadCardState extends State<PayloadCard> {
                           }),
                         ),
                       ),
-                    // Tarot spread: a labelled strip of card images.
+                    // Tarot spread: the proper geometric layout (row / plus /
+                    // Celtic Cross wheel + staff), falling back to a strip when
+                    // the logged spread can't be resolved.
                     if (p['cards'] case final List<dynamic> cards
                         when cards.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            for (final c
-                                in cards.whereType<Map<dynamic, dynamic>>())
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Builder(builder: (_) {
-                                    final r = readTarot('${c['shown'] ?? ''}');
-                                    return CardImage(r.name,
-                                        reversed: r.reversed,
-                                        height: 96,
-                                        showLabel: true);
-                                  }),
-                                  SizedBox(
-                                    width: 64,
-                                    child: Text('${c['position'] ?? ''}',
-                                        textAlign: TextAlign.center,
-                                        style: tk.uiLabel.copyWith(
-                                            fontSize: 10, color: tk.inkMuted)),
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
+                      Builder(builder: (_) {
+                        final drawn = [
+                          for (final c
+                              in cards.whereType<Map<dynamic, dynamic>>())
+                            (
+                              position: '${c['position'] ?? ''}',
+                              shown: '${c['shown'] ?? ''}'
+                            ),
+                        ];
+                        final spread =
+                            spreadForLog('${p['spread'] ?? ''}', drawn.length);
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: spread == null
+                              ? Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    for (final c in drawn)
+                                      Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Builder(builder: (_) {
+                                            final r = readTarot(c.shown);
+                                            return CardImage(r.name,
+                                                reversed: r.reversed,
+                                                height: 96,
+                                                showLabel: true);
+                                          }),
+                                          SizedBox(
+                                            width: 64,
+                                            child: Text(c.position,
+                                                textAlign: TextAlign.center,
+                                                style: tk.uiLabel.copyWith(
+                                                    fontSize: 10,
+                                                    color: tk.inkMuted)),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                )
+                              : TarotSpreadLayout(
+                                  spread: spread, cards: drawn, cardHeight: 84),
+                        );
+                      }),
                     // Story-dice entries carry their icon asset paths in the
                     // payload — render the rolled strip.
                     if (p['icons'] case final List<dynamic> icons
