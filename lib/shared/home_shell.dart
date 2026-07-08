@@ -240,13 +240,18 @@ class _HomeShellState extends ConsumerState<HomeShell> {
 
   Future<void> _createSession(BuildContext dialogContext) async {
     final kits = ref.read(kitsProvider).valueOrNull ?? const <LoopKit>[];
+    final oracles =
+        ref.read(constructedOraclesProvider).valueOrNull ?? const [];
     final result = await showDialog<NewCampaignResult>(
       context: dialogContext,
-      builder: (context) => NewCampaignDialog(kits: kits),
+      builder: (context) => NewCampaignDialog(kits: kits, oracles: oracles),
     );
     if (result == null || result.name.trim().isEmpty) return;
     await ref.read(sessionsProvider.notifier).create(result.name.trim(),
         systems: result.systems, genre: result.genre, tone: result.tone);
+    await ref
+        .read(settingsProvider.notifier)
+        .setDefaultOracle(result.defaultOracle);
     ref.read(shellRouteProvider.notifier).land();
     if (result.start == 'funnel') {
       await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
@@ -1171,11 +1176,17 @@ typedef NewCampaignResult = ({
   String start,
   String seedSystem,
   LoopKit? kit,
+  String defaultOracle,
 });
 
 class NewCampaignDialog extends StatefulWidget {
-  const NewCampaignDialog({super.key, this.kits = const []});
+  const NewCampaignDialog(
+      {super.key, this.kits = const [], this.oracles = const []});
   final List<LoopKit> kits;
+
+  /// The player's app-global constructed oracles, offered as default-oracle
+  /// choices alongside the built-ins.
+  final List<ConstructedOracle> oracles;
 
   @override
   State<NewCampaignDialog> createState() => _NewCampaignDialogState();
@@ -1192,6 +1203,8 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   // Step 1 (system + tools)
   String? _ruleset; // single-select ruleset id, or null for None
   final Set<String> _addons = {'juice', 'party'}; // non-ruleset selections
+  // Default yes/no oracle: 'juice'|'mythic'|'icons'|'cards'|'tarot'|'co:<id>'.
+  String _oracle = 'juice';
 
   // Step 2 (start)
   String _start = 'roster'; // 'roster' | 'funnel' | 'kit'
@@ -1238,6 +1251,12 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
     final systemsForSubmit = {
       ..._systems,
       if (_start == 'funnel') 'funnel',
+      // The chosen default oracle pulls in its backing system so its tools show.
+      ...switch (_oracle) {
+        'mythic' => const {'mythic'},
+        'cards' || 'tarot' => const {'cards'},
+        _ => const <String>{},
+      },
     };
     Navigator.of(context).pop((
       name: _nameCtrl.text,
@@ -1247,6 +1266,7 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
       start: _start,
       seedSystem: _seedSystem,
       kit: _start == 'kit' ? _selectedKit : null,
+      defaultOracle: _oracle,
     ));
   }
 
@@ -1462,6 +1482,38 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
           ]),
           const SizedBox(height: 10),
         ],
+        const Text('Default oracle',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 2),
+        Text(
+          'The quick yes/no you tap from any verb. Icons and cards draw for '
+          'you to read.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 4),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final o in const [
+            ('juice', 'Juice'),
+            ('mythic', 'Mythic'),
+            ('icons', 'Icons'),
+            ('cards', 'Cards'),
+            ('tarot', 'Tarot'),
+          ])
+            ChoiceChip(
+              key: Key('oracle-choice-${o.$1}'),
+              label: Text(o.$2),
+              selected: _oracle == o.$1,
+              onSelected: (_) => setState(() => _oracle = o.$1),
+            ),
+          for (final o in widget.oracles)
+            ChoiceChip(
+              key: Key('oracle-choice-co-${o.id}'),
+              label: Text(o.name.isEmpty ? '(unnamed)' : o.name),
+              selected: _oracle == 'co:${o.id}',
+              onSelected: (_) => setState(() => _oracle = 'co:${o.id}'),
+            ),
+        ]),
+        const SizedBox(height: 10),
         const Divider(),
         CampaignPreviewPane(systems: _systems),
       ],

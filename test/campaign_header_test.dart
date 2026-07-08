@@ -273,6 +273,45 @@ void main() {
     expect(entries.first.title, 'Grim Fate');
   });
 
+  testWidgets('default oracle Icons: quick-roll logs an abstract-icon entry',
+      (tester) async {
+    await _pump(tester, data, {
+      ..._prefs(journalJson: '[]'),
+      'juice.settings.v1.$_sid': '{"defaultOracle":"icons"}',
+    });
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
+    await tester.tap(find.byKey(const Key('hdr-quick-roll')));
+    await tester.pumpAndSettle();
+    final entries = await container.read(journalProvider.future);
+    final e = entries.singleWhere((x) => x.sourceTool == 'gen-abstract-icon');
+    expect((e.payload?['icons'] as List), hasLength(1));
+  });
+
+  testWidgets('default oracle Cards: quick-roll draws + logs a cards entry',
+      (tester) async {
+    await _pump(tester, data, {
+      ..._prefs(journalJson: '[]'),
+      'juice.settings.v1.$_sid': '{"defaultOracle":"cards"}',
+    });
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
+    await tester.tap(find.byKey(const Key('hdr-quick-roll')));
+    await tester.pumpAndSettle();
+    final entries = await container.read(journalProvider.future);
+    expect(entries.where((x) => x.sourceTool == 'cards'), hasLength(1));
+  });
+
+  testWidgets('oracle picker offers the standard set (Icons/Cards/Tarot)',
+      (tester) async {
+    await _pump(tester, data, _prefs(journalJson: '[$_sceneJson]'));
+    await tester.tap(find.byKey(const Key('hdr-oracle')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('hdr-oracle-pick-icons')), findsOneWidget);
+    expect(find.byKey(const Key('hdr-oracle-pick-cards')), findsOneWidget);
+    expect(find.byKey(const Key('hdr-oracle-pick-tarot')), findsOneWidget);
+  });
+
   testWidgets('collapse toggle hides detail row and persists', (tester) async {
     await _pump(
       tester,

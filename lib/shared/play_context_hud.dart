@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/constructed_oracle.dart';
+import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
@@ -248,7 +249,10 @@ class CampaignHeader extends ConsumerWidget {
     }
     return switch (id) {
       'mythic' => 'Mythic',
-      'roll-high' => 'Roll High',
+      'icons' => 'Icons',
+      'cards' => 'Cards',
+      'tarot' => 'Tarot',
+      'roll-high' => 'Roll High', // legacy campaigns; no longer offered
       _ => 'Juice',
     };
   }
@@ -265,10 +269,24 @@ class CampaignHeader extends ConsumerWidget {
     }
   }
 
-  void _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle, int chaos,
-      String defaultOracle) {
+  Future<void> _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle,
+      int chaos, String defaultOracle) async {
+    // Cards + tarot draw-and-log through the deck (which persists the draw
+    // itself); a snackbar then confirms.
+    if (defaultOracle == 'cards' || defaultOracle == 'tarot') {
+      final g = await ref
+          .read(decksProvider.notifier)
+          .drawAndLog(oracle, tarot: defaultOracle == 'tarot');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+      }
+      return;
+    }
+
     final GenResult g;
     final String tool;
+    Map<String, dynamic>? payload;
     if (defaultOracle.startsWith(_coPrefix)) {
       final oid = defaultOracle.substring(_coPrefix.length);
       final oracles =
@@ -287,19 +305,31 @@ class CampaignHeader extends ConsumerWidget {
         case 'mythic':
           g = oracle.mythicFate(4, chaos); // 50/50 odds
           tool = 'mythic';
+        case 'icons':
+          final ic = oracle.abstractIcon();
+          g = GenResult(title: 'Story Dice', rolls: [
+            Roll(label: 'Icon', value: 'd10 ${d10Label(ic.d10)}, d6 ${ic.d6}'),
+          ]);
+          tool = 'gen-abstract-icon';
+          payload = {
+            ...g.toPayload(),
+            'icons': [ic.asset]
+          };
         case 'roll-high':
-          g = oracle.rollHigh('d100', 3); // Unknown odds
+          g = oracle.rollHigh('d100', 3); // Unknown odds (legacy default)
           tool = 'roll-high';
         default:
           g = fateCheckGenResult(oracle.fateCheck(Likelihood.normal));
           tool = 'fate-check';
       }
     }
-    ref
-        .read(journalProvider.notifier)
-        .addResult(g.title, g.asText, sourceTool: tool, payload: g.toPayload());
-    ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(g.summary ?? g.rolls.first.value)));
+    await ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+        sourceTool: tool, payload: payload ?? g.toPayload());
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+              g.summary ?? (g.rolls.isEmpty ? g.title : g.rolls.first.value))));
+    }
   }
 
   Future<void> _pickOracle(
@@ -311,8 +341,9 @@ class CampaignHeader extends ConsumerWidget {
       builder: (_) => SimpleDialog(
         title: const Text('Default oracle'),
         children: [
-          for (final o in const ['juice', 'mythic', 'roll-high'])
+          for (final o in const ['juice', 'mythic', 'icons', 'cards', 'tarot'])
             SimpleDialogOption(
+              key: Key('hdr-oracle-pick-$o'),
               onPressed: () => Navigator.pop(context, o),
               child: Text(_oracleLabel(o, oracles)),
             ),
