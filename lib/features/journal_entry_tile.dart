@@ -256,7 +256,9 @@ class _PayloadCardState extends State<PayloadCard> {
                               .copyWith(fontSize: 11, color: tk.inkMuted),
                         ),
                       ),
-                    if (entry.sourceTool == 'cards' && summary != null)
+                    if (entry.sourceTool == 'cards' &&
+                        p['cards'] is! List &&
+                        summary != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Align(
@@ -266,6 +268,36 @@ class _PayloadCardState extends State<PayloadCard> {
                             return CardImage(r.name,
                                 reversed: r.reversed, height: 120);
                           }),
+                        ),
+                      ),
+                    // Tarot spread: a labelled strip of card images.
+                    if (p['cards'] case final List<dynamic> cards
+                        when cards.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (final c in cards.whereType<Map<dynamic, dynamic>>())
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Builder(builder: (_) {
+                                    final r = readTarot('${c['shown'] ?? ''}');
+                                    return CardImage(r.name,
+                                        reversed: r.reversed, height: 96);
+                                  }),
+                                  SizedBox(
+                                    width: 64,
+                                    child: Text('${c['position'] ?? ''}',
+                                        textAlign: TextAlign.center,
+                                        style: tk.uiLabel.copyWith(
+                                            fontSize: 10, color: tk.inkMuted)),
+                                  ),
+                                ],
+                              ),
+                          ],
                         ),
                       ),
                     // Story-dice entries carry their icon asset paths in the
@@ -440,6 +472,72 @@ class _PayloadCardState extends State<PayloadCard> {
   /// source icon + the one-line answer (serif, ellipsized) + a muted trailing
   /// roll summary + a compact reroll icon (a primary loop action — kept
   /// visible collapsed) + the overflow menu. Tapping the row body expands it.
+  /// The collapsed-row body: rolled icons or drawn tarot cards render as image
+  /// thumbnails (the result IS the image); everything else is a text one-liner.
+  Widget _collapsedContent(JuiceTokens tk, JournalEntry entry, String oneLiner,
+      String? rollSummary) {
+    final p = entry.payload;
+    if (p?['icons'] case final List<dynamic> icons when icons.isNotEmpty) {
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final a in icons.whereType<String>())
+            Image.asset(a, width: 40, height: 40),
+        ],
+      );
+    }
+    // Drawn cards: a spread's card list, or a single card's summary.
+    final shownStrings = <String>[
+      if (p?['cards'] case final List<dynamic> cards)
+        for (final c in cards.whereType<Map<dynamic, dynamic>>()) '${c['shown'] ?? ''}'
+      else if (entry.sourceTool == 'cards' &&
+          (entry.payload?['summary'] as String?)?.isNotEmpty == true)
+        entry.payload!['summary'] as String,
+    ];
+    if (shownStrings.isNotEmpty) {
+      return Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final s in shownStrings)
+            Builder(builder: (_) {
+              final r = readTarot(s);
+              return CardImage(r.name, reversed: r.reversed, height: 56);
+            }),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            oneLiner,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tk.narrative.copyWith(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: tk.ink,
+            ),
+          ),
+        ),
+        if (rollSummary != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Text(
+              rollSummary,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tk.uiLabel.copyWith(fontSize: 11, color: tk.inkMuted),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _collapsedRow(JuiceTokens tk, JournalEntry entry, String oneLiner,
       String? rollSummary) {
     return Padding(
@@ -462,46 +560,9 @@ class _PayloadCardState extends State<PayloadCard> {
               key: Key('payload-expand-${entry.id}'),
               behavior: HitTestBehavior.opaque,
               onTap: () => setState(() => _expanded = true),
-              // Icon-oracle / story-dice entries ARE their images — show the
-              // rolled icons in the collapsed row instead of a text summary.
-              child: switch (entry.payload?['icons']) {
-                final List<dynamic> icons when icons.isNotEmpty => Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      for (final a in icons.whereType<String>())
-                        Image.asset(a, width: 40, height: 40),
-                    ],
-                  ),
-                _ => Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          oneLiner,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tk.narrative.copyWith(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                            color: tk.ink,
-                          ),
-                        ),
-                      ),
-                      if (rollSummary != null)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: Text(
-                            rollSummary,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: tk.uiLabel
-                                .copyWith(fontSize: 11, color: tk.inkMuted),
-                          ),
-                        ),
-                    ],
-                  ),
-              },
+              // Icon-oracle / card entries ARE their images — show the rolled
+              // icons or drawn cards in the collapsed row instead of text.
+              child: _collapsedContent(tk, entry, oneLiner, rollSummary),
             ),
           ),
           if (widget.onReroll != null)

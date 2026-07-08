@@ -846,13 +846,24 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
   /// entry, folding each position's meaning in via spreadBody. Mirrors
   /// drawAndLog for single cards; used by the /spread slash command. (The Cards
   /// section keeps its own draw → show → manual-log flow.)
-  Future<void> drawSpreadAndLog(Oracle oracle, TarotSpread spread) async {
+  Future<List<({String position, String shown})>> drawSpreadAndLog(
+      Oracle oracle, TarotSpread spread) async {
     final out = await drawSpread(oracle, spread);
     await ref.read(journalProvider.notifier).addResult(
-          'Tarot Spread',
-          spreadBody(spread.name, out.cards),
-          sourceTool: 'cards',
-        );
+      'Tarot Spread',
+      spreadBody(spread.name, out.cards),
+      sourceTool: 'cards',
+      // The result's rolls (positions) route this to the rich PayloadCard; the
+      // card shown-strings let the journal + roller render the card images.
+      payload: {
+        ...out.result.toPayload(),
+        'spread': spread.name,
+        'cards': [
+          for (final c in out.cards) {'position': c.position, 'shown': c.shown}
+        ],
+      },
+    );
+    return out.cards;
   }
 
   /// Clears a deck so the next draw reshuffles a full deck.
