@@ -31,7 +31,9 @@ void main() {
 
     test('weighted row round-trips weight', () {
       const t = CustomTable(
-          id: 'w', name: 'W', mode: TableRoll.weighted,
+          id: 'w',
+          name: 'W',
+          mode: TableRoll.weighted,
           rows: [CustomRow('Rain', weight: 3), CustomRow('Sun')]);
       final back = CustomTable.fromJson(t.toJson());
       expect(back.rows.first.weight, 3);
@@ -39,8 +41,11 @@ void main() {
     });
 
     test('legacy string rows still load (back-compat)', () {
-      final t = CustomTable.maybeFromJson(
-          {'id': 'a', 'name': 'n', 'rows': ['Rain', 'Sun']});
+      final t = CustomTable.maybeFromJson({
+        'id': 'a',
+        'name': 'n',
+        'rows': ['Rain', 'Sun']
+      });
       expect(t, isNotNull);
       expect(t!.mode, TableRoll.uniform);
       expect(t.rows.map((r) => r.text).toList(), ['Rain', 'Sun']);
@@ -56,7 +61,12 @@ void main() {
       final t = CustomTable.maybeFromJson({
         'id': 'a',
         'name': 'n',
-        'rows': ['ok', 3, null, {'t': 'fine', 'w': 2}],
+        'rows': [
+          'ok',
+          3,
+          null,
+          {'t': 'fine', 'w': 2}
+        ],
       });
       expect(t, isNotNull);
       expect(t!.rows.map((r) => r.text).toList(), ['ok', 'fine']);
@@ -157,6 +167,18 @@ void main() {
       final d = Dice(_SeqRandom([0, 2])); // d6 -> 1, then 3
       expect(rollNotation(const DiceNotation(2, 6), d), 1 + 3);
     });
+    test('parses fate dice and modifier (2dF+2)', () {
+      final n = parseDiceNotation('2dF+2')!;
+      expect([n.fate, n.count, n.mod], [true, 2, 2]);
+      final plain = parseDiceNotation('2d6+1')!;
+      expect([plain.fate, plain.mod], [false, 1]);
+    });
+    test('rollNotation rolls fate faces (-1/0/+1) plus the modifier', () {
+      // dN(3) faces: value%3+1 -> 1,2,3 map to fate -1,0,+1.
+      final d = Dice(_SeqRandom([2, 0])); // dN(3) -> 3 (+1), then 1 (-1)
+      // 2dF+2: (+1) + (-1) + 2 = 2
+      expect(rollNotation(const DiceNotation(2, 0, mod: 2, fate: true), d), 2);
+    });
   });
 
   group('rollCustomTable', () {
@@ -179,7 +201,9 @@ void main() {
 
     test('weighted: cumulative pick lands in the heavy row', () {
       const t = CustomTable(
-          id: 't', name: 'W', mode: TableRoll.weighted,
+          id: 't',
+          name: 'W',
+          mode: TableRoll.weighted,
           rows: [CustomRow('Rare', weight: 1), CustomRow('Common', weight: 9)]);
       // total = 10; dN(10): nextInt(10) -> value, +1. value 4 -> hit 5 -> Common.
       final g = rollCustomTable(t, Dice(_SeqRandom([4])));
@@ -189,7 +213,9 @@ void main() {
 
     test('weighted: empty-text row reads as (no result)', () {
       const t = CustomTable(
-          id: 't', name: 'W', mode: TableRoll.weighted,
+          id: 't',
+          name: 'W',
+          mode: TableRoll.weighted,
           rows: [CustomRow('', weight: 1)]);
       final g = rollCustomTable(t, Dice(_SeqRandom([0]))); // hit 1
       expect(g.rolls.single.value, '(no result)');
@@ -197,7 +223,10 @@ void main() {
 
     test('ranges: matches the row whose span contains the roll', () {
       const t = CustomTable(
-        id: 't', name: 'R', mode: TableRoll.ranges, dice: 'd100',
+        id: 't',
+        name: 'R',
+        mode: TableRoll.ranges,
+        dice: 'd100',
         rows: [
           CustomRow('Low', min: 1, max: 50),
           CustomRow('High', min: 51, max: 100),
@@ -211,7 +240,10 @@ void main() {
 
     test('ranges: gap (no covering span) yields (no result)', () {
       const t = CustomTable(
-        id: 't', name: 'R', mode: TableRoll.ranges, dice: 'd100',
+        id: 't',
+        name: 'R',
+        mode: TableRoll.ranges,
+        dice: 'd100',
         rows: [CustomRow('Only', min: 1, max: 10)],
       );
       final g = rollCustomTable(t, Dice(_SeqRandom([74]))); // -> 75, no match
@@ -221,7 +253,10 @@ void main() {
 
     test('ranges: blank/garbage dice falls back to d100', () {
       const t = CustomTable(
-        id: 't', name: 'R', mode: TableRoll.ranges, dice: '',
+        id: 't',
+        name: 'R',
+        mode: TableRoll.ranges,
+        dice: '',
         rows: [CustomRow('Hit', min: 1, max: 100)],
       );
       final g = rollCustomTable(t, Dice(_SeqRandom([0]))); // -> 1
@@ -248,8 +283,7 @@ void main() {
     });
 
     test('ranges: "min[-max] text", round-trips', () {
-      final rows =
-          parseRows('01-05 Rusty Flagon\n6 Sly Fox', TableRoll.ranges);
+      final rows = parseRows('01-05 Rusty Flagon\n6 Sly Fox', TableRoll.ranges);
       expect(rows[0].text, 'Rusty Flagon');
       expect(rows[0].min, 1);
       expect(rows[0].max, 5);
@@ -310,13 +344,11 @@ void main() {
 
     test('a bare non-pack list decodes to []', () {
       expect(decodeTablePack('[]'), isEmpty);
-      expect(
-          decodeTablePack('[{"id":"a","name":"n","rows":["X"]}]'), isEmpty);
+      expect(decodeTablePack('[{"id":"a","name":"n","rows":["X"]}]'), isEmpty);
     });
 
     test('wrong kind decodes to []', () {
-      expect(
-          decodeTablePack('{"kind":"something-else","v":1,"tables":[]}'),
+      expect(decodeTablePack('{"kind":"something-else","v":1,"tables":[]}'),
           isEmpty);
     });
 

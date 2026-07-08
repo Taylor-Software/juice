@@ -40,8 +40,7 @@ Future<void> showCustomTableDialog(
             // genre, plus the source the table came from.
             DropdownButtonFormField<String>(
               key: const Key('table-category'),
-              initialValue:
-                  kTableCategories.contains(category) ? category : '',
+              initialValue: kTableCategories.contains(category) ? category : '',
               decoration: const InputDecoration(labelText: 'Category'),
               items: [
                 const DropdownMenuItem(value: '', child: Text('(none)')),
@@ -61,8 +60,7 @@ Future<void> showCustomTableDialog(
                 key: const Key('table-source'),
                 controller: sourceCtl,
                 decoration: const InputDecoration(
-                    labelText: 'Source',
-                    hintText: 'Book / site it came from')),
+                    labelText: 'Source', hintText: 'Book / site it came from')),
             const SizedBox(height: 12),
             SegmentedButton<TableRoll>(
               key: const Key('table-mode'),
@@ -90,7 +88,7 @@ Future<void> showCustomTableDialog(
                   key: const Key('table-dice'),
                   controller: diceCtl,
                   decoration: const InputDecoration(
-                      labelText: 'Dice', hintText: 'd100, 2d6, …')),
+                      labelText: 'Dice', hintText: 'd100, 2d6, 2dF+2 …')),
             ],
             const SizedBox(height: 8),
             TextField(

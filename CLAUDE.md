@@ -989,8 +989,18 @@ Working rules for this repo:
   direction, band FilterChips w/ >=2 guard, chaos, live range preview) + a
   **My Oracles** section on the Ask → Oracle tab (`fate_screen.dart`) listing
   saved oracles w/ per-oracle likelihood dropdown + Roll → ResultCard → log
-  (`sourceTool: 'constructed-oracle'`). Deferred: HUD default-oracle picker
-  integration, `/oracle <name>` command, pack export/import.
+  (`sourceTool: 'constructed-oracle'`). **Fate dice + advantage/disadvantage
+  (2026-07-07):** `parseOracleDice` accepts `NdF(+/-k)` (Fate faces -1/0/+1,
+  `OracleDice.fate`); `RollMode {sum,advantage,disadvantage}` on the model —
+  adv/disadv keep the best/worst single die and only apply with 2+ dice
+  (`advDisAvailable`/`effectiveMode`), pmf via `_keepOne` (max/min-order-stat
+  distribution) vs `_convolve` for sum. `resolveOracle` is pmf-key-based (tiles
+  the real support, incl. negative Fate sums). UI adds a `dF` chip + an
+  `oracle-mode` SegmentedButton shown only for 2+ dice. Fate dice also added to
+  **custom tables** (`custom_table.dart` `DiceNotation` gained `mod`+`fate`;
+  `parseDiceNotation`/`rollNotation` accept `NdF(+/-k)` — ranges-mode tables can
+  roll `2dF+2`). Deferred: HUD default-oracle picker integration, `/oracle
+  <name>` command, pack export/import.
 - **Card-deck oracles** (opt-in `cards` system, NOT in `kAllSystems`): a 52-card
   deck (`kPlayingDeck`, opt-in 54 with the two name-only jokers via
   `kPlayingDeckWithJokers` + the `cards-jokers-toggle` / `DecksState.jokers`

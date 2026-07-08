@@ -14,6 +14,10 @@ import 'models.dart';
 /// Which end of the range means "yes".
 enum OracleDirection { rollHigh, rollLow }
 
+/// How multiple same-size dice combine. [advantage]/[disadvantage] keep the
+/// single best/worst die (only meaningful with 2+ dice); [sum] adds them.
+enum RollMode { sum, advantage, disadvantage }
+
 /// The six possible answer bands, in severity order (best→worst for rollHigh).
 enum OutcomeBand { yesAnd, yes, yesBut, noBut, no, noAnd }
 
@@ -86,47 +90,102 @@ extension OracleLikelihoodInfo on OracleLikelihood {
       };
 }
 
-/// A parsed `NdM(+/-k)` dice notation. [min]/[max] give the sum range.
+/// A parsed dice notation: `NdM(+/-k)` or Fate dice `NdF(+/-k)`. [fate] dice
+/// have three faces (-1, 0, +1); ordinary dice have faces 1..[sides].
 class OracleDice {
-  const OracleDice(this.count, this.sides, this.mod);
+  const OracleDice(this.count, this.sides, this.mod, {this.fate = false});
   final int count;
-  final int sides;
+  final int sides; // ignored when [fate]
   final int mod;
+  final bool fate;
 
-  int get min => count + mod;
-  int get max => count * sides + mod;
+  /// Single-die face → probability (uniform).
+  Map<int, double> get facePmf => fate
+      ? const {-1: 1 / 3, 0: 1 / 3, 1: 1 / 3}
+      : {for (var v = 1; v <= sides; v++) v: 1.0 / sides};
+
+  /// Sum-mode span (lowest/highest possible total). Advantage/disadvantage
+  /// stay within a single die's face range — see [oracleDicePmf].
+  int get min => (fate ? -count : count) + mod;
+  int get max => (fate ? count : count * sides) + mod;
 }
 
-final _oracleDiceRe = RegExp(r'^(\d*)d(\d+)([+-]\d+)?$', caseSensitive: false);
+final _oracleDiceRe =
+    RegExp(r'^(\d*)d(f|\d+)([+-]\d+)?$', caseSensitive: false);
 
-/// Parse `d100`, `2d6`, `3d8+1` (whitespace/case tolerant). Null on garbage or
-/// out of range (count 1..20, sides 2..1000).
+/// Parse `d100`, `2d6`, `3d8+1`, `dF`, `2dF+2` (whitespace/case tolerant). Null
+/// on garbage or out of range (count 1..20, sides 2..1000).
 OracleDice? parseOracleDice(String notation) {
   final m = _oracleDiceRe.firstMatch(notation.replaceAll(RegExp(r'\s+'), ''));
   if (m == null) return null;
   final count = m.group(1)!.isEmpty ? 1 : int.parse(m.group(1)!);
-  final sides = int.parse(m.group(2)!);
   final mod = m.group(3) == null ? 0 : int.parse(m.group(3)!);
-  if (count < 1 || count > 20 || sides < 2 || sides > 1000) return null;
+  if (count < 1 || count > 20) return null;
+  if (m.group(2)!.toLowerCase() == 'f') {
+    return OracleDice(count, 0, mod, fate: true);
+  }
+  final sides = int.parse(m.group(2)!);
+  if (sides < 2 || sides > 1000) return null;
   return OracleDice(count, sides, mod);
 }
 
-/// Probability mass function of the sum of [d]: value → probability. Uniform
-/// single die is the degenerate case; multi-die is the convolved bell curve.
-Map<int, double> oracleDicePmf(OracleDice d) {
-  final one = 1.0 / d.sides;
-  var dist = <double>[1.0];
-  for (var i = 0; i < d.count; i++) {
-    final next = List<double>.filled(dist.length + d.sides - 1, 0);
-    for (var a = 0; a < dist.length; a++) {
-      if (dist[a] == 0) continue;
-      for (var f = 0; f < d.sides; f++) {
-        next[a + f] += dist[a] * one;
-      }
-    }
+Map<int, double> _convolve(Map<int, double> face, int count) {
+  var dist = <int, double>{0: 1.0};
+  for (var i = 0; i < count; i++) {
+    final next = <int, double>{};
+    dist.forEach((a, pa) {
+      face.forEach((f, pf) {
+        next[a + f] = (next[a + f] ?? 0) + pa * pf;
+      });
+    });
     dist = next;
   }
-  return {for (var i = 0; i < dist.length; i++) d.count + d.mod + i: dist[i]};
+  return dist;
+}
+
+/// Distribution of the best (advantage) or worst (disadvantage) of [count] iid
+/// single dice, from the single-die [face] pmf.
+Map<int, double> _keepOne(Map<int, double> face, int count, bool best) {
+  final faces = face.keys.toList()..sort();
+  // cdf[v] = P(single <= v)
+  final out = <int, double>{};
+  var below = 0.0; // P(single < v) as we walk ascending
+  var above = 1.0; // P(single >= v)
+  for (final v in faces) {
+    final pv = face[v]!;
+    final le = below + pv; // P(<= v)
+    final ge = above; // P(>= v)
+    final p = best
+        ? _pow(le, count) - _pow(below, count)
+        : _pow(ge, count) - _pow(ge - pv, count);
+    out[v] = p;
+    below = le;
+    above = ge - pv;
+  }
+  return out;
+}
+
+double _pow(double b, int n) {
+  var r = 1.0;
+  for (var i = 0; i < n; i++) {
+    r *= b;
+  }
+  return r;
+}
+
+/// Probability mass function of [d] rolled under [mode]: value → probability.
+/// [mode] advantage/disadvantage keep the best/worst single die (falling back
+/// to [RollMode.sum] with fewer than 2 dice); [mode] sum convolves them. The
+/// flat modifier shifts every value.
+Map<int, double> oracleDicePmf(OracleDice d, [RollMode mode = RollMode.sum]) {
+  final face = d.facePmf;
+  final Map<int, double> base;
+  if (mode != RollMode.sum && d.count >= 2) {
+    base = _keepOne(face, d.count, mode == RollMode.advantage);
+  } else {
+    base = _convolve(face, d.count);
+  }
+  return {for (final e in base.entries) e.key + d.mod: e.value};
 }
 
 /// A user-constructed yes/no oracle (app-global, reusable across campaigns).
@@ -145,12 +204,17 @@ class ConstructedOracle {
       OutcomeBand.noAnd,
     },
     this.chaos,
+    this.mode = RollMode.sum,
   });
 
   final String id;
   final String name;
   final String notation;
   final OracleDirection direction;
+
+  /// How multiple same-size dice combine (advantage/disadvantage/sum). Only
+  /// applies when the notation rolls 2+ dice — see [advDisAvailable].
+  final RollMode mode;
 
   /// Enabled outcome bands (any subset, at least 2 to be [valid]).
   final Set<OutcomeBand> bands;
@@ -161,6 +225,14 @@ class ConstructedOracle {
 
   bool get valid => bands.length >= 2 && parseOracleDice(notation) != null;
 
+  /// True when advantage/disadvantage is meaningful — the notation rolls 2+
+  /// (same-size) dice.
+  bool get advDisAvailable => (parseOracleDice(notation)?.count ?? 1) >= 2;
+
+  /// The mode actually applied at roll time — [RollMode.sum] whenever
+  /// advantage/disadvantage isn't available, regardless of the stored [mode].
+  RollMode get effectiveMode => advDisAvailable ? mode : RollMode.sum;
+
   ConstructedOracle copyWith({
     String? name,
     String? notation,
@@ -168,6 +240,7 @@ class ConstructedOracle {
     Set<OutcomeBand>? bands,
     int? chaos,
     bool clearChaos = false,
+    RollMode? mode,
   }) =>
       ConstructedOracle(
         id: id,
@@ -176,6 +249,7 @@ class ConstructedOracle {
         direction: direction ?? this.direction,
         bands: bands ?? this.bands,
         chaos: clearChaos ? null : (chaos ?? this.chaos),
+        mode: mode ?? this.mode,
       );
 
   Map<String, dynamic> toJson() => {
@@ -188,6 +262,7 @@ class ConstructedOracle {
             if (bands.contains(b)) b.name
         ],
         if (chaos != null) 'chaos': chaos,
+        if (mode != RollMode.sum) 'mode': mode.name,
       };
 
   factory ConstructedOracle.fromJson(Map<String, dynamic> j) {
@@ -215,6 +290,11 @@ class ConstructedOracle {
             }
           : rawBands,
       chaos: (j['chaos'] as num?)?.toInt(),
+      mode: switch (j['mode']) {
+        'advantage' => RollMode.advantage,
+        'disadvantage' => RollMode.disadvantage,
+        _ => RollMode.sum,
+      },
     );
   }
 
@@ -286,7 +366,8 @@ Map<OutcomeBand, double> _bandWeights(ConstructedOracle o, OracleLikelihood l) {
 List<OracleBandRange> resolveOracle(ConstructedOracle o, OracleLikelihood l) {
   final d = parseOracleDice(o.notation);
   if (d == null) return const [];
-  final pmf = oracleDicePmf(d);
+  final pmf = oracleDicePmf(d, o.effectiveMode);
+  if (pmf.isEmpty) return const [];
   final w = _bandWeights(o, l);
   final order = kOracleBandOrder.where(o.bands.contains).toList();
 
@@ -298,16 +379,18 @@ List<OracleBandRange> resolveOracle(ConstructedOracle o, OracleLikelihood l) {
     thresh.add(acc);
   }
 
-  // Walk sum values from the "yes end" toward the "no end", assigning each to a
-  // band as the running probability crosses each threshold.
-  final values = [for (var v = d.max; v >= d.min; v--) v];
-  if (o.direction == OracleDirection.rollLow) {
-    values.sort(); // low values first = yes end
-  }
+  // Sum values ascending (the actual support of the distribution, which may be
+  // negative for Fate dice).
+  final ascending = pmf.keys.toList()..sort();
+  // Walk from the "yes end" toward the "no end", assigning each value to a band
+  // as the running probability crosses each threshold.
+  final walk = o.direction == OracleDirection.rollLow
+      ? ascending
+      : ascending.reversed.toList();
   final assign = <int, int>{};
   var run = 0.0;
   var si = 0;
-  for (final v in values) {
+  for (final v in walk) {
     run += pmf[v] ?? 0;
     while (si < order.length - 1 && run > thresh[si] + 1e-9) {
       si++;
@@ -319,7 +402,7 @@ List<OracleBandRange> resolveOracle(ConstructedOracle o, OracleLikelihood l) {
   for (var i = 0; i < order.length; i++) {
     int? lo, hi;
     var prob = 0.0;
-    for (var v = d.min; v <= d.max; v++) {
+    for (final v in ascending) {
       if (assign[v] == i) {
         lo ??= v;
         hi = v;
@@ -346,10 +429,18 @@ class OracleRollOutcome {
 OracleRollOutcome rollOracle(
     ConstructedOracle o, OracleLikelihood l, Dice dice) {
   final d = parseOracleDice(o.notation) ?? const OracleDice(1, 100, 0);
-  var sum = d.mod;
-  for (var i = 0; i < d.count; i++) {
-    sum += dice.dN(d.sides);
+  int rollOne() => d.fate ? dice.dN(3) - 2 : dice.dN(d.sides);
+  final faces = [for (var i = 0; i < d.count; i++) rollOne()];
+  final mode = o.effectiveMode;
+  final int kept;
+  if (mode == RollMode.advantage) {
+    kept = faces.reduce((a, b) => a > b ? a : b);
+  } else if (mode == RollMode.disadvantage) {
+    kept = faces.reduce((a, b) => a < b ? a : b);
+  } else {
+    kept = faces.fold(0, (a, b) => a + b);
   }
+  final sum = kept + d.mod;
   final ranges = resolveOracle(o, l);
   OutcomeBand band = ranges.isEmpty ? OutcomeBand.no : ranges.first.band;
   for (final r in ranges) {

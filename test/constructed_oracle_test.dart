@@ -29,6 +29,60 @@ void main() {
       expect(d.min, 3); // 2*1 + 1
       expect(d.max, 13); // 2*6 + 1
     });
+    test('fate dice parse (dF / NdF+k)', () {
+      final f = parseOracleDice('dF')!;
+      expect(f.fate, isTrue);
+      expect([f.count, f.mod], [1, 0]);
+      final g = parseOracleDice('2dF+2')!;
+      expect([g.fate, g.count, g.mod], [true, 2, 2]);
+      expect(g.min, 0); // -2 + 2
+      expect(g.max, 4); // +2 + 2
+    });
+  });
+
+  group('fate + advantage/disadvantage pmf', () {
+    test('single fate die is -1/0/+1 at 1/3 each', () {
+      final p = oracleDicePmf(parseOracleDice('dF')!);
+      expect(p[-1], closeTo(1 / 3, 1e-9));
+      expect(p[0], closeTo(1 / 3, 1e-9));
+      expect(p[1], closeTo(1 / 3, 1e-9));
+    });
+    test('2dF+2 shifts a triangular curve into 0..4 peaking at 2', () {
+      final p = oracleDicePmf(parseOracleDice('2dF+2')!);
+      expect(p.keys.reduce((a, b) => a < b ? a : b), 0);
+      expect(p.keys.reduce((a, b) => a > b ? a : b), 4);
+      expect(p[2], closeTo(3 / 9, 1e-9)); // (-1,+1),(0,0),(+1,-1)
+      expect(p.values.reduce((a, b) => a + b), closeTo(1.0, 1e-9));
+    });
+    test('advantage on 2d20 skews the value distribution upward vs disadv', () {
+      final d = parseOracleDice('2d20')!;
+      double mean(Map<int, double> p) =>
+          p.entries.fold<double>(0, (a, e) => a + e.key * e.value);
+      final adv = oracleDicePmf(d, RollMode.advantage);
+      final dis = oracleDicePmf(d, RollMode.disadvantage);
+      // Both stay within a single die's face range.
+      expect(adv.keys.reduce((a, b) => a > b ? a : b), 20);
+      expect(dis.keys.reduce((a, b) => a < b ? a : b), 1);
+      expect(mean(adv), greaterThan(mean(dis)));
+      expect(adv.values.reduce((a, b) => a + b), closeTo(1.0, 1e-9));
+      expect(dis.values.reduce((a, b) => a + b), closeTo(1.0, 1e-9));
+    });
+    test('adv/disadv fall back to sum with a single die', () {
+      final d = parseOracleDice('d6')!;
+      final adv = oracleDicePmf(d, RollMode.advantage);
+      final sum = oracleDicePmf(d, RollMode.sum);
+      expect(adv, sum);
+    });
+    test('advDisAvailable + effectiveMode gate on 2+ dice', () {
+      const one = ConstructedOracle(
+          id: 'a', name: 'A', notation: 'd20', mode: RollMode.advantage);
+      const two = ConstructedOracle(
+          id: 'b', name: 'B', notation: '2d20', mode: RollMode.advantage);
+      expect(one.advDisAvailable, isFalse);
+      expect(one.effectiveMode, RollMode.sum);
+      expect(two.advDisAvailable, isTrue);
+      expect(two.effectiveMode, RollMode.advantage);
+    });
   });
 
   group('oracleDicePmf', () {
@@ -99,7 +153,7 @@ void main() {
     test(
         'every enabled-band subset + die + likelihood covers min..max with no '
         'gaps or overlaps', () {
-      final dice = ['d4', 'd6', 'd20', 'd100', '2d6', '3d8+1'];
+      final dice = ['d4', 'd6', 'd20', 'd100', '2d6', '3d8+1', '2dF+2', '4dF'];
       final subsets = <Set<OutcomeBand>>[
         OutcomeBand.values.toSet(),
         {OutcomeBand.yes, OutcomeBand.no},

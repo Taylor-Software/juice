@@ -38,6 +38,7 @@ class _OracleConstructorDialogState extends State<_OracleConstructorDialog> {
     ...(widget.existing?.bands ?? OutcomeBand.values.toSet())
   };
   late int? _chaos = widget.existing?.chaos;
+  late RollMode _mode = widget.existing?.mode ?? RollMode.sum;
   // Preview likelihood (not stored — the tier is chosen live at roll time).
   OracleLikelihood _preview = OracleLikelihood.likely;
 
@@ -57,9 +58,10 @@ class _OracleConstructorDialogState extends State<_OracleConstructorDialog> {
         direction: _dir,
         bands: _bands,
         chaos: _chaos,
+        mode: _mode,
       );
 
-  void _setDie(int sides) => setState(() => _formulaCtl.text = 'd$sides');
+  void _setDie(String notation) => setState(() => _formulaCtl.text = notation);
 
   @override
   Widget build(BuildContext context) {
@@ -95,8 +97,14 @@ class _OracleConstructorDialogState extends State<_OracleConstructorDialog> {
                   key: Key('oracle-die-$s'),
                   label: Text('d$s'),
                   selected: draft.notation == 'd$s',
-                  onSelected: (_) => _setDie(s),
+                  onSelected: (_) => _setDie('d$s'),
                 ),
+              ChoiceChip(
+                key: const Key('oracle-die-F'),
+                label: const Text('dF'),
+                selected: draft.notation.toLowerCase() == 'df',
+                onSelected: (_) => _setDie('dF'),
+              ),
             ]),
             const SizedBox(height: 8),
             TextField(
@@ -104,11 +112,35 @@ class _OracleConstructorDialogState extends State<_OracleConstructorDialog> {
               controller: _formulaCtl,
               decoration: InputDecoration(
                 labelText: 'Formula',
-                hintText: '2d6, 3d8+1…',
-                errorText: parsed == null ? 'Try NdM like 2d6 or 3d8+1' : null,
+                hintText: '2d6, 3d8+1, 2dF+2…',
+                errorText:
+                    parsed == null ? 'Try NdM or NdF (2d6, 3d8+1, dF)' : null,
               ),
               onChanged: (_) => setState(() {}),
             ),
+            if (draft.advDisAvailable) ...[
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text('When rolling 2+ dice',
+                    style: theme.textTheme.labelMedium),
+              ),
+              const SizedBox(height: 4),
+              SegmentedButton<RollMode>(
+                key: const Key('oracle-mode'),
+                segments: const [
+                  ButtonSegment(value: RollMode.sum, label: Text('Sum')),
+                  ButtonSegment(
+                      value: RollMode.advantage, label: Text('Advantage')),
+                  ButtonSegment(
+                      value: RollMode.disadvantage,
+                      label: Text('Disadvantage')),
+                ],
+                selected: {_mode},
+                showSelectedIcon: false,
+                onSelectionChanged: (s) => setState(() => _mode = s.first),
+              ),
+            ],
             const SizedBox(height: 12),
             SegmentedButton<OracleDirection>(
               key: const Key('oracle-direction'),
