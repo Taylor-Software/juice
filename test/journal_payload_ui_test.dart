@@ -130,7 +130,7 @@ void main() {
     expect(find.byType(CardImage), findsOneWidget);
   });
 
-  testWidgets('a story-dice entry renders its icon strip only when expanded',
+  testWidgets('a story-dice entry shows its icon images in the collapsed row',
       (tester) async {
     const iconEntryJson = '{'
         '"id":"i1","timestamp":"2026-06-12T10:00:00.000Z",'
@@ -143,12 +143,7 @@ void main() {
         '"assets/abstract_icons/0_6.png"]}}';
     await pumpJournal(tester, _journalPrefs(iconEntryJson));
 
-    // Collapsed: no images.
-    expect(find.byType(Image), findsNothing);
-
-    await tester.tap(find.byKey(const Key('payload-expand-i1')));
-    await tester.pumpAndSettle();
-
+    // The icons are the result — they render in the collapsed row (not text).
     final images = tester
         .widgetList<Image>(find.byType(Image))
         .map((w) => (w.image as AssetImage).assetName)
@@ -157,6 +152,8 @@ void main() {
       'assets/abstract_icons/3_2.png',
       'assets/abstract_icons/0_6.png',
     ]);
+    // No text roll-summary line for an icon entry.
+    expect(find.textContaining('d10 3, d6 2'), findsNothing);
   });
 
   testWidgets(
