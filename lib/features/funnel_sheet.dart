@@ -51,6 +51,7 @@ class FunnelSheetView extends ConsumerWidget {
     final schema = funnelPeasantSchema(s.seedSystem, s.seedVariant);
     return ListView(
       key: const Key('funnel-sheet'),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.all(12),
       children: [
         sheetNameHeader(context, ref, character,
@@ -127,6 +128,10 @@ class FunnelSheetView extends ConsumerWidget {
             enabled: !p.graduated,
             label: 'Name',
             onSave: (v) => setP(p.copyWith(name: v)),
+            onRoll: switch (ref.watch(oracleProvider).valueOrNull) {
+              null => null,
+              final oracle => () => oracle.generateName().summary ?? '',
+            },
           ),
           for (final f in schema.flavorFields)
             DebouncedTextField(

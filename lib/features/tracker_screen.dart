@@ -430,14 +430,17 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _addCharacter(BuildContext context) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
     final result = await showDialog<({String title, String note})>(
       context: context,
-      builder: (_) => const _EditDialog(
+      builder: (_) => _EditDialog(
         heading: 'New Character',
         labelA: 'Name',
         labelB: 'Note (optional)',
         initialA: '',
         initialB: '',
+        onRollName:
+            oracle == null ? null : () => oracle.generateName().summary ?? '',
       ),
     );
     if (result == null || result.title.trim().isEmpty) return;
@@ -465,6 +468,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         initialA: name,
         initialB: npc.asText,
         onRollName: () => oracle.generateName().summary ?? '',
+        onRollNote: () => oracle.npc().asText,
       ),
     );
     if (result == null || result.title.trim().isEmpty) return;
@@ -1693,6 +1697,7 @@ class _EditDialog extends StatefulWidget {
     required this.initialA,
     required this.initialB,
     this.onRollName,
+    this.onRollNote,
   });
   final String heading;
   final String labelA;
@@ -1703,6 +1708,9 @@ class _EditDialog extends StatefulWidget {
   /// If non-null, a dice icon is shown on the name field; tapping it calls
   /// this to generate a new name and fills the field.
   final String Function()? onRollName;
+
+  /// Same, for the note field (e.g. reroll NPC characteristics).
+  final String Function()? onRollNote;
 
   @override
   State<_EditDialog> createState() => _EditDialogState();
@@ -1748,7 +1756,17 @@ class _EditDialogState extends State<_EditDialog> {
             controller: _b,
             maxLines: 3,
             minLines: 1,
-            decoration: InputDecoration(labelText: widget.labelB),
+            decoration: InputDecoration(
+              labelText: widget.labelB,
+              suffixIcon: widget.onRollNote == null
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.casino_outlined),
+                      tooltip: 'Reroll',
+                      onPressed: () =>
+                          setState(() => _b.text = widget.onRollNote!()),
+                    ),
+            ),
           ),
         ],
       ),

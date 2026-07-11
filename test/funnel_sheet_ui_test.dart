@@ -1,14 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/funnel_sheet.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet) async {
+Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet,
+    {List<Override> overrides = const []}) async {
   tester.view.physicalSize = const Size(1200, 6000);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
@@ -27,7 +31,7 @@ Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet) async {
       }
     ]),
   });
-  final container = ProviderContainer();
+  final container = ProviderContainer(overrides: overrides);
   addTearDown(container.dispose);
   final char = (await container.read(charactersProvider.future)).single;
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -61,6 +65,27 @@ void main() {
     expect(find.textContaining('1 / 1 alive'), findsOneWidget);
     expect(find.byKey(const Key('funnel-peasant-0')), findsOneWidget);
     expect(find.byKey(const Key('funnel-add-peasant')), findsOneWidget);
+  });
+
+  testWidgets('peasant name field dice rolls + saves a name', (tester) async {
+    final oracle = Oracle(OracleData(
+        jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+            as Map<String, dynamic>));
+    final c = await _pump(tester, _dccFunnel(),
+        overrides: [oracleProvider.overrideWith((ref) async => oracle)]);
+    await c.read(oracleProvider.future);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('funnel-peasant-0')));
+    await tester.pumpAndSettle();
+    final dice = find.descendant(
+        of: find.byKey(const Key('funnel-peasant-0-name')),
+        matching: find.byIcon(Icons.casino_outlined));
+    expect(dice, findsOneWidget);
+    await tester.tap(dice);
+    await tester.pumpAndSettle();
+    final peasants =
+        (await c.read(charactersProvider.future)).single.funnel!.peasants;
+    expect(peasants.first.name.trim(), isNotEmpty);
   });
 
   testWidgets('add peasant raises count + caps at kFunnelMaxPeasants',
