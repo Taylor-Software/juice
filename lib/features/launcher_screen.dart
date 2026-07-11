@@ -85,7 +85,8 @@ class LauncherScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _new(BuildContext context, WidgetRef ref) async {
+  Future<void> _new(BuildContext context, WidgetRef ref,
+      {bool wasPristine = false}) async {
     final kits = ref.read(kitsProvider).valueOrNull ?? const <LoopKit>[];
     final oracles =
         ref.read(constructedOraclesProvider).valueOrNull ?? const [];
@@ -99,6 +100,10 @@ class LauncherScreen extends ConsumerWidget {
     await ref
         .read(settingsProvider.notifier)
         .setDefaultOracle(result.defaultOracle);
+    // First real campaign replaces the untouched first-run placeholder.
+    if (wasPristine) {
+      await ref.read(sessionsProvider.notifier).remove('default');
+    }
     if (result.start == 'funnel') {
       // Seed the funnel into the new (now-active) campaign, then land on the
       // roster where it lives + dismiss the launcher.
@@ -113,7 +118,8 @@ class LauncherScreen extends ConsumerWidget {
     }
   }
 
-  Future<void> _import(BuildContext context, WidgetRef ref) async {
+  Future<void> _import(BuildContext context, WidgetRef ref,
+      {bool wasPristine = false}) async {
     final FilePickerResult? result;
     try {
       result = await FilePicker.pickFiles(
@@ -137,6 +143,10 @@ class LauncherScreen extends ConsumerWidget {
       await ref
           .read(sessionsProvider.notifier)
           .importCampaign(utf8.decode(bytes));
+      // First real campaign replaces the untouched first-run placeholder.
+      if (wasPristine) {
+        await ref.read(sessionsProvider.notifier).remove('default');
+      }
       unawaited(_enter(ref));
     } on FormatException catch (e) {
       if (context.mounted) {
@@ -224,6 +234,14 @@ class LauncherScreen extends ConsumerWidget {
     final showBackupNudge = !showWelcome &&
         hasJournal &&
         (lastExport == null || (staleDays != null && staleDays >= 7));
+    // Untouched first-run placeholder: route the user into the creation
+    // wizard instead of "Continue"-ing into a legacy-shaped Campaign 1.
+    // Legacy migration fills the journal and a rename changes the name, so
+    // both fall back to the normal launcher.
+    final pristine = sessions.sessions.length == 1 &&
+        sessions.active == 'default' &&
+        active.name == 'Campaign 1' &&
+        !hasJournal;
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -252,61 +270,83 @@ class LauncherScreen extends ConsumerWidget {
                   _BackupNudge(lastExportMs: lastExport),
                 ],
                 const SizedBox(height: 24),
-                FilledButton.icon(
-                  key: const Key('launcher-continue'),
-                  onPressed: () => _resume(context, ref),
-                  icon: const Icon(Icons.play_arrow),
-                  label: Text('Continue · ${active.name}'),
-                ),
-                const SizedBox(height: 16),
-                Text('Campaigns', style: theme.textTheme.titleSmall),
-                for (final s in sessions.sessions)
-                  ListTile(
-                    key: Key('launcher-campaign-${s.id}'),
-                    leading: CampaignIdentityLeading(
-                      meta: s,
-                      active: s.id == sessions.active,
-                    ),
-                    title: Text(s.name),
-                    subtitle: Text(
-                      campaignSubtitle(s),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                    onTap: () => _switch(context, ref, s),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          key: Key('launcher-rename-${s.id}'),
-                          icon: const Icon(Icons.edit_outlined),
-                          tooltip: 'Rename',
-                          onPressed: () => _rename(context, ref, s),
-                        ),
-                        if (sessions.sessions.length > 1)
-                          IconButton(
-                            key: Key('launcher-delete-${s.id}'),
-                            icon: const Icon(Icons.delete_outline),
-                            tooltip: 'Delete',
-                            onPressed: () => _delete(context, ref, s),
-                          ),
-                      ],
-                    ),
+                if (pristine) ...[
+                  FilledButton.icon(
+                    key: const Key('launcher-start-first'),
+                    onPressed: () => _new(context, ref, wasPristine: true),
+                    icon: const Icon(Icons.auto_stories),
+                    label: const Text('Start your first adventure'),
                   ),
-                const Divider(),
-                ListTile(
-                  key: const Key('launcher-new'),
-                  leading: const Icon(Icons.add),
-                  title: const Text('New campaign'),
-                  onTap: () => _new(context, ref),
-                ),
-                ListTile(
-                  key: const Key('launcher-import'),
-                  leading: const Icon(Icons.file_download_outlined),
-                  title: const Text('Import from file'),
-                  onTap: () => _import(context, ref),
-                ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    key: const Key('launcher-skip-blank'),
+                    onPressed: () => _resume(context, ref),
+                    child: const Text('Skip — open a blank campaign'),
+                  ),
+                  const Divider(),
+                  ListTile(
+                    key: const Key('launcher-import'),
+                    leading: const Icon(Icons.file_download_outlined),
+                    title: const Text('Import from file'),
+                    onTap: () => _import(context, ref, wasPristine: true),
+                  ),
+                ] else ...[
+                  FilledButton.icon(
+                    key: const Key('launcher-continue'),
+                    onPressed: () => _resume(context, ref),
+                    icon: const Icon(Icons.play_arrow),
+                    label: Text('Continue · ${active.name}'),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Campaigns', style: theme.textTheme.titleSmall),
+                  for (final s in sessions.sessions)
+                    ListTile(
+                      key: Key('launcher-campaign-${s.id}'),
+                      leading: CampaignIdentityLeading(
+                        meta: s,
+                        active: s.id == sessions.active,
+                      ),
+                      title: Text(s.name),
+                      subtitle: Text(
+                        campaignSubtitle(s),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      onTap: () => _switch(context, ref, s),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            key: Key('launcher-rename-${s.id}'),
+                            icon: const Icon(Icons.edit_outlined),
+                            tooltip: 'Rename',
+                            onPressed: () => _rename(context, ref, s),
+                          ),
+                          if (sessions.sessions.length > 1)
+                            IconButton(
+                              key: Key('launcher-delete-${s.id}'),
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: 'Delete',
+                              onPressed: () => _delete(context, ref, s),
+                            ),
+                        ],
+                      ),
+                    ),
+                  const Divider(),
+                  ListTile(
+                    key: const Key('launcher-new'),
+                    leading: const Icon(Icons.add),
+                    title: const Text('New campaign'),
+                    onTap: () => _new(context, ref),
+                  ),
+                  ListTile(
+                    key: const Key('launcher-import'),
+                    leading: const Icon(Icons.file_download_outlined),
+                    title: const Text('Import from file'),
+                    onTap: () => _import(context, ref),
+                  ),
+                ],
               ],
             ),
           ),

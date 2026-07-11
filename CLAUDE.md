@@ -629,6 +629,19 @@ Working rules for this repo:
   hides when user creates a second campaign. Covered by
   `test/launcher_welcome_test.dart` (4 widget tests). See
   `docs/superpowers/plans/2026-06-29-streamline-epic.md`.
+  **First-run start flow (2026-07-11):** the launcher detects the untouched
+  first-run placeholder (`pristine` = single session, id `default`, name
+  `Campaign 1`, empty journal — legacy migration fills the journal, a rename
+  changes the name, so both fall back to the normal launcher) and swaps the
+  primary path: `launcher-start-first` ("Start your first adventure") opens
+  the creation wizard, `launcher-skip-blank` is the escape hatch into the
+  blank campaign, and the Continue button / campaign list / New-campaign row
+  are hidden. After the first successful wizard create or file import the
+  `default` placeholder session is removed, so the roster starts with the
+  user's real campaign. `SessionsNotifier.build()` still always creates the
+  placeholder (active-session invariant) — the re-route is launcher-UI-only.
+  Covered by `test/launcher_first_run_test.dart`. See
+  `docs/superpowers/specs/2026-07-11-first-run-start-flow-design.md`.
 - **Play-loop consolidation** (Streamline epic Phase 6) — assistant rail now
   defaults open and persists its expand/collapse state per device
   (`assistantRailExpandedProvider`, `juice.assistant_rail_expanded.v1`, app-global
