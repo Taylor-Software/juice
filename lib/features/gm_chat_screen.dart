@@ -62,9 +62,12 @@ class _GmChatScreenState extends ConsumerState<GmChatScreen> {
       final target = JournalEntry(
           id: 'gm-chat-target', timestamp: DateTime.now(), title: '', body: t);
       final history = ref.read(gmChatProvider).valueOrNull?.turns ?? const [];
+      final settings = await ref.read(settingsProvider.future);
       final answer =
           await ref.read(interpreterServiceProvider).gmChat(GmChatSeed(
                 history: history,
+                genre: settings.genre,
+                tone: settings.tone,
                 sceneTitle: scene,
                 systemPrimer: ref.read(systemPrimerProvider),
                 activeCharacter: ref.read(activeCharacterLineProvider),

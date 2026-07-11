@@ -45,6 +45,16 @@ void main() {
     expect(prompt, contains('entry 24'));
   });
 
+  test('buildSummaryPrompt flattens and caps each entry', () {
+    // A pasted multi-paragraph epic must neither break the bullet structure
+    // nor eat the generation window (kPromptMaxFieldChars per entry).
+    final long = 'saga ${'x' * 600}';
+    final prompt = buildSummaryPrompt(['Line one\n\nline two', long]);
+    expect(prompt, contains('- Line one line two'));
+    expect(prompt, isNot(contains(long)));
+    expect(prompt, contains('…'));
+  });
+
   test('parseSummary strips think tags and trims', () {
     expect(parseSummary('<think>internal</think> The party fled.'),
         'The party fled.');

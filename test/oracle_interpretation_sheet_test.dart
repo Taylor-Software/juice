@@ -91,6 +91,17 @@ void main() {
     expect(fake.lastSeed!.journalContext, ['x']);
   });
 
+  testWidgets('activeCharacter rides the rebuilt seed into the service',
+      (tester) async {
+    // Regression: the sheet rebuilds the seed to inject settings; dropping
+    // the pc: line here silently un-grounded every interpret call.
+    final fake = await pump(tester,
+        initial: const InterpreterStatus(InterpreterPhase.ready),
+        seedOverride: const OracleSeed(
+            resultText: 'Fate Check — Yes', activeCharacter: 'Taurin (PC)'));
+    expect(fake.lastSeed!.activeCharacter, 'Taurin (PC)');
+  });
+
   testWidgets('swipe dismisses a card; all dismissed offers reroll',
       (tester) async {
     final fake = await pump(tester,

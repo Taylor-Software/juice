@@ -254,20 +254,33 @@ Working rules for this repo:
   rulesets)` picks one by priority (dnd > shadowdark > Ironsworn-family, family
   refined by enabled ruleset sundered_isles > starforged > classic);
   `systemPrimerProvider` resolves the active campaign's. It rides a `system:`
-  INPUT line in the oracle + voice prompts (NOT recap), kept tiny
-  (`kSystemPrimerMaxChars`) for the web model's ~1280-token budget. See
+  INPUT line in the oracle + voice prompts (NOT recap), kept to one dense line
+  (`kSystemPrimerMaxChars`). See
   `docs/superpowers/specs/2026-06-17-system-primer-design.md`.
   **AI expansion #1 (richer context):** all four seams now share a grounded
   context block — recall-ranked recent journal (`recallLines` →
   `relatedEntries`), the active scene, and the active PC (`activeCharacterLine`
   / `activeCharacterLineProvider` in `play_context.dart`, a `pc:` line distinct
-  from voiceLine's spoken-NPC `character:` line). `askGm` was brought to parity
-  (was question + scene title only). Recall caps were loosened from the retired
-  web budget (`kRecallMaxEntries` 2→6, `kRecallMaxChars` 100→280) since AI is
-  desktop/mobile-only (Gemma 4 E4B). See
+  from voiceLine's spoken-NPC `character:` line). See
   `docs/superpowers/specs/2026-06-24-ai-richer-context-design.md`. This is
   foundation #1 of the AI-expansion epic; multi-turn GM chat (#2) + new
   affordances (#3) ride on it.
+  **Prompt hygiene pass (2026-07-11):** every seam's prompt now opens with ONE
+  shared `_groundingBlock` (oracle_interpreter.dart) in canonical order —
+  genre, tone, system, pc, scene, recall — so field order/capping can't drift
+  (the oracle few-shot examples moved `scene:` before `result:` to match).
+  Genre/tone now ride ALL creative seams (`NarrateSeed`/`FleshOutSeed`/
+  `GmChatSeed`/`RankSuggestionsSeed` gained the fields; wired from
+  `settingsProvider` at each call site). The model loader tries a 4096-token
+  session first (`_loadModel` ladder 4096→2048→1280 — the old 2048 first-try
+  was an E2B-era holdover), recall caps rose to `kRecallMaxEntries` 8 /
+  `kRecallMaxChars` 360, narrate + flesh-out carry one compact few-shot
+  example each, `buildSummaryPrompt` flattens + caps each entry at
+  `kPromptMaxFieldChars`, and rank/summarize generate at temperature 0.4
+  (`_kPreciseTemp`) vs 1.0 for the creative seams. Also fixed: the
+  interpretation sheet rebuilds its seed and was DROPPING `activeCharacter` —
+  the `pc:` line now rides through (regression-tested in
+  `oracle_interpretation_sheet_test.dart`).
   **AI expansion #2 (multi-turn GM chat):** a stateless transcript-in-prompt
   conversation — `gmChat(GmChatSeed)` renders the #1 grounding + the last
   `kGmChatHistoryTurns` (8) turns + a trailing `GM:` via the fresh-chat
@@ -276,8 +289,8 @@ Working rules for this repo:
   (`juice.gmchat.v1`, in `sessionScopedKeys` → exported). The
   `lib/features/gm_chat_screen.dart` bubble thread (`showGmChat`) opens from the
   assistant rail's Ask-GM box; nothing auto-logs — a per-GM-message Save writes a
-  `gm-chat` journal entry. The single-shot `askGm` seam is retained but
-  app-unused. See
+  `gm-chat` journal entry. (The old single-shot `askGm` seam has since been
+  fully removed from the interface.) See
   `docs/superpowers/specs/2026-06-24-multi-turn-gm-chat-design.md`.
   **AI expansion #3 (GM narration):** a one-tap `narrate(NarrateSeed)` seam
   (`NarrateMode {continueScene, complication}` in `lib/engine/oracle_interpreter.dart`)
@@ -308,6 +321,12 @@ Working rules for this repo:
   Append/Cancel review dialog was extracted to the shared
   `lib/features/flesh_out_review.dart` (now used by room/hex/scene). See
   `docs/superpowers/specs/2026-06-24-scene-description-flesh-out-design.md`.
+  The world trackers joined as flesh-out surfaces (2026-07-11): People
+  (`flesh-out-npc-<id>`, kind 'NPC', appends to `Npc.note`), Places
+  (`flesh-out-place-<id>`, kind 'location', appends to `Place.note`), and
+  Rumors (`flesh-out-rumor-<id>`, kind 'rumor', appends to `Rumor.note`) —
+  all through `buildFleshOutSeed` + `showFleshOutReview`, covered by
+  `test/world_flesh_out_test.dart`.
   **AI expansion #5 (LLM-ranked suggestion chips):** the assistant rail reorders
   its fixed rule-based chips by LLM relevance and annotates the top pick with a
   one-line `💡 why` caption. `rankSuggestions(RankSuggestionsSeed)` returns a

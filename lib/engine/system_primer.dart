@@ -6,9 +6,10 @@
 /// memory/licensing-constraint). Pure Dart.
 library;
 
-/// Budget guard: each primer stays short so the worst-case oracle prompt fits
-/// the web model's ~1280-token context (spec "Token budget"). A test pins it;
-/// no runtime truncation — these are authored constants, not user data.
+/// Budget guard: each primer stays a single dense line so it grounds without
+/// crowding the recall/scene lines (the interpreter session is token-capped —
+/// see interpreter_gemma.dart _loadModel). A test pins it; no runtime
+/// truncation — these are authored constants, not user data.
 const int kSystemPrimerMaxChars = 220;
 
 const Map<String, String> kSystemPrimers = {

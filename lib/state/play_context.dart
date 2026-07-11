@@ -132,6 +132,8 @@ FleshOutSeed fleshOutSeedFrom({
   required String systemPrimer,
   required String activeCharacter,
   required List<JournalEntry> journal,
+  String genre = '',
+  String tone = '',
   String? excludeId,
   String? activeSceneId,
 }) {
@@ -150,6 +152,8 @@ FleshOutSeed fleshOutSeedFrom({
     entityKind: entityKind,
     name: name,
     existingDetail: existingDetail,
+    genre: genre,
+    tone: tone,
     systemPrimer: systemPrimer,
     activeCharacter: activeCharacter,
     sceneTitle: sceneTitle,
@@ -164,14 +168,21 @@ FleshOutSeed buildFleshOutSeed(
   required String name,
   required String existingDetail,
   String? excludeId,
-}) =>
-    fleshOutSeedFrom(
-      entityKind: entityKind,
-      name: name,
-      existingDetail: existingDetail,
-      systemPrimer: ref.read(systemPrimerProvider),
-      activeCharacter: ref.read(activeCharacterLineProvider),
-      journal: ref.read(journalProvider).valueOrNull ?? const [],
-      excludeId: excludeId,
-      activeSceneId: ref.read(playContextProvider).valueOrNull?.activeSceneId,
-    );
+}) {
+  // Best-effort settings read: by the time a flesh-out is tapped the
+  // settings are long since loaded; a cold read just means no genre line.
+  final settings =
+      ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+  return fleshOutSeedFrom(
+    entityKind: entityKind,
+    name: name,
+    existingDetail: existingDetail,
+    genre: settings.genre,
+    tone: settings.tone,
+    systemPrimer: ref.read(systemPrimerProvider),
+    activeCharacter: ref.read(activeCharacterLineProvider),
+    journal: ref.read(journalProvider).valueOrNull ?? const [],
+    excludeId: excludeId,
+    activeSceneId: ref.read(playContextProvider).valueOrNull?.activeSceneId,
+  );
+}

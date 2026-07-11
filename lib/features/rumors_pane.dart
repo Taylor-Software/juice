@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
+import '../shared/ai_badge.dart';
+import '../state/interpreter.dart';
+import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'flesh_out_review.dart';
 
 /// Tracking → Rumors: a per-campaign list of leads/rumors to resolve.
 class RumorsPane extends ConsumerWidget {
@@ -54,11 +58,25 @@ class RumorsPane extends ConsumerWidget {
                               : null,
                         ),
                         subtitle: r.note.isEmpty ? null : Text(r.note),
-                        secondary: IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: 'Delete',
-                          onPressed: () =>
-                              ref.read(rumorsProvider.notifier).remove(r.id),
+                        secondary: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (ref.watch(aiReadyProvider))
+                              IconButton(
+                                key: Key('flesh-out-rumor-${r.id}'),
+                                visualDensity: VisualDensity.compact,
+                                icon: const AiBadge(),
+                                tooltip: 'Flesh out (AI)',
+                                onPressed: () => _fleshOut(context, ref, r),
+                              ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline),
+                              tooltip: 'Delete',
+                              onPressed: () => ref
+                                  .read(rumorsProvider.notifier)
+                                  .remove(r.id),
+                            ),
+                          ],
                         ),
                       ),
                   ],
@@ -66,6 +84,28 @@ class RumorsPane extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// AI flesh-out: generate → Append/Cancel review → append to the rumor's
+  /// note (same arc as the world trackers' flesh-outs).
+  Future<void> _fleshOut(BuildContext context, WidgetRef ref, Rumor r) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'rumor', name: r.text, existingDetail: r.note);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (!await showFleshOutReview(context, detail)) return;
+    final note =
+        [r.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
+    await ref.read(rumorsProvider.notifier).replace(r.copyWith(note: note));
   }
 
   Future<void> _add(BuildContext context, WidgetRef ref) async {

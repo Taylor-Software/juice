@@ -48,7 +48,8 @@ void main() {
       expect(p, contains('scene: (none given)'));
     });
 
-    test('journalContext renders recall lines between result and scene', () {
+    test('grounding renders in canonical order: scene + recall before result',
+        () {
       const seed = OracleSeed(
         resultText: 'Fate Check — Yes',
         journalContext: ['a', 'b'],
@@ -57,10 +58,10 @@ void main() {
         'INPUT:',
         'genre: (unspecified)',
         'tone: (unspecified)',
-        'result: Fate Check — Yes',
+        'scene: (none given)',
         'recall: a',
         'recall: b',
-        'scene: (none given)',
+        'result: Fate Check — Yes',
         'OUTPUT:',
       ]);
     });
@@ -70,15 +71,18 @@ void main() {
       final seed = OracleSeed(
         resultText: 'r',
         // More entries than the cap; the first is over the char cap.
-        journalContext: ['x' * 400, 'b', 'c', 'd', 'e', 'f', 'g'],
+        journalContext: [
+          'x' * (kRecallMaxChars + 40),
+          for (var i = 0; i < kRecallMaxEntries; i++) 'entry $i',
+        ],
       );
       final recalls = buildOraclePrompt(seed)
           .split('\n')
           .where((l) => l.startsWith('recall: '))
           .toList();
-      expect(recalls, hasLength(kRecallMaxEntries)); // capped (7 → 6)
+      expect(recalls, hasLength(kRecallMaxEntries)); // one over → capped
       expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…'); // truncated
-      expect(recalls[1], 'recall: b');
+      expect(recalls[1], 'recall: entry 0');
     });
 
     test('no journalContext -> no recall line', () {
@@ -302,15 +306,18 @@ result: Fate Check (Likely) — Yes, and…
       final seed = VoiceSeed(
         line: 'Go.',
         mood: 'default',
-        journalContext: ['x' * 400, 'b', 'c', 'd', 'e', 'f', 'g'],
+        journalContext: [
+          'x' * (kRecallMaxChars + 40),
+          for (var i = 0; i < kRecallMaxEntries; i++) 'entry $i',
+        ],
       );
       final recalls = buildVoicePrompt(seed)
           .split('\n')
           .where((l) => l.startsWith('recall: '))
           .toList();
-      expect(recalls, hasLength(kRecallMaxEntries)); // capped (7 → 6)
+      expect(recalls, hasLength(kRecallMaxEntries)); // one over → capped
       expect(recalls[0], 'recall: ${'x' * kRecallMaxChars}…');
-      expect(recalls[1], 'recall: b');
+      expect(recalls[1], 'recall: entry 0');
     });
 
     test('multi-line seed fields collapse to one prompt line each', () {
@@ -395,9 +402,9 @@ result: Fate Check (Likely) — Yes, and…
     });
   });
 
-  test('recall budget is loosened for the on-device model', () {
-    expect(kRecallMaxEntries, 6);
-    expect(kRecallMaxChars, 280);
+  test('recall budget matches the 4096-token loader session', () {
+    expect(kRecallMaxEntries, 8);
+    expect(kRecallMaxChars, 360);
   });
 
   group('activeCharacterLine', () {
@@ -457,8 +464,11 @@ result: Fate Check (Likely) — Yes, and…
       final p =
           buildNarratePrompt(const NarrateSeed(mode: NarrateMode.complication));
       expect(p, contains('complication or twist'));
-      expect(p, isNot(contains('system:'))); // empty grounding omitted
-      expect(p, isNot(contains('scene:'))); // null sceneTitle omitted too
+      // The instruction's few-shot example carries its own scene: line, so
+      // omission checks scope to the live block (after the last INPUT:).
+      final live = p.substring(p.lastIndexOf('INPUT:'));
+      expect(live, isNot(contains('system:'))); // empty grounding omitted
+      expect(live, isNot(contains('scene:'))); // null sceneTitle omitted too
       expect(p.trimRight(), endsWith('Narration:'));
     });
 
@@ -504,11 +514,14 @@ result: Fate Check (Likely) — Yes, and…
       final p = buildFleshOutPrompt(
           const FleshOutSeed(entityKind: 'location', name: 'The Old Mill'));
       expect(p, contains('Flesh out the following location'));
-      expect(p, contains('name: The Old Mill')); // name always present
-      expect(p, isNot(contains('existing:')));
-      expect(p, isNot(contains('system:')));
-      expect(p, isNot(contains('pc:')));
-      expect(p, isNot(contains('recall:')));
+      // The instruction's few-shot example carries name:/existing: lines, so
+      // omission checks scope to the live block (after the last INPUT:).
+      final live = p.substring(p.lastIndexOf('INPUT:'));
+      expect(live, contains('name: The Old Mill')); // name always present
+      expect(live, isNot(contains('existing:')));
+      expect(live, isNot(contains('system:')));
+      expect(live, isNot(contains('pc:')));
+      expect(live, isNot(contains('recall:')));
       expect(p.trimRight(), endsWith('Detail:'));
     });
 
@@ -517,6 +530,67 @@ result: Fate Check (Likely) — Yes, and…
           'A damp vault.');
       expect(() => parseFleshOutResponse('   '), throwsFormatException);
     });
+  });
+
+  group('genre/tone ride every creative seam', () {
+    // The prose seams honor campaign genre/tone; each prompt's live block
+    // must carry both lines when set (regression: only interpret/voice did).
+    test('narrate', () {
+      final p = buildNarratePrompt(const NarrateSeed(
+          mode: NarrateMode.continueScene,
+          genre: 'grimdark fantasy',
+          tone: 'tense'));
+      final live = p.substring(p.lastIndexOf('INPUT:'));
+      expect(live, contains('genre: grimdark fantasy'));
+      expect(live, contains('tone: tense'));
+    });
+
+    test('gmChat', () {
+      final p = buildGmChatPrompt(const GmChatSeed(
+          history: [ChatTurn(ChatRole.player, 'Is the door locked?')],
+          genre: 'grimdark fantasy',
+          tone: 'tense'));
+      expect(p, contains('genre: grimdark fantasy'));
+      expect(p, contains('tone: tense'));
+    });
+
+    test('fleshOut', () {
+      final p = buildFleshOutPrompt(const FleshOutSeed(
+          entityKind: 'NPC',
+          name: 'Vane',
+          genre: 'grimdark fantasy',
+          tone: 'tense'));
+      final live = p.substring(p.lastIndexOf('INPUT:'));
+      expect(live, contains('genre: grimdark fantasy'));
+      expect(live, contains('tone: tense'));
+    });
+
+    test('rankSuggestions', () {
+      final p = buildRankPrompt(const RankSuggestionsSeed(
+          candidates: [(id: 'a', label: 'A')],
+          genre: 'grimdark fantasy',
+          tone: 'tense'));
+      expect(p, contains('genre: grimdark fantasy'));
+      expect(p, contains('tone: tense'));
+    });
+
+    test('empty genre/tone are omitted (no placeholder outside oracle/voice)',
+        () {
+      final p = buildNarratePrompt(
+          const NarrateSeed(mode: NarrateMode.continueScene));
+      final live = p.substring(p.lastIndexOf('INPUT:'));
+      expect(live, isNot(contains('genre:')));
+      expect(live, isNot(contains('tone:')));
+    });
+  });
+
+  test('buildOraclePrompt caps an over-long scene like the other builders',
+      () {
+    final long = 'a' * (kPromptMaxFieldChars + 100);
+    final p = buildOraclePrompt(
+        OracleSeed(resultText: 'r', sceneContext: long));
+    expect(p, contains('scene: ${'a' * kPromptMaxFieldChars}…'));
+    expect(p, isNot(contains(long)));
   });
 
   group('buildRankPrompt / parseRankResult', () {

@@ -85,6 +85,9 @@ class _OracleInterpretationSheetState
         sceneContext: widget.seed.sceneContext,
         journalContext: widget.seed.journalContext,
         systemPrimer: ref.read(systemPrimerProvider),
+        // Carry the host's pc: line through — dropping it here silently
+        // un-grounded every interpret call (journal, Run dice, Loop).
+        activeCharacter: widget.seed.activeCharacter,
       ));
       if (!mounted) return;
       setState(() {
