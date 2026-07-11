@@ -381,12 +381,32 @@ class _LoopBarState extends ConsumerState<LoopBar> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('New scene'),
-        content: TextField(
-          key: const Key('loop-scene-name'),
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Scene title…'),
-          onSubmitted: (v) => Navigator.pop(dialogCtx, v),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              key: const Key('loop-scene-name'),
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Scene title…'),
+              onSubmitted: (v) => Navigator.pop(dialogCtx, v),
+            ),
+            const SizedBox(height: 8),
+            // Inspiration at the point of need (audit F6): fill the title
+            // from the scene generator; tap again to reroll, edit freely.
+            TextButton.icon(
+              key: const Key('loop-scene-seed'),
+              icon: const Icon(Icons.auto_awesome, size: 18),
+              label: const Text('Roll a seed'),
+              // Await the FUTURE (not .valueOrNull) so a cold oracle fills
+              // when loaded instead of silently no-oping on first tap.
+              onPressed: () async {
+                final g = (await ref.read(oracleProvider.future)).newScene();
+                controller.text = g.summary ?? g.title;
+              },
+            ),
+          ],
         ),
         actions: [
           TextButton(

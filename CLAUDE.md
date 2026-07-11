@@ -809,7 +809,12 @@ Working rules for this repo:
   `expandedCrossAxisAlignment: stretch` — without these the clipped Steps
   read as nonexistent (stranger-test S3 residue) and step cards floated
   centered at intrinsic width. See
-  `docs/superpowers/specs/2026-07-11-loop-steps-visibility-design.md`. And a tally row on thread
+  `docs/superpowers/specs/2026-07-11-loop-steps-visibility-design.md`.
+  The loop's New-scene dialog carries a `loop-scene-seed` "Roll a seed" chip
+  (fills the title from `Oracle.newScene()`, rerollable; its handler awaits
+  `oracleProvider.future` at TAP time so a cold oracle neither blocks the
+  dialog nor dead-ends the chip). See
+  `docs/superpowers/specs/2026-07-11-scene-seed-design.md`. And a tally row on thread
   cards (`ThreadsPane`, `thread-tally-add/dec/inc/roll/remove-<id>`, Wrap +
   compact buttons for narrow-width safety). See
   `docs/superpowers/specs/2026-06-29-solo-loop-success-tally-design.md` +
