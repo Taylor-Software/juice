@@ -41,7 +41,8 @@ void main() {
     await t.pumpAndSettle();
   }
 
-  testWidgets('loop bar is collapsed by default so the journal fills the height',
+  testWidgets(
+      'loop bar is collapsed by default so the journal fills the height',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -76,5 +77,36 @@ void main() {
     expect(loopH, lessThan(260), reason: 'loop bar should be compact');
     // Expanding took height away from the journal.
     expect(journalH, lessThan(collapsedJournalH));
+  });
+
+  testWidgets('expanded loop bar has a visible scrollbar and reachable steps',
+      (t) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    await pump(t);
+    await t.tap(find.byKey(const Key('loop-collapse-toggle')));
+    await t.pumpAndSettle();
+
+    // The capped region carries the "there is more below" affordance
+    // (audit F2 / stranger-test S3: clipped Steps read as nonexistent).
+    expect(
+        find.ancestor(
+            of: find.byType(LoopBar), matching: find.byType(Scrollbar)),
+        findsOneWidget);
+
+    // Expanding Steps overflows the cap; the last step must be reachable by
+    // scrolling the capped region.
+    await t.tap(find.byKey(const Key('loop-steps')));
+    await t.pumpAndSettle();
+    await t.scrollUntilVisible(find.byKey(const Key('loop-capture-field')), 200,
+        scrollable: find
+            .descendant(
+                of: find.ancestor(
+                    of: find.byType(LoopBar), matching: find.byType(Scrollbar)),
+                matching: find.byType(Scrollable))
+            .first);
+    expect(find.byKey(const Key('loop-capture-field')), findsOneWidget);
   });
 }

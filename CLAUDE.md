@@ -801,7 +801,15 @@ Working rules for this repo:
   `_loopLastProvider`/`_loopCaptureProvider`/`_loopTallyRollProvider`; the
   `TextEditingController` re-seeds from `_loopCaptureProvider` in `initState`
   since the State is disposed on subtab switch). See
-  `docs/superpowers/plans/2026-06-30-solo-loop-polish.md`. And a tally row on thread
+  `docs/superpowers/plans/2026-06-30-solo-loop-polish.md`.
+  **Steps visibility (2026-07-11):** `PlayScreen` (the Play body hosting the
+  loop bar above `JournalScreen`, in `loop_bar.dart`) wraps its 45%-capped
+  loop-bar scroll region in a `Scrollbar(thumbVisibility: true)` with an
+  owned controller, and the Steps `ExpansionTile` uses
+  `expandedCrossAxisAlignment: stretch` — without these the clipped Steps
+  read as nonexistent (stranger-test S3 residue) and step cards floated
+  centered at intrinsic width. See
+  `docs/superpowers/specs/2026-07-11-loop-steps-visibility-design.md`. And a tally row on thread
   cards (`ThreadsPane`, `thread-tally-add/dec/inc/roll/remove-<id>`, Wrap +
   compact buttons for narrow-width safety). See
   `docs/superpowers/specs/2026-06-29-solo-loop-success-tally-design.md` +

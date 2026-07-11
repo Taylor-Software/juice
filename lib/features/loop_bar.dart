@@ -139,7 +139,10 @@ class _LoopBarState extends ConsumerState<LoopBar> {
           key: const Key('loop-steps'),
           title: const Text('Steps'),
           initiallyExpanded: false,
-          childrenPadding: const EdgeInsets.only(bottom: 8),
+          // Stretch, or the default (center) alignment shrinks each step Card
+          // to its content width and floats it in dead gutters.
+          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
           children: [
             _step(context, '1 · Scene',
                 scene == null ? 'No scene yet.' : scene.title, [
@@ -620,10 +623,27 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
 /// journal's `Expanded` flex: 1, so the column split its height ~50/50 — the
 /// loop bar reserved half the screen and squeezed the feed to a sliver that
 /// couldn't scroll. Collapse state is sticky ([loopBarExpandedProvider]).
-class PlayScreen extends ConsumerWidget {
+class PlayScreen extends ConsumerStatefulWidget {
   const PlayScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlayScreen> createState() => _PlayScreenState();
+}
+
+class _PlayScreenState extends ConsumerState<PlayScreen> {
+  // Owned so the always-visible Scrollbar and the capped scroll view share a
+  // position — the visible thumb is the "there is more below" affordance the
+  // bare capped scroll region lacked (stranger-test S3: clipped Steps read as
+  // nonexistent).
+  final _loopScroll = ScrollController();
+
+  @override
+  void dispose() {
+    _loopScroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final expanded = ref.watch(loopBarExpandedProvider).valueOrNull ?? true;
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -653,7 +673,14 @@ class PlayScreen extends ConsumerWidget {
             if (expanded)
               ConstrainedBox(
                 constraints: BoxConstraints(maxHeight: cap),
-                child: const SingleChildScrollView(child: LoopBar()),
+                child: Scrollbar(
+                  controller: _loopScroll,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: _loopScroll,
+                    child: const LoopBar(),
+                  ),
+                ),
               ),
             const Expanded(child: JournalScreen()),
           ],

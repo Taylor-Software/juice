@@ -43,8 +43,7 @@ void main() {
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
       child: MaterialApp(
         theme: AppTheme.light(),
-        home: const Scaffold(
-            body: SingleChildScrollView(child: LoopBar())),
+        home: const Scaffold(body: SingleChildScrollView(child: LoopBar())),
       ),
     ));
     await tester.pumpAndSettle();
@@ -56,6 +55,21 @@ void main() {
     await tester.tap(find.byKey(const Key('loop-steps')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('step cards stretch to the full row width', (tester) async {
+    await pump(tester);
+    await expandSteps(tester);
+    // Audit F2 regression: the default (center) ExpansionTile alignment let
+    // each step Card shrink to content width and float in dead gutters.
+    final cardWidth = tester
+        .getSize(find.ancestor(
+            of: find.byKey(const Key('loop-new-scene')),
+            matching: find.byType(Card)))
+        .width;
+    final rowWidth = tester.getSize(find.byKey(const Key('loop-steps'))).width;
+    expect(cardWidth, greaterThan(rowWidth - 40),
+        reason: 'step card ($cardWidth) should fill the row ($rowWidth)');
   });
 
   testWidgets('renders the five steps', (tester) async {
@@ -229,8 +243,8 @@ void main() {
         tester.element(find.byKey(const Key('loop-new-scene'))));
     final journal = container.read(journalProvider).valueOrNull ?? const [];
     expect(
-      journal.where(
-          (e) => e.kind == JournalKind.scene && e.title == 'The crypt'),
+      journal
+          .where((e) => e.kind == JournalKind.scene && e.title == 'The crypt'),
       hasLength(1),
     );
   });
@@ -286,8 +300,7 @@ void main() {
           child: MaterialApp(home: Scaffold(body: child)),
         );
 
-    await tester.pumpWidget(
-        app(const SingleChildScrollView(child: LoopBar())));
+    await tester.pumpWidget(app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
     // Expand the steps tile so step-card widgets are in the tree.
@@ -304,8 +317,7 @@ void main() {
     // Tear down the bar (dispose the State) then re-pump in the same container.
     await tester.pumpWidget(app(const SizedBox.shrink()));
     await tester.pumpAndSettle();
-    await tester.pumpWidget(
-        app(const SingleChildScrollView(child: LoopBar())));
+    await tester.pumpWidget(app(const SingleChildScrollView(child: LoopBar())));
     await tester.pumpAndSettle();
 
     // Re-expand the steps tile after the State was recreated.
@@ -367,8 +379,8 @@ void main() {
     expect(find.byKey(const Key('loop-tally-roll-result')), findsOneWidget);
     final journal = container.read(journalProvider).valueOrNull ?? const [];
     expect(
-      journal.where(
-          (e) => e.title == 'Tally roll' && e.sourceTool == 'solo-loop'),
+      journal
+          .where((e) => e.title == 'Tally roll' && e.sourceTool == 'solo-loop'),
       hasLength(1),
     );
   });
