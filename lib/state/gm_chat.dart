@@ -20,7 +20,10 @@ class GmChatNotifier extends AsyncNotifier<GmChatState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const GmChatState();
-    return GmChatState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => GmChatState.fromJson(j as Map<String, dynamic>),
+        const GmChatState());
   }
 
   Future<void> _save(GmChatState s) async {

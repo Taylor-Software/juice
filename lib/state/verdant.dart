@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/verdant.dart';
-import 'providers.dart' show sessionsProvider;
+import 'providers.dart' show decodePersisted, sessionsProvider;
 
 const _kTransportKeys = {'mount', 'boat', 'airship'};
 
@@ -114,7 +114,10 @@ class VerdantNotifier extends AsyncNotifier<VerdantJourney> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const VerdantJourney();
-    return VerdantJourney.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => VerdantJourney.fromJson(j as Map<String, dynamic>),
+        const VerdantJourney());
   }
 
   Future<VerdantJourney> get _ready async => state.valueOrNull ?? await future;
