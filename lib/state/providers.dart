@@ -60,6 +60,40 @@ final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
 
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
 
+/// Tolerant decode for USER-persisted JSON (never bundled assets): corrupt
+/// storage — a partial write on app kill, a manual edit, a migration bug —
+/// must degrade to [fallback], not leave the provider in permanent
+/// AsyncError. The app-wide `valueOrNull ?? default` read convention renders
+/// an errored provider as a silently empty screen with no recovery path.
+T decodePersisted<T>(String raw, T Function(dynamic json) decode, T fallback) {
+  try {
+    return decode(jsonDecode(raw));
+  } catch (_) {
+    return fallback;
+  }
+}
+
+/// Tolerant list decode: a corrupt blob yields an empty list, and a corrupt
+/// ROW is skipped so one bad entry can't take out the rest of the list.
+List<T> decodePersistedList<T>(
+    String raw, T Function(Map<String, dynamic> json) fromJson) {
+  try {
+    final list = jsonDecode(raw) as List;
+    final out = <T>[];
+    for (final row in list) {
+      if (row is! Map) continue;
+      try {
+        out.add(fromJson(row.cast<String, dynamic>()));
+      } catch (_) {
+        // Skip the corrupt row, keep the survivors.
+      }
+    }
+    return out;
+  } catch (_) {
+    return <T>[];
+  }
+}
+
 /// Generic persisted list backed by a JSON string in SharedPreferences.
 abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   String get prefsKey;
@@ -75,8 +109,7 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return <T>[];
-    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
-    return list.map(fromJson).toList();
+    return decodePersistedList(raw, fromJson);
   }
 
   Future<void> _persist(List<T> items) async {
@@ -746,7 +779,10 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const CrawlState();
-    return CrawlState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => CrawlState.fromJson(j as Map<String, dynamic>),
+        const CrawlState());
   }
 
   Future<void> save(CrawlState s) async {
@@ -779,7 +815,10 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const DecksState();
-    return DecksState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => DecksState.fromJson(j as Map<String, dynamic>),
+        const DecksState());
   }
 
   Future<void> _save(DecksState s) async {
@@ -900,7 +939,8 @@ class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
     final raw = prefs.getString(_scopedKey);
     return (raw == null || raw.isEmpty)
         ? const FactionRegistry()
-        : FactionRegistry.fromJson(jsonDecode(raw));
+        : decodePersisted(
+            raw, FactionRegistry.fromJson, const FactionRegistry());
   }
 
   Future<void> save(FactionRegistry reg) async {
@@ -957,7 +997,10 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const EncounterState();
-    return EncounterState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => EncounterState.fromJson(j as Map<String, dynamic>),
+        const EncounterState());
   }
 
   Future<void> save(EncounterState s) async {
@@ -1092,7 +1135,8 @@ class MapNotifier extends AsyncNotifier<MapState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const MapState();
-    return MapState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(raw,
+        (j) => MapState.fromJson(j as Map<String, dynamic>), const MapState());
   }
 
   Future<void> save(MapState s) async {
@@ -1736,7 +1780,10 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const CampaignSettings();
-    return CampaignSettings.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => CampaignSettings.fromJson(j as Map<String, dynamic>),
+        const CampaignSettings());
   }
 
   Future<void> save(CampaignSettings s) async {
@@ -1789,10 +1836,13 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
   Future<List<Creature>> build() async {
     final raw = (await SharedPreferences.getInstance()).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
-    return (jsonDecode(raw) as List)
-        .map(Creature.maybeFromJson)
-        .whereType<Creature>()
-        .toList();
+    return decodePersisted(
+        raw,
+        (j) => (j as List)
+            .map(Creature.maybeFromJson)
+            .whereType<Creature>()
+            .toList(),
+        const <Creature>[]);
   }
 
   Future<List<Creature>> get _ready async => state.valueOrNull ?? await future;
@@ -1830,10 +1880,13 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
   Future<List<CustomTable>> build() async {
     final raw = (await SharedPreferences.getInstance()).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
-    return (jsonDecode(raw) as List)
-        .map(CustomTable.maybeFromJson)
-        .whereType<CustomTable>()
-        .toList();
+    return decodePersisted(
+        raw,
+        (j) => (j as List)
+            .map(CustomTable.maybeFromJson)
+            .whereType<CustomTable>()
+            .toList(),
+        const <CustomTable>[]);
   }
 
   Future<List<CustomTable>> get _ready async =>
@@ -1888,10 +1941,13 @@ class ConstructedOraclesNotifier
   Future<List<ConstructedOracle>> build() async {
     final raw = (await SharedPreferences.getInstance()).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
-    return (jsonDecode(raw) as List)
-        .map(ConstructedOracle.maybeFromJson)
-        .whereType<ConstructedOracle>()
-        .toList();
+    return decodePersisted(
+        raw,
+        (j) => (j as List)
+            .map(ConstructedOracle.maybeFromJson)
+            .whereType<ConstructedOracle>()
+            .toList(),
+        const <ConstructedOracle>[]);
   }
 
   Future<List<ConstructedOracle>> get _ready async =>
@@ -1954,10 +2010,13 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
   Future<List<UserRefCard>> build() async {
     final raw = (await SharedPreferences.getInstance()).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
-    return (jsonDecode(raw) as List)
-        .map(UserRefCard.maybeFromJson)
-        .whereType<UserRefCard>()
-        .toList();
+    return decodePersisted(
+        raw,
+        (j) => (j as List)
+            .map(UserRefCard.maybeFromJson)
+            .whereType<UserRefCard>()
+            .toList(),
+        const <UserRefCard>[]);
   }
 
   Future<List<UserRefCard>> get _ready async =>
@@ -2282,6 +2341,10 @@ const sessionScopedKeys = [
   'juice.decks.v1',
   'juice.gmchat.v1',
   'juice.light.v1',
+  // Session-scoped UX caches: registered so campaign delete purges them and
+  // export/migration carries them (audit F3 — they were orphaned before).
+  'juice.suggestDismissed',
+  'juice.recap',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
@@ -2292,7 +2355,13 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     if (raw != null && raw.isNotEmpty) {
-      return SessionsState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      try {
+        return SessionsState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+      } catch (_) {
+        // Corrupt registry: fall through to the first-run path and rebuild a
+        // fresh one. Every provider gates on this registry, so an AsyncError
+        // here bricks the whole app with no signal (audit F3).
+      }
     }
     // First run with sessions: adopt legacy single-campaign data, if any.
     const def = SessionMeta(id: 'default', name: 'Campaign 1');
@@ -2577,7 +2646,8 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return <String>{};
-    return (jsonDecode(raw) as List).cast<String>().toSet();
+    return decodePersisted(
+        raw, (j) => (j as List).whereType<String>().toSet(), <String>{});
   }
 
   static const _bases = {'classic', 'starforged'};

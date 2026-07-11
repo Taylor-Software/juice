@@ -1148,6 +1148,18 @@ Working rules for this repo:
   `lib/shared/tool_host.dart` + the declarative registry in
   `lib/shared/tool_registry.dart`). Add rails only when a real need appears.
 - Persistence is session-scoped: SharedPreferences keys are `<base>.<sessionId>`, registry in `juice.sessions.v1`; legacy un-suffixed keys migrate on first run (see `SessionsNotifier.build`). The journal lives in `juice.journal.v2`. (The legacy `juice.log.v1` migration + v1-campaign-import support were removed — pre-release, no real v1 data.) Campaign files are schema v3 (v1/v2 still import). Export is a plain `.juice.json` string, OR — when the campaign references blob images (sketch annotation backgrounds) — a `.juice.zip` bundle (`campaign.json` + `blobs/<id>`) via `campaign_bundle.dart` (`archive` dep), so annotations travel with the export; `importCampaignData` detects zip vs json and re-`put`s bundled blobs under their content-addressed ids (`SessionsNotifier.exportActiveFile`/`importCampaignData`). Blob bundling is gated on `blobStoreAvailableProvider` (web exports stay plain json).
+  **Tolerant persistence reads (2026-07-11):** every USER-persisted decode
+  goes through `decodePersisted`/`decodePersistedList` (providers.dart) or a
+  local try/catch — corrupt storage degrades to the default state and a
+  corrupt LIST ROW is skipped, never a permanent `AsyncError` (the
+  `valueOrNull ?? default` UI convention would render that as a silent empty
+  screen; a corrupt `juice.sessions.v1` would brick the app). The sessions
+  registry falls through to the first-run path on corrupt JSON. Bundled-asset
+  loads and campaign-file import stay STRICT on purpose (build-verified
+  assets should fail loudly; import surfaces `FormatException` to the user).
+  `juice.suggestDismissed` + `juice.recap` are registered in
+  `sessionScopedKeys`. Covered by `test/persistence_tolerance_test.dart`. See
+  `docs/superpowers/specs/2026-07-11-persistence-hardening-design.md`.
 - **Journal sketches (drawing).** `JournalKind.sketch` entries store vector
   strokes in `payload['sketch']` as `SketchData` (`lib/engine/sketch.dart`,
   pure: strokes = ARGB color/width/points + canvas size, JSON round-trips,

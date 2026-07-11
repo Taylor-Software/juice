@@ -20,7 +20,10 @@ class PlayContextNotifier extends AsyncNotifier<PlayContext> {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const PlayContext();
-    return PlayContext.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    return decodePersisted(
+        raw,
+        (j) => PlayContext.fromJson(j as Map<String, dynamic>),
+        const PlayContext());
   }
 
   Future<PlayContext> get _ready async => state.valueOrNull ?? await future;
