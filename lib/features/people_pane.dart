@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/play_context.dart';
@@ -84,6 +85,7 @@ class PeoplePane extends ConsumerWidget {
       {String seedName = '', String seedNote = ''}) async {
     final places = ref.read(placesProvider).valueOrNull ?? const <Place>[];
     final allNpcs = ref.read(npcsProvider).valueOrNull ?? const <Npc>[];
+    final oracle = ref.read(oracleProvider).valueOrNull;
     final saved = await showDialog<Npc>(
       context: context,
       builder: (_) => _NpcDialog(
@@ -91,7 +93,8 @@ class PeoplePane extends ConsumerWidget {
           seedName: seedName,
           seedNote: seedNote,
           places: places,
-          allNpcs: allNpcs),
+          allNpcs: allNpcs,
+          oracle: oracle),
     );
     if (saved == null || saved.name.trim().isEmpty) return;
     await ref.read(npcsProvider.notifier).upsert(saved);
@@ -237,10 +240,11 @@ class _NpcCard extends ConsumerWidget {
   Future<void> _editExisting(BuildContext context, WidgetRef ref) async {
     final places = ref.read(placesProvider).valueOrNull ?? const <Place>[];
     final allNpcs = ref.read(npcsProvider).valueOrNull ?? const <Npc>[];
+    final oracle = ref.read(oracleProvider).valueOrNull;
     final saved = await showDialog<Npc>(
       context: context,
-      builder: (_) =>
-          _NpcDialog(existing: npc, places: places, allNpcs: allNpcs),
+      builder: (_) => _NpcDialog(
+          existing: npc, places: places, allNpcs: allNpcs, oracle: oracle),
     );
     if (saved != null) await ref.read(npcsProvider.notifier).upsert(saved);
   }
@@ -253,6 +257,7 @@ class _NpcDialog extends StatefulWidget {
     this.seedNote = '',
     required this.places,
     this.allNpcs = const [],
+    this.oracle,
   });
   final Npc? existing;
   final String seedName;
@@ -261,6 +266,9 @@ class _NpcDialog extends StatefulWidget {
 
   /// Every NPC — relation targets (self is filtered out in the picker).
   final List<Npc> allNpcs;
+
+  /// When available, name/notes get a dice icon that rerolls the field.
+  final Oracle? oracle;
 
   @override
   State<_NpcDialog> createState() => _NpcDialogState();
@@ -296,6 +304,18 @@ class _NpcDialogState extends State<_NpcDialog> {
           .firstOrNull ??
       '(gone)';
 
+  Widget? _rollIcon(String key, String tooltip, String Function(Oracle) roll,
+      TextEditingController ctl) {
+    final oracle = widget.oracle;
+    if (oracle == null) return null;
+    return IconButton(
+      key: Key(key),
+      icon: const Icon(Icons.casino_outlined),
+      tooltip: tooltip,
+      onPressed: () => ctl.text = roll(oracle),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Guard against a stale placeId (linked place deleted).
@@ -309,7 +329,11 @@ class _NpcDialogState extends State<_NpcDialog> {
               key: const Key('npc-name'),
               controller: _nameCtl,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Name')),
+              decoration: InputDecoration(
+                labelText: 'Name',
+                suffixIcon: _rollIcon('npc-name-roll', 'Roll a name',
+                    (o) => o.generateName().summary ?? '', _nameCtl),
+              )),
           const SizedBox(height: 8),
           TextField(
               key: const Key('npc-role'),
@@ -349,7 +373,11 @@ class _NpcDialogState extends State<_NpcDialog> {
               controller: _noteCtl,
               minLines: 2,
               maxLines: 6,
-              decoration: const InputDecoration(labelText: 'Notes')),
+              decoration: InputDecoration(
+                labelText: 'Notes',
+                suffixIcon: _rollIcon('npc-note-roll',
+                    'Reroll characteristics', (o) => o.npc().asText, _noteCtl),
+              )),
           ..._relationsSection(),
         ]),
       ),

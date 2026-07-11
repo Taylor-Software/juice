@@ -770,6 +770,7 @@ class DebouncedTextField extends StatefulWidget {
     this.enabled = true,
     this.keyboardType,
     this.isDense = false,
+    this.onRoll,
   });
 
   final String initialValue;
@@ -781,6 +782,10 @@ class DebouncedTextField extends StatefulWidget {
   final TextInputType? keyboardType;
   final bool isDense;
 
+  /// If non-null, a dice icon is shown on the field; tapping it calls this
+  /// to generate a value, fills the field, and saves immediately.
+  final String Function()? onRoll;
+
   static const debounce = Duration(milliseconds: 400);
 
   @override
@@ -788,6 +793,8 @@ class DebouncedTextField extends StatefulWidget {
 }
 
 class _DebouncedTextFieldState extends State<DebouncedTextField> {
+  late final TextEditingController _ctl =
+      TextEditingController(text: widget.initialValue);
   Timer? _timer;
   String? _pending;
 
@@ -818,20 +825,48 @@ class _DebouncedTextFieldState extends State<DebouncedTextField> {
         }
       });
     }
+    _ctl.dispose();
     super.dispose();
+  }
+
+  void _roll() {
+    final v = widget.onRoll!();
+    _ctl.text = v;
+    _pending = v;
+    _flush();
   }
 
   @override
   Widget build(BuildContext context) => TextFormField(
-        initialValue: widget.initialValue,
+        controller: _ctl,
         enabled: widget.enabled,
         maxLines: widget.maxLines,
         keyboardType: widget.keyboardType,
         decoration: InputDecoration(
-            labelText: widget.label,
-            hintText: widget.hint,
-            isDense: widget.isDense),
-        onEditingComplete: _flush,
+          labelText: widget.label,
+          hintText: widget.hint,
+          isDense: widget.isDense,
+          suffixIcon: widget.onRoll == null
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.casino_outlined),
+                  tooltip: 'Roll',
+                  onPressed: widget.enabled ? _roll : null,
+                ),
+        ),
+        // Providing onEditingComplete replaces the framework default, which
+        // is what unfocuses on Done — so unfocus explicitly or the soft
+        // keyboard never dismisses.
+        onEditingComplete: () {
+          _flush();
+          FocusScope.of(context).unfocus();
+        },
+        // Mobile's default keeps focus on outside touch taps; dismiss the
+        // keyboard (and save) when the user taps away from the field.
+        onTapOutside: (_) {
+          _flush();
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
         onChanged: (v) {
           _pending = v;
           _timer?.cancel();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
@@ -98,6 +99,7 @@ class PlacesPane extends ConsumerWidget {
         seedKind: seedKind,
         activeLocation:
             ref.read(playContextProvider).valueOrNull?.activeLocation,
+        oracle: ref.read(oracleProvider).valueOrNull,
       ),
     );
     if (saved == null || saved.name.trim().isEmpty) return;
@@ -208,6 +210,7 @@ class _PlaceCard extends ConsumerWidget {
         existing: place,
         activeLocation:
             ref.read(playContextProvider).valueOrNull?.activeLocation,
+        oracle: ref.read(oracleProvider).valueOrNull,
       ),
     );
     if (saved != null) await ref.read(placesProvider.notifier).upsert(saved);
@@ -252,11 +255,15 @@ class _PlaceDialog extends StatefulWidget {
     this.seedNote = '',
     this.seedKind,
     this.activeLocation,
+    this.oracle,
   });
   final Place? existing;
   final String seedNote;
   final PlaceKind? seedKind;
   final LocationRef? activeLocation;
+
+  /// When available, name/notes get a dice icon that rerolls the field.
+  final Oracle? oracle;
 
   @override
   State<_PlaceDialog> createState() => _PlaceDialogState();
@@ -278,6 +285,18 @@ class _PlaceDialogState extends State<_PlaceDialog> {
     super.dispose();
   }
 
+  Widget? _rollIcon(String key, String tooltip, String Function(Oracle) roll,
+      TextEditingController ctl) {
+    final oracle = widget.oracle;
+    if (oracle == null) return null;
+    return IconButton(
+      key: Key(key),
+      icon: const Icon(Icons.casino_outlined),
+      tooltip: tooltip,
+      onPressed: () => ctl.text = roll(oracle),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final canPin = widget.activeLocation != null && _location == null;
@@ -289,7 +308,14 @@ class _PlaceDialogState extends State<_PlaceDialog> {
               key: const Key('place-name'),
               controller: _nameCtl,
               autofocus: true,
-              decoration: const InputDecoration(labelText: 'Name')),
+              decoration: InputDecoration(
+                labelText: 'Name',
+                suffixIcon: _rollIcon(
+                    'place-name-roll',
+                    'Roll a name',
+                    (o) => o.settlement().rolls.first.value,
+                    _nameCtl),
+              )),
           const SizedBox(height: 8),
           DropdownButtonFormField<PlaceKind>(
             key: const Key('place-kind'),
@@ -307,7 +333,11 @@ class _PlaceDialogState extends State<_PlaceDialog> {
               controller: _noteCtl,
               minLines: 2,
               maxLines: 6,
-              decoration: const InputDecoration(labelText: 'Notes')),
+              decoration: InputDecoration(
+                labelText: 'Notes',
+                suffixIcon: _rollIcon('place-note-roll', 'Reroll details',
+                    (o) => o.settlement().asText, _noteCtl),
+              )),
           const SizedBox(height: 8),
           if (_location != null)
             Row(children: [

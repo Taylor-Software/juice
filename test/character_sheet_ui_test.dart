@@ -1310,19 +1310,25 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('generate-npc')));
     await tester.pumpAndSettle();
-    // Locate the dice IconButton scoped to the AlertDialog.
+    // Locate the dice IconButtons scoped to the AlertDialog — one on the
+    // name field, one on the note (characteristics) field.
     final dialog = find.byType(AlertDialog);
     expect(dialog, findsOneWidget);
-    final diceButton = find.descendant(
+    final diceButtons = find.descendant(
         of: dialog, matching: find.byIcon(Icons.casino_outlined));
-    expect(diceButton, findsOneWidget);
-    await tester.tap(diceButton);
+    expect(diceButtons, findsNWidgets(2));
+    await tester.tap(diceButtons.first);
     await tester.pumpAndSettle();
     // After re-roll the name field must still be non-empty.
-    final nameField =
-        find.descendant(of: dialog, matching: find.byType(TextField)).first;
-    final tf = tester.widget<TextField>(nameField);
-    expect(tf.controller!.text.trim(), isNotEmpty);
+    final fields =
+        find.descendant(of: dialog, matching: find.byType(TextField));
+    final nameTf = tester.widget<TextField>(fields.first);
+    expect(nameTf.controller!.text.trim(), isNotEmpty);
+    // The note dice re-rolls the NPC characteristics.
+    await tester.tap(diceButtons.last);
+    await tester.pumpAndSettle();
+    final noteTf = tester.widget<TextField>(fields.last);
+    expect(noteTf.controller!.text, contains('Personality'));
   });
 
   // -- Task 3: grouped roster + role dropdown --
