@@ -1,14 +1,23 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:juice_oracle/engine/models.dart';
+import 'package:juice_oracle/engine/oracle.dart';
+import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/loop_bar.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 
 import 'fake_interpreter.dart';
+
+Oracle _oracle() => Oracle(OracleData(
+    jsonDecode(File('assets/oracle_data.json').readAsStringSync())
+        as Map<String, dynamic>));
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -55,6 +64,34 @@ void main() {
     await tester.tap(find.byKey(const Key('loop-steps')));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('New-scene dialog seeds a title from the scene generator',
+      (tester) async {
+    await pump(tester, overrides: [
+      // Real oracle from the asset FILE (rootBundle hangs the headless
+      // runner) — the seed chip awaits oracleProvider.
+      oracleProvider.overrideWith((ref) async => _oracle()),
+    ]);
+    await expandSteps(tester);
+    await tester.tap(find.byKey(const Key('loop-new-scene')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('loop-scene-seed')));
+    await tester.pump();
+    final seeded = tester
+        .widget<TextField>(find.byKey(const Key('loop-scene-name')))
+        .controller!
+        .text;
+    expect(seeded, isNotEmpty);
+
+    await tester.tap(find.text('Create'));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+        tester.element(find.byKey(const Key('loop-next-beat'))));
+    final journal = container.read(journalProvider).valueOrNull ?? const [];
+    expect(journal.any((e) => e.kind == JournalKind.scene && e.title == seeded),
+        isTrue);
   });
 
   testWidgets('step cards stretch to the full row width', (tester) async {
