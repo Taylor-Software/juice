@@ -303,8 +303,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final target = activeSceneEntry(journal,
             ref.read(playContextProvider).valueOrNull?.activeSceneId) ??
         journal.firstOrNull;
+    final narrateSettings = await ref.read(settingsProvider.future);
+    if (!mounted) return;
     final seed = NarrateSeed(
       mode: mode,
+      genre: narrateSettings.genre,
+      tone: narrateSettings.tone,
       sceneTitle: _sceneContext(),
       systemPrimer: ref.read(systemPrimerProvider),
       activeCharacter: ref.read(activeCharacterLineProvider),

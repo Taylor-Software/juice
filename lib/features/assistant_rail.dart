@@ -56,8 +56,12 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
     _rankingSig = sig;
     final scene =
         activeSceneEntry(journal, activeSceneId) ?? journal.firstOrNull;
+    final settings =
+        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
     final seed = RankSuggestionsSeed(
       candidates: [for (final s in candidates) (id: s.id, label: s.label)],
+      genre: settings.genre,
+      tone: settings.tone,
       systemPrimer: ref.read(systemPrimerProvider),
       sceneTitle: scene == null
           ? null

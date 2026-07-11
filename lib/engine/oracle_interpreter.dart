@@ -14,11 +14,12 @@ import 'gm_chat.dart';
 import 'journal_search.dart';
 import 'models.dart';
 
-/// Hard caps on the prompt's `recall:` block. AI is desktop/mobile-only now
-/// (Gemma 4 E4B, ample context window) — these were tiny holdovers from the
-/// retired ~1280-token web model and have been loosened to feed real grounding.
-const int kRecallMaxEntries = 6;
-const int kRecallMaxChars = 280;
+/// Hard caps on the prompt's `recall:` block. Sized against the loader's
+/// 4096-token session budget (see interpreter_gemma.dart _loadModel): the
+/// worst-case interpret prompt (instruction + full grounding + max recall)
+/// must leave room for the JSON output even on the 2048 fallback tier.
+const int kRecallMaxEntries = 8;
+const int kRecallMaxChars = 360;
 
 /// Everything the model needs to interpret one logged oracle result.
 class OracleSeed {
@@ -78,14 +79,51 @@ String activeCharacterLine(Character? c) {
   return '${c.name} ($role)$cond';
 }
 
-/// A capped `pc:` prompt line for the active player character, or '' when empty.
-/// Distinct from voiceLine's `character:` line (the spoken NPC).
-String _pcLine(String activeCharacter) {
-  final f = _flat(activeCharacter);
-  if (f.isEmpty) return '';
-  final cut =
-      f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-  return 'pc: $cut\n';
+/// The shared grounding block every seam's prompt opens with, in one canonical
+/// order: genre, tone, system, pc, scene, recall. This is the single place the
+/// game-situation lines are rendered, so seams can't drift in field order,
+/// capping, or placeholder behavior.
+///
+/// Empty fields are omitted, except under [placeholders] (the interpret/voice
+/// prompts keep explicit '(unspecified)'/'(none given)' markers because their
+/// few-shot examples show them). A null [sceneTitle] omits the scene line even
+/// under [placeholders] — for seams with no scene concept (voice).
+String _groundingBlock({
+  String genre = '',
+  String tone = '',
+  String systemPrimer = '',
+  String activeCharacter = '',
+  String? sceneTitle,
+  List<String> journalContext = const [],
+  bool placeholders = false,
+}) {
+  final b = StringBuffer();
+  void line(String key, String value, {String placeholder = ''}) {
+    final f = _flat(value);
+    if (f.isEmpty) {
+      if (placeholders && placeholder.isNotEmpty) {
+        b.write('$key: $placeholder\n');
+      }
+      return;
+    }
+    b.write('$key: ${_capped(f)}\n');
+  }
+
+  line('genre', genre, placeholder: '(unspecified)');
+  line('tone', tone, placeholder: '(unspecified)');
+  line('system', systemPrimer);
+  line('pc', activeCharacter);
+  if (sceneTitle != null) {
+    line('scene', sceneTitle, placeholder: '(none given)');
+  }
+  for (final context in journalContext.take(kRecallMaxEntries)) {
+    final f = _flat(context);
+    if (f.isEmpty) continue;
+    final cut =
+        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
+    b.write('recall: $cut\n');
+  }
+  return b.toString();
 }
 
 /// A single interpretation card; [lens] is the register it was written in.
@@ -134,8 +172,8 @@ Example 1
 INPUT:
 genre: grimdark fantasy
 tone: tense and dangerous
-result: Fate Check (Likely) — No, but…
 scene: Scene: Begging entry at the city gate after dark (Chaos 6)
+result: Fate Check (Likely) — No, but…
 OUTPUT:
 {"interpretations":[{"lens":"literal","reading":"The gate stays shut, but a postern door creaks open a hand's width — a bribe might widen it."},{"lens":"symbolic","reading":"The city turns its iron back on you; only its rats and refuse acknowledge your arrival."},{"lens":"complication","reading":"A guard waves you toward the smugglers' stair instead, and now he knows your face."},{"lens":"foreshadow","reading":"Above the gate, someone snuffs a lantern the moment you look up."}]}
 
@@ -143,8 +181,8 @@ Example 2
 INPUT:
 genre: cozy folk mystery
 tone: warm but uneasy
-result: Story: Discover / Object
 scene: (none given)
+result: Story: Discover / Object
 OUTPUT:
 {"interpretations":[{"lens":"literal","reading":"Behind the loose hearthstone sits a rusted tin box, something shifting inside when you lift it."},{"lens":"symbolic","reading":"A single mismatched teacup at the back of the cupboard — kept for someone who never came back."},{"lens":"complication","reading":"You find the cottage deed, and a second name on it you have never heard before."},{"lens":"foreshadow","reading":"A pressed flower falls from a book — a kind that only grows two valleys over."}]}
 ''';
@@ -153,37 +191,13 @@ OUTPUT:
 /// (the prompt format is line-keyed, so embedded newlines would break it).
 String _flat(String v) => v.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-/// [_flat] with an explicit placeholder when the field is empty.
-String _orElse(String v, String fallback) {
-  final f = _flat(v);
-  return f.isEmpty ? fallback : f;
-}
-
 /// Builds the per-roll user message from a seed. The format is line-keyed
 /// (one field per line, matching the few-shot examples), so runs of
 /// whitespace/newlines in seed fields collapse to single spaces.
 String buildOraclePrompt(OracleSeed seed) {
-  // Recall block, capped engine-side (see kRecallMaxEntries/kRecallMaxChars).
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
-
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: $primer\n';
-
   return 'INPUT:\n'
-      'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
-      'tone: ${_orElse(seed.tone, '(unspecified)')}\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
+      '${_groundingBlock(genre: seed.genre, tone: seed.tone, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, sceneTitle: seed.sceneContext, journalContext: seed.journalContext, placeholders: true)}'
       'result: ${_flat(seed.resultText)}\n'
-      '$recall'
-      'scene: ${_orElse(seed.sceneContext, '(none given)')}\n'
       'OUTPUT:';
 }
 
@@ -360,33 +374,18 @@ markdown, no quotation marks, no stage directions, no commentary.''';
 /// (format and recall capping as [buildOraclePrompt]). Optional fields are
 /// omitted entirely; empty settings become explicit placeholders.
 String buildVoicePrompt(VoiceSeed seed) {
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
-
   final name = seed.characterName;
   final tone = seed.tone;
   final topic = seed.topic;
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: $primer\n';
   return '$_voiceInstruction\n\n'
       'INPUT:\n'
-      'genre: ${_orElse(seed.genre, '(unspecified)')}\n'
-      'tone: ${_orElse(seed.toneSetting, '(unspecified)')}\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
+      '${_groundingBlock(genre: seed.genre, tone: seed.toneSetting, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, journalContext: seed.journalContext, placeholders: true)}'
       '${name == null ? '' : 'character: ${_flat(name)}\n'}'
       '${seed.characterTags.isEmpty ? '' : 'traits: ${_flat(seed.characterTags.join(', '))}\n'}'
       'mood: ${_flat(seed.mood)}\n'
       '${tone == null ? '' : 'line tone: ${_flat(tone)}\n'}'
       '${topic == null ? '' : 'topic: ${_flat(topic)}\n'}'
       'line: ${_flat(seed.line)}\n'
-      '$recall'
       'OUTPUT:';
 }
 
@@ -424,6 +423,8 @@ const String _gmChatInstruction =
 class GmChatSeed {
   const GmChatSeed({
     required this.history,
+    this.genre = '',
+    this.tone = '',
     this.sceneTitle,
     this.systemPrimer = '',
     this.activeCharacter = '',
@@ -432,30 +433,20 @@ class GmChatSeed {
 
   /// The full transcript, oldest first, INCLUDING the latest player turn.
   final List<ChatTurn> history;
+
+  /// Per-campaign settings (as [OracleSeed.genre]/[OracleSeed.tone]).
+  final String genre;
+  final String tone;
   final String? sceneTitle;
   final String systemPrimer;
   final String activeCharacter;
   final List<String> journalContext;
 }
 
-/// Stateless multi-turn prompt: instruction + the #1 grounding (system/pc/scene/
-/// recall) + a transcript of the last [kGmChatHistoryTurns] turns + a trailing
+/// Stateless multi-turn prompt: instruction + the shared grounding block +
+/// a transcript of the last [kGmChatHistoryTurns] turns + a trailing
 /// `GM:` for the model to continue. Caps mirror the other builders.
 String buildGmChatPrompt(GmChatSeed seed) {
-  final scene = seed.sceneTitle;
-  final sceneLine = (scene == null || scene.trim().isEmpty)
-      ? ''
-      : 'scene: ${_capped(_flat(scene))}\n';
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
   final recent = seed.history.length > kGmChatHistoryTurns
       ? seed.history.sublist(seed.history.length - kGmChatHistoryTurns)
       : seed.history;
@@ -470,10 +461,7 @@ String buildGmChatPrompt(GmChatSeed seed) {
   }
   return '$_gmChatInstruction\n\n'
       'INPUT:\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
-      '$sceneLine'
-      '$recall'
+      '${_groundingBlock(genre: seed.genre, tone: seed.tone, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, sceneTitle: seed.sceneTitle, journalContext: seed.journalContext)}'
       '$transcript'
       'GM:';
 }
@@ -495,56 +483,63 @@ enum NarrateMode { continueScene, complication }
 class NarrateSeed {
   const NarrateSeed({
     required this.mode,
+    this.genre = '',
+    this.tone = '',
     this.sceneTitle,
     this.systemPrimer = '',
     this.activeCharacter = '',
     this.journalContext = const [],
   });
   final NarrateMode mode;
+
+  /// Per-campaign settings (as [OracleSeed.genre]/[OracleSeed.tone]).
+  final String genre;
+  final String tone;
   final String? sceneTitle;
   final String systemPrimer;
   final String activeCharacter;
   final List<String> journalContext;
 }
 
+/// Instruction + one compact example per mode — examples move small-model
+/// quality more than rules do (same rationale as [oracleSystemInstruction]).
 String _narrateInstruction(NarrateMode mode) => switch (mode) {
       NarrateMode.continueScene =>
         'You are the game master for a solo tabletop RPG. Narrate the next beat '
             'of the current scene in 1-3 sentences of vivid present-tense prose, '
             'advancing the action and staying consistent with the established '
-            'facts. Output only the narration — no preamble, no options, no '
-            'questions.',
+            'facts. Honor the stated genre and tone. Output only the narration '
+            '— no preamble, no options, no questions.\n'
+            '\n'
+            'Example\n'
+            'INPUT:\n'
+            'genre: grimdark fantasy\n'
+            'scene: Ambushed on the marsh causeway\n'
+            'Narration:\n'
+            'A second arrow hisses out of the reeds and takes the torch from '
+            'your hand — the light rolls, guttering, toward the black water.',
       NarrateMode.complication =>
         'You are the game master for a solo tabletop RPG. Introduce ONE '
             'complication or twist that raises the stakes in the current scene, '
             'in 1-3 sentences of present-tense prose, consistent with the '
-            'established facts. Output only the complication.',
+            'established facts. Honor the stated genre and tone. Output only '
+            'the complication.\n'
+            '\n'
+            'Example\n'
+            'INPUT:\n'
+            'genre: cozy folk mystery\n'
+            'scene: Asking the miller about the missing ledger\n'
+            'Narration:\n'
+            'The miller answers a shade too quickly — and behind him, his '
+            'daughter eases the ledger drawer shut with her hip.',
     };
 
-/// Mode-specific instruction + the #1 grounding (system/pc/scene/recall) + a
-/// trailing `Narration:` cue. Scene/system lines go through `_capped`
-/// ([kPromptMaxFieldChars]); recall is [kRecallMaxEntries] × [kRecallMaxChars].
+/// Mode-specific instruction + the shared grounding block + a trailing
+/// `Narration:` cue.
 String buildNarratePrompt(NarrateSeed seed) {
-  final scene = seed.sceneTitle;
-  final sceneLine = (scene == null || scene.trim().isEmpty)
-      ? ''
-      : 'scene: ${_capped(_flat(scene))}\n';
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
   return '${_narrateInstruction(seed.mode)}\n\n'
       'INPUT:\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
-      '$sceneLine'
-      '$recall'
+      '${_groundingBlock(genre: seed.genre, tone: seed.tone, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, sceneTitle: seed.sceneTitle, journalContext: seed.journalContext)}'
       'Narration:';
 }
 
@@ -562,6 +557,8 @@ class FleshOutSeed {
     required this.entityKind,
     required this.name,
     this.existingDetail = '',
+    this.genre = '',
+    this.tone = '',
     this.systemPrimer = '',
     this.activeCharacter = '',
     this.sceneTitle,
@@ -570,6 +567,10 @@ class FleshOutSeed {
 
   /// Human label for the prompt, e.g. 'NPC' / 'story thread' / 'location'.
   final String entityKind;
+
+  /// Per-campaign settings (as [OracleSeed.genre]/[OracleSeed.tone]).
+  final String genre;
+  final String tone;
 
   /// The entity's name/title — the subject of the flesh-out.
   final String name;
@@ -591,37 +592,30 @@ class FleshOutSeed {
   final List<String> journalContext;
 }
 
-/// A fixed instruction + the #1 grounding (system/scene/recall via the shared
-/// helpers) + name/existing lines + a trailing `Detail:` cue. Field strings
-/// go through `_capped` ([kPromptMaxFieldChars]).
+/// A fixed instruction (+ one compact example) + the shared grounding block +
+/// name/existing lines + a trailing `Detail:` cue. Field strings go through
+/// `_capped` ([kPromptMaxFieldChars]).
 String buildFleshOutPrompt(FleshOutSeed seed) {
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
-  final scene = seed.sceneTitle;
-  final sceneLine = (scene == null || scene.trim().isEmpty)
-      ? ''
-      : 'scene: ${_capped(_flat(scene))}\n';
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
   final existing = _flat(seed.existingDetail);
   final existingLine =
       existing.isEmpty ? '' : 'existing: ${_capped(existing)}\n';
   return 'You are the game master for a solo tabletop RPG. Flesh out the '
       'following ${seed.entityKind} with 2-4 sentences of vivid, concrete '
       'detail consistent with the established facts. Build on any existing '
-      'notes — do not contradict them. Output only the description — no '
-      'preamble, no headers, no lists.\n\n'
+      'notes — do not contradict them. Honor the stated genre and tone. '
+      'Output only the description — no preamble, no headers, no lists.\n'
+      '\n'
+      'Example\n'
       'INPUT:\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
-      '$sceneLine'
-      '$recall'
+      'genre: grimdark fantasy\n'
+      'name: Marta the ferrywoman\n'
+      'existing: Knows everyone who crosses the river.\n'
+      'Detail:\n'
+      'Marta poles the ferry with a soldier\'s forearms and a debtor\'s eyes, '
+      'and she remembers every crossing — who paid, who begged, and who made '
+      'her look away. Lately she refuses coin from anyone heading north.\n\n'
+      'INPUT:\n'
+      '${_groundingBlock(genre: seed.genre, tone: seed.tone, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, sceneTitle: seed.sceneTitle, journalContext: seed.journalContext)}'
       'name: ${_capped(_flat(seed.name))}\n'
       '$existingLine'
       'Detail:';
@@ -639,6 +633,8 @@ String parseFleshOutResponse(String raw) {
 class RankSuggestionsSeed {
   const RankSuggestionsSeed({
     required this.candidates,
+    this.genre = '',
+    this.tone = '',
     this.systemPrimer = '',
     this.sceneTitle,
     this.activeCharacter = '',
@@ -647,6 +643,10 @@ class RankSuggestionsSeed {
 
   /// Candidate next-move chips in rule order: (stable id, display label).
   final List<({String id, String label})> candidates;
+
+  /// Per-campaign settings (as [OracleSeed.genre]/[OracleSeed.tone]).
+  final String genre;
+  final String tone;
 
   /// Authored facts-only system primer (see system_primer.dart), or ''.
   final String systemPrimer;
@@ -674,23 +674,9 @@ class RankResult {
   final String why;
 }
 
-/// Instruction + the #1 grounding (system/pc/scene/recall) + the candidate
-/// lines + a JSON cue. Caps mirror the other builders.
+/// Instruction + the shared grounding block + the candidate lines + a JSON
+/// cue. Caps mirror the other builders.
 String buildRankPrompt(RankSuggestionsSeed seed) {
-  final primer = _flat(seed.systemPrimer);
-  final systemLine = primer.isEmpty ? '' : 'system: ${_capped(primer)}\n';
-  final scene = seed.sceneTitle;
-  final sceneLine = (scene == null || scene.trim().isEmpty)
-      ? ''
-      : 'scene: ${_capped(_flat(scene))}\n';
-  final recall = StringBuffer();
-  for (final context in seed.journalContext.take(kRecallMaxEntries)) {
-    final f = _flat(context);
-    if (f.isEmpty) continue;
-    final cut =
-        f.length > kRecallMaxChars ? '${f.substring(0, kRecallMaxChars)}…' : f;
-    recall.write('recall: $cut\n');
-  }
   final cand = StringBuffer();
   for (final c in seed.candidates) {
     cand.write('- ${c.id}: ${_flat(c.label)}\n');
@@ -701,10 +687,7 @@ String buildRankPrompt(RankSuggestionsSeed seed) {
       'one fits. Output ONLY a JSON object, no prose: '
       '{"order":["id",...],"why":"..."}.\n\n'
       'INPUT:\n'
-      '$systemLine'
-      '${_pcLine(seed.activeCharacter)}'
-      '$sceneLine'
-      '$recall'
+      '${_groundingBlock(genre: seed.genre, tone: seed.tone, systemPrimer: seed.systemPrimer, activeCharacter: seed.activeCharacter, sceneTitle: seed.sceneTitle, journalContext: seed.journalContext)}'
       'candidates:\n'
       '$cand'
       'OUTPUT:';
@@ -742,12 +725,14 @@ const String _summaryInstruction =
     'tight 2-3 sentence "previously on" recap in past tense, plain prose, no '
     'lists or preamble.';
 
-/// Builds the recap prompt from recent entry texts (oldest first), capped
-/// like the other builders.
+/// Builds the recap prompt from recent entry texts (oldest first). Capped at
+/// 20 entries AND [kPromptMaxFieldChars] per entry (flattened to one line so
+/// a multi-paragraph body can't break the bullet structure or eat the
+/// generation window).
 String buildSummaryPrompt(List<String> entries) {
   final capped =
       entries.length > 20 ? entries.sublist(entries.length - 20) : entries;
-  final body = capped.map((e) => '- $e').join('\n');
+  final body = capped.map((e) => '- ${_capped(_flat(e))}').join('\n');
   return '$_summaryInstruction\n\n'
       'Recent journal entries (oldest first):\n$body\n\nRecap:';
 }

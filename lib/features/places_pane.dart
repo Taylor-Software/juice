@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
+import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'flesh_out_review.dart';
 
 String _placeKindLabel(PlaceKind k) => switch (k) {
       PlaceKind.settlement => 'Settlement',
@@ -185,6 +188,14 @@ class _PlaceCard extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (ref.watch(aiReadyProvider))
+              IconButton(
+                key: Key('flesh-out-place-${place.id}'),
+                visualDensity: VisualDensity.compact,
+                icon: const AiBadge(),
+                tooltip: 'Flesh out (AI)',
+                onPressed: () => _fleshOut(context, ref),
+              ),
             IconButton(
               key: Key('place-edit-${place.id}'),
               tooltip: 'Edit',
@@ -214,6 +225,30 @@ class _PlaceCard extends ConsumerWidget {
       ),
     );
     if (saved != null) await ref.read(placesProvider.notifier).upsert(saved);
+  }
+
+  /// AI flesh-out: generate → Append/Cancel review → append to the note
+  /// (same arc as the map's room/hex and the tracker's thread flesh-outs).
+  Future<void> _fleshOut(BuildContext context, WidgetRef ref) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'location',
+        name: place.name.isEmpty ? '(unnamed place)' : place.name,
+        existingDetail: place.note);
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (!await showFleshOutReview(context, detail)) return;
+    final note =
+        [place.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
+    await ref.read(placesProvider.notifier).upsert(place.copyWith(note: note));
   }
 
   void _showEntries(

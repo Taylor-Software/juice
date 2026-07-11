@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'flesh_out_review.dart';
 
 String _dispositionLabel(NpcDisposition d) => switch (d) {
       NpcDisposition.friendly => 'Friendly',
@@ -206,6 +209,14 @@ class _NpcCard extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (ref.watch(aiReadyProvider))
+              IconButton(
+                key: Key('flesh-out-npc-${npc.id}'),
+                visualDensity: VisualDensity.compact,
+                icon: const AiBadge(),
+                tooltip: 'Flesh out (AI)',
+                onPressed: () => _fleshOut(context, ref),
+              ),
             IconButton(
               key: Key('npc-party-${npc.id}'),
               tooltip: 'Add to party as companion',
@@ -247,6 +258,32 @@ class _NpcCard extends ConsumerWidget {
           existing: npc, places: places, allNpcs: allNpcs, oracle: oracle),
     );
     if (saved != null) await ref.read(npcsProvider.notifier).upsert(saved);
+  }
+
+  /// AI flesh-out: generate → Append/Cancel review → append to the note
+  /// (same arc as the map's room/hex and the tracker's thread flesh-outs).
+  Future<void> _fleshOut(BuildContext context, WidgetRef ref) async {
+    final seed = buildFleshOutSeed(ref,
+        entityKind: 'NPC',
+        name: npc.name.isEmpty ? '(unnamed NPC)' : npc.name,
+        existingDetail: [npc.role, npc.note]
+            .where((s) => s.trim().isNotEmpty)
+            .join(' — '));
+    final String detail;
+    try {
+      detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Flesh out failed: $e')));
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    if (!await showFleshOutReview(context, detail)) return;
+    final note =
+        [npc.note, detail].where((s) => s.trim().isNotEmpty).join('\n\n');
+    await ref.read(npcsProvider.notifier).upsert(npc.copyWith(note: note));
   }
 }
 

@@ -126,11 +126,13 @@ class GemmaInterpreterService implements InterpreterService {
     }
   }
 
-  /// Try a roomy context first; some artifacts cap the KV cache, so fall back
-  /// to 1280, and from the GPU backend to CPU.
+  /// Try a roomy context first (E4B handles far more than the retired web
+  /// model's 1280; 4096 gives the loosened recall caps + few-shot prompts real
+  /// headroom); some artifacts cap the KV cache, so step down, and from the
+  /// GPU backend to CPU.
   Future<InferenceModel> _loadModel() async {
     Object? firstError;
-    for (final maxTokens in const [2048, 1280]) {
+    for (final maxTokens in const [4096, 2048, 1280]) {
       for (final backend in const [
         PreferredBackend.gpu,
         PreferredBackend.cpu,
@@ -148,12 +150,19 @@ class GemmaInterpreterService implements InterpreterService {
     throw StateError('Model load failed: $firstError');
   }
 
-  /// One set of chat params for interpret() and voiceLine(): variety is the
-  /// product, so override the topK-1 defaults.
+  /// Creative seams (interpret/voice/narrate/…): variety is the product, so
+  /// override the topK-1 defaults.
+  static const double _kCreativeTemp = 1.0;
+
+  /// Structured/factual seams (rankSuggestions JSON, summarize): a cooler
+  /// temperature trades variety for parse reliability and faithfulness.
+  static const double _kPreciseTemp = 0.4;
+
+  /// One set of chat params per seam temperament (see the temp constants).
   Future<InferenceChat> _createChat(InferenceModel model,
-      {String? systemInstruction}) {
+      {String? systemInstruction, double temperature = _kCreativeTemp}) {
     return model.createChat(
-      temperature: 1.0,
+      temperature: temperature,
       topK: 64,
       topP: 0.95,
       isThinking: false,
@@ -163,11 +172,14 @@ class GemmaInterpreterService implements InterpreterService {
   }
 
   /// One prompt → raw model text, the shared generation discipline for
-  /// interpret() and voiceLine(): fresh chat + inter-token watchdog.
-  Future<String> _generate(String prompt, {String? systemInstruction}) async {
+  /// every seam: fresh chat + inter-token watchdog.
+  Future<String> _generate(String prompt,
+      {String? systemInstruction,
+      double temperature = _kCreativeTemp}) async {
     final model = _model;
     if (model == null) throw StateError('Interpreter not ready');
-    final chat = await _createChat(model, systemInstruction: systemInstruction);
+    final chat = await _createChat(model,
+        systemInstruction: systemInstruction, temperature: temperature);
     await chat.addQueryChunk(Message.text(text: prompt, isUser: true));
     final buffer = StringBuffer();
     // Inter-token watchdog: 60s with no token means the generation hung.
@@ -194,7 +206,8 @@ class GemmaInterpreterService implements InterpreterService {
 
   @override
   Future<String> summarize(List<String> entries) async {
-    return parseSummary(await _generate(buildSummaryPrompt(entries)));
+    return parseSummary(await _generate(buildSummaryPrompt(entries),
+        temperature: _kPreciseTemp));
   }
 
   @override
@@ -214,7 +227,8 @@ class GemmaInterpreterService implements InterpreterService {
 
   @override
   Future<RankResult> rankSuggestions(RankSuggestionsSeed seed) async {
-    return parseRankResult(await _generate(buildRankPrompt(seed)));
+    return parseRankResult(await _generate(buildRankPrompt(seed),
+        temperature: _kPreciseTemp));
   }
 
   @override
