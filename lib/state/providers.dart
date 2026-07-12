@@ -2209,6 +2209,26 @@ class ChipHelpSeenNotifier extends AsyncNotifier<bool> {
 final chipHelpSeenProvider =
     AsyncNotifierProvider<ChipHelpSeenNotifier, bool>(ChipHelpSeenNotifier.new);
 
+/// App-global reading text scale (multiplies the platform scale). Default 1.0;
+/// per-device like [aiEnabledProvider] — NOT session-scoped, NOT exported.
+class TextScaleNotifier extends AsyncNotifier<double> {
+  static const _key = 'juice.text_scale.v1';
+
+  @override
+  Future<double> build() async =>
+      (await SharedPreferences.getInstance()).getDouble(_key) ?? 1.0;
+
+  Future<void> set(double value) async {
+    final v = value.clamp(0.85, 1.4);
+    final p = await SharedPreferences.getInstance();
+    await p.setDouble(_key, v);
+    state = AsyncData(v);
+  }
+}
+
+final textScaleProvider =
+    AsyncNotifierProvider<TextScaleNotifier, double>(TextScaleNotifier.new);
+
 /// App-global flag: the recap banner has been permanently suppressed ("Never").
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class RecapSuppressedNotifier extends AsyncNotifier<bool> {

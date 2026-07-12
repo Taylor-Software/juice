@@ -105,8 +105,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                 // Override the theme's full-width (Size.fromHeight) minimumSize
                 // so this button sizes to its content inside the Row instead of
                 // forcing an infinite width beside the Clear button.
-                style:
-                    FilledButton.styleFrom(minimumSize: const Size(64, 48)),
+                style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
                 onPressed: () async {
                   final v = _keyCtrl.text.trim();
                   if (v.isEmpty) return;
@@ -144,6 +143,39 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                       .read(cloudInterpretEnabledProvider.notifier)
                       .setEnabled(v),
             ),
+            const SizedBox(height: 16),
+            Text('Reading size', style: theme.textTheme.labelLarge),
+            const SizedBox(height: 4),
+            const Text(
+              'Scales all text in the app (on top of your system setting).',
+              style: TextStyle(fontSize: 12),
+            ),
+            Consumer(builder: (context, ref, _) {
+              final scale = ref.watch(textScaleProvider).valueOrNull ?? 1.0;
+              return Row(children: [
+                const Icon(Icons.text_fields, size: 16),
+                Expanded(
+                  child: Slider(
+                    key: const Key('settings-text-scale'),
+                    value: scale.clamp(0.85, 1.4),
+                    min: 0.85,
+                    max: 1.4,
+                    divisions: 11,
+                    label: '${(scale * 100).round()}%',
+                    onChanged: (v) =>
+                        ref.read(textScaleProvider.notifier).set(v),
+                  ),
+                ),
+                const Icon(Icons.text_fields, size: 24),
+                if (scale != 1.0)
+                  TextButton(
+                    key: const Key('settings-text-scale-reset'),
+                    onPressed: () =>
+                        ref.read(textScaleProvider.notifier).set(1.0),
+                    child: const Text('Reset'),
+                  ),
+              ]);
+            }),
             const SizedBox(height: 16),
             Text('Third-party content', style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),
