@@ -1,6 +1,13 @@
 // lib/shared/design_tokens.dart
 import 'package:flutter/material.dart';
 
+/// Below this viewport width the play chrome treats the device as a phone:
+/// the assistant rail defaults collapsed, expanding the loop bar collapses the
+/// rail (and vice versa), chrome auto-collapses while the composer has focus,
+/// and the campaign header's expanded row scrolls horizontally instead of
+/// wrapping. Matches the Material compact-width breakpoint.
+const double kCompactWidth = 600;
+
 /// Warm "tome" design tokens from docs/design_handoff_juice_ux_refresh/README.md.
 /// Applied to narrative surfaces (journal, result cards, resume). The rest of
 /// the app keeps the M3 ColorScheme; read these via Theme.of(context).extension.

@@ -5,6 +5,7 @@ import '../engine/models.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/suggestions.dart';
 import '../shared/ai_badge.dart';
+import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
@@ -137,8 +138,14 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
     final activeSceneId =
         ref.watch(playContextProvider).valueOrNull?.activeSceneId;
-    final expanded =
-        ref.watch(assistantRailExpandedProvider).valueOrNull ?? true;
+    final compact = MediaQuery.sizeOf(context).width < kCompactWidth;
+    // Sticky user choice wins; unset defaults open on wide screens (chips are
+    // the new-user on-ramp) and collapsed on phones (the journal needs the
+    // space). While the composer has focus on a phone, render collapsed
+    // regardless — the keyboard is already eating half the viewport.
+    final stored = ref.watch(assistantRailExpandedProvider).valueOrNull;
+    final typing = compact && ref.watch(journalComposerFocusProvider);
+    final expanded = (stored ?? !compact) && !typing;
     final sig = _signature(journal, suggestions, activeSceneId);
     if (expanded &&
         aiReady &&
@@ -160,9 +167,17 @@ class _AssistantRailState extends ConsumerState<AssistantRail> {
           label: expanded ? 'Collapse assistant' : 'Expand assistant',
           child: InkWell(
             key: const Key('assistant-expand'),
-            onTap: () => ref
-                .read(assistantRailExpandedProvider.notifier)
-                .setExpanded(!expanded),
+            onTap: () {
+              ref
+                  .read(assistantRailExpandedProvider.notifier)
+                  .setExpanded(!expanded);
+              // On a phone the rail and the loop bar never stack expanded —
+              // opening one closes the other (both sit above the same
+              // already-short journal).
+              if (!expanded && compact) {
+                ref.read(loopBarExpandedProvider.notifier).setExpanded(false);
+              }
+            },
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               child: Row(
