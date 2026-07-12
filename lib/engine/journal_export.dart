@@ -35,6 +35,59 @@ String journalToMarkdown({
   return buf.toString();
 }
 
+/// True when [e] reads as narrative prose rather than mechanics: scenes,
+/// session breaks, written entries, and the AI narration/interpretation
+/// results. Dice/oracle results, readings, and sketches are mechanics.
+/// Shared by the story export and the journal's reading-mode filter.
+bool isStoryEntry(JournalEntry e) => switch (e.kind) {
+      JournalKind.scene || JournalKind.session || JournalKind.text => true,
+      JournalKind.result =>
+        e.sourceTool == 'narrate' || e.sourceTool == 'interpret',
+      JournalKind.sketch => false,
+    };
+
+/// Renders the journal as clean narrative Markdown ("story mode"), oldest
+/// first: `#` session breaks, `##` scene headers with their descriptions,
+/// and prose paragraphs. Mechanical results, sketches, chaos snapshots,
+/// tags, and thread links are all omitted — this is the shareable story,
+/// not the table transcript (that's [journalToMarkdown]).
+String journalToStory({
+  required String campaignName,
+  required List<JournalEntry> entriesNewestFirst,
+  required DateTime exportedAt,
+}) {
+  final buf = StringBuffer()
+    ..writeln('# $campaignName')
+    ..writeln()
+    ..writeln('Exported ${_date(exportedAt)}');
+  final story = entriesNewestFirst.reversed.where(isStoryEntry).toList();
+  if (story.isEmpty) {
+    buf
+      ..writeln()
+      ..writeln('(empty journal)');
+    return buf.toString();
+  }
+  for (final e in story) {
+    final body = mentionsToPlain(e.body).trim();
+    buf.writeln();
+    switch (e.kind) {
+      case JournalKind.session:
+        buf.writeln('# ${e.title}');
+      case JournalKind.scene:
+        buf.writeln('## ${e.title}');
+        if (body.isNotEmpty) {
+          buf
+            ..writeln()
+            ..writeln(body);
+        }
+      default:
+        // Prose entries: body only — titles like "Narration" are chrome.
+        buf.writeln(body.isNotEmpty ? body : e.title);
+    }
+  }
+  return buf.toString();
+}
+
 /// Renders the journal as one self-contained HTML page (inline style,
 /// no external resources), oldest entry first. All user text is escaped.
 String journalToHtml({
