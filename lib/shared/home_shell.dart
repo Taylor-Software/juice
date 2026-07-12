@@ -25,6 +25,7 @@ import '../features/oracles_tab.dart';
 import '../features/sheet_tab.dart';
 import '../features/run_screen.dart';
 import '../features/tracking_tab.dart';
+import '../state/auto_backup.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
@@ -932,6 +933,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     // opens the New-campaign wizard (avoids a first-tap race where the
     // "Import a kit" step would show no kits yet).
     ref.watch(kitsProvider);
+    // Activate the silent rolling auto-backup (journal changes → rate-limited
+    // export to app-support/backups; no-op on web/tests).
+    ref.watch(autoBackupProvider);
     final split = ref.watch(splitViewProvider).valueOrNull ?? false;
     final wideEnough = MediaQuery.sizeOf(context).width >= 1000;
     final sessionName =
