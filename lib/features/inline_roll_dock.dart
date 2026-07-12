@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/suggestions.dart';
 import '../shared/design_tokens.dart';
+import '../shared/haptics.dart';
 import '../state/providers.dart';
 import '../state/suggestions_provider.dart';
 import 'ask_oracle_dialog.dart';
@@ -25,6 +26,7 @@ class InlineRollDock extends ConsumerWidget {
   Future<void> _roll(WidgetRef ref, Suggestion s) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return; // oracle data still loading: skip safely
+    hapticRoll();
     await rollInlineSuggestion(ref, oracle, s);
     onRolled?.call();
   }

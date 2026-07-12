@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
+import '../shared/haptics.dart';
 import '../state/providers.dart';
 import 'dice_roll_animation.dart';
 
@@ -87,6 +88,7 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
     } on FormatException {
       return;
     }
+    hapticRoll();
     setState(() => _record(result));
   }
 
