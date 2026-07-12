@@ -4,9 +4,13 @@ import 'destination.dart';
 import 'shell_route.dart';
 
 class SubtabDef {
-  const SubtabDef(this.key, this.label);
+  const SubtabDef(this.key, this.label, {this.aliases = const []});
   final String key;
   final String label;
+
+  /// Legacy subtab keys that resolve to this tab (e.g. a merged pane keeps
+  /// its old routes working: 'people'/'places' → 'world').
+  final List<String> aliases;
 }
 
 /// A destination root: a [TabBar] over an [IndexedStack] body (never a
@@ -61,7 +65,8 @@ class _SubtabHostState extends ConsumerState<SubtabHost>
 
   void _applyRoute(ShellRoute route) {
     if (route.destination != widget.destination || route.subtab.isEmpty) return;
-    final i = widget.tabs.indexWhere((t) => t.key == route.subtab);
+    final i = widget.tabs.indexWhere(
+        (t) => t.key == route.subtab || t.aliases.contains(route.subtab));
     if (i >= 0 && i != _controller.index) _controller.index = i;
   }
 
