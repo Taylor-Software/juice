@@ -80,13 +80,16 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     terracottaDeep: Color(0xFF7C3A1A),
     ink: Color(0xFF2B2018),
     inkBody: Color(0xFF5A4A40),
-    inkMuted: Color(0xFF8A7466),
-    inkFaint: Color(0xFF9A8576),
+    // Accessibility (2026-07-12): muted/faint darkened to clear WCAG AA on
+    // the card background (muted 4.5:1, faint 3.7:1 — was 3.7/3.0); hue kept.
+    inkMuted: Color(0xFF7D6759),
+    inkFaint: Color(0xFF8A7466),
     hairline: Color(0xFFEFE0D6),
     borderInput: Color(0xFFE0C7B7),
     chaos: Color(0xFFB5762A),
     chaosChipBg: Color(0xFFF4D9A8),
-    chaosChipText: Color(0xFF8A5A18),
+    // Was 0xFF8A5A18 (4.3:1 on the chip bg) — darkened past 4.5:1.
+    chaosChipText: Color(0xFF7E5214),
     sage: Color(0xFF5B7A52),
     gold: Color(0xFFD9A84E),
     narrative: _narrative,
@@ -106,7 +109,9 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     ink: Color(0xFFF3E8DF),
     inkBody: Color(0xFFD8C8BC),
     inkMuted: Color(0xFFAD9B8C),
-    inkFaint: Color(0xFF8F7E70),
+    // Accessibility (2026-07-12): lightened from 0xFF8F7E70 (3.8:1 on the
+    // dark card) to clear 4.5:1.
+    inkFaint: Color(0xFF9C8A7B),
     hairline: Color(0xFF3D3229),
     borderInput: Color(0xFF4A3C31),
     chaos: Color(0xFFD9A84E),
