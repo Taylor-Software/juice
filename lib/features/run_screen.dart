@@ -715,6 +715,32 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
               ),
             ],
           ),
+          // Pinned favorites (from the dice roller): tap fills + rolls.
+          if ((ref.watch(favoriteDiceProvider).valueOrNull ?? const [])
+              .isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final fav
+                      in ref.watch(favoriteDiceProvider).valueOrNull ??
+                          const <String>[])
+                    ActionChip(
+                      key: Key('run-dice-fav-$fav'),
+                      avatar: const Icon(Icons.star, size: 14),
+                      label: Text(fav),
+                      onPressed: oracle == null
+                          ? null
+                          : () {
+                              _diceCtrl.text = fav;
+                              _rollDice();
+                            },
+                    ),
+                ],
+              ),
+            ),
         ],
       ),
     );
