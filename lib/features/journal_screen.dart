@@ -46,6 +46,12 @@ import '../engine/content_registry.dart';
 import 'sketch_editor.dart';
 import 'sketch_open.dart';
 
+/// Reading mode: hide mechanical entries (rolls, readings, sketches) and show
+/// only the narrative — scenes, session breaks, written prose, narrations.
+/// Deliberately NOT autoDispose (survives verb switches) and not persisted
+/// (a fresh launch always starts in the full journal).
+final _readingModeProvider = StateProvider<bool>((_) => false);
+
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
 class JournalScreen extends ConsumerStatefulWidget {
@@ -777,6 +783,9 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         if (_searching) {
           visible = searchEntries(visible, _search.text);
         }
+        if (ref.watch(_readingModeProvider)) {
+          visible = visible.where(isStoryEntry).toList();
+        }
         // The fixed top group (nudge / recap / filters / actions /
         // search) sits above the entry list. At comfortable heights it
         // takes its natural size and the entry ListView fills the rest.
@@ -957,6 +966,18 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 _searching = !_searching;
                 if (!_searching) _search.clear();
               }),
+            ),
+            IconButton(
+              key: const Key('journal-reading-mode'),
+              icon: Icon(ref.watch(_readingModeProvider)
+                  ? Icons.auto_stories
+                  : Icons.auto_stories_outlined),
+              isSelected: ref.watch(_readingModeProvider),
+              tooltip: ref.watch(_readingModeProvider)
+                  ? 'Show everything'
+                  : 'Reading mode (story only)',
+              onPressed: () => ref.read(_readingModeProvider.notifier).state =
+                  !ref.read(_readingModeProvider),
             ),
             IconButton(
               key: const Key('journal-export'),
@@ -2140,6 +2161,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             onPressed: () => Navigator.pop(context, 'html'),
             child: const Text('HTML'),
           ),
+          SimpleDialogOption(
+            key: const Key('export-story'),
+            onPressed: () => Navigator.pop(context, 'story'),
+            child: const Text('Story (Markdown, prose only)'),
+          ),
         ],
       ),
     );
@@ -2152,18 +2178,25 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final threadTitles = {for (final t in allThreads) t.id: t.title};
     final name =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
-    final content = format == 'md'
-        ? journalToMarkdown(
-            campaignName: name,
-            entriesNewestFirst: entries,
-            threadTitles: threadTitles,
-            exportedAt: DateTime.now())
-        : journalToHtml(
-            campaignName: name,
-            entriesNewestFirst: entries,
-            threadTitles: threadTitles,
-            exportedAt: DateTime.now());
-    return ('${slugify(name)}-journal.$format', content);
+    final content = switch (format) {
+      'md' => journalToMarkdown(
+          campaignName: name,
+          entriesNewestFirst: entries,
+          threadTitles: threadTitles,
+          exportedAt: DateTime.now()),
+      'story' => journalToStory(
+          campaignName: name,
+          entriesNewestFirst: entries,
+          exportedAt: DateTime.now()),
+      _ => journalToHtml(
+          campaignName: name,
+          entriesNewestFirst: entries,
+          threadTitles: threadTitles,
+          exportedAt: DateTime.now()),
+    };
+    return format == 'story'
+        ? ('${slugify(name)}-story.md', content)
+        : ('${slugify(name)}-journal.$format', content);
   }
 
   Future<void> _confirmClear() async {
