@@ -2229,6 +2229,44 @@ class TextScaleNotifier extends AsyncNotifier<double> {
 final textScaleProvider =
     AsyncNotifierProvider<TextScaleNotifier, double>(TextScaleNotifier.new);
 
+/// App-global favorite dice notations ("2d6+3"), pinned by the player from
+/// the dice roller. Reusable across campaigns like [customTablesProvider] —
+/// NOT session-scoped, NOT exported. Deduped, capped, insertion-ordered.
+class FavoriteDiceNotifier extends AsyncNotifier<List<String>> {
+  static const _key = 'juice.favorite_dice.v1';
+  static const _cap = 12;
+
+  @override
+  Future<List<String>> build() async =>
+      (await SharedPreferences.getInstance()).getStringList(_key) ??
+      const <String>[];
+
+  Future<void> _saveList(List<String> v) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setStringList(_key, v);
+    state = AsyncData(v);
+  }
+
+  Future<void> add(String notation) async {
+    final n = notation.trim();
+    if (n.isEmpty) return;
+    final cur = state.valueOrNull ?? await future;
+    if (cur.contains(n)) return;
+    final next = [...cur, n];
+    if (next.length > _cap) next.removeAt(0);
+    await _saveList(next);
+  }
+
+  Future<void> remove(String notation) async {
+    final cur = state.valueOrNull ?? await future;
+    await _saveList(cur.where((x) => x != notation).toList());
+  }
+}
+
+final favoriteDiceProvider =
+    AsyncNotifierProvider<FavoriteDiceNotifier, List<String>>(
+        FavoriteDiceNotifier.new);
+
 /// App-global flag: the recap banner has been permanently suppressed ("Never").
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class RecapSuppressedNotifier extends AsyncNotifier<bool> {

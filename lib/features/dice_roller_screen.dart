@@ -123,6 +123,17 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
           decoration: InputDecoration(
             labelText: 'Expression',
             errorText: _error,
+            // Pin the current (valid) expression as an app-global favorite.
+            suffixIcon: IconButton(
+              key: const Key('dice-fav-add'),
+              icon: const Icon(Icons.star_border),
+              tooltip: 'Pin as favorite',
+              onPressed: canRoll
+                  ? () => ref
+                      .read(favoriteDiceProvider.notifier)
+                      .add(_input.text.trim())
+                  : null,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -134,6 +145,17 @@ class _DiceRollerScreenState extends ConsumerState<DiceRollerScreen> {
               ActionChip(
                 label: Text(die),
                 onPressed: () => _tapChip(die),
+              ),
+            // Pinned favorites: tap rolls, ✕ unpins.
+            for (final fav in ref.watch(favoriteDiceProvider).valueOrNull ??
+                const <String>[])
+              InputChip(
+                key: Key('dice-fav-$fav'),
+                avatar: const Icon(Icons.star, size: 16),
+                label: Text(fav),
+                onPressed: () => _rollExpr(fav),
+                onDeleted: () =>
+                    ref.read(favoriteDiceProvider.notifier).remove(fav),
               ),
           ],
         ),
