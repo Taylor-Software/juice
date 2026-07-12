@@ -296,6 +296,26 @@ class CampaignHeader extends ConsumerWidget {
     };
   }
 
+  /// Rolls the campaign's default oracle exactly like the HUD quick-roll
+  /// button; shared by the desktop Cmd/Ctrl+R shortcut. No-op while the
+  /// oracle is still loading.
+  static Future<void> quickRollDefault(
+      BuildContext context, WidgetRef ref) async {
+    final oracle = ref.read(oracleProvider).valueOrNull;
+    if (oracle == null) return;
+    final CampaignSettings settings = ref.read(settingsProvider).valueOrNull ??
+        await ref.read(settingsProvider.future);
+    final crawl = ref.read(crawlProvider).valueOrNull;
+    if (!context.mounted) return;
+    const drawKinds = {'icons', 'cards', 'tarot'};
+    if (drawKinds.contains(settings.defaultOracle)) {
+      await showOracleRollSheet(context, oracle, settings.defaultOracle);
+    } else {
+      await const CampaignHeader()._quickRoll(context, ref, oracle,
+          crawl?.chaosFactor ?? 5, settings.defaultOracle);
+    }
+  }
+
   /// Icon reflecting the current default oracle: a card glyph for cards/tarot,
   /// dice otherwise (icons/juice/mythic/custom/constructed).
   static IconData _quickRollIcon(String defaultOracle) =>
