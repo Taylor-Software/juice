@@ -29,6 +29,7 @@ import '../shared/help_nav.dart';
 import '../shared/mention_text.dart';
 import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/pdf_rasterizer.dart';
@@ -208,9 +209,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   size: 16),
               label: Text('Track ${s.name}?'),
               onPressed: () => _acceptSuggestion(s),
-              onDeleted: () => ref
-                  .read(dismissedSuggestionsProvider.notifier)
-                  .dismiss(suggestionKey(s.kind, s.name)),
+              onDeleted: () {
+                final key = suggestionKey(s.kind, s.name);
+                ref.read(dismissedSuggestionsProvider.notifier).dismiss(key);
+                showUndoSnackbar(
+                    context,
+                    'Dismissed "${s.name}"',
+                    () => ref
+                        .read(dismissedSuggestionsProvider.notifier)
+                        .undismiss(key));
+              },
               deleteIcon: Icon(Icons.close,
                   key: Key('suggest-dismiss-${suggestionKey(s.kind, s.name)}'),
                   size: 16),
@@ -2259,7 +2267,17 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               const SnackBar(content: Text('Current location set')));
         }
       case 'delete':
+        final entries = ref.read(journalProvider).valueOrNull ?? const [];
+        final idx = entries.indexWhere((e) => e.id == entry.id);
         await notifier.remove(entry.id);
+        if (mounted) {
+          showUndoSnackbar(
+              context,
+              entry.kind == JournalKind.scene
+                  ? 'Scene deleted'
+                  : 'Entry deleted',
+              () => notifier.restoreAt(idx < 0 ? 0 : idx, entry));
+        }
       case 'link':
         final picked = await showDialog<String>(
           context: context,

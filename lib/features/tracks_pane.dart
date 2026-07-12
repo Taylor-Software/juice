@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/providers.dart';
 
 /// Tracking → Tracks: simple capped progress tracks (clocks) for solo play.
@@ -76,9 +77,21 @@ class TracksPane extends ConsumerWidget {
                                     if (v == 'rename') {
                                       _rename(context, ref, t);
                                     } else if (v == 'delete') {
+                                      final list = ref
+                                              .read(tracksProvider)
+                                              .valueOrNull ??
+                                          const <Track>[];
+                                      final idx =
+                                          list.indexWhere((x) => x.id == t.id);
                                       ref
                                           .read(tracksProvider.notifier)
                                           .remove(t.id);
+                                      showUndoSnackbar(
+                                          context,
+                                          'Track deleted',
+                                          () => ref
+                                              .read(tracksProvider.notifier)
+                                              .restoreAt(idx < 0 ? 0 : idx, t));
                                     }
                                   },
                                   itemBuilder: (_) => const [

@@ -124,6 +124,15 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   /// Await the loaded list: mutating before build() completes must not
   /// throw on [_scopedKey] or clobber previously persisted data.
   Future<List<T>> get _ready async => state.valueOrNull ?? await future;
+
+  /// Re-inserts [item] at [index] (clamped to the current list), restoring a
+  /// just-deleted row for the delete-undo snackbar. The caller captures the
+  /// item and its index before calling remove.
+  Future<void> restoreAt(int index, T item) async {
+    final items = [...await _ready];
+    items.insert(index.clamp(0, items.length), item);
+    await _persist(items);
+  }
 }
 
 // -- Journal ----------------------------------------------------------------
@@ -2954,6 +2963,16 @@ class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
   Future<void> dismiss(String key) async {
     final current = {...(state.valueOrNull ?? await future)};
     current.add(key);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_scopedKey, jsonEncode(current.toList()));
+    state = AsyncData(current);
+  }
+
+  /// Removes [key] from the dismissed set — the undo path for a mis-tapped
+  /// tracking-chip ✕.
+  Future<void> undismiss(String key) async {
+    final current = {...(state.valueOrNull ?? await future)};
+    current.remove(key);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_scopedKey, jsonEncode(current.toList()));
     state = AsyncData(current);

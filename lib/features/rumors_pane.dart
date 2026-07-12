@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/models.dart';
 import '../shared/ai_badge.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -72,9 +73,20 @@ class RumorsPane extends ConsumerWidget {
                             IconButton(
                               icon: const Icon(Icons.delete_outline),
                               tooltip: 'Delete',
-                              onPressed: () => ref
-                                  .read(rumorsProvider.notifier)
-                                  .remove(r.id),
+                              onPressed: () {
+                                final list =
+                                    ref.read(rumorsProvider).valueOrNull ??
+                                        const <Rumor>[];
+                                final idx =
+                                    list.indexWhere((x) => x.id == r.id);
+                                ref.read(rumorsProvider.notifier).remove(r.id);
+                                showUndoSnackbar(
+                                    context,
+                                    'Rumor deleted',
+                                    () => ref
+                                        .read(rumorsProvider.notifier)
+                                        .restoreAt(idx < 0 ? 0 : idx, r));
+                              },
                             ),
                           ],
                         ),

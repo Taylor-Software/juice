@@ -6,6 +6,7 @@ import '../engine/oracle.dart';
 import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -240,7 +241,18 @@ class _NpcCard extends ConsumerWidget {
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline),
-              onPressed: () => ref.read(npcsProvider.notifier).remove(npc.id),
+              onPressed: () {
+                final list =
+                    ref.read(npcsProvider).valueOrNull ?? const <Npc>[];
+                final idx = list.indexWhere((x) => x.id == npc.id);
+                ref.read(npcsProvider.notifier).remove(npc.id);
+                showUndoSnackbar(
+                    context,
+                    '${npc.name} deleted',
+                    () => ref
+                        .read(npcsProvider.notifier)
+                        .restoreAt(idx < 0 ? 0 : idx, npc));
+              },
             ),
           ],
         ),
@@ -266,9 +278,8 @@ class _NpcCard extends ConsumerWidget {
     final seed = buildFleshOutSeed(ref,
         entityKind: 'NPC',
         name: npc.name.isEmpty ? '(unnamed NPC)' : npc.name,
-        existingDetail: [npc.role, npc.note]
-            .where((s) => s.trim().isNotEmpty)
-            .join(' — '));
+        existingDetail:
+            [npc.role, npc.note].where((s) => s.trim().isNotEmpty).join(' — '));
     final String detail;
     try {
       detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
@@ -412,8 +423,8 @@ class _NpcDialogState extends State<_NpcDialog> {
               maxLines: 6,
               decoration: InputDecoration(
                 labelText: 'Notes',
-                suffixIcon: _rollIcon('npc-note-roll',
-                    'Reroll characteristics', (o) => o.npc().asText, _noteCtl),
+                suffixIcon: _rollIcon('npc-note-roll', 'Reroll characteristics',
+                    (o) => o.npc().asText, _noteCtl),
               )),
           ..._relationsSection(),
         ]),
