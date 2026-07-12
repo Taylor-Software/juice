@@ -404,20 +404,29 @@ void main() {
         isA<Icon>().having((i) => i.icon, 'icon', Icons.style_outlined));
   });
 
-  testWidgets('light timer: inc lights it, dec darkens, out at 0',
+  testWidgets('light timer: idle shows only a start chip; steppers when lit',
       (tester) async {
-    await _pump(tester, data, _prefs()); // a bare campaign — ungated
-    expect(find.text('Light: out'), findsOneWidget); // default 0
-    expect(
-        tester
-            .widget<IconButton>(find.byKey(const Key('hdr-light-dec')))
-            .onPressed,
-        isNull); // dec disabled at 0
-    await tester.tap(find.byKey(const Key('hdr-light-inc')));
+    await _pump(tester, data, _prefs()); // a bare campaign — timer idle
+    // De-noised idle state: one muted start chip, no counter chip or steppers.
+    expect(find.byKey(const Key('hdr-light-start')), findsOneWidget);
+    expect(find.byKey(const Key('hdr-light-dec')), findsNothing);
+    expect(find.byKey(const Key('hdr-light-inc')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('hdr-light-start')));
     await tester.pumpAndSettle();
     expect(find.text('Light 1'), findsOneWidget); // lit
+    expect(find.byKey(const Key('hdr-light-start')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('hdr-light-inc')));
+    await tester.pumpAndSettle();
+    expect(find.text('Light 2'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('hdr-light-dec')));
+    await tester.pumpAndSettle(); // rebuild so the next tap sees light=1
     await tester.tap(find.byKey(const Key('hdr-light-dec')));
     await tester.pumpAndSettle();
-    expect(find.text('Light: out'), findsOneWidget);
+    // Burned down to 0 — back to the idle start chip.
+    expect(find.byKey(const Key('hdr-light-start')), findsOneWidget);
+    expect(find.byKey(const Key('hdr-light-dec')), findsNothing);
   });
 }

@@ -123,6 +123,14 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   void initState() {
     super.initState();
     _composer.addListener(_onComposerChanged);
+    _composerFocus.addListener(_onComposerFocusChanged);
+  }
+
+  /// Mirror composer focus into the ephemeral provider so the play chrome
+  /// (loop bar / rail / header row) can collapse while typing on phones.
+  void _onComposerFocusChanged() {
+    ref.read(journalComposerFocusProvider.notifier).state =
+        _composerFocus.hasFocus;
   }
 
   void _onComposerChanged() {
@@ -588,10 +596,32 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   }
 
   @override
+  void deactivate() {
+    // The screen can go away while focused (verb/campaign switch); don't
+    // leave the ephemeral typing flag stuck true. Riverpod forbids `ref` in
+    // dispose (the element is already marked disposed) and a synchronous
+    // write here would markNeedsBuild the shell header mid-finalization, so
+    // grab the controller now and clear it post-frame. The catch covers
+    // teardown races where the container is disposed before the frame ends.
+    if (ref.read(journalComposerFocusProvider)) {
+      final ctrl = ref.read(journalComposerFocusProvider.notifier);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          ctrl.state = false;
+        } catch (_) {
+          // Container already disposed (test teardown / app shutdown).
+        }
+      });
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _searchDebounce?.cancel();
     _composer.removeListener(_onComposerChanged);
     _composer.dispose();
+    _composerFocus.removeListener(_onComposerFocusChanged);
     _composerFocus.dispose();
     _search.dispose();
     _entryScroll.dispose();
@@ -1181,8 +1211,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 ref.read(journalProvider.notifier).togglePin(e.id),
             onCharacterTap: _openCharacter,
             onThreadTap: _openThread,
-                      onNpcTap: _openNpc,
-                      onPlaceTap: _openPlace,
+            onNpcTap: _openNpc,
+            onPlaceTap: _openPlace,
             onDiceTap: _rollDice,
             lonelog: lonelog,
             placeChip: _placeChip(e),
@@ -1199,8 +1229,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   [e.body, ...extras].join('\n'),
                   onCharacterTap: _openCharacter,
                   onThreadTap: _openThread,
-                      onNpcTap: _openNpc,
-                      onPlaceTap: _openPlace,
+                  onNpcTap: _openNpc,
+                  onPlaceTap: _openPlace,
                   onDiceTap: _rollDice,
                   lonelog: lonelog,
                 ),

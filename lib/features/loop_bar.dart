@@ -9,6 +9,7 @@ import '../engine/next_beat.dart';
 import '../engine/oracle_interpreter.dart';
 import '../engine/solo_oracle.dart';
 import '../engine/tally.dart';
+import '../shared/design_tokens.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -664,7 +665,13 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final expanded = ref.watch(loopBarExpandedProvider).valueOrNull ?? true;
+    final compact = MediaQuery.sizeOf(context).width < kCompactWidth;
+    // Match the notifier's default (collapsed) on the first loading frame so
+    // the bar doesn't flash open and snap shut. While the composer has focus
+    // on a phone, render collapsed — the keyboard already halves the viewport.
+    final stored = ref.watch(loopBarExpandedProvider).valueOrNull ?? false;
+    final typing = compact && ref.watch(journalComposerFocusProvider);
+    final expanded = stored && !typing;
     return LayoutBuilder(
       builder: (context, constraints) {
         final cap = constraints.maxHeight.isFinite
@@ -674,9 +681,18 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
           children: [
             InkWell(
               key: const Key('loop-collapse-toggle'),
-              onTap: () => ref
-                  .read(loopBarExpandedProvider.notifier)
-                  .setExpanded(!expanded),
+              onTap: () {
+                ref
+                    .read(loopBarExpandedProvider.notifier)
+                    .setExpanded(!expanded);
+                // Phones never stack the loop bar and the assistant rail
+                // expanded at once — opening one closes the other.
+                if (!expanded && compact) {
+                  ref
+                      .read(assistantRailExpandedProvider.notifier)
+                      .setExpanded(false);
+                }
+              },
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
                 child: Row(

@@ -2202,13 +2202,16 @@ final recapSuppressedProvider =
         RecapSuppressedNotifier.new);
 
 /// App-global sticky state for the assistant rail's open/collapsed position.
-/// Default true (open) so new users see suggestion chips immediately.
-class AssistantRailExpandedNotifier extends AsyncNotifier<bool> {
+/// Null = the user never toggled it; the rail then picks a viewport-aware
+/// default (open on wide screens so new users see suggestion chips, collapsed
+/// on phones where the chrome would bury the journal). A user toggle persists
+/// and wins over the default on every device size.
+class AssistantRailExpandedNotifier extends AsyncNotifier<bool?> {
   static const _key = 'juice.assistant_rail_expanded.v1';
 
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? true;
+  Future<bool?> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key);
 
   Future<void> setExpanded(bool value) async {
     final p = await SharedPreferences.getInstance();
@@ -2218,8 +2221,14 @@ class AssistantRailExpandedNotifier extends AsyncNotifier<bool> {
 }
 
 final assistantRailExpandedProvider =
-    AsyncNotifierProvider<AssistantRailExpandedNotifier, bool>(
+    AsyncNotifierProvider<AssistantRailExpandedNotifier, bool?>(
         AssistantRailExpandedNotifier.new);
+
+/// Ephemeral (never persisted): true while the journal composer has keyboard
+/// focus. On compact viewports the play chrome (loop bar, assistant rail,
+/// campaign-header expanded row) collapses while this is set, so the on-screen
+/// keyboard plus chrome can't squeeze the entry list to nothing mid-typing.
+final journalComposerFocusProvider = StateProvider<bool>((_) => false);
 
 /// App-global sticky state for the Play screen's Solo-Loop bar (expanded vs
 /// collapsed). Default false (collapsed) so the Play screen opens to the journal

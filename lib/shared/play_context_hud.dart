@@ -53,7 +53,12 @@ class CampaignHeader extends ConsumerWidget {
     final theme = Theme.of(context);
     final tk = context.juice;
     final light = ref.watch(lightProvider).valueOrNull ?? 0;
-    final collapsed = settings.headerCollapsed;
+    final compact = MediaQuery.sizeOf(context).width < kCompactWidth;
+    // While the journal composer has focus on a phone the expanded row yields
+    // its space to the keyboard (the collapse is visual only — the persisted
+    // setting is untouched and the row returns on blur).
+    final typing = compact && ref.watch(journalComposerFocusProvider);
+    final collapsed = settings.headerCollapsed || typing;
     return Container(
       key: const Key('campaign-header'),
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -129,40 +134,39 @@ class CampaignHeader extends ConsumerWidget {
           if (!collapsed)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  // Global light timer — ungated (every campaign, every verb);
-                  // a neutral player-controlled countdown, no duration asserted.
-                  InputChip(
-                    backgroundColor: tk.card,
-                    side: BorderSide.none,
-                    avatar: Icon(Icons.local_fire_department,
-                        size: 16,
-                        color: light > 0
-                            ? theme.colorScheme.primary
-                            : tk.inkMuted),
-                    label: Text(light > 0 ? 'Light $light' : 'Light: out',
-                        style: TextStyle(color: tk.inkMuted)),
-                    onPressed: null,
-                  ),
-                  IconButton(
-                    key: const Key('hdr-light-dec'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.remove, size: 18),
-                    onPressed: light > 0
-                        ? () => ref.read(lightProvider.notifier).set(light - 1)
-                        : null,
-                  ),
-                  IconButton(
-                    key: const Key('hdr-light-inc'),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.add, size: 18),
-                    onPressed: () =>
-                        ref.read(lightProvider.notifier).set(light + 1),
-                  ),
+              child: _expandedRow(
+                compact,
+                [
+                  // Global light timer — a neutral player-controlled countdown,
+                  // no duration asserted. De-noised: the chip + steppers show
+                  // only while a timer is running; an idle campaign gets a
+                  // single muted start chip at the END of the row instead
+                  // (most campaigns never track light).
+                  if (light > 0) ...[
+                    InputChip(
+                      backgroundColor: tk.card,
+                      side: BorderSide.none,
+                      avatar: Icon(Icons.local_fire_department,
+                          size: 16, color: theme.colorScheme.primary),
+                      label: Text('Light $light',
+                          style: TextStyle(color: tk.inkMuted)),
+                      onPressed: null,
+                    ),
+                    IconButton(
+                      key: const Key('hdr-light-dec'),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.remove, size: 18),
+                      onPressed: () =>
+                          ref.read(lightProvider.notifier).set(light - 1),
+                    ),
+                    IconButton(
+                      key: const Key('hdr-light-inc'),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.add, size: 18),
+                      onPressed: () =>
+                          ref.read(lightProvider.notifier).set(light + 1),
+                    ),
+                  ],
                   if (usesMythic && crawl != null) ...[
                     // Roll-control: the Chaos steppers (value itself lives in
                     // the always-visible tier-1 chip above — not duplicated).
@@ -229,6 +233,21 @@ class CampaignHeader extends ConsumerWidget {
                           style: TextStyle(color: tk.inkMuted)),
                       onPressed: () => showGenerateSheet(context),
                     ),
+                  if (light == 0)
+                    Tooltip(
+                      message: 'Start a light timer',
+                      child: ActionChip(
+                        key: const Key('hdr-light-start'),
+                        backgroundColor: tk.card,
+                        side: BorderSide.none,
+                        avatar: Icon(Icons.local_fire_department_outlined,
+                            size: 16, color: tk.inkMuted),
+                        label:
+                            Text('Light', style: TextStyle(color: tk.inkMuted)),
+                        onPressed: () =>
+                            ref.read(lightProvider.notifier).set(1),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -236,6 +255,27 @@ class CampaignHeader extends ConsumerWidget {
       ),
     );
   }
+
+  /// The expanded (tier-2) control row. Wide screens wrap so everything is
+  /// visible at once; phones keep it to ONE horizontally-scrolling line so
+  /// pinned threads + starred characters can't stack the header several rows
+  /// deep on the narrowest screens.
+  Widget _expandedRow(bool compact, List<Widget> children) => compact
+      ? SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final w in children)
+                Padding(padding: const EdgeInsets.only(right: 8), child: w),
+            ],
+          ),
+        )
+      : Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: children,
+        );
 
   /// Prefix marking a constructed-oracle id in `settings.defaultOracle`.
   static const _coPrefix = 'co:';
