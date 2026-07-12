@@ -145,55 +145,66 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 onTap: () => _exportCampaign(dialogContext),
               ),
               ListTile(
-                leading: const Icon(Icons.notes_outlined),
-                title: const Text('Export as Lonelog (.md)'),
-                onTap: () => _exportLonelog(dialogContext),
-              ),
-              ListTile(
                 leading: const Icon(Icons.file_download_outlined),
                 title: const Text('Import campaign'),
                 onTap: () => _importCampaign(dialogContext),
               ),
-              ListTile(
-                leading: const Icon(Icons.download_outlined),
-                title: const Text('Import Lonelog (.md)'),
-                onTap: () => _importLonelog(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-export-tables'),
-                leading: const Icon(Icons.table_chart_outlined),
-                title: const Text('Export table pack'),
-                onTap: () => _exportTablePack(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-import-tables'),
-                leading: const Icon(Icons.table_view_outlined),
-                title: const Text('Import table pack'),
-                onTap: () => _importTablePack(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-export-oracles'),
-                leading: const Icon(Icons.casino_outlined),
-                title: const Text('Export oracle pack'),
-                onTap: () => _exportOraclePack(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-import-oracles'),
-                leading: const Icon(Icons.casino_outlined),
-                title: const Text('Import oracle pack'),
-                onTap: () => _importOraclePack(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-export-loopkit'),
-                leading: const Icon(Icons.inventory_2_outlined),
-                title: const Text('Export loop kit'),
-                onTap: () => _exportLoopKit(dialogContext),
-              ),
-              ListTile(
-                key: const Key('menu-import-loopkit'),
-                leading: const Icon(Icons.inventory_outlined),
-                title: const Text('Import loop kit'),
-                onTap: () => _importLoopKit(dialogContext),
+              // The 8 secondary pack/notation rows fold under one group so
+              // the drawer's two primary actions stay findable (audit #7).
+              ExpansionTile(
+                key: const Key('menu-more-io'),
+                leading: const Icon(Icons.import_export),
+                title: const Text('More import / export…'),
+                subtitle:
+                    const Text('Lonelog · table & oracle packs · loop kits'),
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.notes_outlined),
+                    title: const Text('Export as Lonelog (.md)'),
+                    onTap: () => _exportLonelog(dialogContext),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.download_outlined),
+                    title: const Text('Import Lonelog (.md)'),
+                    onTap: () => _importLonelog(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-export-tables'),
+                    leading: const Icon(Icons.table_chart_outlined),
+                    title: const Text('Export table pack'),
+                    onTap: () => _exportTablePack(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-import-tables'),
+                    leading: const Icon(Icons.table_view_outlined),
+                    title: const Text('Import table pack'),
+                    onTap: () => _importTablePack(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-export-oracles'),
+                    leading: const Icon(Icons.casino_outlined),
+                    title: const Text('Export oracle pack'),
+                    onTap: () => _exportOraclePack(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-import-oracles'),
+                    leading: const Icon(Icons.casino_outlined),
+                    title: const Text('Import oracle pack'),
+                    onTap: () => _importOraclePack(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-export-loopkit'),
+                    leading: const Icon(Icons.inventory_2_outlined),
+                    title: const Text('Export loop kit'),
+                    onTap: () => _exportLoopKit(dialogContext),
+                  ),
+                  ListTile(
+                    key: const Key('menu-import-loopkit'),
+                    leading: const Icon(Icons.inventory_outlined),
+                    title: const Text('Import loop kit'),
+                    onTap: () => _importLoopKit(dialogContext),
+                  ),
+                ],
               ),
               if (ref.read(blobStoreAvailableProvider))
                 ListTile(

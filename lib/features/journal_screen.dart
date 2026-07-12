@@ -175,11 +175,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         ),
       );
 
-  /// "Track this?" chips for recurring people the journal isn't tracking yet.
-  Widget _suggestionRow() {
+  /// The current "Track this?" suggestions (recurring names the journal isn't
+  /// tracking yet). Shared by the chips row and the one-time explainer card.
+  List<EntitySuggestion> _currentSuggestions() {
     final entries =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
-    if (entries.isEmpty) return const SizedBox.shrink();
+    if (entries.isEmpty) return const [];
     final existingChars = {
       for (final c
           in (ref.watch(charactersProvider).valueOrNull ?? const <Character>[]))
@@ -192,12 +193,48 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     };
     final dismissed =
         ref.watch(dismissedSuggestionsProvider).valueOrNull ?? const <String>{};
-    final suggestions = suggestEntities(entries,
+    return suggestEntities(entries,
             existingCharNames: existingChars,
             existingThreadTitles: existingThreads,
             dismissed: dismissed)
         .take(3)
         .toList();
+  }
+
+  /// One-time explainer for the tracking chips (stranger-test S10: "Track
+  /// Random?" was unexplained). Lives in the height-capped scrollable header
+  /// group — NOT beside the chips in the fixed bottom chrome, where any extra
+  /// row re-breaks the journal's no-overflow guarantee at short heights.
+  Widget _chipHelpCard() {
+    if (ref.watch(chipHelpSeenProvider).valueOrNull ?? true) {
+      return const SizedBox.shrink();
+    }
+    if (_currentSuggestions().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: Row(
+        key: const Key('chip-help'),
+        children: [
+          Expanded(
+            child: Text(
+              'Names you write become "Track …?" chips below — tap one to '
+              'track it as a character or thread; ✕ just hides it.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          TextButton(
+            key: const Key('chip-help-got-it'),
+            onPressed: () => ref.read(chipHelpSeenProvider.notifier).markSeen(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// "Track this?" chips for recurring people the journal isn't tracking yet.
+  Widget _suggestionRow() {
+    final suggestions = _currentSuggestions();
     if (suggestions.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
@@ -839,6 +876,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                       children: [
                         _aiNudge(),
                         _recapBanner(entries),
+                        _chipHelpCard(),
                         if (threads.isNotEmpty ||
                             tags.isNotEmpty ||
                             chars.isNotEmpty)
