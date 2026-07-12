@@ -171,11 +171,13 @@ void main() {
     expect(find.byKey(const Key('recap-banner')), findsNothing);
   });
 
-  testWidgets('no banner and /recap snackbars when the model is unsupported',
+  testWidgets('card shows without the AI action when the model is unsupported',
       (tester) async {
     await pumpRecap(tester, data, phase: InterpreterPhase.unsupported);
-    // Banner gated on interpreter support.
-    expect(find.byKey(const Key('recap-banner')), findsNothing);
+    // The deterministic resume card renders for everyone; only the AI
+    // Recap action is gated on interpreter support.
+    expect(find.byKey(const Key('recap-banner')), findsOneWidget);
+    expect(find.byKey(const Key('recap-action')), findsNothing);
 
     // /recap typed + Enter surfaces the enable-AI snackbar, no crash.
     await tester.enterText(find.byKey(const Key('journal-composer')), '/recap');

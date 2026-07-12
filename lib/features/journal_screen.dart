@@ -13,6 +13,7 @@ import '../engine/dice.dart';
 import '../engine/dice_notation.dart';
 import '../engine/entity_suggestions.dart';
 import '../engine/journal_export.dart';
+import '../engine/resume.dart';
 import '../engine/journal_search.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
@@ -499,10 +500,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
   }
 
-  /// "Previously on…" nudge shown when there are entries the player hasn't
-  /// recapped since last visit (and the model is available to do it).
+  /// "Previously on…" resume card shown when the player arrives with entries
+  /// they haven't seen since last visit. Deterministic content (latest scene
+  /// + newest entry snippets) for everyone; the AI Recap action itself is the
+  /// only part gated on the model being available.
   Widget _recapBanner(List<JournalEntry> entries) {
-    if (!_canVoice) return const SizedBox.shrink();
     // Permanently opted out via the banner's "Never" action.
     if (ref.watch(recapSuppressedProvider).valueOrNull ?? false) {
       return const SizedBox.shrink();
@@ -519,49 +521,75 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       return const SizedBox.shrink();
     }
     final theme = Theme.of(context);
+    final onCard = theme.colorScheme.onSecondaryContainer;
+    final resume = resumeLines(entries);
     return Container(
       key: const Key('recap-banner'),
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.history_edu_outlined,
-              size: 18, color: theme.colorScheme.onSecondaryContainer),
-          const SizedBox(width: 8),
-          const AiBadge(),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('Returning to this campaign?',
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSecondaryContainer)),
+          Row(
+            children: [
+              Icon(Icons.history_edu_outlined, size: 18, color: onCard),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Previously on this campaign…',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: onCard)),
+              ),
+              if (_canVoice) ...[
+                const AiBadge(),
+                TextButton(
+                  key: const Key('recap-action'),
+                  onPressed: _recap,
+                  child: const Text('Recap'),
+                ),
+              ],
+              TextButton(
+                key: const Key('recap-never'),
+                onPressed: () {
+                  setState(() => _recapDismissed = true);
+                  ref.read(recapSuppressedProvider.notifier).markSeen();
+                },
+                child: const Text('Never'),
+              ),
+              IconButton(
+                key: const Key('recap-dismiss'),
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(Icons.close, size: 18),
+                tooltip: 'Dismiss',
+                onPressed: () {
+                  setState(() => _recapDismissed = true);
+                  ref
+                      .read(recapCacheProvider.notifier)
+                      .markSeen(entries.first.id);
+                },
+              ),
+            ],
           ),
-          TextButton(
-            key: const Key('recap-action'),
-            onPressed: _recap,
-            child: const Text('Recap'),
-          ),
-          TextButton(
-            key: const Key('recap-never'),
-            onPressed: () {
-              setState(() => _recapDismissed = true);
-              ref.read(recapSuppressedProvider.notifier).markSeen();
-            },
-            child: const Text('Never'),
-          ),
-          IconButton(
-            key: const Key('recap-dismiss'),
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.close, size: 18),
-            tooltip: 'Dismiss',
-            onPressed: () {
-              setState(() => _recapDismissed = true);
-              ref.read(recapCacheProvider.notifier).markSeen(entries.first.id);
-            },
-          ),
+          if (resume.sceneTitle != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 26, bottom: 2),
+              child: Text('Scene: ${resume.sceneTitle}',
+                  key: const Key('resume-scene'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: onCard, fontStyle: FontStyle.italic)),
+            ),
+          for (final line in resume.lines)
+            Padding(
+              padding: const EdgeInsets.only(left: 26, bottom: 2),
+              child: Text('• $line',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(color: onCard)),
+            ),
         ],
       ),
     );
