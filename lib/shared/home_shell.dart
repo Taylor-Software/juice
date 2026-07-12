@@ -107,6 +107,22 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
+                        key: Key('session-duplicate-${s.id}'),
+                        icon: const Icon(Icons.copy_all_outlined),
+                        tooltip: 'New story with this setup',
+                        onPressed: () async {
+                          await ref
+                              .read(sessionsProvider.notifier)
+                              .duplicateSetup(s.id);
+                          if (dialogContext.mounted) {
+                            Navigator.of(dialogContext).pop();
+                          }
+                          if (shellContext.mounted) {
+                            await enterCampaign(shellContext, ref);
+                          }
+                        },
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.tune),
                         tooltip: 'Edit systems',
                         onPressed: () => _editSystems(dialogContext, s),

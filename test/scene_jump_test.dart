@@ -9,8 +9,6 @@ import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/features/scene_jump_sheet.dart';
 import 'package:juice_oracle/shared/theme.dart';
 import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
-
 import 'fake_interpreter.dart';
 
 /// Newest-first journal: an old scene buried under 40 filler entries.

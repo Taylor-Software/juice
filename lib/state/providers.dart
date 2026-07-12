@@ -2450,6 +2450,37 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }
 
+  /// Creates and activates a NEW campaign copying [sourceId]'s setup — the
+  /// enabled systems, D&D edition, and the settings blob (genre / tone /
+  /// default oracle / header state) — with completely fresh play state:
+  /// "same setup, new story". No journal/threads/etc. are copied.
+  Future<void> duplicateSetup(String sourceId) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    SessionMeta? src;
+    for (final m in s.sessions) {
+      if (m.id == sourceId) src = m;
+    }
+    if (src == null) return;
+    final id = _newId();
+    final meta = SessionMeta(
+      id: id,
+      name: '${src.name} — new story',
+      systems: src.systems == null ? null : [...src.systems!],
+      identityColor: identityHueFor(id, s.sessions.length),
+      identityIcon: src.identityIcon,
+      genre: src.genre,
+      dndEdition: src.dndEdition,
+    );
+    final prefs = await SharedPreferences.getInstance();
+    final settings = prefs.getString('juice.settings.v1.$sourceId');
+    if (settings != null && settings.isNotEmpty) {
+      await prefs.setString('juice.settings.v1.$id', settings);
+    }
+    await _save(
+        SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
+  }
+
   /// Rename session [id]; no-op for unknown ids or a blank name.
   Future<void> rename(String id, String name) async {
     final s = state.valueOrNull;
