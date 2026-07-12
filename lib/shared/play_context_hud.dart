@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
 import '../features/oracle_roll_sheet.dart';
+import '../features/scene_jump_sheet.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'design_tokens.dart';
@@ -75,10 +76,16 @@ class CampaignHeader extends ConsumerWidget {
                 size: 16, color: theme.colorScheme.primary),
             const SizedBox(width: 6),
             Expanded(
-              child: Text(
-                scene?.title ?? 'No scene yet',
-                style: theme.textTheme.labelLarge,
-                overflow: TextOverflow.ellipsis,
+              // Tap the scene line to open the scene jump list (scrolls the
+              // journal back to any scene divider).
+              child: InkWell(
+                key: const Key('hdr-scene-jump'),
+                onTap: () => showSceneJumpSheet(context),
+                child: Text(
+                  scene?.title ?? 'No scene yet',
+                  style: theme.textTheme.labelLarge,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
             // Narrative-state Chaos value — always visible (tier 1), even when

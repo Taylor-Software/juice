@@ -43,6 +43,7 @@ import 'inline_roll_dock.dart';
 import 'journal_entry_tile.dart';
 import 'oracle_interpretation_sheet.dart';
 import 'reference_view.dart';
+import 'scene_jump_sheet.dart';
 import '../engine/content_registry.dart';
 import 'sketch_editor.dart';
 import 'sketch_open.dart';
@@ -105,6 +106,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // it for the rest of this visit. Both reset on a campaign switch.
   bool? _recapEligible;
   bool _recapDismissed = false;
+
+  // Scene-jump reveal: the target entry id (its tile carries [_revealKey])
+  // while _revealEntry scroll-hunts the lazy reverse ListView for it.
+  String? _revealTarget;
+  final GlobalKey _revealKey = GlobalKey();
 
   /// Minimum journal entries present at entry for the recap offer to appear —
   /// below this there's nothing worth recapping (a fresh/just-started game).
@@ -723,6 +729,39 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     });
   }
 
+  /// Scrolls the entry list to the entry with [id] (scene jump). The list is
+  /// lazy, so offscreen tiles have no context: step the viewport toward the
+  /// top (reverse list — older is further up) until the target's GlobalKey
+  /// mounts, then centre it. Filters/search are cleared first so the target
+  /// is guaranteed to be in [visible].
+  Future<void> _revealEntry(String id) async {
+    setState(() {
+      _filterThreadId = null;
+      _filterTag = null;
+      _filterCharId = null;
+      _searching = false;
+      _search.clear();
+      _revealTarget = id;
+    });
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || !_entryScroll.hasClients) return;
+    final pos = _entryScroll.position;
+    var guard = 0;
+    while (mounted &&
+        _revealKey.currentContext == null &&
+        pos.pixels < pos.maxScrollExtent &&
+        guard++ < 500) {
+      pos.jumpTo((pos.pixels + pos.viewportDimension * 0.9)
+          .clamp(0.0, pos.maxScrollExtent));
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    final ctx = _revealKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      await Scrollable.ensureVisible(ctx,
+          alignment: 0.5, duration: const Duration(milliseconds: 250));
+    }
+  }
+
   // (The old empty-state blind-roll path + its fallback Suggestion were
   // retired by the stranger-test audit S1/S2 — the primary now opens the
   // ask-first oracle dialog; the dock keeps its own roll-oracle chip through
@@ -761,6 +800,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         });
       }
     });
+    // Consume a one-shot scene-jump request (set by the scene jump sheet):
+    // clear it, then scroll-hunt for the entry post-frame.
+    final reveal = ref.watch(journalRevealProvider);
+    if (reveal != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || ref.read(journalRevealProvider) != reveal) return;
+        ref.read(journalRevealProvider.notifier).state = null;
+        _revealEntry(reveal);
+      });
+    }
     // Watch the oracle so payload entries gain their re-roll affordance once
     // it finishes loading (re-roll runs a command against it).
     ref.watch(oracleProvider);
@@ -894,8 +943,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   reverse: true,
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                   itemCount: visible.length,
-                  itemBuilder: (context, i) =>
-                      _entry(visible[i], threads, threadTitle, lonelog),
+                  // The reveal target carries the GlobalKey _revealEntry
+                  // scroll-hunts for (lazy list — offscreen tiles have no
+                  // context until built).
+                  itemBuilder: (context, i) => KeyedSubtree(
+                    key: visible[i].id == _revealTarget
+                        ? _revealKey
+                        : ValueKey('entry-${visible[i].id}'),
+                    child: _entry(visible[i], threads, threadTitle, lonelog),
+                  ),
                 ),
               ),
             ],
