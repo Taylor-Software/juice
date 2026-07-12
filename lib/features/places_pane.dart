@@ -7,6 +7,7 @@ import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
 import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -205,8 +206,18 @@ class _PlaceCard extends ConsumerWidget {
             IconButton(
               tooltip: 'Delete',
               icon: const Icon(Icons.delete_outline),
-              onPressed: () =>
-                  ref.read(placesProvider.notifier).remove(place.id),
+              onPressed: () {
+                final list =
+                    ref.read(placesProvider).valueOrNull ?? const <Place>[];
+                final idx = list.indexWhere((x) => x.id == place.id);
+                ref.read(placesProvider.notifier).remove(place.id);
+                showUndoSnackbar(
+                    context,
+                    '${place.name} deleted',
+                    () => ref
+                        .read(placesProvider.notifier)
+                        .restoreAt(idx < 0 ? 0 : idx, place));
+              },
             ),
           ],
         ),
@@ -345,11 +356,8 @@ class _PlaceDialogState extends State<_PlaceDialog> {
               autofocus: true,
               decoration: InputDecoration(
                 labelText: 'Name',
-                suffixIcon: _rollIcon(
-                    'place-name-roll',
-                    'Roll a name',
-                    (o) => o.settlement().rolls.first.value,
-                    _nameCtl),
+                suffixIcon: _rollIcon('place-name-roll', 'Roll a name',
+                    (o) => o.settlement().rolls.first.value, _nameCtl),
               )),
           const SizedBox(height: 8),
           DropdownButtonFormField<PlaceKind>(

@@ -10,6 +10,7 @@ import '../shared/design_tokens.dart';
 import '../shared/destination.dart';
 import '../shared/empty_state.dart';
 import '../shared/shell_route.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -204,8 +205,18 @@ class ThreadsPane extends ConsumerWidget {
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: () =>
-                            ref.read(threadsProvider.notifier).remove(t.id),
+                        onPressed: () {
+                          final list = ref.read(threadsProvider).valueOrNull ??
+                              const <Thread>[];
+                          final idx = list.indexWhere((x) => x.id == t.id);
+                          ref.read(threadsProvider.notifier).remove(t.id);
+                          showUndoSnackbar(
+                              context,
+                              'Thread deleted',
+                              () => ref
+                                  .read(threadsProvider.notifier)
+                                  .restoreAt(idx < 0 ? 0 : idx, t));
+                        },
                       ),
                     ],
                   ),
@@ -1180,7 +1191,16 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                             .read(charactersProvider.notifier)
                             .toggleStarred(c.id);
                       case 'delete':
+                        final list = ref.read(charactersProvider).valueOrNull ??
+                            const <Character>[];
+                        final idx = list.indexWhere((x) => x.id == c.id);
                         ref.read(charactersProvider.notifier).remove(c.id);
+                        showUndoSnackbar(
+                            context,
+                            '${c.name} deleted',
+                            () => ref
+                                .read(charactersProvider.notifier)
+                                .restoreAt(idx < 0 ? 0 : idx, c));
                     }
                   },
                   itemBuilder: (_) => [
