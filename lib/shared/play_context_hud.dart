@@ -8,6 +8,7 @@ import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
 import '../features/oracle_roll_sheet.dart';
 import '../features/scene_jump_sheet.dart';
+import 'haptics.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'design_tokens.dart';
@@ -332,6 +333,7 @@ class CampaignHeader extends ConsumerWidget {
 
   Future<void> _quickRoll(BuildContext context, WidgetRef ref, Oracle oracle,
       int chaos, String defaultOracle) async {
+    hapticRoll();
     // Cards + tarot draw-and-log through the deck (which persists the draw
     // itself); a snackbar then confirms.
     if (defaultOracle == 'cards' || defaultOracle == 'tarot') {

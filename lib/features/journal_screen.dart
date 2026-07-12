@@ -946,12 +946,45 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   // The reveal target carries the GlobalKey _revealEntry
                   // scroll-hunts for (lazy list — offscreen tiles have no
                   // context until built).
-                  itemBuilder: (context, i) => KeyedSubtree(
-                    key: visible[i].id == _revealTarget
-                        ? _revealKey
-                        : ValueKey('entry-${visible[i].id}'),
-                    child: _entry(visible[i], threads, threadTitle, lonelog),
-                  ),
+                  itemBuilder: (context, i) {
+                    final e = visible[i];
+                    final tile = KeyedSubtree(
+                      key: e.id == _revealTarget
+                          ? _revealKey
+                          : ValueKey('entry-${e.id}'),
+                      child: _entry(e, threads, threadTitle, lonelog),
+                    );
+                    // Phone ergonomics: swipe right to edit, left to delete
+                    // (delete has the standard Undo snackbar). Desktop keeps
+                    // the popup menu only — mouse-drag deletes are too easy.
+                    if (MediaQuery.sizeOf(context).width >= kCompactWidth) {
+                      return tile;
+                    }
+                    return Dismissible(
+                      key: ValueKey('swipe-${e.id}'),
+                      background: Container(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: 16),
+                        child: const Icon(Icons.edit_outlined),
+                      ),
+                      secondaryBackground: Container(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        alignment: Alignment.centerRight,
+                        padding: const EdgeInsets.only(right: 16),
+                        child: const Icon(Icons.delete_outline),
+                      ),
+                      confirmDismiss: (dir) async {
+                        if (dir == DismissDirection.endToStart) {
+                          await _onAction('delete', e, threads);
+                          return true;
+                        }
+                        await _onAction('edit', e, threads);
+                        return false;
+                      },
+                      child: tile,
+                    );
+                  },
                 ),
               ),
             ],

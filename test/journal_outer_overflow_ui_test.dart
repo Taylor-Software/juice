@@ -47,7 +47,8 @@ Map<String, Object> _prefs() => {
       'juice.ai_nudge_seen.v1': true,
     };
 
-Future<void> pumpJournalAt(WidgetTester tester, double height) async {
+Future<void> pumpJournalAt(WidgetTester tester, double height,
+    {double width = 700}) async {
   SharedPreferences.setMockInitialValues(_prefs());
   await tester.pumpWidget(ProviderScope(
     child: MaterialApp(
@@ -55,7 +56,7 @@ Future<void> pumpJournalAt(WidgetTester tester, double height) async {
       home: Scaffold(
         body: Center(
           child: SizedBox(
-            width: 700,
+            width: width,
             height: height,
             child: const JournalScreen(),
           ),
@@ -106,6 +107,16 @@ void main() {
     await pumpJournalAt(tester, 200);
     expect(tester.takeException(), isNull);
     // Composer must stay reachable even when squeezed.
+    expect(find.byKey(const Key('journal-composer')), findsOneWidget);
+  });
+
+  testWidgets('journal body does not overflow at phone size (375×812)',
+      (tester) async {
+    // The wedge form factor: dock chips + composer + suggestion row must all
+    // fit a real phone width without horizontal overflow.
+    await pumpJournalAt(tester, 812, width: 375);
+    expect(tester.takeException(), isNull,
+        reason: 'journal body overflowed at 375px width');
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 }
