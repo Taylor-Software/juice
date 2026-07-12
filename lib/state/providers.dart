@@ -2190,6 +2190,25 @@ final trackHelpSeenProvider =
     AsyncNotifierProvider<TrackHelpSeenNotifier, bool>(
         TrackHelpSeenNotifier.new);
 
+/// App-global flag: the journal's tracking-chip explainer ("Track Kara?")
+/// has been dismissed. Same posture as [trackHelpSeenProvider].
+class ChipHelpSeenNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.chip_help_seen.v1';
+
+  @override
+  Future<bool> build() async =>
+      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+
+  Future<void> markSeen() async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_key, true);
+    state = const AsyncData(true);
+  }
+}
+
+final chipHelpSeenProvider =
+    AsyncNotifierProvider<ChipHelpSeenNotifier, bool>(ChipHelpSeenNotifier.new);
+
 /// App-global flag: the recap banner has been permanently suppressed ("Never").
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class RecapSuppressedNotifier extends AsyncNotifier<bool> {

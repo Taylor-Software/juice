@@ -108,4 +108,23 @@ void main() {
     });
     expect(find.byKey(const Key('suggest-character-brannoc')), findsNothing);
   });
+
+  testWidgets('one-time chip explainer shows and Got it dismisses for good',
+      (tester) async {
+    await pumpSuggestions(tester, data);
+    expect(find.byKey(const Key('chip-help')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('chip-help-got-it')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('chip-help')), findsNothing);
+    // Chips themselves are unaffected.
+    expect(find.byKey(const Key('suggest-character-brannoc')), findsOneWidget);
+
+    // Persisted: a fresh pump with the flag set never shows the explainer.
+    await pumpSuggestions(tester, data, prefs: {
+      ..._sessionWithBrannoc,
+      'juice.chip_help_seen.v1': true,
+    });
+    expect(find.byKey(const Key('chip-help')), findsNothing);
+  });
 }

@@ -80,6 +80,9 @@ void main() {
 
     await t.tap(find.byTooltip('Campaigns'));
     await t.pumpAndSettle();
+    // Folded under the "More import / export…" group (drawer regrouping).
+    await t.tap(find.byKey(const Key('menu-more-io')));
+    await t.pumpAndSettle();
     expect(find.text('Export as Lonelog (.md)'), findsOneWidget);
   });
 
@@ -96,6 +99,8 @@ void main() {
     await t.pumpAndSettle();
 
     await t.tap(find.byTooltip('Campaigns'));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('menu-more-io')));
     await t.pumpAndSettle();
     expect(find.text('Import Lonelog (.md)'), findsOneWidget);
   });
