@@ -9,6 +9,34 @@ Working rules for this repo:
 
 ## Project notes
 
+- **QoL sweep (2026-07-12, PRs #287–#299)** — thirteen player-experience
+  features, each with a spec in `docs/superpowers/specs/2026-07-12-*`:
+  mobile chrome density + HUD light-chip de-noising (`kCompactWidth` 600,
+  composer-focus chrome collapse, `journalComposerFocusProvider`); **undo
+  snackbars on every destructive delete** (`_PersistedList.restoreAt` +
+  `showUndoSnackbar` in `lib/shared/undo_snackbar.dart`,
+  `DismissedSuggestionsNotifier.undismiss`); **story export**
+  (`journalToStory`/`isStoryEntry` in `journal_export.dart`, third export
+  option) + a `journal-reading-mode` prose-only filter; a deterministic
+  **"Previously on…" resume card** (`lib/engine/resume.dart`, AI Recap
+  button is the only gated part); campaigns-drawer regrouping
+  (`menu-more-io` ExpansionTile) + one-time tracking-chip explainer
+  (`chipHelpSeenProvider`); **Track subtab consolidation** — Tasks→Threads
+  (TasksPane deleted, `task-new` on ThreadsPane) and People+Places→World
+  (`lib/features/world_pane.dart`), legacy routes via `SubtabDef.aliases`;
+  **keyboard shortcuts** (shell Cmd/Ctrl+K search + Cmd/Ctrl+R quick roll via
+  `CampaignHeader.quickRollDefault`; journal Cmd/Ctrl+Enter send +
+  Cmd/Ctrl+Shift+N new scene); **scene jump** from the tappable HUD scene
+  line (`scene_jump_sheet.dart`, one-shot `journalRevealProvider` +
+  scroll-hunt of the lazy reverse list); campaign
+  **duplicateSetup** ("— new story", per-row drawer button); **reading
+  text-scale** (`textScaleProvider`, `MaterialApp.builder`) + a WCAG
+  contrast pass on the muted tokens; **silent rolling auto-backup**
+  (`lib/state/auto_backup.dart`, timer-free, stamps last-export);
+  **favorite dice** (`favoriteDiceProvider`, roller + Run chips); phone
+  **swipe edit/delete** on entries + `hapticRoll` + a 375px overflow guard.
+  Run-vs-Track verb overlap: keep decision recorded in
+  `docs/superpowers/audits/2026-07-12-run-vs-track-decision.md`.
 - **Product display name is "Solo Adventurer's Journal"** (in-app titles, platform
   manifests, web title/manifest, README H1). This is DISTINCT from two things that
   intentionally keep the old "juice" identifier: (1) the **Juice oracle** — the
