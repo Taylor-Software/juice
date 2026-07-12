@@ -930,9 +930,25 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         // is used unchanged.
         const kJournalScrollFallback = 360.0;
         const kJournalEntryRegionMin = 120.0;
+        // Journal-scoped keyboard shortcuts (fire while focus is inside the
+        // journal, e.g. the composer): Cmd/Ctrl+Enter logs the composer,
+        // Cmd/Ctrl+Shift+N opens the New-scene dialog.
+        Widget shortcuts(Widget child) => CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter, meta: true):
+                    _send,
+                const SingleActivator(LogicalKeyboardKey.enter, control: true):
+                    _send,
+                const SingleActivator(LogicalKeyboardKey.keyN,
+                    meta: true, shift: true): _newScene,
+                const SingleActivator(LogicalKeyboardKey.keyN,
+                    control: true, shift: true): _newScene,
+              },
+              child: child,
+            );
         if (constraints.maxHeight.isFinite &&
             constraints.maxHeight < kJournalScrollFallback) {
-          return SingleChildScrollView(
+          return shortcuts(SingleChildScrollView(
             child: Column(
               children: [
                 const AssistantRail(),
@@ -940,15 +956,15 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 ...belowEntry,
               ],
             ),
-          );
+          ));
         }
-        return Column(
+        return shortcuts(Column(
           children: [
             const AssistantRail(),
             Expanded(child: entryRegion),
             ...belowEntry,
           ],
-        );
+        ));
       },
     );
   }

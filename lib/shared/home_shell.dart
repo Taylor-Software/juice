@@ -1053,11 +1053,30 @@ class _HomeShellState extends ConsumerState<HomeShell> {
         ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            const CampaignHeader(),
-            Expanded(child: _shellBody(context, family, systems)),
-          ],
+        // Desktop keyboard shortcuts. CallbackShortcuts only fires for focus
+        // within its subtree, so the Focus(autofocus) gives the shell a node
+        // before any field is focused; modifier combos still reach here while
+        // typing (text fields don't consume them).
+        child: CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+                showCampaignSearchSheet(context),
+            const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+                showCampaignSearchSheet(context),
+            const SingleActivator(LogicalKeyboardKey.keyR, meta: true): () =>
+                CampaignHeader.quickRollDefault(context, ref),
+            const SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
+                CampaignHeader.quickRollDefault(context, ref),
+          },
+          child: Focus(
+            autofocus: true,
+            child: Column(
+              children: [
+                const CampaignHeader(),
+                Expanded(child: _shellBody(context, family, systems)),
+              ],
+            ),
+          ),
         ),
       ),
     );
