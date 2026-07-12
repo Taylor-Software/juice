@@ -130,13 +130,20 @@ class GemmaInterpreterService implements InterpreterService {
   /// model's 1280; 4096 gives the loosened recall caps + few-shot prompts real
   /// headroom); some artifacts cap the KV cache, so step down, and from the
   /// GPU backend to CPU.
+  ///
+  /// iOS never gets the GPU backend: LiteRT-LM's Metal accelerator null-derefs
+  /// loading E4B on iPhone (SIGSEGV at 0x0 in AGX buffer setup — device crash
+  /// log 2026-07-11, iPhone 15 Pro Max; same class as upstream flutter_gemma
+  /// #218). A native crash kills the process before this catch runs, so the
+  /// step-down ladder cannot recover from it — the only safe move is to not
+  /// attempt Metal at all.
   Future<InferenceModel> _loadModel() async {
     Object? firstError;
+    final backends = defaultTargetPlatform == TargetPlatform.iOS
+        ? const [PreferredBackend.cpu]
+        : const [PreferredBackend.gpu, PreferredBackend.cpu];
     for (final maxTokens in const [4096, 2048, 1280]) {
-      for (final backend in const [
-        PreferredBackend.gpu,
-        PreferredBackend.cpu,
-      ]) {
+      for (final backend in backends) {
         try {
           return await FlutterGemma.getActiveModel(
               maxTokens: maxTokens, preferredBackend: backend);
