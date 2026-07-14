@@ -141,13 +141,18 @@ void main() {
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
-  testWidgets('composer has a draw button', (tester) async {
+  testWidgets('composer offers draw behind the attach menu', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       'juice.journal.v2.default': '[]',
     });
     await pumpJournal(tester);
+    // Draw moved off the composer row into the '+' menu — inline it crowded the
+    // text field down to a sliver on a phone.
+    expect(find.byKey(const Key('composer-draw')), findsNothing);
+    await tester.tap(find.byKey(const Key('composer-attach')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('composer-draw')), findsOneWidget);
   });
 }

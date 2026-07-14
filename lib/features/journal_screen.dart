@@ -56,6 +56,11 @@ final _readingModeProvider = StateProvider<bool>((_) => false);
 
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
+/// The composer's attach actions. They live behind one `＋` menu rather than
+/// inline: each is a whole separate authoring flow (not a one-tap action), and
+/// inline they crowded the text field down to a ~58px sliver on a phone.
+enum _ComposerAttach { draw, image, pdf }
+
 class JournalScreen extends ConsumerStatefulWidget {
   const JournalScreen({super.key});
 
@@ -86,6 +91,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final FocusNode _composerFocus = FocusNode();
+  // The body swaps layout branches at the scroll-fallback height below, and on
+  // a phone the keyboard shrinks the journal straight across that threshold —
+  // so the swap fires the instant the user starts typing. Without a GlobalKey
+  // the composer's element is destroyed and rebuilt by the swap: the old
+  // EditableText closes its text-input connection (the keyboard hides) while
+  // _composerFocus — owned by this State — keeps focus, so no focus-change
+  // event fires to reopen it. The field keeps its cursor, the keyboard stays
+  // down, and keystrokes go nowhere. The key lets the element reparent across
+  // the swap instead, keeping the input connection alive.
+  final GlobalKey _composerKey = GlobalKey();
   final TextEditingController _search = TextEditingController();
   Timer? _searchDebounce;
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
@@ -2100,8 +2115,58 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     );
   }
 
+  Future<void> _draw() async {
+    final data = await showSketchEditor(context);
+    if (data != null && !data.isEmpty) {
+      await ref.read(journalProvider.notifier).addSketch(data);
+    }
+  }
+
+  /// The `＋` menu holding the composer's attach flows. Draw is always offered,
+  /// so the menu never renders empty.
+  Widget _attachMenu({required bool image, required bool pdf}) =>
+      PopupMenuButton<_ComposerAttach>(
+        key: const Key('composer-attach'),
+        icon: const Icon(Icons.add),
+        tooltip: 'Attach',
+        onSelected: (v) => switch (v) {
+          _ComposerAttach.draw => _draw(),
+          _ComposerAttach.image => _annotateImage(),
+          _ComposerAttach.pdf => _annotatePdf(),
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            key: Key('composer-draw'),
+            value: _ComposerAttach.draw,
+            child: ListTile(
+              leading: Icon(Icons.draw_outlined),
+              title: Text('Draw a sketch'),
+            ),
+          ),
+          if (image)
+            const PopupMenuItem(
+              key: Key('composer-annotate-image'),
+              value: _ComposerAttach.image,
+              child: ListTile(
+                leading: Icon(Icons.image_outlined),
+                title: Text('Annotate an image'),
+              ),
+            ),
+          if (pdf)
+            const PopupMenuItem(
+              key: Key('composer-annotate-pdf'),
+              value: _ComposerAttach.pdf,
+              child: ListTile(
+                leading: Icon(Icons.picture_as_pdf_outlined),
+                title: Text('Annotate a PDF'),
+              ),
+            ),
+        ],
+      );
+
   Widget _composerBar() {
     return SafeArea(
+      key: _composerKey,
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),
@@ -2160,36 +2225,16 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                   ),
                 ],
               ),
-            IconButton(
-              key: const Key('composer-draw'),
-              icon: const Icon(Icons.draw_outlined),
-              tooltip: 'Draw a sketch',
-              onPressed: () async {
-                final data = await showSketchEditor(context);
-                if (data != null && !data.isEmpty) {
-                  await ref.read(journalProvider.notifier).addSketch(data);
-                }
-              },
+            // Watched here, in build — itemBuilder runs later, when the menu
+            // opens, and `ref.watch` outside build would not re-subscribe.
+            _attachMenu(
+              // Annotate-an-image needs the blob store (file-backed); hidden on
+              // web until an IndexedDB store lands.
+              image: ref.watch(blobStoreAvailableProvider),
+              // Annotate a PDF page also needs a rasterizer (desktop/mobile).
+              pdf: ref.watch(blobStoreAvailableProvider) &&
+                  ref.watch(pdfAvailableProvider),
             ),
-            // Annotate-an-image needs the blob store (file-backed); hidden on web
-            // until an IndexedDB store lands (blobStoreAvailableProvider).
-            if (ref.watch(blobStoreAvailableProvider))
-              IconButton(
-                key: const Key('composer-annotate-image'),
-                icon: const Icon(Icons.image_outlined),
-                tooltip: 'Annotate an image',
-                onPressed: _annotateImage,
-              ),
-            // Annotate a PDF page; needs the blob store + a PDF rasterizer
-            // (desktop/mobile — hidden on web for now).
-            if (ref.watch(blobStoreAvailableProvider) &&
-                ref.watch(pdfAvailableProvider))
-              IconButton(
-                key: const Key('composer-annotate-pdf'),
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                tooltip: 'Annotate a PDF',
-                onPressed: _annotatePdf,
-              ),
             IconButton(
               key: const Key('journal-send'),
               icon: const Icon(Icons.send),
