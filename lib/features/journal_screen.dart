@@ -101,6 +101,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   // down, and keystrokes go nowhere. The key lets the element reparent across
   // the swap instead, keeping the input connection alive.
   final GlobalKey _composerKey = GlobalKey();
+  // Same reason as [_composerKey]: the rail sits in both branches, so the swap
+  // would rebuild it. Its State holds the Ask-the-Oracle text and the LLM
+  // rank cache — rebuilding silently drops a half-typed question on the floor
+  // and re-ranks unchanged play state, one wasted call per keyboard cycle.
+  final GlobalKey _railKey = GlobalKey();
   final TextEditingController _search = TextEditingController();
   Timer? _searchDebounce;
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
@@ -1055,7 +1060,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
           return shortcuts(SingleChildScrollView(
             child: Column(
               children: [
-                const AssistantRail(),
+                AssistantRail(key: _railKey),
                 SizedBox(height: kJournalEntryRegionMin, child: entryRegion),
                 ...belowEntry,
               ],
@@ -1064,7 +1069,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         }
         return shortcuts(Column(
           children: [
-            const AssistantRail(),
+            AssistantRail(key: _railKey),
             Expanded(child: entryRegion),
             ...belowEntry,
           ],
