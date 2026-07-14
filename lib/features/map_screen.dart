@@ -111,19 +111,26 @@ class _MapChromeState extends State<MapChrome> {
               left: 8,
               right: 8,
               child: _floating(
+                // The bar is bottom-unbounded in this Stack, so a wide tool set
+                // (hexcrawl's climate chips + generation controls wrap several
+                // rows deep) would overflow and be silently clipped — i.e.
+                // unreachable. Cap it and let it scroll instead.
+                maxHeight: detailCap,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        // Wrap under the Row's bounded width: a bare
-                        // FilledButton as a non-flex Row child is measured
-                        // against an unbounded main axis and throws
-                        // "BoxConstraints forces an infinite width", aborting
-                        // the whole tab's layout. Callers pin a finite
-                        // minimumSize so buttons can sit side by side.
-                        Flexible(
+                        // Expanded (not Flexible + Spacer): both of those
+                        // default to flex: 1, so the Row would split its width
+                        // 50/50 and strand the toggle mid-bar. Expanded also
+                        // bounds the Wrap — a bare FilledButton as a non-flex
+                        // Row child is measured against an unbounded main axis
+                        // and throws "BoxConstraints forces an infinite
+                        // width", aborting the whole tab's layout. Callers pin
+                        // a finite minimumSize so buttons sit side by side.
+                        Expanded(
                           child: Wrap(
                             spacing: 8,
                             runSpacing: 4,
@@ -131,8 +138,7 @@ class _MapChromeState extends State<MapChrome> {
                             children: widget.primary,
                           ),
                         ),
-                        if (hasTools) ...[
-                          const Spacer(),
+                        if (hasTools)
                           IconButton(
                             key: const Key('map-tools-toggle'),
                             visualDensity: VisualDensity.compact,
@@ -143,7 +149,6 @@ class _MapChromeState extends State<MapChrome> {
                             onPressed: () =>
                                 setState(() => _toolsOpen = !_toolsOpen),
                           ),
-                        ],
                       ],
                     ),
                     if (hasTools && _toolsOpen)
@@ -160,6 +165,9 @@ class _MapChromeState extends State<MapChrome> {
                 ),
               ),
             ),
+            // No _floating wrapper here: the detail/result cards are already
+            // Cards, i.e. they bring their own opaque surface. Wrapping them
+            // would nest a card in a card and frame it in an empty bar.
             if (widget.detail case final d?)
               Positioned(
                 left: 8,
@@ -167,10 +175,7 @@ class _MapChromeState extends State<MapChrome> {
                 bottom: 8,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: detailCap),
-                  child: _floating(
-                    padding: EdgeInsets.zero,
-                    child: SingleChildScrollView(child: d),
-                  ),
+                  child: SingleChildScrollView(child: d),
                 ),
               ),
           ],
@@ -180,9 +185,12 @@ class _MapChromeState extends State<MapChrome> {
   }
 
   /// Chrome floats over a painted canvas, so it needs its own opaque surface
-  /// to stay legible against whatever it covers.
+  /// to stay legible against whatever it covers. [maxHeight] caps it against
+  /// the pane and scrolls the overflow — chrome may crowd the map, never
+  /// swallow it, and never silently clip itself out of reach.
   Widget _floating({
     required Widget child,
+    required double maxHeight,
     EdgeInsets padding = const EdgeInsets.fromLTRB(8, 4, 4, 4),
   }) =>
       Material(
@@ -190,7 +198,12 @@ class _MapChromeState extends State<MapChrome> {
         borderRadius: BorderRadius.circular(12),
         clipBehavior: Clip.antiAlias,
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: Padding(padding: padding, child: child),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
+          child: SingleChildScrollView(
+            child: Padding(padding: padding, child: child),
+          ),
+        ),
       );
 }
 
@@ -479,6 +492,9 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
               ? null
               : Column(
                   mainAxisSize: MainAxisSize.min,
+                  // Stretch: a Column centers by default, which would float
+                  // the cards at intrinsic width in the middle of the pane.
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (selected != null) _detailCard(context, selected),
                     if (_last != null)
@@ -1449,7 +1465,13 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
         ),
     ];
     if (cards.isEmpty) return null;
-    return Column(mainAxisSize: MainAxisSize.min, children: cards);
+    // Stretch: a Column centers by default, which would float the cards at
+    // intrinsic width in the middle of the pane.
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: cards,
+    );
   }
 
   /// Current crawl environment + Lost flag, mirroring the Exploration tool.
@@ -2076,17 +2098,22 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     );
   }
 
-  /// The revealed sub-hex ring, read out under the flower canvas.
-  Widget _flowerLegend(BuildContext context, HexCell h) => Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final lc in h.local)
-              Text('• ${lc.terrain}: ${lc.feature}',
-                  style: Theme.of(context).textTheme.bodySmall),
-          ],
+  /// The revealed sub-hex ring, read out over the flower canvas. Carries its
+  /// own Card surface — it floats over paint and must stay legible.
+  Widget _flowerLegend(BuildContext context, HexCell h) => Card(
+        key: const Key('flower-legend'),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final lc in h.local)
+                Text('• ${lc.terrain}: ${lc.feature}',
+                    style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
         ),
       );
 }
