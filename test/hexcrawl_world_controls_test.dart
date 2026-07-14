@@ -43,14 +43,23 @@ Future<void> _pump(WidgetTester t, {required bool hexcrawl}) async {
   await t.pumpAndSettle();
 }
 
+/// Hexcrawl generation is a secondary control, so it lives behind the map
+/// chrome's Tools toggle — open it before asserting on the gate.
+Future<void> _openTools(WidgetTester t) async {
+  await t.tap(find.byKey(const Key('map-tools-toggle')));
+  await t.pumpAndSettle();
+}
+
 void main() {
   testWidgets('hexcrawl controls appear when the flag is on', (t) async {
     await _pump(t, hexcrawl: true);
+    await _openTools(t);
     expect(find.byKey(const Key('hexcrawl-generate-region')), findsOneWidget);
   });
 
   testWidgets('hexcrawl controls hidden when the flag is off', (t) async {
     await _pump(t, hexcrawl: false);
+    await _openTools(t);
     expect(find.byKey(const Key('hexcrawl-generate-region')), findsNothing);
   });
 }

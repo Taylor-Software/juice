@@ -25,6 +25,175 @@ import 'map_snapshot.dart';
 /// Grid cell size for the dungeon canvas, in logical pixels.
 const _cell = 56.0;
 
+/// Fraction of the pane the floating detail overlay may occupy before it
+/// scrolls internally. The map keeps the rest — the overlay can crowd the
+/// canvas but never swallow it.
+const _kDetailMaxFraction = 0.45;
+
+/// Top inset applied to a canvas's PANNABLE CONTENT (not to the canvas widget,
+/// which stays full-bleed) so map content doesn't start life under the floating
+/// chrome bar — a fresh dungeon's entrance sits at the grid origin, i.e.
+/// exactly where the bar is. Roughly the collapsed bar's height; the content
+/// still pans up under the bar when the reader wants that space back.
+///
+/// Applied OUTSIDE each canvas's tap target, so hit-test coordinates stay
+/// canvas-relative and the painter/[roomIdAt] origin contract is untouched.
+const _kChromeInset = 56.0;
+
+/// The shared pannable viewport every map canvas sits in: same zoom limits
+/// everywhere, and one place that applies [_kChromeInset].
+Widget _mapViewport({required Widget child, double boundary = 400}) =>
+    InteractiveViewer(
+      constrained: false,
+      boundaryMargin: EdgeInsets.all(boundary),
+      minScale: 0.5,
+      maxScale: 3,
+      child: Padding(
+        padding: const EdgeInsets.only(top: _kChromeInset),
+        child: child,
+      ),
+    );
+
+/// Full-bleed map scaffold: the canvas owns the whole pane and the chrome
+/// floats over it.
+///
+/// Both map panes used to stack their controls, chips, level headers and
+/// detail cards as siblings in a `Column` around `Expanded(canvas)` — so the
+/// map, the actual content, only ever got what was left over from both ends.
+/// On a phone that was well under half the pane and the maps were unreadable.
+///
+/// Here [canvas] fills the pane. Over it float a compact bar carrying the
+/// pane's [primary] verbs (one tap, never buried) plus a Tools toggle that
+/// folds away the [tools] — the secondary controls that used to be permanent —
+/// and an optional [detail] overlay pinned to the bottom, height-capped and
+/// internally scrollable.
+class MapChrome extends StatefulWidget {
+  const MapChrome({
+    super.key,
+    required this.canvas,
+    required this.primary,
+    this.tools = const [],
+    this.detail,
+  });
+
+  final Widget canvas;
+
+  /// Always-visible actions — the pane's main verbs (Travel, New room, …).
+  final List<Widget> primary;
+
+  /// Secondary controls, hidden behind the Tools toggle. Omit the toggle
+  /// entirely when empty.
+  final List<Widget> tools;
+
+  /// Selection/result card floating over the bottom of the canvas.
+  final Widget? detail;
+
+  @override
+  State<MapChrome> createState() => _MapChromeState();
+}
+
+class _MapChromeState extends State<MapChrome> {
+  bool _toolsOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasTools = widget.tools.isNotEmpty;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final detailCap = constraints.maxHeight.isFinite
+            ? constraints.maxHeight * _kDetailMaxFraction
+            : double.infinity;
+        return Stack(
+          children: [
+            Positioned.fill(child: widget.canvas),
+            Positioned(
+              top: 8,
+              left: 8,
+              right: 8,
+              child: _floating(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        // Wrap under the Row's bounded width: a bare
+                        // FilledButton as a non-flex Row child is measured
+                        // against an unbounded main axis and throws
+                        // "BoxConstraints forces an infinite width", aborting
+                        // the whole tab's layout. Callers pin a finite
+                        // minimumSize so buttons can sit side by side.
+                        Flexible(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: widget.primary,
+                          ),
+                        ),
+                        if (hasTools) ...[
+                          const Spacer(),
+                          IconButton(
+                            key: const Key('map-tools-toggle'),
+                            visualDensity: VisualDensity.compact,
+                            icon: Icon(_toolsOpen
+                                ? Icons.expand_less
+                                : Icons.tune_outlined),
+                            tooltip: _toolsOpen ? 'Hide tools' : 'Tools',
+                            onPressed: () =>
+                                setState(() => _toolsOpen = !_toolsOpen),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (hasTools && _toolsOpen)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: widget.tools,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (widget.detail case final d?)
+              Positioned(
+                left: 8,
+                right: 8,
+                bottom: 8,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: detailCap),
+                  child: _floating(
+                    padding: EdgeInsets.zero,
+                    child: SingleChildScrollView(child: d),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Chrome floats over a painted canvas, so it needs its own opaque surface
+  /// to stay legible against whatever it covers.
+  Widget _floating({
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.fromLTRB(8, 4, 4, 4),
+  }) =>
+      Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Padding(padding: padding, child: child),
+      );
+}
+
 /// Inset of a room's rounded rect inside its cell.
 const _roomInset = 6.0;
 
@@ -302,151 +471,129 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
         final selected = s.currentRoomId == null
             ? null
             : s.rooms.where((r) => r.id == s.currentRoomId).firstOrNull;
-        return Column(
-          children: [
-            _controls(context, s),
-            // Several dungeons can live on one world map — switch or add.
-            if (s.dungeons.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
-                  child: Wrap(spacing: 4, runSpacing: 4, children: [
-                    for (final d in s.dungeons)
-                      ChoiceChip(
-                        key: Key('dungeon-site-chip-${d.id}'),
-                        label: Text(d.name),
-                        selected: d.id == s.activeDungeon?.id,
-                        onSelected: (_) =>
-                            ref.read(mapProvider.notifier).switchDungeon(d.id),
+        return MapChrome(
+          canvas: s.rooms.isEmpty ? _empty(context) : _canvas(s),
+          primary: _primary(context, s),
+          tools: _tools(context, s),
+          detail: selected == null && _last == null
+              ? null
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selected != null) _detailCard(context, selected),
+                    if (_last != null)
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ResultCard(
+                          result: _last!,
+                          onLog: () => _log(_last!.title, _last!.asText),
+                        ),
                       ),
-                    ActionChip(
-                      key: const Key('dungeon-new-site'),
-                      avatar: const Icon(Icons.add, size: 16),
-                      label: const Text('New dungeon'),
-                      onPressed: () =>
-                          ref.read(mapProvider.notifier).addDungeon(),
-                    ),
-                  ]),
+                  ],
                 ),
-              ),
-            // Map-layer hierarchy: when the dungeon is anchored to a world
-            // hex, offer the "up" hop back to it.
-            if (s.hasAnchor)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
-                  child: ActionChip(
-                    key: const Key('dungeon-up-world'),
-                    avatar: const Icon(Icons.arrow_upward, size: 16),
-                    label: Text(
-                        'World: Hex (${s.anchorHexCol}, ${s.anchorHexRow})'),
-                    onPressed: () async {
-                      await ref
-                          .read(playContextProvider.notifier)
-                          .setActiveLocation(LocationRef(
-                              hexCol: s.anchorHexCol, hexRow: s.anchorHexRow));
-                      ref
-                          .read(shellRouteProvider.notifier)
-                          .goTo(Destination.map, subtab: 'world');
-                    },
-                  ),
-                ),
-              ),
-            if (_classicOn() && s.levels.isNotEmpty) _levelHeader(context, s),
-            if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
-            Expanded(child: s.rooms.isEmpty ? _empty(context) : _canvas(s)),
-            if (selected != null) _detailCard(context, selected),
-            if (_last != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: ResultCard(
-                  result: _last!,
-                  onLog: () => _log(_last!.title, _last!.asText),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
         );
       },
     );
   }
 
-  Widget _controls(BuildContext context, MapState s) {
+  /// Always-visible: the pane's main verb.
+  List<Widget> _primary(BuildContext context, MapState s) {
     final classic = _classicOn();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      child: Row(
-        children: [
-          // Flexible bounds the button's width. As a bare non-flex Row child a
-          // FilledButton is measured with maxWidth:Infinity (RenderFlex sizes
-          // non-flex children against an unbounded main axis) and throws
-          // "BoxConstraints forces an infinite width" — aborting the whole
-          // tab's layout (blank tool / hung release web).
-          if (classic && s.rooms.isEmpty)
-            Flexible(
-              // Wrap under the Flexible's bounded width, so the two buttons
-              // stack on narrow screens instead of overflowing the Row. The
-              // theme's full-width FilledButton minimumSize is pinned finite
-              // so they can sit side by side (the loop_bar pattern).
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: [
-                  FilledButton.tonal(
-                    key: const Key('classic-enter'),
-                    style:
-                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-                    onPressed: _enterDungeon,
-                    child: const Text('Enter the dungeon'),
-                  ),
-                  FilledButton.tonalIcon(
-                    key: const Key('classic-enter-cave'),
-                    style:
-                        FilledButton.styleFrom(minimumSize: const Size(0, 40)),
-                    onPressed: _enterCave,
-                    icon: const Icon(Icons.landscape_outlined),
-                    label: const Text('Enter a cave'),
-                  ),
-                ],
-              ),
-            )
-          else if (!classic)
-            Flexible(
-              child: FilledButton.tonal(
-                key: const Key('new-room'),
-                onPressed: _newRoom,
-                child: const Text('New room'),
-              ),
-            ),
-          const Spacer(),
-          IconButton(
-            key: const Key('dungeon-journal'),
-            icon: const Icon(Icons.bookmark_add_outlined),
-            tooltip: 'Add map to journal',
-            onPressed: s.rooms.isEmpty
-                ? null
-                : () => _log('Dungeon map', _dungeonSummary(s)),
-          ),
-          if (ref.watch(blobStoreAvailableProvider))
-            IconButton(
-              key: const Key('dungeon-snapshot'),
-              icon: const Icon(Icons.draw_outlined),
-              tooltip: 'Annotate in journal',
-              onPressed: () =>
-                  snapshotMapToJournal(context, ref, _dungeonSnapKey),
-            ),
-          IconButton(
-            key: const Key('dungeon-reset'),
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Reset dungeon',
-            onPressed: () => _reset(context),
-          ),
-        ],
-      ),
-    );
+    // A themed FilledButton's minimumSize width is infinity, so it must pin a
+    // finite one to sit in the chrome's Wrap.
+    final style = FilledButton.styleFrom(minimumSize: const Size(0, 40));
+    if (classic && s.rooms.isEmpty) {
+      return [
+        FilledButton.tonal(
+          key: const Key('classic-enter'),
+          style: style,
+          onPressed: _enterDungeon,
+          child: const Text('Enter the dungeon'),
+        ),
+        FilledButton.tonalIcon(
+          key: const Key('classic-enter-cave'),
+          style: style,
+          onPressed: _enterCave,
+          icon: const Icon(Icons.landscape_outlined),
+          label: const Text('Enter a cave'),
+        ),
+      ];
+    }
+    if (!classic) {
+      return [
+        FilledButton.tonal(
+          key: const Key('new-room'),
+          style: style,
+          onPressed: _newRoom,
+          child: const Text('New room'),
+        ),
+      ];
+    }
+    // A classic dungeon in progress has no button here (rooms grow by tapping
+    // doors), so the always-visible slot goes to "which level am I on" — depth
+    // is identity and navigation, not a tool to fold away.
+    if (s.levels.isNotEmpty) return [_levelHeader(context, s)];
+    return const [];
   }
+
+  /// Folded behind the Tools toggle: everything that used to sit permanently
+  /// between the top of the pane and the canvas.
+  List<Widget> _tools(BuildContext context, MapState s) => [
+        // Several dungeons can live on one world map — switch or add.
+        for (final d in s.dungeons)
+          ChoiceChip(
+            key: Key('dungeon-site-chip-${d.id}'),
+            label: Text(d.name),
+            selected: d.id == s.activeDungeon?.id,
+            onSelected: (_) =>
+                ref.read(mapProvider.notifier).switchDungeon(d.id),
+          ),
+        if (s.dungeons.isNotEmpty)
+          ActionChip(
+            key: const Key('dungeon-new-site'),
+            avatar: const Icon(Icons.add, size: 16),
+            label: const Text('New dungeon'),
+            onPressed: () => ref.read(mapProvider.notifier).addDungeon(),
+          ),
+        // Map-layer hierarchy: when the dungeon is anchored to a world hex,
+        // offer the "up" hop back to it.
+        if (s.hasAnchor)
+          ActionChip(
+            key: const Key('dungeon-up-world'),
+            avatar: const Icon(Icons.arrow_upward, size: 16),
+            label: Text('World: Hex (${s.anchorHexCol}, ${s.anchorHexRow})'),
+            onPressed: () async {
+              await ref.read(playContextProvider.notifier).setActiveLocation(
+                  LocationRef(hexCol: s.anchorHexCol, hexRow: s.anchorHexRow));
+              ref
+                  .read(shellRouteProvider.notifier)
+                  .goTo(Destination.map, subtab: 'world');
+            },
+          ),
+        if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
+        IconButton(
+          key: const Key('dungeon-journal'),
+          icon: const Icon(Icons.bookmark_add_outlined),
+          tooltip: 'Add map to journal',
+          onPressed: s.rooms.isEmpty
+              ? null
+              : () => _log('Dungeon map', _dungeonSummary(s)),
+        ),
+        if (ref.watch(blobStoreAvailableProvider))
+          IconButton(
+            key: const Key('dungeon-snapshot'),
+            icon: const Icon(Icons.draw_outlined),
+            tooltip: 'Annotate in journal',
+            onPressed: () =>
+                snapshotMapToJournal(context, ref, _dungeonSnapKey),
+          ),
+        IconButton(
+          key: const Key('dungeon-reset'),
+          icon: const Icon(Icons.delete_sweep_outlined),
+          tooltip: 'Reset dungeon',
+          onPressed: () => _reset(context),
+        ),
+      ];
 
   Widget _empty(BuildContext context) {
     final theme = Theme.of(context);
@@ -480,11 +627,7 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
     final maxY = cellsY.reduce(math.max);
     final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
     final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
-    return InteractiveViewer(
-      constrained: false,
-      boundaryMargin: const EdgeInsets.all(400),
-      minScale: 0.5,
-      maxScale: 3,
+    return _mapViewport(
       child: SizedBox(
         width: width,
         height: height,
@@ -576,39 +719,35 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
       if (lvl.typeName.isNotEmpty) lvl.typeName,
       if (lvl.stone.isNotEmpty) lvl.stone,
     ].join(' · ');
-    return Padding(
+    // Layout (padding/alignment) belongs to the chrome bar that hosts this.
+    return Column(
       key: const Key('classic-level-header'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label,
-                style: theme.textTheme.labelLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            if (s.levels.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    for (final l in s.levels)
-                      ChoiceChip(
-                        key: Key('classic-level-chip-${l.depth}'),
-                        label: Text('D${l.depth}'),
-                        visualDensity: VisualDensity.compact,
-                        selected: l.depth == lvl.depth,
-                        onSelected: (_) =>
-                            ref.read(mapProvider.notifier).switchLevel(l.depth),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: theme.textTheme.labelLarge
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        if (s.levels.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                for (final l in s.levels)
+                  ChoiceChip(
+                    key: Key('classic-level-chip-${l.depth}'),
+                    label: Text('D${l.depth}'),
+                    visualDensity: VisualDensity.compact,
+                    selected: l.depth == lvl.depth,
+                    onSelected: (_) =>
+                        ref.read(mapProvider.notifier).switchLevel(l.depth),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -1225,56 +1364,39 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
         .generateRegion(data, _hcClimate, _hcCount, widget.oracle.dice);
   }
 
-  Widget _hexcrawlControls(BuildContext context) {
+  List<Widget> _hexcrawlTools(BuildContext context) {
     final data = ref.watch(hexcrawlDataProvider).valueOrNull;
-    if (data == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 6,
-            children: [
-              for (final c in data.climates)
-                ChoiceChip(
-                  label: Text(c),
-                  selected: _hcClimate == c,
-                  onSelected: (_) => setState(() => _hcClimate = c),
-                ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              FilledButton.tonal(
-                key: const Key('hexcrawl-reveal'),
-                onPressed: _hcCrawl,
-                child: const Text('Reveal next (hexcrawl)'),
-              ),
-              FilledButton.tonal(
-                key: const Key('hexcrawl-generate-region'),
-                onPressed: _hcRegion,
-                child: Text('Generate region ($_hcCount)'),
-              ),
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () =>
-                    setState(() => _hcCount = (_hcCount - 5).clamp(5, 60)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () =>
-                    setState(() => _hcCount = (_hcCount + 5).clamp(5, 60)),
-              ),
-            ],
-          ),
-        ],
+    if (data == null) return const [];
+    // Pinned finite so these can share a row in the chrome's Wrap.
+    final style = FilledButton.styleFrom(minimumSize: const Size(0, 40));
+    return [
+      for (final c in data.climates)
+        ChoiceChip(
+          label: Text(c),
+          selected: _hcClimate == c,
+          onSelected: (_) => setState(() => _hcClimate = c),
+        ),
+      FilledButton.tonal(
+        key: const Key('hexcrawl-reveal'),
+        style: style,
+        onPressed: _hcCrawl,
+        child: const Text('Reveal next (hexcrawl)'),
       ),
-    );
+      FilledButton.tonal(
+        key: const Key('hexcrawl-generate-region'),
+        style: style,
+        onPressed: _hcRegion,
+        child: Text('Generate region ($_hcCount)'),
+      ),
+      IconButton(
+        icon: const Icon(Icons.remove),
+        onPressed: () => setState(() => _hcCount = (_hcCount - 5).clamp(5, 60)),
+      ),
+      IconButton(
+        icon: const Icon(Icons.add),
+        onPressed: () => setState(() => _hcCount = (_hcCount + 5).clamp(5, 60)),
+      ),
+    ];
   }
 
   @override
@@ -1286,94 +1408,107 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (s) {
         final sel = _selectedHex(s);
-        return Column(
-          children: [
-            if (crawl.envRow != null) _envLine(context, crawl),
-            _controls(context, s),
-            if (_hexcrawlOn()) _hexcrawlControls(context),
-            Expanded(
-              child: sel != null && _zoom == _HexZoom.flower
-                  ? _flowerView(context, sel)
-                  : sel != null && _zoom == _HexZoom.interior
-                      ? _interiorView(context, sel)
-                      : (s.hexes.isEmpty ? _empty(context) : _canvas(s)),
-            ),
-            if (_hexcrawlOn() && sel != null && _zoom == _HexZoom.region)
-              _hexDetailCard(context, sel),
-            if (_last != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: ResultCard(
-                  result: _last!,
-                  onLog: () => _log(_last!.title, _last!.asText),
-                ),
-              ),
-            const SizedBox(height: 8),
-          ],
+        final zoomed = sel != null && _zoom != _HexZoom.region;
+        return MapChrome(
+          canvas: sel != null && _zoom == _HexZoom.flower
+              ? _flowerCanvas(context, sel)
+              : sel != null && _zoom == _HexZoom.interior
+                  ? _interiorCanvas(context, sel)
+                  : (s.hexes.isEmpty ? _empty(context) : _canvas(s)),
+          // Each zoom level has its own verbs — a zoomed-in view must not
+          // stack the region's controls on top of its own.
+          primary: switch (_zoom) {
+            _ when !zoomed => _regionPrimary(),
+            _HexZoom.flower => _flowerPrimary(sel),
+            _HexZoom.interior => _interiorPrimary(sel),
+            _ => _regionPrimary(),
+          },
+          tools: zoomed
+              ? _sharedTools(context, s)
+              : _regionTools(context, s, crawl),
+          detail: _detailOverlay(context, sel),
         );
       },
     );
   }
 
-  /// Current crawl environment + Lost flag, mirroring the Exploration tool.
-  Widget _envLine(BuildContext context, CrawlState crawl) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          '${_envNames[crawl.envRow! - 1]}'
-          '${crawl.lost ? ' — LOST (d6 encounters)' : ''}',
-          style: theme.textTheme.bodySmall,
+  /// The bottom overlay: whichever cards apply to the current zoom.
+  Widget? _detailOverlay(BuildContext context, HexCell? sel) {
+    final cards = <Widget>[
+      if (_hexcrawlOn() && sel != null && _zoom == _HexZoom.region)
+        _hexDetailCard(context, sel),
+      if (sel != null && _zoom == _HexZoom.flower && sel.local.isNotEmpty)
+        _flowerLegend(context, sel),
+      if (_last != null)
+        Padding(
+          padding: const EdgeInsets.all(8),
+          child: ResultCard(
+            result: _last!,
+            onLog: () => _log(_last!.title, _last!.asText),
+          ),
         ),
-      ),
-    );
+    ];
+    if (cards.isEmpty) return null;
+    return Column(mainAxisSize: MainAxisSize.min, children: cards);
   }
 
-  Widget _controls(BuildContext context, MapState s) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      child: Row(
-        children: [
-          // Flexible bounds the button's width — see the dungeon _controls note:
-          // a bare FilledButton in this Row is measured with infinite width and
-          // throws, aborting the tab layout.
-          Flexible(
-            child: FilledButton.tonal(
-              key: const Key('travel'),
-              onPressed: _travel,
-              child: const Text('Travel'),
-            ),
-          ),
-          const Spacer(),
+  /// Current crawl environment + Lost flag, mirroring the Exploration tool.
+  Widget _envChip(BuildContext context, CrawlState crawl) => Chip(
+        key: const Key('hex-env-chip'),
+        visualDensity: VisualDensity.compact,
+        avatar: const Icon(Icons.terrain_outlined, size: 16),
+        label: Text(
+          '${_envNames[crawl.envRow! - 1]}'
+          '${crawl.lost ? ' — LOST (d6 encounters)' : ''}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      );
+
+  List<Widget> _regionPrimary() => [
+        FilledButton.tonal(
+          key: const Key('travel'),
+          // A themed FilledButton's minimumSize width is infinity, so it must
+          // pin a finite one to sit in the chrome's Wrap.
+          style: FilledButton.styleFrom(minimumSize: const Size(0, 40)),
+          onPressed: _travel,
+          child: const Text('Travel'),
+        ),
+      ];
+
+  /// Tools available at every zoom level.
+  List<Widget> _sharedTools(BuildContext context, MapState s) => [
+        IconButton(
+          key: const Key('hex-journal'),
+          icon: const Icon(Icons.bookmark_add_outlined),
+          tooltip: 'Add map to journal',
+          onPressed: s.hexes.isEmpty
+              ? null
+              : () => _log('Wilderness map', _hexSummary(s)),
+        ),
+        // Only in the full-map (region) view — the snapshot boundary isn't in
+        // the tree during flower/interior zoom.
+        if (_zoom == _HexZoom.region && ref.watch(blobStoreAvailableProvider))
           IconButton(
-            key: const Key('hex-journal'),
-            icon: const Icon(Icons.bookmark_add_outlined),
-            tooltip: 'Add map to journal',
-            onPressed: s.hexes.isEmpty
-                ? null
-                : () => _log('Wilderness map', _hexSummary(s)),
+            key: const Key('map-snapshot'),
+            icon: const Icon(Icons.draw_outlined),
+            tooltip: 'Annotate in journal',
+            onPressed: () => snapshotMapToJournal(context, ref, _hexSnapKey),
           ),
-          // Only in the full-map (region) view — the snapshot boundary isn't in
-          // the tree during flower/interior zoom.
-          if (_zoom == _HexZoom.region && ref.watch(blobStoreAvailableProvider))
-            IconButton(
-              key: const Key('map-snapshot'),
-              icon: const Icon(Icons.draw_outlined),
-              tooltip: 'Annotate in journal',
-              onPressed: () => snapshotMapToJournal(context, ref, _hexSnapKey),
-            ),
-          IconButton(
-            key: const Key('hex-reset'),
-            icon: const Icon(Icons.delete_sweep_outlined),
-            tooltip: 'Reset hex map',
-            onPressed: () => _reset(context),
-          ),
-        ],
-      ),
-    );
-  }
+        IconButton(
+          key: const Key('hex-reset'),
+          icon: const Icon(Icons.delete_sweep_outlined),
+          tooltip: 'Reset hex map',
+          onPressed: () => _reset(context),
+        ),
+      ];
+
+  List<Widget> _regionTools(
+          BuildContext context, MapState s, CrawlState crawl) =>
+      [
+        if (crawl.envRow != null) _envChip(context, crawl),
+        if (_hexcrawlOn()) ..._hexcrawlTools(context),
+        ..._sharedTools(context, s),
+      ];
 
   Widget _empty(BuildContext context) {
     final theme = Theme.of(context);
@@ -1415,11 +1550,7 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
     final height = math.max(
         (maxRow - minRow + 0.5) * math.sqrt(3) * _hexSize + 4 * _hexSize,
         360.0);
-    return InteractiveViewer(
-      constrained: false,
-      boundaryMargin: const EdgeInsets.all(400),
-      minScale: 0.5,
-      maxScale: 3,
+    return _mapViewport(
       child: SizedBox(
         width: width,
         height: height,
@@ -1822,7 +1953,44 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
         h.col, h.row, _hcInteriorCount, data, widget.oracle.dice);
   }
 
-  Widget _interiorView(BuildContext context, HexCell h) {
+  List<Widget> _interiorPrimary(HexCell h) {
+    // Pinned finite so these can share a row in the chrome's Wrap.
+    final style = FilledButton.styleFrom(minimumSize: const Size(0, 40));
+    return [
+      OutlinedButton(
+        key: const Key('interior-back'),
+        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+        onPressed: () => setState(() => _zoom = _HexZoom.region),
+        child: const Text('Back'),
+      ),
+      FilledButton.tonal(
+        key: const Key('interior-reveal'),
+        style: style,
+        onPressed: () => _interiorCrawl(h),
+        child: const Text('Reveal area'),
+      ),
+      FilledButton.tonal(
+        key: const Key('interior-generate'),
+        style: style,
+        onPressed: () => _interiorFull(h),
+        child: Text('Generate interior ($_hcInteriorCount)'),
+      ),
+      IconButton(
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.remove),
+        onPressed: () => setState(
+            () => _hcInteriorCount = (_hcInteriorCount - 1).clamp(3, 12)),
+      ),
+      IconButton(
+        visualDensity: VisualDensity.compact,
+        icon: const Icon(Icons.add),
+        onPressed: () => setState(
+            () => _hcInteriorCount = (_hcInteriorCount + 1).clamp(3, 12)),
+      ),
+    ];
+  }
+
+  Widget _interiorCanvas(BuildContext context, HexCell h) {
     final scheme = Theme.of(context).colorScheme;
     // Render site areas through the existing dungeon painter (no corridors).
     final rooms = [
@@ -1833,9 +2001,8 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
             y: h.siteAreas[i].y,
             title: h.siteAreas[i].name),
     ];
-    Widget canvas;
     if (rooms.isEmpty) {
-      canvas = Center(
+      return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Text('No areas yet. Reveal or generate the interior.',
@@ -1843,144 +2010,85 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
               style: Theme.of(context).textTheme.bodyMedium),
         ),
       );
-    } else {
-      final minX = rooms.map((r) => r.x).reduce(math.min);
-      final minY = rooms.map((r) => r.y).reduce(math.min);
-      final maxX = rooms.map((r) => r.x).reduce(math.max);
-      final maxY = rooms.map((r) => r.y).reduce(math.max);
-      final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
-      final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
-      canvas = InteractiveViewer(
-        constrained: false,
-        boundaryMargin: const EdgeInsets.all(400),
-        minScale: 0.5,
-        maxScale: 3,
-        child: SizedBox(
-          width: width,
-          height: height,
-          child: CustomPaint(
-            key: const Key('interior-canvas'),
-            size: Size(width, height),
-            painter: _DungeonPainter(
-                rooms: rooms,
-                corridors: const [],
-                currentRoomId: null,
-                scheme: scheme),
-          ),
-        ),
-      );
     }
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              OutlinedButton(
-                key: const Key('interior-back'),
-                onPressed: () => setState(() => _zoom = _HexZoom.region),
-                child: const Text('Back'),
-              ),
-              FilledButton.tonal(
-                key: const Key('interior-reveal'),
-                onPressed: () => _interiorCrawl(h),
-                child: const Text('Reveal area'),
-              ),
-              FilledButton.tonal(
-                key: const Key('interior-generate'),
-                onPressed: () => _interiorFull(h),
-                child: Text('Generate interior ($_hcInteriorCount)'),
-              ),
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: () => setState(() =>
-                    _hcInteriorCount = (_hcInteriorCount - 1).clamp(3, 12)),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () => setState(() =>
-                    _hcInteriorCount = (_hcInteriorCount + 1).clamp(3, 12)),
-              ),
-            ],
-          ),
+    final minX = rooms.map((r) => r.x).reduce(math.min);
+    final minY = rooms.map((r) => r.y).reduce(math.min);
+    final maxX = rooms.map((r) => r.x).reduce(math.max);
+    final maxY = rooms.map((r) => r.y).reduce(math.max);
+    final width = math.max((maxX - minX + 1) * _cell + _cell, 360.0);
+    final height = math.max((maxY - minY + 1) * _cell + _cell, 360.0);
+    return _mapViewport(
+      child: SizedBox(
+        width: width,
+        height: height,
+        child: CustomPaint(
+          key: const Key('interior-canvas'),
+          size: Size(width, height),
+          painter: _DungeonPainter(
+              rooms: rooms,
+              corridors: const [],
+              currentRoomId: null,
+              scheme: scheme),
         ),
-        Expanded(child: canvas),
-        const SizedBox(height: 8),
-      ],
+      ),
     );
   }
 
-  Widget _flowerView(BuildContext context, HexCell h) {
+  List<Widget> _flowerPrimary(HexCell h) {
+    // Pinned finite so these can share a row in the chrome's Wrap.
+    final style = FilledButton.styleFrom(minimumSize: const Size(0, 40));
+    return [
+      OutlinedButton(
+        key: const Key('local-back'),
+        style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+        onPressed: () => setState(() => _zoom = _HexZoom.region),
+        child: const Text('Back'),
+      ),
+      FilledButton.tonal(
+        key: const Key('local-reveal'),
+        style: style,
+        onPressed: () => _localCrawl(h),
+        child: const Text('Reveal sub-hex'),
+      ),
+      FilledButton.tonal(
+        key: const Key('local-fill'),
+        style: style,
+        onPressed: () => _localFull(h),
+        child: const Text('Fill hex'),
+      ),
+    ];
+  }
+
+  Widget _flowerCanvas(BuildContext context, HexCell h) {
     final scheme = Theme.of(context).colorScheme;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              OutlinedButton(
-                key: const Key('local-back'),
-                onPressed: () => setState(() => _zoom = _HexZoom.region),
-                child: const Text('Back'),
-              ),
-              FilledButton.tonal(
-                key: const Key('local-reveal'),
-                onPressed: () => _localCrawl(h),
-                child: const Text('Reveal sub-hex'),
-              ),
-              FilledButton.tonal(
-                key: const Key('local-fill'),
-                onPressed: () => _localFull(h),
-                child: const Text('Fill hex'),
-              ),
-            ],
-          ),
+    return _mapViewport(
+      boundary: 200,
+      child: SizedBox(
+        width: 360,
+        height: 360,
+        child: CustomPaint(
+          key: const Key('flower-canvas'),
+          size: const Size(360, 360),
+          painter: _FlowerPainter(
+              centerTerrain: h.terrain ?? '', ring: h.local, scheme: scheme),
         ),
-        Expanded(
-          child: InteractiveViewer(
-            constrained: false,
-            boundaryMargin: const EdgeInsets.all(200),
-            minScale: 0.5,
-            maxScale: 3,
-            child: SizedBox(
-              width: 360,
-              height: 360,
-              child: CustomPaint(
-                key: const Key('flower-canvas'),
-                size: const Size(360, 360),
-                painter: _FlowerPainter(
-                    centerTerrain: h.terrain ?? '',
-                    ring: h.local,
-                    scheme: scheme),
-              ),
-            ),
-          ),
-        ),
-        if (h.local.isNotEmpty)
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxHeight: 96),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (final lc in h.local)
-                    Text('• ${lc.terrain}: ${lc.feature}',
-                        style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-      ],
+      ),
     );
   }
+
+  /// The revealed sub-hex ring, read out under the flower canvas.
+  Widget _flowerLegend(BuildContext context, HexCell h) => Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final lc in h.local)
+              Text('• ${lc.terrain}: ${lc.feature}',
+                  style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      );
 }
 
 class _FlowerPainter extends CustomPainter {
