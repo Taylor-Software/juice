@@ -2209,6 +2209,13 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: const InputDecoration(
                   hintText: 'Write in your journal…',
+                  // The hint inherits maxLines (4) unless told otherwise, so on
+                  // a phone — where the action buttons squeeze this field to
+                  // ~142px — it wrapped to three lines and grew the EMPTY field
+                  // to 120px, against 48px on a desktop. A placeholder must
+                  // never open the field it is a placeholder for; it ellipsizes
+                  // instead. Typed text still grows the field to maxLines.
+                  hintMaxLines: 1,
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
