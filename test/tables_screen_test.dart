@@ -8,8 +8,11 @@ import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/tables_screen.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_interpreter.dart';
 
 final _oracle = Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -37,7 +40,7 @@ Future<void> pump(WidgetTester tester, {String? customTablesJson}) async {
 /// Pump under an [UncontrolledProviderScope] so the test can read
 /// [journalProvider] to assert what a roll logged.
 Future<ProviderContainer> pumpWithContainer(WidgetTester tester,
-    {String? customTablesJson}) async {
+    {String? customTablesJson, List<Override> overrides = const []}) async {
   SharedPreferences.setMockInitialValues({
     'juice.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
@@ -48,7 +51,7 @@ Future<ProviderContainer> pumpWithContainer(WidgetTester tester,
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final c = ProviderContainer();
+  final c = ProviderContainer(overrides: overrides);
   addTearDown(c.dispose);
   await c.read(sessionsProvider.future);
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -230,5 +233,90 @@ void main() {
     expect(saved.genre, 'Fantasy');
     expect(saved.category, 'Characters & NPCs');
     expect(saved.source, 'Big Book of Bars');
+  });
+
+  testWidgets('no inspire button on a rolled table row when AI is not ready',
+      (tester) async {
+    await pumpWithContainer(tester,
+        overrides: [interpretReadyProvider.overrideWithValue(false)]);
+    await tester.enterText(
+        find.byKey(const Key('tables-search')), 'quest objective');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quest Objective'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Add to journal'), findsOneWidget); // rolled
+    expect(find.byKey(const Key('table-inspire-quest_objective')), findsNothing);
+  });
+
+  testWidgets(
+      'inspire on a rolled table row logs ONE combined entry carrying the '
+      'roll and the reading', (tester) async {
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    final c = await pumpWithContainer(tester, overrides: [
+      interpretReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    await c.read(journalProvider.future);
+
+    await tester.enterText(
+        find.byKey(const Key('tables-search')), 'quest objective');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quest Objective'));
+    await tester.pumpAndSettle();
+
+    final btn = find.byKey(const Key('table-inspire-quest_objective'));
+    expect(btn, findsOneWidget, reason: 'a rolled row offers Inspire');
+    await tester.tap(btn);
+    await tester.pumpAndSettle();
+
+    // The rolled row rides into the prompt as the thing being read.
+    expect(fake.lastSeed, isNotNull);
+    expect(fake.lastSeed!.resultText, contains('Quest Objective'));
+
+    // Accept the (fake) reading card via its "Use this" action.
+    await tester.tap(find.byKey(const Key('interp-accept-0')));
+    await tester.pumpAndSettle();
+
+    final journal = c.read(journalProvider).valueOrNull ?? const [];
+    expect(journal, hasLength(1),
+        reason: 'inspire commits one entry, not a roll + a separate reading');
+    expect(
+        journal.single.body, contains('— Oracle reading (literal): fallback'));
+    expect(journal.single.title, 'Quest Objective');
+  });
+
+  testWidgets('a rolled row with inspire survives phone width (375px)',
+      (tester) async {
+    tester.view.physicalSize = const Size(375, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.journal.v2.default': '[]',
+    });
+    final c = ProviderContainer(
+        overrides: [interpretReadyProvider.overrideWithValue(true)]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: c,
+      child: MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(body: TablesScreen(oracle: _oracle)),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('tables-search')), 'quest objective');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Quest Objective'));
+    await tester.pumpAndSettle();
+    // Three trailing icon buttons (inspire + log + roll) must fit the row.
+    expect(find.byKey(const Key('table-inspire-quest_objective')),
+        findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

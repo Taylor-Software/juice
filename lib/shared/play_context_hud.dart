@@ -6,6 +6,7 @@ import '../engine/dice.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../features/generate_sheet.dart';
+import '../features/inspire.dart';
 import '../features/oracle_roll_sheet.dart';
 import '../features/scene_jump_sheet.dart';
 import 'haptics.dart';
@@ -337,12 +338,12 @@ class CampaignHeader extends ConsumerWidget {
     // Cards + tarot draw-and-log through the deck (which persists the draw
     // itself); a snackbar then confirms.
     if (defaultOracle == 'cards' || defaultOracle == 'tarot') {
-      final g = await ref
+      final out = await ref
           .read(decksProvider.notifier)
           .drawAndLog(oracle, tarot: defaultOracle == 'tarot');
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+        showLoggedSnackBar(context, ref, out.entryId,
+            message: 'Drew ${out.result.summary}');
       }
       return;
     }

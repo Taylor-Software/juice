@@ -9,6 +9,7 @@ import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../state/providers.dart';
 import 'dice_roll_animation.dart';
+import 'inspire.dart';
 import 'tarot_spread_layout.dart';
 
 /// Opens the roll sheet for a draw-style default oracle (`icons`/`cards`/
@@ -47,7 +48,15 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
   TarotSpread? _lastSpread;
   List<({String position, String shown})> _lastSpreadCards = const [];
 
+  /// Journal entry id of the last throw/draw — every roll here logs on the spot,
+  /// so Inspire reads that entry rather than logging a second one.
+  String? _loggedId;
+
   bool get _isIcons => widget.defaultOracle == 'icons';
+
+  /// Inspire is offered once something has been rolled and interpret is ready.
+  bool get _canInspire =>
+      _loggedId != null && ref.watch(interpretReadyProvider);
 
   @override
   Widget build(BuildContext context) {
@@ -104,9 +113,10 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
             onPressed: _rollIcons,
           ),
         ),
+        if (_canInspire) Align(child: _inspireButton()),
       ];
 
-  void _rollIcons() {
+  Future<void> _rollIcons() async {
     final icons = widget.oracle.abstractIcons(_iconCount);
     setState(() {
       _lastIcons = icons;
@@ -122,12 +132,14 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
               value: 'd10 ${d10Label(icons[i].d10)}, d6 ${icons[i].d6}'),
       ],
     );
-    ref.read(journalProvider.notifier).addResult(g.title, g.asText,
+    final id = await ref.read(journalProvider.notifier).addResult(
+        g.title, g.asText,
         sourceTool: 'gen-abstract-icon',
         payload: {
           ...g.toPayload(),
           'icons': [for (final i in icons) i.asset]
         });
+    if (mounted) setState(() => _loggedId = id);
   }
 
   // -- Cards ------------------------------------------------------------------
@@ -196,25 +208,41 @@ class _OracleRollSheetState extends ConsumerState<_OracleRollSheet> {
             onPressed: _drawCards,
           ),
         ),
+        if (_canInspire) Align(child: _inspireButton()),
       ];
 
   Future<void> _drawCards() async {
     final decks = ref.read(decksProvider.notifier);
     if (_tarot && _spread) {
-      final cards = await decks.drawSpreadAndLog(widget.oracle, _spreadPick);
+      final out = await decks.drawSpreadAndLog(widget.oracle, _spreadPick);
       setState(() {
         _lastSpreadName = _spreadPick.name;
         _lastSpread = _spreadPick;
-        _lastSpreadCards = cards;
+        _lastSpreadCards = out.cards;
         _lastCard = null;
+        _loggedId = out.entryId;
       });
     } else {
-      final g = await decks.drawAndLog(widget.oracle, tarot: _tarot);
+      final out = await decks.drawAndLog(widget.oracle, tarot: _tarot);
       setState(() {
-        _lastCard = g.summary;
+        _lastCard = out.result.summary;
         _lastSpreadName = null;
         _lastSpreadCards = const [];
+        _loggedId = out.entryId;
       });
     }
   }
+
+  /// Inspire the draw/throw just logged. The result is already in the journal
+  /// (a draw advances deck state, so it can't be deferred) — so this appends to
+  /// that entry rather than logging a second one.
+  Widget _inspireButton() => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: OutlinedButton.icon(
+          key: const Key('oracle-roll-inspire'),
+          icon: const Icon(Icons.auto_awesome_outlined),
+          label: const Text('Inspire'),
+          onPressed: () => inspireEntry(context, ref, _loggedId!),
+        ),
+      );
 }

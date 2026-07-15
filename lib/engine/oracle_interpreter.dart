@@ -61,10 +61,32 @@ class OracleSeed {
 /// [relatedEntries]), formatted "Title — body" (or body only when untitled) for
 /// any seam's `journalContext`. The prompt builders still take [kRecallMaxEntries]
 /// and cap each at [kRecallMaxChars]. Pure.
-List<String> recallLines(List<JournalEntry> journal, JournalEntry target) => [
-      for (final e in relatedEntries(journal, target))
+List<String> recallLines(List<JournalEntry> journal, JournalEntry target) =>
+    _format(relatedEntries(journal, target));
+
+/// The recall-ranked journal lines for a raw [text] — the same grounding
+/// [recallLines] gives an existing entry, for a roll that isn't logged yet.
+/// [excludeId] drops an entry from its own recall. Pure.
+List<String> recallLinesFor(
+  List<JournalEntry> journal,
+  String text, {
+  String? excludeId,
+}) =>
+    _format(relatedEntriesForText(journal, text, excludeId: excludeId));
+
+List<String> _format(List<JournalEntry> entries) => [
+      for (final e in entries)
         e.title.isEmpty ? e.body : '${e.title} — ${e.body}',
     ];
+
+/// Folds an accepted [card] into an entry [body], producing the one combined
+/// journal entry: the result that was rolled, plus the reading it inspired.
+/// The single source of this format — every inspire surface appends alike, and
+/// `PayloadCard` renders the remainder past its structured rolls. Pure.
+String appendReading(String body, OracleInterpretation card) {
+  final reading = '— Oracle reading (${card.lens}): ${card.reading}';
+  return body.trim().isEmpty ? reading : '${body.trimRight()}\n\n$reading';
+}
 
 /// A short "who the PC is" line for the prompt, or '' when none. Facts-only:
 /// name + role + any conditions. Pure.

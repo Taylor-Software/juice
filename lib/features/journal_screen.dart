@@ -40,8 +40,8 @@ import '../state/providers.dart';
 import 'ask_oracle_dialog.dart';
 import 'generate_sheet.dart';
 import 'inline_roll_dock.dart';
+import 'inspire.dart';
 import 'journal_entry_tile.dart';
-import 'oracle_interpretation_sheet.dart';
 import 'reference_view.dart';
 import 'scene_jump_sheet.dart';
 import '../engine/content_registry.dart';
@@ -417,11 +417,11 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Future<void> _drawCardCmd({required bool tarot}) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
-    final g =
+    final out =
         await ref.read(decksProvider.notifier).drawAndLog(oracle, tarot: tarot);
     if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Drew ${g.summary}')));
+      showLoggedSnackBar(context, ref, out.entryId,
+          message: 'Drew ${out.result.summary}');
     }
   }
 
@@ -2753,44 +2753,12 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   /// when set (falling back to the newest scene entry via [activeSceneEntry]).
   String _sceneContext() {
     final journal = ref.read(journalProvider).valueOrNull ?? const [];
-    final scene = activeSceneEntry(
-        journal, ref.read(playContextProvider).valueOrNull?.activeSceneId);
-    if (scene == null) return '';
-    final chaos =
-        scene.chaosFactor != null ? ' (Chaos ${scene.chaosFactor})' : '';
-    return 'Scene: ${scene.title}$chaos';
+    return sceneContextLine(activeSceneEntry(
+        journal, ref.read(playContextProvider).valueOrNull?.activeSceneId));
   }
 
-  Future<void> _interpret(JournalEntry entry) async {
-    // Recall: the most relevant past entries ride into the prompt so
-    // readings can reference established NPCs, places, and threads.
-    final journal = ref.read(journalProvider).valueOrNull ?? const [];
-    final seed = OracleSeed(
-      resultText:
-          entry.title.isEmpty ? entry.body : '${entry.title}\n${entry.body}',
-      sceneContext: _sceneContext(),
-      activeCharacter: ref.read(activeCharacterLineProvider),
-      journalContext: recallLines(journal, entry),
-    );
-    final accepted = await showModalBottomSheet<OracleInterpretation>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) => OracleInterpretationSheet(
-        seed: seed,
-        onAccept: (card) => Navigator.pop(sheetContext, card),
-      ),
-    );
-    if (accepted == null || !mounted) return;
-    // The sheet can stay open a long time; re-read the entry so the append
-    // can't clobber concurrent edits or resurrect a deleted entry.
-    final fresh = (ref.read(journalProvider).valueOrNull ?? const [])
-        .where((e) => e.id == entry.id)
-        .firstOrNull;
-    if (fresh == null) return;
-    await ref.read(journalProvider.notifier).replace(fresh.copyWith(
-        body:
-            '${fresh.body}\n\n— Oracle reading (${accepted.lens}): ${accepted.reading}'));
-  }
+  Future<void> _interpret(JournalEntry entry) =>
+      inspireEntry(context, ref, entry.id);
 
   Future<void> _voiceEntry(JournalEntry entry) async {
     final settings =

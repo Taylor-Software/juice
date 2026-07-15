@@ -168,7 +168,9 @@ void main() {
     expect(find.byKey(const Key('beat-interpret')), findsOneWidget);
   });
 
-  testWidgets('interpret renders inline; Keep logs one entry', (tester) async {
+  testWidgets(
+      'interpret renders inline; Keep folds the reading into the '
+      'roll\'s own entry', (tester) async {
     SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -196,10 +198,19 @@ void main() {
     expect(find.byKey(const Key('loop-interpret-card')), findsOneWidget);
     container = ProviderScope.containerOf(
         tester.element(find.byKey(const Key('loop-interpret-card'))));
+    // The seed carries the shared grounding — the scene rides through (this
+    // seam sent no recall at all before the inspire standardization).
+    expect(fake.lastSeed!.sceneContext, contains('The crypt'));
+
     await tester.tap(find.byKey(const Key('loop-interpret-keep')));
     await tester.pumpAndSettle();
     final journal = container.read(journalProvider).valueOrNull ?? const [];
-    expect(journal.where((e) => e.sourceTool == 'interpret').length, 1);
+    // One combined entry: the reading folds into the roll that prompted it,
+    // rather than landing as a second free-floating 'interpret' entry.
+    expect(journal.where((e) => e.sourceTool == 'interpret'), isEmpty);
+    final roll = journal.firstWhere((e) => e.sourceTool == 'solo-loop');
+    expect(roll.body, contains('— Oracle reading (literal): fallback'));
+    expect(journal.where((e) => e.sourceTool == 'solo-loop').length, 1);
   });
 
   testWidgets('interpret Discard hides card and logs nothing', (tester) async {

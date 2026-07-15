@@ -7,6 +7,7 @@ import '../shared/shell_route.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'inspire.dart';
 import 'flesh_out_review.dart';
 
 /// Tracking → Scenes: derived list of journal scene dividers, newest first.
@@ -116,22 +117,26 @@ class ScenesPane extends ConsumerWidget {
         .read(journalProvider.notifier)
         .addScene(result.title.trim(), chaosFactor: chaos);
     await ref.read(playContextProvider.notifier).setActiveScene(id);
-    if (usesMythic && result.rollTest) {
+    if (usesMythic && result.rollTest && context.mounted) {
       // `?? 5` only fires before any crawl state exists; 5 is the Mythic 2e
       // default Chaos Factor (matches CrawlState.chaosFactor's default).
-      await _rollSceneTest(ref, chaos ?? 5);
+      await _rollSceneTest(context, ref, chaos ?? 5);
     }
   }
 
   /// Rolls a Mythic Scene Test and logs it as a journal result. An interrupted
   /// scene additionally rolls (and logs) a random event — the canonical Mythic
   /// "scene is replaced" follow-up — reusing [Oracle.mythicRandomEvent].
-  Future<void> _rollSceneTest(WidgetRef ref, int chaos) async {
+  ///
+  /// Offers Inspire on whichever roll carries the story: the random event when
+  /// the scene was interrupted, else the test itself.
+  Future<void> _rollSceneTest(
+      BuildContext context, WidgetRef ref, int chaos) async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final journal = ref.read(journalProvider.notifier);
     final test = oracle.mythicSceneTest(chaos);
-    await journal.addResult(test.title, test.asText,
+    var inspireId = await journal.addResult(test.title, test.asText,
         sourceTool: 'mythic', payload: test.toPayload());
     // Literal must match the outcome string emitted by Oracle.mythicSceneTest.
     if (test.rolls.first.value == 'Interrupted Scene') {
@@ -146,9 +151,12 @@ class ScenesPane extends ConsumerWidget {
               .toList();
       final event =
           oracle.mythicRandomEvent(threads: threads, characters: characters);
-      await journal.addResult(event.title, event.asText,
+      inspireId = await journal.addResult(event.title, event.asText,
           sourceTool: 'mythic', payload: event.toPayload());
     }
+    if (!context.mounted) return;
+    showLoggedSnackBar(context, ref, inspireId,
+        message: test.summary ?? 'Scene test rolled');
   }
 
   Future<void> _editScene(

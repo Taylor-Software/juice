@@ -17,6 +17,35 @@ void main() {
     expect(find.byType(ActionChip), findsNothing);
   });
 
+  testWidgets('no inspire button when onInspire is null (AI off / not ready)',
+      (tester) async {
+    await _pump(tester, ResultCard(result: _result, onLog: () {}));
+    expect(find.byKey(const Key('result-inspire')), findsNothing);
+  });
+
+  testWidgets('inspire button renders beside Add-to-journal and fires',
+      (tester) async {
+    var inspires = 0;
+    var logs = 0;
+    await _pump(
+      tester,
+      ResultCard(
+        result: _result,
+        onLog: () => logs++,
+        onInspire: () => inspires++,
+      ),
+    );
+    final btn = find.byKey(const Key('result-inspire'));
+    expect(btn, findsOneWidget);
+    await tester.tap(btn);
+    await tester.pump();
+    expect(inspires, 1);
+    // Inspire is an alternative way to commit the result, not a replacement
+    // for the plain log — both actions stay available.
+    expect(logs, 0);
+    expect(find.byIcon(Icons.bookmark_add_outlined), findsOneWidget);
+  });
+
   testWidgets('renders action chips and taps fire their callback',
       (tester) async {
     var taps = 0;

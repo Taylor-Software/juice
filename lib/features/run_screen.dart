@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/dice_notation.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
-import '../engine/oracle_interpreter.dart';
-import 'oracle_interpretation_sheet.dart';
+import 'inspire.dart';
 import 'quick_ref_view.dart';
 import 'reference_view.dart';
 import 'sheet_widgets.dart';
@@ -536,6 +535,10 @@ class _DiceOraclePanel extends ConsumerStatefulWidget {
 
 class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
   GenResult? _last;
+
+  /// Journal entry id of the last roll — every roll here logs on the spot, so
+  /// Inspire appends its reading to that entry (see _interpret).
+  String? _lastId;
   Likelihood _likelihood = Likelihood.normal;
   final _diceCtrl = TextEditingController();
 
@@ -547,7 +550,7 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
 
   /// Ad-hoc dice notation roll (d20, 2d6+1, …) — mirrors the journal's inline
   /// dice path, logged as a rerollable `dice` entry.
-  void _rollDice() {
+  Future<void> _rollDice() async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final text = _diceCtrl.text.trim();
@@ -562,19 +565,23 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
       return;
     }
     final g = diceRollGenResult(r);
-    ref.read(journalProvider.notifier).addResult(
+    final id = await ref.read(journalProvider.notifier).addResult(
       g.title,
       g.asText,
       sourceTool: 'dice',
       payload: {...g.toPayload(), 'expression': r.expression},
     );
-    setState(() => _last = g);
+    if (!mounted) return;
+    setState(() {
+      _last = g;
+      _lastId = id;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${r.expression} = ${r.total}')),
     );
   }
 
-  void _roll() {
+  Future<void> _roll() async {
     final oracle = ref.read(oracleProvider).valueOrNull;
     if (oracle == null) return;
     final defaultOracle =
@@ -593,45 +600,24 @@ class _DiceOraclePanelState extends ConsumerState<_DiceOraclePanel> {
         g = fateCheckGenResult(oracle.fateCheck(_likelihood));
         tool = 'fate-check';
     }
-    ref
+    final id = await ref
         .read(journalProvider.notifier)
         .addResult(g.title, g.asText, sourceTool: tool, payload: g.toPayload());
-    setState(() => _last = g);
+    if (!mounted) return;
+    setState(() {
+      _last = g;
+      _lastId = id;
+    });
   }
 
-  /// Interpret the last roll inline (on-device LLM): seed from the result + the
-  /// active scene + PC, run the shared interpretation sheet, log the reading.
+  /// Interpret the last roll inline (on-device LLM). The roll is logged the
+  /// moment it's rolled here, so this APPENDS the reading to that entry rather
+  /// than logging a second one — the same combined roll-plus-reading entry the
+  /// Journal produces, via the shared grounding (see `inspire.dart`).
   Future<void> _interpret() async {
-    final g = _last;
-    if (g == null) return;
-    final journal =
-        ref.read(journalProvider).valueOrNull ?? const <JournalEntry>[];
-    final ctx = ref.read(playContextProvider).valueOrNull;
-    final scene = activeSceneEntry(journal, ctx?.activeSceneId);
-    final settings =
-        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
-    final seed = OracleSeed(
-      resultText: g.asText,
-      genre: settings.genre,
-      tone: settings.tone,
-      sceneContext: scene == null ? '' : '${scene.title}\n${scene.body}'.trim(),
-      activeCharacter: ref.read(activeCharacterLineProvider),
-      systemPrimer: ref.read(systemPrimerProvider),
-    );
-    final accepted = await showModalBottomSheet<OracleInterpretation>(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetCtx) => OracleInterpretationSheet(
-        seed: seed,
-        onAccept: (card) => Navigator.pop(sheetCtx, card),
-      ),
-    );
-    if (accepted == null || !mounted) return;
-    await ref.read(journalProvider.notifier).addResult(
-          'Oracle reading',
-          '(${accepted.lens}): ${accepted.reading}',
-          sourceTool: 'interpret',
-        );
+    final id = _lastId;
+    if (id == null) return;
+    await inspireEntry(context, ref, id);
   }
 
   @override

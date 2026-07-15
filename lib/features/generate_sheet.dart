@@ -11,6 +11,7 @@ import '../shared/result_card.dart';
 import '../state/providers.dart';
 import 'custom_table_editor.dart';
 import 'dice_roll_animation.dart';
+import 'inspire.dart';
 
 /// Opens the flavor-generator sheet from the journal composer.
 Future<void> showGenerateSheet(BuildContext context) =>
@@ -148,6 +149,11 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
             if (_lastDialog != null) ...[
               ResultCard(
                 result: _lastDialog!,
+                onInspire: ref.watch(interpretReadyProvider)
+                    ? () => inspireGenResult(context, ref, _lastDialog!,
+                        sourceTool: sourceToolFor(GenSection.npcs),
+                        payload: _lastDialog!.toPayload())
+                    : null,
                 onLog: () => _logResult(_lastDialog!, GenSection.npcs),
               ),
               const SizedBox(height: 12),
@@ -205,21 +211,21 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
                 // Category order mirrors the Ask → Tables library grouping.
                 for (final (_, group) in groupTablesByCategory(tables))
                   for (final t in group)
-                  InputChip(
-                    key: Key('table-roll-${t.id}'),
-                    label: Text(t.name.isEmpty ? '(untitled)' : t.name),
-                    onPressed: () {
-                      final r = rollCustomTable(t, Dice());
-                      ref.read(journalProvider.notifier).addResult(
-                          r.title, r.asText,
-                          sourceTool: 'custom-table', payload: r.toPayload());
-                      Navigator.of(context).pop();
-                    },
-                    // The chip's trailing button opens the edit/delete dialog.
-                    onDeleted: () => showCustomTableDialog(context, ref, t),
-                    deleteIcon: const Icon(Icons.edit, size: 16),
-                    deleteButtonTooltipMessage: 'Edit table',
-                  ),
+                    InputChip(
+                      key: Key('table-roll-${t.id}'),
+                      label: Text(t.name.isEmpty ? '(untitled)' : t.name),
+                      onPressed: () {
+                        final r = rollCustomTable(t, Dice());
+                        ref.read(journalProvider.notifier).addResult(
+                            r.title, r.asText,
+                            sourceTool: 'custom-table', payload: r.toPayload());
+                        Navigator.of(context).pop();
+                      },
+                      // The chip's trailing button opens the edit/delete dialog.
+                      onDeleted: () => showCustomTableDialog(context, ref, t),
+                      deleteIcon: const Icon(Icons.edit, size: 16),
+                      deleteButtonTooltipMessage: 'Edit table',
+                    ),
                 ActionChip(
                   key: const Key('table-new'),
                   avatar: const Icon(Icons.add, size: 16),

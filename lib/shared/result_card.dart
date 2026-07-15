@@ -28,11 +28,17 @@ class ResultCard extends StatelessWidget {
     super.key,
     required this.result,
     this.onLog,
+    this.onInspire,
     this.actions,
   });
 
   final GenResult result;
   final VoidCallback? onLog;
+
+  /// Read this result with the LLM and log the reading with it (see
+  /// `inspire.dart`). Null hides the button — pass it only when interpret is
+  /// ready (`interpretReadyProvider`).
+  final VoidCallback? onInspire;
 
   /// Contextual quick-actions rendered as chips below the rolls. Empty/null
   /// hides the row.
@@ -52,6 +58,13 @@ class ResultCard extends StatelessWidget {
                 Expanded(
                   child: Text(result.title, style: theme.textTheme.titleMedium),
                 ),
+                if (onInspire != null)
+                  IconButton(
+                    key: const Key('result-inspire'),
+                    tooltip: 'Inspire — read this result for my story',
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    onPressed: onInspire,
+                  ),
                 if (onLog != null)
                   IconButton(
                     tooltip: 'Add to journal',

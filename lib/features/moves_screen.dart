@@ -7,6 +7,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
+import 'inspire.dart';
 
 String _licenseLabel(String licenseUrl) {
   if (licenseUrl.contains('by-nc-sa')) return 'CC-BY-NC-SA 4.0';
@@ -79,6 +80,9 @@ class _MovesScreenState extends ConsumerState<MovesScreen> {
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
               child: ResultCard(
                 result: _last!,
+                onInspire: ref.watch(interpretReadyProvider)
+                    ? () => inspireGenResult(context, ref, _last!)
+                    : null,
                 onLog: () {
                   ref
                       .read(journalProvider.notifier)
