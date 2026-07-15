@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -90,16 +91,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   bool _searching = false;
   final TextEditingController _composer = TextEditingController();
   final FocusNode _composerFocus = FocusNode();
-  // The body swaps layout branches at the scroll-fallback height below, and on
-  // a phone the keyboard shrinks the journal straight across that threshold —
-  // so the swap fires the instant the user starts typing. Without a GlobalKey
-  // the composer's element is destroyed and rebuilt by the swap: the old
-  // EditableText closes its text-input connection (the keyboard hides) while
-  // _composerFocus — owned by this State — keeps focus, so no focus-change
-  // event fires to reopen it. The field keeps its cursor, the keyboard stays
-  // down, and keystrokes go nowhere. The key lets the element reparent across
-  // the swap instead, keeping the input connection alive.
-  final GlobalKey _composerKey = GlobalKey();
   final TextEditingController _search = TextEditingController();
   Timer? _searchDebounce;
   // Drives the entry ListView so a dock roll can reveal the new newest entry.
@@ -1022,17 +1013,25 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Below this height the fixed chrome (panel + suggestion row + dock +
-        // composer) can sum taller than the viewport, so an Expanded entry
-        // region would collapse to 0 and the chrome would overflow. The
-        // observed max fixed chrome (full suggestion row, dock, multi-line
-        // composer affordances) is ~290px; below `kJournalScrollFallback`
-        // we scroll the whole body and give the entry list a bounded minimum so
-        // nothing overflows and the composer stays reachable. Above it, the
-        // current Expanded-fills layout (with reverse-anchoring + _entryScroll)
-        // is used unchanged.
-        const kJournalScrollFallback = 360.0;
-        const kJournalEntryRegionMin = 120.0;
+        // The fixed chrome (panel + suggestion row + dock + composer) can sum
+        // taller than a squeezed viewport — on a phone the keyboard shrinks the
+        // journal to roughly half this. Rather than swap layouts at a
+        // threshold, the body is laid out at `max(viewport, kJournalMinBody)`
+        // inside a scroll view that is always present: at comfortable heights
+        // the box equals the viewport, the content fits exactly and nothing
+        // scrolls (identical to a plain Column + Expanded); when squeezed the
+        // box holds its floor and the viewport scrolls over it, so the entry
+        // list keeps a usable slice and the composer stays reachable.
+        //
+        // This must stay ONE tree at every height. The keyboard drags the
+        // journal across any height threshold on every focus, so a branch here
+        // rebuilds the subtree mid-keystroke: the composer's EditableText is
+        // destroyed and recreated, dropping its text-input connection while
+        // this State's _composerFocus keeps focus — no focus-change event
+        // fires, so the keyboard never reopens and keystrokes go nowhere
+        // (#301). Only the box's height changes with the viewport; every
+        // element identity below is stable.
+        const kJournalMinBody = 360.0;
         // Journal-scoped keyboard shortcuts (fire while focus is inside the
         // journal, e.g. the composer): Cmd/Ctrl+Enter logs the composer,
         // Cmd/Ctrl+Shift+N opens the New-scene dialog.
@@ -1049,22 +1048,22 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               },
               child: child,
             );
-        if (constraints.maxHeight.isFinite &&
-            constraints.maxHeight < kJournalScrollFallback) {
-          return shortcuts(SingleChildScrollView(
+        // An unbounded journal region would make the box infinitely tall (and
+        // Expanded unsatisfiable), so fall back to the floor. The shell always
+        // bounds this in practice.
+        final bodyHeight = constraints.maxHeight.isFinite
+            ? math.max(constraints.maxHeight, kJournalMinBody)
+            : kJournalMinBody;
+        return shortcuts(SingleChildScrollView(
+          child: SizedBox(
+            height: bodyHeight,
             child: Column(
               children: [
-                SizedBox(height: kJournalEntryRegionMin, child: entryRegion),
+                Expanded(child: entryRegion),
                 ...belowEntry,
               ],
             ),
-          ));
-        }
-        return shortcuts(Column(
-          children: [
-            Expanded(child: entryRegion),
-            ...belowEntry,
-          ],
+          ),
         ));
       },
     );
@@ -2163,7 +2162,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
 
   Widget _composerBar() {
     return SafeArea(
-      key: _composerKey,
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 4, 8),

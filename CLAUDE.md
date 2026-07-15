@@ -639,8 +639,9 @@ Working rules for this repo:
   with the merge: `assistantRailExpandedProvider` / `loopBarExpandedProvider`,
   the cross-talk, the rail's viewport-aware default, the `assistant-expand` +
   `loop-collapse-toggle` keys, and `JournalScreen`'s `_railKey` GlobalKey (the
-  assistant no longer sits in the 360px layout-swap subtree, so #302's
-  reparent hack is structurally unnecessary). **GOTCHA:** collapsing UNMOUNTS
+  assistant no longer sits in the journal's swapping subtree, so #302's
+  reparent hack is structurally unnecessary — and the swap itself is since
+  gone, see the journal-body bullet below). **GOTCHA:** collapsing UNMOUNTS
   the assistant, and the panel auto-collapses on journal-composer focus on a
   phone — i.e. every keyboard cycle. So the LLM rank cache + Ask-box text live
   in file-private NON-autoDispose `StateProvider`s in `assistant_rail.dart`
@@ -649,6 +650,28 @@ Working rules for this repo:
   notifiers ACROSS the await since `ref` dies if the panel collapses
   mid-flight. Guarded by `test/assistant_state_survival_test.dart` +
   `test/play_screen_layout_test.dart`.
+- **The journal body is ONE tree at every height** (`journal_screen.dart`, the
+  `LayoutBuilder` at the end of `build`). It lays out at
+  `max(viewport, kJournalMinBody)` (360) inside an always-present
+  `SingleChildScrollView`: with room, the box equals the viewport so content
+  fits exactly and nothing scrolls (identical to a plain `Column` +
+  `Expanded(entryRegion)`); squeezed, the box holds its floor and the viewport
+  scrolls over it, keeping a usable entry slice + a reachable composer. **Do
+  NOT reintroduce a height branch here.** This replaced a swap at 360 between
+  `Column[Expanded(entries), chrome]` and `SingleChildScrollView(Column[...])`
+  — on a phone the keyboard drags the journal across any such threshold on
+  every focus, so the branch fired mid-keystroke and destroyed the composer's
+  `EditableText`, dropping its text-input connection while the State-owned
+  `_composerFocus` kept focus. No focus-change event fired, so the keyboard
+  never reopened and keystrokes went nowhere — the journal was unwritable on a
+  phone (#301, first papered over with a `_composerKey` GlobalKey; both the
+  branch and the key are now gone). Guarded by
+  `test/journal_composer_focus_test.dart` (asserts `testTextInput.isVisible` +
+  real typing across a 336px keyboard inset, and element identity WITHOUT a
+  GlobalKey — if that identity check fails, a branch has crept back) and two
+  sizing invariants in `journal_outer_overflow_ui_test.dart`
+  (`maxScrollExtent == 0` at 900, `> 0` at 240). NOTE: `hasFocus` stays true
+  through the bug — never assert on focus alone here.
 - **Generators are re-homed** (no standalone screen). The 28-generator registry
   lives in `lib/engine/generator_registry.dart` (`GenSection`, `GeneratorDef`,
   `kGenerators`, `flavorGenerators` = 24, `sourceToolFor`). The 24 flavor

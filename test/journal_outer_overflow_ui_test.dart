@@ -119,4 +119,30 @@ void main() {
         reason: 'journal body overflowed at 375px width');
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
+
+  // The body is one tree at every height: a box of max(viewport, 360) inside an
+  // always-present scroll view. The height branch this replaced was what
+  // destroyed the composer mid-keystroke (see journal_composer_focus_test).
+  // These pin the two ends of that sizing so the outer scroll view can't start
+  // scrolling where the layout used to be rigid.
+  ScrollPosition bodyScroll(WidgetTester t) =>
+      t.state<ScrollableState>(find.byType(Scrollable).first).position;
+
+  testWidgets('the body does not scroll when the viewport has room',
+      (tester) async {
+    await pumpJournalAt(tester, 900);
+    final p = bodyScroll(tester);
+    expect(p.maxScrollExtent, 0,
+        reason:
+            'a roomy journal must stay rigid — the box equals the viewport, '
+            'so the outer scroll view has nothing to scroll');
+  });
+
+  testWidgets('the body scrolls once squeezed past the floor', (tester) async {
+    await pumpJournalAt(tester, 240);
+    final p = bodyScroll(tester);
+    expect(p.maxScrollExtent, greaterThan(0),
+        reason: 'a squeezed journal holds its 360 floor and scrolls over it, '
+            'rather than collapsing the entry list and spilling the chrome');
+  });
 }
