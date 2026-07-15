@@ -65,7 +65,14 @@ class _AiNudgeCardState extends ConsumerState<AiNudgeCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const AiBadge(label: 'Bring the oracle to life', size: 15),
+          // Headline-length label: it must wrap on a phone rather than run off
+          // the card. Safe here — the Column inside this fixed-width Container
+          // bounds it.
+          const AiBadge(
+            label: 'Bring the oracle to life',
+            size: 15,
+            wrapLabel: true,
+          ),
           const SizedBox(height: 6),
           Text(
             'On-device AI interprets your rolls, voices NPCs, and recaps your '

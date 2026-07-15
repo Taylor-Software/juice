@@ -193,4 +193,25 @@ void main() {
     expect(tester.getSize(entryList).height, greaterThan(headerH),
         reason: 'entries are the content — they dominate a roomy region');
   });
+
+  // The first-run AI nudge is the first thing a new phone user sees. Its
+  // headline label ('Bring the oracle to life' at 15px) sat in AiBadge's Row
+  // with no flex, so at 390 wide it ran 47px off the card — yellow-and-black
+  // stripes on the very first screen. AiBadge now takes wrapLabel and the nudge
+  // opts in. Guarded at both ends of the app's phone range.
+  //
+  // NOTE: this needs BOTH the narrow width AND the nudge showing — either alone
+  // is clean, which is how it hid. The starvation test above deliberately uses
+  // 700 wide to keep these two failures from masking each other.
+  for (final w in <double>[360.0, 390.0]) {
+    testWidgets('the first-run nudge does not overflow at ${w}px wide',
+        (tester) async {
+      await pumpJournalAt(tester, 562, width: w, firstRun: true);
+      expect(tester.takeException(), isNull,
+          reason: 'the nudge headline must wrap, not overflow, at $w wide');
+      // A hidden card cannot overflow — assert it is actually showing, or this
+      // passes for the wrong reason.
+      expect(find.byKey(const Key('ai-nudge-card')), findsOneWidget);
+    });
+  }
 }
