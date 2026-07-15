@@ -48,8 +48,14 @@ Map<String, Object> _prefs() => {
     };
 
 Future<void> pumpJournalAt(WidgetTester tester, double height,
-    {double width = 700}) async {
-  SharedPreferences.setMockInitialValues(_prefs());
+    {double width = 700, bool firstRun = false}) async {
+  SharedPreferences.setMockInitialValues({
+    ..._prefs(),
+    // A first-run user has neither one-time card dismissed, so the header group
+    // renders the AI nudge + chip-help card and is at its tallest.
+    if (firstRun) 'juice.ai_nudge_seen.v1': false,
+    if (firstRun) 'juice.chip_help_seen.v1': false,
+  });
   await tester.pumpWidget(ProviderScope(
     child: MaterialApp(
       theme: AppTheme.light(),
@@ -144,5 +150,47 @@ void main() {
     expect(p.maxScrollExtent, greaterThan(0),
         reason: 'a squeezed journal holds its 360 floor and scrolls over it, '
             'rather than collapsing the entry list and spilling the chrome');
+  });
+
+  // The entry list is the only reverse:true ListView (the filter strip is a
+  // short horizontal one) — match it exactly rather than by type.
+  final entryList = find.byWidgetPredicate(
+      (w) => w is ListView && w.reverse == true && w.controller != null);
+
+  // The header group (AI nudge / recap / chip help / filters / actions) is
+  // capped at kJournalHeaderMaxFraction of the entry region. Capping it at the
+  // FULL region instead let the group take 100% and starve the list to 0px —
+  // and a lazy ListView with no height builds no items, so the journal rendered
+  // NOTHING, silently, with no overflow to give it away.
+  //
+  // Measured on a real 390x844 phone at first run (both one-time cards showing):
+  // region ~270px, group wanted ~270px, entries got 0. This fixture reproduces
+  // the same starvation at 700 wide — verified: with the cap at 1.0 the entry
+  // list is 0.0px here at 420/460/490/520, and 135px with it at 0.5. It uses
+  // 700 rather than a phone width on purpose: at 390 the first-run nudge ALSO
+  // overflows horizontally by 47px, a separate bug that would muddy this one.
+  testWidgets('the header group never starves the entry list to nothing',
+      (tester) async {
+    await pumpJournalAt(tester, 490, width: 700, firstRun: true);
+    expect(tester.takeException(), isNull);
+    expect(entryList, findsOneWidget);
+    expect(tester.getSize(entryList).height, greaterThan(0),
+        reason: 'a first-run journal must still show entries — the nudge + '
+            'chip-help cards must not consume the whole region');
+    // A 0-height lazy list silently builds no items, which is exactly how this
+    // hid: assert entries actually RENDER, not merely that the box is non-zero.
+    expect(find.textContaining('Gorath'), findsWidgets,
+        reason: 'entries must render, not just have a non-zero box');
+  });
+
+  testWidgets('the header cap is a ceiling, not a target', (tester) async {
+    // Where the group fits naturally it must not be shrunk, and the entry list
+    // keeps the rest — the cap must not start rationing a roomy journal.
+    await pumpJournalAt(tester, 900);
+    final headerH = tester.getSize(find.byType(Scrollbar).first).height;
+    expect(headerH, lessThan(900 * kJournalHeaderMaxFraction),
+        reason: 'at 900 the short header is nowhere near the cap');
+    expect(tester.getSize(entryList).height, greaterThan(headerH),
+        reason: 'entries are the content — they dominate a roomy region');
   });
 }
