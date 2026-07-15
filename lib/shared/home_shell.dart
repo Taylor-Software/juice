@@ -909,20 +909,30 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           Expanded(child: body),
         ]);
       }
+      // Typing on a phone, the nav is 80px of destinations you are not going
+      // to: the keyboard already halves the screen, and what the writer needs
+      // is the story they are writing about. Yield it and hand the height to
+      // the journal — the standard phone pattern, and the same
+      // composer-focus collapse the HUD and the "Next" panel already do.
+      // Returns on blur; the persisted route is untouched.
+      final typing =
+          c.maxWidth < kCompactWidth && ref.watch(journalComposerFocusProvider);
       return Scaffold(
         body: body,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: (i) =>
-              ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
-          destinations: [
-            for (final d in destinations)
-              NavigationDestination(
-                icon: navIcon(d),
-                label: destinationMeta[d]!.label,
+        bottomNavigationBar: typing
+            ? null
+            : NavigationBar(
+                selectedIndex: index,
+                onDestinationSelected: (i) =>
+                    ref.read(shellRouteProvider.notifier).goTo(destinations[i]),
+                destinations: [
+                  for (final d in destinations)
+                    NavigationDestination(
+                      icon: navIcon(d),
+                      label: destinationMeta[d]!.label,
+                    ),
+                ],
               ),
-          ],
-        ),
       );
     });
   }
