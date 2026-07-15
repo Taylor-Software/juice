@@ -2287,43 +2287,17 @@ final recapSuppressedProvider =
     AsyncNotifierProvider<RecapSuppressedNotifier, bool>(
         RecapSuppressedNotifier.new);
 
-/// App-global sticky state for the assistant rail's open/collapsed position.
-/// Null = the user never toggled it; the rail then picks a viewport-aware
-/// default (open on wide screens so new users see suggestion chips, collapsed
-/// on phones where the chrome would bury the journal). A user toggle persists
-/// and wins over the default on every device size.
-class AssistantRailExpandedNotifier extends AsyncNotifier<bool?> {
-  static const _key = 'juice.assistant_rail_expanded.v1';
-
-  @override
-  Future<bool?> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key);
-
-  Future<void> setExpanded(bool value) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, value);
-    state = AsyncData(value);
-  }
-}
-
-final assistantRailExpandedProvider =
-    AsyncNotifierProvider<AssistantRailExpandedNotifier, bool?>(
-        AssistantRailExpandedNotifier.new);
-
-/// Ephemeral (never persisted): true while the journal composer has keyboard
-/// focus. On compact viewports the play chrome (loop bar, assistant rail,
-/// campaign-header expanded row) collapses while this is set, so the on-screen
-/// keyboard plus chrome can't squeeze the entry list to nothing mid-typing.
-final journalComposerFocusProvider = StateProvider<bool>((_) => false);
-
-/// App-global sticky state for the Play screen's Solo-Loop bar (expanded vs
-/// collapsed). Default false (collapsed) so the Play screen opens to the journal
-/// feed — the loop bar's "Next beat" + Steps otherwise stack ~160px of chrome
-/// above the feed and squeeze it. The always-visible "Solo Loop" header keeps it
-/// one tap away. Per-device, NOT session-scoped — same posture as
-/// [assistantRailExpandedProvider].
-class LoopBarExpandedNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.loopbar_expanded.v1';
+/// App-global sticky state for the Play screen's "Next" panel — the single
+/// accordion holding the Solo-Loop controls and the assistant (suggestion
+/// chips + Ask the Oracle). Default false (collapsed) on every viewport so the
+/// Play screen opens to the journal feed; the always-visible "Next" header
+/// keeps the panel one tap away. Per-device, NOT session-scoped.
+///
+/// Replaces the separate loop-bar and assistant-rail flags: the two panels
+/// were merged into one, which also retired their "opening one closes the
+/// other" cross-talk and the rail's viewport-dependent default.
+class PlayPanelExpandedNotifier extends AsyncNotifier<bool> {
+  static const _key = 'juice.play_panel_expanded.v1';
 
   @override
   Future<bool> build() async =>
@@ -2336,9 +2310,15 @@ class LoopBarExpandedNotifier extends AsyncNotifier<bool> {
   }
 }
 
-final loopBarExpandedProvider =
-    AsyncNotifierProvider<LoopBarExpandedNotifier, bool>(
-        LoopBarExpandedNotifier.new);
+final playPanelExpandedProvider =
+    AsyncNotifierProvider<PlayPanelExpandedNotifier, bool>(
+        PlayPanelExpandedNotifier.new);
+
+/// Ephemeral (never persisted): true while the journal composer has keyboard
+/// focus. On compact viewports the play chrome (the "Next" panel and the
+/// campaign-header expanded row) collapses while this is set, so the on-screen
+/// keyboard plus chrome can't squeeze the entry list to nothing mid-typing.
+final journalComposerFocusProvider = StateProvider<bool>((_) => false);
 
 /// The interpreter's status as a reactive provider (the service exposes it as
 /// a ValueListenable). Lets AI affordances rebuild as the phase flips.

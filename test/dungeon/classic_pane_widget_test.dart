@@ -166,6 +166,9 @@ void main() {
           DungeonFaction(
               id: 'f1', name: 'X', monsterType: 'Goblins', roomIds: ['r'])
         ]));
+    // Reset is a secondary control, folded behind the chrome's Tools toggle.
+    await tester.tap(find.byKey(const Key('map-tools-toggle')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('dungeon-reset')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reset'));

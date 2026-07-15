@@ -601,9 +601,10 @@ Working rules for this repo:
   system — spells are relics/freeform). See
   `docs/superpowers/specs/2026-06-29-content-library-spells-monsters-design.md`
   and the plan `docs/superpowers/plans/2026-06-29-content-library-spells-monsters.md`.
-- The **assistant rail** (`lib/features/assistant_rail.dart`) sits atop the
-  Journal verb (collapsed by default — a thin `assistant-expand` header; chips +
-  ask box render only when expanded, so it doesn't crowd the journal). Suggestion
+- The **assistant** (`AssistantSection`, `lib/features/assistant_rail.dart`) is a
+  section of the Play screen's **"Next" panel** — it owns NO header and NO
+  collapse state (mounting IS being visible; see the "Next" panel bullet below).
+  Suggestion
   chips come from a pure rule-based `SuggestionEngine` (`lib/engine/suggestions.dart`,
   `suggestionsFor`) wired by `suggestionsProvider` (`lib/state/suggestions_provider.dart`,
   a plain sync `Provider<List<Suggestion>>` reading the PlayContext spine +
@@ -624,6 +625,30 @@ Working rules for this repo:
   `kind==scene` entry (no explicit activeScene pointer). See
   `docs/superpowers/specs/2026-06-18-assistant-rail-design.md`. Deferred:
   LLM-ranked suggestions, per-system rule packs, multi-turn GM chat.
+- The **"Next" panel** (2026-07-14) is the Play screen's ONE collapsible
+  chrome accordion above the journal feed, built by `PlayScreen`
+  (`loop_bar.dart`): a slim `play-panel-toggle` header, then (when expanded)
+  `LoopBar` + `AssistantSection` stacked in a scroll region capped at ~45% of
+  the play area, then `JournalScreen` fills the rest as a NON-flex sibling.
+  Collapsed by default on EVERY viewport (`playPanelExpandedProvider`,
+  `juice.play_panel_expanded.v1`, app-global like `aiNudgeSeenProvider`).
+  This MERGED two separately-collapsing panels — the Solo-Loop bar and the
+  assistant rail (which used to mount inside `JournalScreen`) — that each had
+  their own header, own sticky flag, and an "opening one closes the other"
+  phone rule; they answer the same question ("what do I do next"). Retired
+  with the merge: `assistantRailExpandedProvider` / `loopBarExpandedProvider`,
+  the cross-talk, the rail's viewport-aware default, the `assistant-expand` +
+  `loop-collapse-toggle` keys, and `JournalScreen`'s `_railKey` GlobalKey (the
+  assistant no longer sits in the 360px layout-swap subtree, so #302's
+  reparent hack is structurally unnecessary). **GOTCHA:** collapsing UNMOUNTS
+  the assistant, and the panel auto-collapses on journal-composer focus on a
+  phone — i.e. every keyboard cycle. So the LLM rank cache + Ask-box text live
+  in file-private NON-autoDispose `StateProvider`s in `assistant_rail.dart`
+  (`_rankCacheProvider`/`_rankingSigProvider`/`_askTextProvider`, same posture
+  as the loop bar's nav-surviving state), NOT in State; `_maybeRank` holds its
+  notifiers ACROSS the await since `ref` dies if the panel collapses
+  mid-flight. Guarded by `test/assistant_state_survival_test.dart` +
+  `test/play_screen_layout_test.dart`.
 - **Generators are re-homed** (no standalone screen). The 28-generator registry
   lives in `lib/engine/generator_registry.dart` (`GenSection`, `GeneratorDef`,
   `kGenerators`, `flavorGenerators` = 24, `sourceToolFor`). The 24 flavor
@@ -689,10 +714,8 @@ Working rules for this repo:
   placeholder (active-session invariant) — the re-route is launcher-UI-only.
   Covered by `test/launcher_first_run_test.dart`. See
   `docs/superpowers/specs/2026-07-11-first-run-start-flow-design.md`.
-- **Play-loop consolidation** (Streamline epic Phase 6) — assistant rail now
-  defaults open and persists its expand/collapse state per device
-  (`assistantRailExpandedProvider`, `juice.assistant_rail_expanded.v1`, app-global
-  like `aiNudgeSeenProvider`). Track tab order resequenced: Home → Scenes →
+- **Play-loop consolidation** (Streamline epic Phase 6) — Track tab order
+  resequenced: Home → Scenes →
   Threads → **Encounter** → Rumors → Tracks → party tools → lonelog (Encounter
   surfaced earlier so an active fight is one tap away). Sheet empty-state
   ("Every story needs a hero. Create your first character.") was already built;
@@ -1025,6 +1048,31 @@ Working rules for this repo:
   a tap-to-select hex detail card + a `_HexZoom` canvas-mode switch — the flower
   ring, `siteLines`, and `siteAreas` are all stored on `HexCell` (never
   `MapState.rooms`, so the Dungeon tab stays independent).
+- **Map chrome floats; the canvas owns the pane** (`MapChrome` in
+  `map_screen.dart`, 2026-07-14). Both panes previously stacked controls,
+  site/anchor chips, the level header and hexcrawl controls above
+  `Expanded(canvas)` and the detail + result cards below it, so the map got
+  only the leftovers from both ends (worst on a phone, and a zoomed hex view
+  wore the region's controls on top of its own). Now the canvas fills the pane
+  in a `Stack` and the chrome floats: a compact bar of `primary` verbs (per
+  zoom level — Travel / New room / classic-enter / flower+interior Back+Reveal;
+  a classic dungeon with levels puts `_levelHeader` here, since depth is
+  identity, not a tool), a `map-tools-toggle` folding away `tools`
+  (journal/snapshot/reset, dungeon-site + up-to-world chips, hexcrawl
+  generation, the env chip), and a bottom `detail` overlay. Both float regions
+  cap at `_kDetailMaxFraction` (45%) and scroll — chrome may crowd the map,
+  never swallow it, and a bottom-unbounded `Positioned` must never silently
+  clip itself out of reach. **GOTCHAS:** (1) detail widgets must bring their
+  OWN `Card` surface (the overlay adds none — that would nest a card in a
+  card) and their host Column uses `crossAxisAlignment.stretch` (a Column
+  centers by default); (2) the bar's Row uses `Expanded` — `Flexible` +
+  `Spacer` BOTH default to flex:1 and split the width 50/50, stranding the
+  toggle mid-bar; (3) `_mapViewport` (the one shared `InteractiveViewer` for
+  all four canvases) applies `_kChromeInset` to the PANNABLE CONTENT, not the
+  canvas, so a fresh dungeon's entrance doesn't land under the bar that rolled
+  it — it sits OUTSIDE the tap target, so hit-test coords and the
+  painter/`roomIdAt` origin contract are untouched. Tests reaching a folded
+  tool must tap `map-tools-toggle` first.
 - The **Classic Dungeon crawler** (opt-in `classic-dungeon` system,
   `SystemCategory.exploration`, NOT in `kAllSystems`) vendors **Roll 4 Ruin
   v2.1** (Nocturnal Peacock, **CC-BY-NC-SA-4.0** — attribution in

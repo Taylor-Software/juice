@@ -52,6 +52,14 @@ void main() {
     return ProviderScope.containerOf(tester.element(find.byType(HexMapPane)));
   }
 
+  /// Secondary map controls (journal/snapshot/reset, dungeon-site chips, the
+  /// up-to-world chip, hexcrawl generation) are folded behind the chrome's
+  /// Tools toggle so the canvas owns the pane — open it before reaching them.
+  Future<void> openTools(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('map-tools-toggle')));
+    await tester.pumpAndSettle();
+  }
+
   // Two rooms side by side at known coordinates so taps are deterministic.
   String seededMap({List<Map<String, dynamic>>? hexes}) => jsonEncode({
         'rooms': [
@@ -114,6 +122,44 @@ void main() {
     expect(find.byKey(const Key('dungeon-canvas')), findsOneWidget);
   });
 
+  // Regression guard for the full-bleed map chrome. Both panes used to stack
+  // controls, chips and detail cards as Column siblings around
+  // Expanded(canvas), so the map got only the leftovers from both ends. The
+  // canvas now owns the pane and the chrome floats over it.
+  testWidgets('the canvas owns the pane; the detail card floats over it',
+      (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await pumpDungeon(tester, mapJson: seededMap());
+
+    final paneH = tester.getSize(find.byType(DungeonMapPane)).height;
+    final viewport = find.ancestor(
+        of: find.byKey(const Key('dungeon-canvas')),
+        matching: find.byType(InteractiveViewer));
+    expect(tester.getSize(viewport).height, paneH,
+        reason: 'the canvas viewport should fill the pane, not share it');
+
+    // Selecting a room must not shrink the map — the card floats over it.
+    final origin = tester.getTopLeft(find.byKey(const Key('dungeon-canvas')));
+    await tester.tapAt(origin + const Offset(56, 56));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('room-detail-card')), findsOneWidget);
+    expect(tester.getSize(viewport).height, paneH,
+        reason: 'the detail card stole height from the canvas');
+  });
+
+  testWidgets('secondary controls fold away behind the Tools toggle',
+      (tester) async {
+    await pumpDungeon(tester, mapJson: seededMap());
+    expect(find.byKey(const Key('dungeon-reset')), findsNothing);
+    // The pane's main verb stays one tap away, never folded.
+    expect(find.byKey(const Key('new-room')), findsOneWidget);
+    await openTools(tester);
+    expect(find.byKey(const Key('dungeon-reset')), findsOneWidget);
+  });
+
   testWidgets('tap selects a room; Linger appends detail and shows result',
       (tester) async {
     final container = await pumpDungeon(tester, mapJson: seededMap());
@@ -139,6 +185,7 @@ void main() {
 
   testWidgets('journal snapshot logs room count and titles', (tester) async {
     final container = await pumpDungeon(tester, mapJson: seededMap());
+    await openTools(tester);
     await tester.tap(find.byKey(const Key('dungeon-journal')));
     await tester.pumpAndSettle();
     final entries = container.read(journalProvider).valueOrNull!;
@@ -155,6 +202,7 @@ void main() {
         mapJson: seededMap(hexes: [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ]));
+    await openTools(tester);
     await tester.tap(find.byKey(const Key('dungeon-reset')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reset'));
@@ -290,6 +338,7 @@ void main() {
           'currentHexCol': 1,
           'currentHexRow': 0,
         }));
+    await openTools(tester);
     await tester.tap(find.byKey(const Key('hex-journal')));
     await tester.pumpAndSettle();
     final entries = container.read(journalProvider).valueOrNull!;
@@ -424,8 +473,7 @@ void main() {
     expect(container.read(mapProvider).valueOrNull!.hasAnchor, isFalse);
   });
 
-  testWidgets(
-      'backlink sheet row previews the entry; Open journal navigates',
+  testWidgets('backlink sheet row previews the entry; Open journal navigates',
       (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
@@ -469,8 +517,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('entry-preview-open-n1')));
     await tester.pumpAndSettle();
-    expect(container.read(shellRouteProvider).destination,
-        Destination.journal);
+    expect(container.read(shellRouteProvider).destination, Destination.journal);
     // Both the preview and the backlink sheet are gone.
     expect(find.byKey(const Key('entry-preview-n1')), findsNothing);
     expect(find.byKey(const Key('loc-entry-row-n1')), findsNothing);
@@ -607,6 +654,7 @@ void main() {
           'currentHexRow': null,
         }));
 
+    await openTools(tester);
     expect(find.byKey(const Key('dungeon-site-chip-a')), findsOneWidget);
     expect(find.byKey(const Key('dungeon-site-chip-b')), findsOneWidget);
     expect(find.byKey(const Key('dungeon-new-site')), findsOneWidget);
@@ -646,6 +694,7 @@ void main() {
           'anchorHexRow': 3,
         }));
 
+    await openTools(tester);
     expect(find.byKey(const Key('dungeon-up-world')), findsOneWidget);
     expect(find.textContaining('Hex (2, 3)'), findsOneWidget);
     await tester.tap(find.byKey(const Key('dungeon-up-world')));

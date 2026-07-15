@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/oracle.dart';
 import 'package:juice_oracle/engine/oracle_data.dart';
+import 'package:juice_oracle/engine/oracle_interpreter.dart';
+import 'package:juice_oracle/features/assistant_rail.dart';
 import 'package:juice_oracle/features/journal_screen.dart';
 import 'package:juice_oracle/features/loop_bar.dart';
 import 'package:juice_oracle/state/interpreter.dart';
@@ -21,11 +23,15 @@ Oracle _oracle() => Oracle(OracleData(
 /// Regression guard for the Play-screen split. PlayScreen previously wrapped the
 /// Solo-Loop bar in `Flexible(fit: loose)` — which defaults to flex: 1, the same
 /// as the journal's `Expanded` — so the column split its height ~50/50 and the
-/// journal feed was squeezed to a sliver that couldn't scroll. The loop bar must
+/// journal feed was squeezed to a sliver that couldn't scroll. The panel must
 /// be a compact NON-flex child so the journal keeps priority, and it must be
 /// collapsible.
+///
+/// Also guards the merged "Next" panel: the Solo-Loop bar and the assistant
+/// (previously a separately-collapsing rail inside [JournalScreen]) are now one
+/// accordion, collapsed by default on every viewport.
 void main() {
-  Future<void> pump(WidgetTester t) async {
+  Future<void> pump(WidgetTester t, {FakeInterpreterService? fake}) async {
     t.view.physicalSize = const Size(1000, 720);
     t.view.devicePixelRatio = 1.0;
     addTearDown(t.view.resetPhysicalSize);
@@ -34,7 +40,8 @@ void main() {
       overrides: [
         // Avoid rootBundle (which hangs the headless runner) for the oracle.
         oracleProvider.overrideWith((ref) async => _oracle()),
-        interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
+        interpreterServiceProvider
+            .overrideWithValue(fake ?? FakeInterpreterService()),
       ],
       child: const MaterialApp(home: Scaffold(body: PlayScreen())),
     ));
@@ -42,20 +49,54 @@ void main() {
   }
 
   testWidgets(
-      'loop bar is collapsed by default so the journal fills the height',
+      'Next panel is collapsed by default so the journal fills the height',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
-    // Default is collapsed: no loop bar chrome, the journal owns the height and
-    // the composer is reachable at the bottom.
+    // Default is collapsed on every viewport (this one is wide): neither the
+    // loop bar nor the assistant renders, the journal owns the height and the
+    // composer is reachable at the bottom.
     expect(find.byType(LoopBar), findsNothing);
+    expect(find.byType(AssistantSection), findsNothing);
     expect(find.byKey(const Key('journal-composer')), findsOneWidget);
   });
 
-  testWidgets('expanding shows a compact loop bar the journal still dwarfs',
+  testWidgets('one toggle reveals both the loop bar and the assistant',
+      (t) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    await pump(t);
+    // The merged panel has exactly one header — the old separate 'Solo Loop'
+    // and 'Assistant' headers are gone.
+    expect(find.byKey(const Key('play-panel-toggle')), findsOneWidget);
+    await t.tap(find.byKey(const Key('play-panel-toggle')));
+    await t.pumpAndSettle();
+    expect(find.byType(LoopBar), findsOneWidget);
+    expect(find.byType(AssistantSection), findsOneWidget);
+  });
+
+  testWidgets('collapsed Next panel does not call the LLM (no spend)',
+      (t) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.ai_enabled.v1': true,
+    });
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    fake.queuedRank.add(const RankResult(order: ['start-scene'], why: 'x'));
+    // AI ready, but the panel is collapsed → the assistant never mounts, so
+    // suggestion ranking never runs.
+    await pump(t, fake: fake);
+    expect(fake.rankCalls, 0);
+  });
+
+  testWidgets('expanding shows a compact panel the journal still dwarfs',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
@@ -64,8 +105,8 @@ void main() {
     await pump(t);
     final collapsedJournalH = t.getSize(find.byType(JournalScreen)).height;
 
-    // Expand the loop bar via its sticky toggle.
-    await t.tap(find.byKey(const Key('loop-collapse-toggle')));
+    // Expand the panel via its sticky toggle.
+    await t.tap(find.byKey(const Key('play-panel-toggle')));
     await t.pumpAndSettle();
 
     final loopH = t.getSize(find.byType(LoopBar)).height;
@@ -79,14 +120,14 @@ void main() {
     expect(journalH, lessThan(collapsedJournalH));
   });
 
-  testWidgets('expanded loop bar has a visible scrollbar and reachable steps',
+  testWidgets('expanded panel has a visible scrollbar and reachable steps',
       (t) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
-    await t.tap(find.byKey(const Key('loop-collapse-toggle')));
+    await t.tap(find.byKey(const Key('play-panel-toggle')));
     await t.pumpAndSettle();
 
     // The capped region carries the "there is more below" affordance

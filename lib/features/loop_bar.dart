@@ -13,6 +13,7 @@ import '../shared/design_tokens.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'assistant_rail.dart';
 import 'generate_sheet.dart';
 import 'journal_screen.dart';
 
@@ -632,18 +633,27 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
       );
 }
 
-/// The "Play" destination body: the collapsible Solo-Loop bar above the live
+/// The "Play" destination body: one collapsible "Next" panel above the live
 /// journal feed.
 ///
-/// Layout: a slim toggle header, then (when expanded) the [LoopBar] at its
-/// natural height capped at ~45% of the play area (scrolling internally beyond
-/// that), then [JournalScreen] fills — and owns the scroll of — the rest.
+/// Layout: a slim toggle header, then (when expanded) the [LoopBar] and
+/// [AssistantSection] stacked at their natural height, capped at ~45% of the
+/// play area (scrolling internally beyond that), then [JournalScreen] fills —
+/// and owns the scroll of — the rest.
 ///
-/// The loop bar is a NON-flex child so the journal always keeps priority. An
+/// The two were separately-collapsing panels — the Solo-Loop bar here and the
+/// assistant rail nested inside [JournalScreen] — each with its own header,
+/// its own sticky flag, and a "opening one closes the other" rule on phones.
+/// They answer the same question ("what do I do next"), so they are now one
+/// accordion with one sticky flag ([playPanelExpandedProvider]) and no
+/// cross-talk. Hosting the assistant here also keeps it clear of
+/// [JournalScreen]'s narrow-viewport layout swap, which used to rebuild it.
+///
+/// The panel is a NON-flex child so the journal always keeps priority. An
 /// earlier `Flexible(fit: loose)` had the DEFAULT flex: 1, identical to the
 /// journal's `Expanded` flex: 1, so the column split its height ~50/50 — the
-/// loop bar reserved half the screen and squeezed the feed to a sliver that
-/// couldn't scroll. Collapse state is sticky ([loopBarExpandedProvider]).
+/// panel reserved half the screen and squeezed the feed to a sliver that
+/// couldn't scroll.
 class PlayScreen extends ConsumerStatefulWidget {
   const PlayScreen({super.key});
   @override
@@ -665,11 +675,12 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final compact = MediaQuery.sizeOf(context).width < kCompactWidth;
     // Match the notifier's default (collapsed) on the first loading frame so
-    // the bar doesn't flash open and snap shut. While the composer has focus
+    // the panel doesn't flash open and snap shut. While the composer has focus
     // on a phone, render collapsed — the keyboard already halves the viewport.
-    final stored = ref.watch(loopBarExpandedProvider).valueOrNull ?? false;
+    final stored = ref.watch(playPanelExpandedProvider).valueOrNull ?? false;
     final typing = compact && ref.watch(journalComposerFocusProvider);
     final expanded = stored && !typing;
     return LayoutBuilder(
@@ -679,30 +690,26 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
             : double.infinity;
         return Column(
           children: [
-            InkWell(
-              key: const Key('loop-collapse-toggle'),
-              onTap: () {
-                ref
-                    .read(loopBarExpandedProvider.notifier)
-                    .setExpanded(!expanded);
-                // Phones never stack the loop bar and the assistant rail
-                // expanded at once — opening one closes the other.
-                if (!expanded && compact) {
-                  ref
-                      .read(assistantRailExpandedProvider.notifier)
-                      .setExpanded(false);
-                }
-              },
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-                child: Row(
-                  children: [
-                    Icon(expanded ? Icons.expand_less : Icons.expand_more,
-                        size: 20),
-                    const SizedBox(width: 6),
-                    Text('Solo Loop',
-                        style: Theme.of(context).textTheme.labelMedium),
-                  ],
+            Semantics(
+              button: true,
+              label: expanded ? 'Collapse next' : 'Expand next',
+              child: InkWell(
+                key: const Key('play-panel-toggle'),
+                onTap: () => ref
+                    .read(playPanelExpandedProvider.notifier)
+                    .setExpanded(!expanded),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.bolt, size: 16, color: theme.colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Text('Next', style: theme.textTheme.labelMedium),
+                      const Spacer(),
+                      Icon(expanded ? Icons.expand_less : Icons.expand_more,
+                          size: 18),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -714,7 +721,10 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
                   thumbVisibility: true,
                   child: SingleChildScrollView(
                     controller: _loopScroll,
-                    child: const LoopBar(),
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [LoopBar(), AssistantSection()],
+                    ),
                   ),
                 ),
               ),
