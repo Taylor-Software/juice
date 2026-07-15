@@ -1015,7 +1015,19 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
       },
     );
 
-    // The chrome that sits below the entry region — order preserved exactly.
+    // Typing on a phone, the roll dock and the "Track …?" chips are 104px of
+    // tools the writer isn't reaching for — and the keyboard has already taken
+    // half the screen, leaving the journal ~34px. Yield them while the composer
+    // has focus so the entries do; both return on blur. Nothing is lost
+    // meanwhile: a trailing '?' still raises the ask chip and '/' still opens
+    // the slash palette, so rolling mid-sentence stays a keystroke away.
+    //
+    // The slash / mention / ask panel above is a TYPING affordance — it stays.
+    // The composer stays LAST: Element.updateChildren syncs the tail bottom-up,
+    // so dropping children ABOVE it keeps its EditableText (and the keyboard)
+    // alive. Anything that displaces it from last risks #301 all over again.
+    final typingOnPhone = MediaQuery.sizeOf(context).width < kCompactWidth &&
+        ref.watch(journalComposerFocusProvider);
     final belowEntry = <Widget>[
       if (_slashActive)
         _slashPalette()
@@ -1023,8 +1035,8 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         _mentionPanel()
       else if (_askActive)
         _askChip(),
-      _suggestionRow(),
-      InlineRollDock(onRolled: _revealNewest),
+      if (!typingOnPhone) _suggestionRow(),
+      if (!typingOnPhone) InlineRollDock(onRolled: _revealNewest),
       _composerBar(),
     ];
 
