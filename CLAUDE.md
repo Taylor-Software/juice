@@ -403,12 +403,17 @@ Working rules for this repo:
   oracles, moves, map, and the generate sheet's dialog card; `table-inspire-<key>`
   on Ask → Tables rows; `oracle-roll-inspire` in the draw sheet; and
   `showLoggedSnackBar` adds an Inspire action to the instant-log surfaces
-  (custom tables, scenes, HUD/composer draws). All gate on
-  `interpretReadyProvider`. **GOTCHA:** `showLoggedSnackBar` closes over `ref`,
-  so it is only safe where the host stays mounted — NOT from a dialog/sheet that
-  pops (the generate sheet's 24 flavor chips log-and-pop, so they're deliberately
-  left to the journal's own Interpret). Retry is the sheet's existing
-  Regenerate — no new UI. Note `JournalKind` defaults to `result` and the entry
+  (custom tables, scenes, combat, HUD/composer draws). All gate on
+  `interpretReadyProvider`. Retry is the sheet's existing Regenerate — no new UI.
+  **GOTCHA:** `showLoggedSnackBar` closes over `ref`/`context` for a tap that
+  happens LATER, so it is only safe where that host stays mounted — never call it
+  from a dialog/sheet about to pop. Where a surface logs-and-pops, the fix is to
+  **pop the entry id and let the opener show the snackbar**: `showGenerateSheet
+  (context, ref)` (the 24 flavor chips + My Tables chips — one tap still logs and
+  closes) and `_attack`'s `showDialog<({String id, String line})>` (combat) both
+  do this, so the surviving ref belongs to the caller. Guarded by
+  `test/generate_sheet_test.dart` (taps Inspire on the popped sheet's entry — a
+  dead ref throws there). Note `JournalKind` defaults to `result` and the entry
   menu gates Interpret on exactly that, so every logged result was ALREADY
   interpretable from the journal; this work is about reach at the point of the
   roll, not a missing capability.

@@ -507,7 +507,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   /// /inspire: opens the generators sheet (the same surface as composer-inspire).
   /// [arg] is accepted for forward-compat but the sheet has no preselect hook,
   /// so it just opens.
-  void _inspireCmd(String arg) => showGenerateSheet(context);
+  void _inspireCmd(String arg) => showGenerateSheet(context, ref);
 
   /// /thread <title>: creates a story thread with that title via the existing
   /// ThreadNotifier.add pipeline. An empty title navigates to the Track verb's
@@ -2235,7 +2235,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
               key: const Key('composer-inspire'),
               icon: const Icon(Icons.auto_awesome),
               tooltip: 'Inspire (generators)',
-              onPressed: () => showGenerateSheet(context),
+              onPressed: () => showGenerateSheet(context, ref),
             ),
             if (ref.watch(aiReadyProvider))
               PopupMenuButton<NarrateMode>(

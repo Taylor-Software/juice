@@ -240,7 +240,7 @@ class CampaignHeader extends ConsumerWidget {
                       label: Text(
                           crawl.lost ? 'Wilderness (lost)' : 'Wilderness',
                           style: TextStyle(color: tk.inkMuted)),
-                      onPressed: () => showGenerateSheet(context),
+                      onPressed: () => showGenerateSheet(context, ref),
                     ),
                   if (light == 0)
                     Tooltip(

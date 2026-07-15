@@ -212,7 +212,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                 key: const Key('loop-inspire'),
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('Inspire'),
-                onPressed: () => showGenerateSheet(context),
+                onPressed: () => showGenerateSheet(context, ref),
               ),
             ]),
             _step(
@@ -518,7 +518,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
       case BeatAction.interpret:
         _interpret();
       case BeatAction.inspire:
-        unawaited(showGenerateSheet(context));
+        unawaited(showGenerateSheet(context, ref));
       case BeatAction.capture:
         FocusScope.of(context).requestFocus(_captureFocus);
     }

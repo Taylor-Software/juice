@@ -10,8 +10,11 @@ import 'package:juice_oracle/engine/oracle_data.dart';
 import 'package:juice_oracle/features/generate_sheet.dart';
 import 'package:juice_oracle/shared/result_card.dart';
 import 'package:juice_oracle/shared/theme.dart';
+import 'package:juice_oracle/state/interpreter.dart';
 import 'package:juice_oracle/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_interpreter.dart';
 
 Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -44,7 +47,95 @@ Future<void> _pumpSheet(WidgetTester tester, ProviderContainer c) async {
   await tester.pumpAndSettle();
 }
 
+/// Pumps a HOST that opens the sheet via the real [showGenerateSheet] entry
+/// point. The host — not the sheet — owns the context/ref the Inspire SnackBar
+/// closes over, which is the whole point: a flavor chip pops the sheet, so a
+/// snackbar wired from inside it would fire on a dead ref.
+Future<void> _pumpHost(WidgetTester tester, ProviderContainer c) async {
+  await tester.pumpWidget(UncontrolledProviderScope(
+    container: c,
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      home: Scaffold(
+        body: Consumer(
+          builder: (context, ref, _) => ElevatedButton(
+            key: const Key('open-gen'),
+            onPressed: () => showGenerateSheet(context, ref),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    ),
+  ));
+  await tester.pumpAndSettle();
+}
+
 void main() {
+  testWidgets('a flavor chip logs, pops the sheet, and offers Inspire on the '
+      'entry it just wrote', (tester) async {
+    SharedPreferences.setMockInitialValues({..._basePrefs});
+    final fake = FakeInterpreterService(
+        initial: const InterpreterStatus(InterpreterPhase.ready));
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+      interpretReadyProvider.overrideWithValue(true),
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await c.read(sessionsProvider.future);
+    await c.read(journalProvider.future);
+
+    await _pumpHost(tester, c);
+    await tester.tap(find.byKey(const Key('open-gen')));
+    await tester.pumpAndSettle();
+
+    // One tap on a flavor chip: logs AND closes (the fast path is preserved).
+    await tester.tap(find.byKey(const Key('gen-New Quest')));
+    await tester.pumpAndSettle();
+    expect(find.byType(GenerateSheet), findsNothing, reason: 'sheet popped');
+    expect((c.read(journalProvider).valueOrNull ?? const []), hasLength(1));
+
+    // The snackbar's Inspire action runs against the HOST's ref, which
+    // outlived the popped sheet — a dead ref would throw here.
+    final inspire = find.text('Inspire');
+    expect(inspire, findsOneWidget);
+    await tester.tap(inspire);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const Key('interp-accept-0')));
+    await tester.pumpAndSettle();
+
+    // Still ONE entry — the reading folded into the roll it came from.
+    final journal = c.read(journalProvider).valueOrNull ?? const [];
+    expect(journal, hasLength(1));
+    expect(journal.single.body, contains('— Oracle reading (literal): fallback'));
+  });
+
+  testWidgets('no Inspire action on the snackbar when interpret is not ready',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({..._basePrefs});
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+      interpretReadyProvider.overrideWithValue(false),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await c.read(sessionsProvider.future);
+    await c.read(journalProvider.future);
+
+    await _pumpHost(tester, c);
+    await tester.tap(find.byKey(const Key('open-gen')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('gen-New Quest')));
+    await tester.pumpAndSettle();
+
+    expect((c.read(journalProvider).valueOrNull ?? const []), hasLength(1));
+    expect(find.text('Inspire'), findsNothing);
+    expect(find.text('Added to journal'), findsOneWidget);
+  });
+
   testWidgets('lists flavor generators (not the entity ones)', (tester) async {
     final c = await _makeContainer();
     await _pumpSheet(tester, c);
