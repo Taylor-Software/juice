@@ -54,6 +54,12 @@ import 'sketch_open.dart';
 /// (a fresh launch always starts in the full journal).
 final _readingModeProvider = StateProvider<bool>((_) => false);
 
+/// Most of the journal's entry region that the fixed top group (AI nudge /
+/// recap / chip help / filters / actions / search) may take before it scrolls
+/// internally. Entries are the content — the chrome above them never gets more
+/// than half, at any viewport.
+const double kJournalHeaderMaxFraction = 0.5;
+
 /// The campaign journal: a forward-reading stream of entries (oldest at top)
 /// with a composer pinned at the bottom for free-text and scene entries.
 /// The composer's attach actions. They live behind one `＋` menu rather than
@@ -908,15 +914,26 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         // The fixed top group (nudge / recap / filters / actions /
         // search) sits above the entry list. At comfortable heights it
         // takes its natural size and the entry ListView fills the rest.
-        // When the region is short the group is capped at the available
-        // height and scrolls internally (rather than squeezing the entry
-        // Expanded below zero and overflowing). The ListView keeps its
-        // own Expanded + reverse-anchoring + _entryScroll either way.
+        // When the region is short the group is capped and scrolls
+        // internally, rather than squeezing the entry Expanded below zero
+        // and overflowing. The ListView keeps its own Expanded +
+        // reverse-anchoring + _entryScroll either way.
+        //
+        // The cap is a FRACTION, not the full region: capping at
+        // `constraints.maxHeight` let the group take 100% and starve the
+        // list to 0px, and a lazy ListView with no height builds no items —
+        // so the journal rendered NOTHING, silently. That was the real state
+        // on a 390x844 phone at first run, where the AI nudge + chip-help
+        // card push the group to ~270px against a ~270px region. Entries are
+        // the content; the chrome above them never gets more than half.
+        // (Matches the 45% precedent in MapChrome and the "Next" panel.)
         return LayoutBuilder(
           builder: (context, constraints) => Column(
             children: [
               ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                constraints: BoxConstraints(
+                    maxHeight:
+                        constraints.maxHeight * kJournalHeaderMaxFraction),
                 // The visible thumb is what tells a first-time user the header
                 // group (Solo Loop steps etc.) continues past the fold — the
                 // expanded Steps panel used to clip with no affordance at all
