@@ -17,20 +17,24 @@ Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
         as Map<String, dynamic>));
 
-/// The journal body swaps layout branches at its 360px scroll-fallback height:
-/// a tall viewport gets `Column[rail, Expanded(entries), chrome]`, a short one
-/// gets `SingleChildScrollView(Column[...])`. On a phone the software keyboard
-/// shrinks the journal straight across that threshold, so the swap fires the
-/// instant the user starts typing.
+/// On a phone the software keyboard halves the journal's height the instant the
+/// user starts typing, so the body is relaid out mid-keystroke. That relayout
+/// must not rebuild the composer's element.
 ///
-/// The swap must not rebuild the composer's element. When it did, the old
-/// EditableText closed its text-input connection (hiding the keyboard) while
-/// the State-owned `_composerFocus` kept focus — so no focus-change event ever
-/// fired to reopen it. The field kept its cursor, the keyboard stayed down and
-/// keystrokes went nowhere: the journal was unwritable on a phone.
+/// It used to. The body swapped layout branches at a 360px height threshold
+/// that the keyboard dragged it straight across, and the swap destroyed and
+/// recreated the composer: the old EditableText closed its text-input
+/// connection (hiding the keyboard) while the State-owned `_composerFocus` kept
+/// focus — so no focus-change event ever fired to reopen it. The field kept its
+/// cursor, the keyboard stayed down and keystrokes went nowhere: the journal
+/// was unwritable on a phone (#301). The branch was first papered over with a
+/// GlobalKey on the composer, then removed outright — the body is now one tree
+/// at every height, sized to `max(viewport, kJournalMinBody)`.
 ///
 /// These guard the symptom, not the mechanism — `hasFocus` stayed true through
 /// the whole bug, so asserting on focus alone would pass against the break.
+/// Element identity is asserted separately, and now rests on the tree being
+/// stable rather than on a key propping it up.
 void main() {
   const composer = Key('journal-composer');
   // Roughly an iPhone keyboard; 640 - 336 = 304 is under the 360 threshold.
@@ -82,7 +86,7 @@ void main() {
     expect(composerText(t), 'a fine mess');
   });
 
-  testWidgets('the composer element is reused across the swap', (t) async {
+  testWidgets('the composer element is reused across the relayout', (t) async {
     await pump(t);
     await t.tap(find.byKey(composer));
     await t.pumpAndSettle();
@@ -92,9 +96,11 @@ void main() {
     await t.pumpAndSettle();
 
     // Identity is the mechanism the keyboard fix rests on: a rebuilt element
-    // disposes the EditableText and drops the input connection.
+    // disposes the EditableText and drops the input connection. With the
+    // height branch gone this holds without a GlobalKey — if it ever fails
+    // again, a branch has crept back into the body.
     expect(identical(before, find.byKey(composer).evaluate().single), isTrue,
-        reason: 'the composer must reparent across the swap, not rebuild');
+        reason: 'the composer must survive the relayout, not be rebuilt');
   });
 
   testWidgets('typing still works after the keyboard closes again', (t) async {
