@@ -72,30 +72,33 @@ Set<String> _terms(String text) => RegExp(r'[a-z0-9]+')
     .where((w) => w.length >= 3 && !_stopwords.contains(w))
     .toSet();
 
-/// The [limit] entries most relevant to [target], for interpreter recall.
+/// The [limit] entries most relevant to [text], for interpreter recall. This is
+/// the ranking core: [relatedEntries] ranks against an existing entry, while a
+/// not-yet-logged roll ranks against its result string directly.
 /// Deterministic term-overlap ranking — no embeddings:
-/// - Terms: lowercase alphanumeric words of length >= 3 from the target's
-///   title + body + tags, minus stopwords (small built-in english list).
+/// - Terms: lowercase alphanumeric words of length >= 3 from [text], minus
+///   stopwords (small built-in english list).
 /// - Score: +1 per distinct shared term in an entry's title/body,
-///   +3 per shared tag (tags are curated signal).
-/// - Excludes [target] itself (by id) and scene entries (they're headers,
-///   not content). Score 0 entries are dropped.
+///   +3 per shared [tags] entry (tags are curated signal). [tags] must be
+///   lowercased by the caller.
+/// - Excludes [excludeId] and scene entries (they're headers, not content).
+///   Score 0 entries are dropped.
 /// - Ties break toward the more recent timestamp.
-List<JournalEntry> relatedEntries(
+List<JournalEntry> relatedEntriesForText(
   List<JournalEntry> entries,
-  JournalEntry target, {
+  String text, {
+  Set<String> tags = const {},
+  String? excludeId,
   int limit = 2,
 }) {
-  final targetTerms =
-      _terms('${target.title}\n${target.body}\n${target.tags.join('\n')}');
-  final targetTags = target.tags.map((t) => t.toLowerCase()).toSet();
+  final targetTerms = _terms(text);
   final scored = <(JournalEntry, int)>[];
   for (final e in entries) {
-    if (e.id == target.id || e.kind == JournalKind.scene) continue;
+    if (e.id == excludeId || e.kind == JournalKind.scene) continue;
     final sharedTerms =
         targetTerms.intersection(_terms('${e.title}\n${e.body}')).length;
     final sharedTags =
-        e.tags.map((t) => t.toLowerCase()).toSet().intersection(targetTags);
+        e.tags.map((t) => t.toLowerCase()).toSet().intersection(tags);
     final score = sharedTerms + 3 * sharedTags.length;
     if (score > 0) scored.add((e, score));
   }
@@ -106,3 +109,18 @@ List<JournalEntry> relatedEntries(
   });
   return [for (final (e, _) in scored.take(limit)) e];
 }
+
+/// The [limit] entries most relevant to [target], for interpreter recall.
+/// Ranks on the target's title + body + tags via [relatedEntriesForText].
+List<JournalEntry> relatedEntries(
+  List<JournalEntry> entries,
+  JournalEntry target, {
+  int limit = 2,
+}) =>
+    relatedEntriesForText(
+      entries,
+      '${target.title}\n${target.body}\n${target.tags.join('\n')}',
+      tags: target.tags.map((t) => t.toLowerCase()).toSet(),
+      excludeId: target.id,
+      limit: limit,
+    );

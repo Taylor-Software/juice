@@ -161,6 +161,71 @@ FleshOutSeed fleshOutSeedFrom({
   );
 }
 
+/// The current scene rendered for a prompt's `scene:` line: "Scene: <title>
+/// (Chaos N) — <description>", matching the shape the interpret few-shot
+/// examples were authored against. '' when there's no scene. Chaos and the
+/// description are each omitted when absent. Pure.
+///
+/// The single source of the scene format — the Run and Loop seams used to
+/// hand-render "title\nbody", silently dropping the Chaos factor.
+String sceneContextLine(JournalEntry? scene) {
+  if (scene == null) return '';
+  final chaos =
+      scene.chaosFactor != null ? ' (Chaos ${scene.chaosFactor})' : '';
+  final body = scene.body.trim();
+  final detail = body.isEmpty ? '' : ' — $body';
+  return 'Scene: ${scene.title}$chaos$detail';
+}
+
+/// Pure: assemble an [OracleSeed] from already-read campaign state — the one
+/// builder behind every inspire surface, so no seam can drift in what grounding
+/// it sends. [resultText] is what's being read (a roll, a generator result, or
+/// an entry's title + body). `journalContext` is ALWAYS populated: recall ranked
+/// against [resultText] (see [recallLinesFor]), with [excludeId] dropping an
+/// entry from its own recall.
+OracleSeed interpretSeedFrom({
+  required String resultText,
+  required List<JournalEntry> journal,
+  String genre = '',
+  String tone = '',
+  String systemPrimer = '',
+  String activeCharacter = '',
+  String? activeSceneId,
+  String? excludeId,
+}) {
+  return OracleSeed(
+    resultText: resultText,
+    genre: genre,
+    tone: tone,
+    systemPrimer: systemPrimer,
+    activeCharacter: activeCharacter,
+    sceneContext: sceneContextLine(activeSceneEntry(journal, activeSceneId)),
+    journalContext: recallLinesFor(journal, resultText, excludeId: excludeId),
+  );
+}
+
+/// Wrapper for widgets: read the providers, delegate to [interpretSeedFrom].
+OracleSeed buildInterpretSeed(
+  WidgetRef ref, {
+  required String resultText,
+  String? excludeId,
+}) {
+  // Best-effort settings read (see buildFleshOutSeed): a cold read just means
+  // no genre line, never a failed interpret.
+  final settings =
+      ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
+  return interpretSeedFrom(
+    resultText: resultText,
+    journal: ref.read(journalProvider).valueOrNull ?? const [],
+    genre: settings.genre,
+    tone: settings.tone,
+    systemPrimer: ref.read(systemPrimerProvider),
+    activeCharacter: ref.read(activeCharacterLineProvider),
+    activeSceneId: ref.read(playContextProvider).valueOrNull?.activeSceneId,
+    excludeId: excludeId,
+  );
+}
+
 /// Wrapper for widgets: read the providers, delegate to [fleshOutSeedFrom].
 FleshOutSeed buildFleshOutSeed(
   WidgetRef ref, {

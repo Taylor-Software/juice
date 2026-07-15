@@ -6,6 +6,7 @@ import '../engine/dice_notation.dart';
 import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
 import '../state/providers.dart';
+import 'inspire.dart';
 import 'quick_ref_view.dart';
 
 /// Initiative tracker: combatants from character sheets (live first-track
@@ -339,13 +340,17 @@ class EncounterScreen extends ConsumerWidget {
       .where((x) => x.id != attacker.id && !x.defeated)
       .toList();
 
-  void _attack(BuildContext context, WidgetRef ref, Combatant attacker,
-      List<Combatant> targets, List<Character> chars) {
-    showDialog<void>(
+  Future<void> _attack(BuildContext context, WidgetRef ref, Combatant attacker,
+      List<Combatant> targets, List<Character> chars) async {
+    final out = await showDialog<({String id, String line})>(
       context: context,
       builder: (_) =>
           _AttackDialog(attacker: attacker, targets: targets, chars: chars),
     );
+    if (out == null || !context.mounted) return;
+    // Shown here, not in the dialog: its ref dies with it, and the snackbar's
+    // Inspire action outlives the pop.
+    showLoggedSnackBar(context, ref, out.id, message: out.line);
   }
 
   Widget _addButtons(BuildContext context, WidgetRef ref) {
@@ -1469,8 +1474,11 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
     return null;
   }
 
-  void _log(
-      {required int total, required bool hit, int? damage, (int, int)? hp}) {
+  /// Logs the combat beat and returns the entry id + its line. The snackbar is
+  /// the CALLER's job: this dialog pops immediately after, and an Inspire action
+  /// on the snackbar must close over a `ref` that outlives it.
+  Future<({String id, String line})> _log(
+      {required int total, required bool hit, int? damage, (int, int)? hp}) async {
     final line = combatLogLine(
       attacker: widget.attacker.name,
       target: _target.name,
@@ -1480,26 +1488,29 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
       damage: damage,
       hp: hp,
     );
-    ref
+    final id = await ref
         .read(journalProvider.notifier)
         .addResult('Combat', line, sourceTool: 'combat');
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(line)));
+    return (id: id, line: line);
   }
 
-  void _apply() {
+  Future<void> _apply() async {
     final total = _attackTotal;
     if (total == null || _hit != true) return;
     final damage = _roll(_dmg.text);
     if (damage == null) return;
-    _log(total: total, hit: true, damage: damage, hp: _applyDamage(damage));
-    Navigator.of(context).pop();
+    final out =
+        await _log(total: total, hit: true, damage: damage, hp: _applyDamage(damage));
+    if (!mounted) return;
+    Navigator.of(context).pop(out);
   }
 
-  void _logMiss() {
+  Future<void> _logMiss() async {
     final total = _attackTotal;
     if (total == null) return;
-    _log(total: total, hit: false);
-    Navigator.of(context).pop();
+    final out = await _log(total: total, hit: false);
+    if (!mounted) return;
+    Navigator.of(context).pop(out);
   }
 
   @override

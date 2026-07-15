@@ -19,6 +19,7 @@ import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
+import 'inspire.dart';
 import 'flesh_out_review.dart';
 import 'map_snapshot.dart';
 
@@ -502,6 +503,9 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                         padding: const EdgeInsets.all(8),
                         child: ResultCard(
                           result: _last!,
+                          onInspire: ref.watch(interpretReadyProvider)
+                              ? () => inspireGenResult(context, ref, _last!)
+                              : null,
                           onLog: () => _log(_last!.title, _last!.asText),
                         ),
                       ),
@@ -1460,6 +1464,9 @@ class HexMapPaneState extends ConsumerState<HexMapPane> {
           padding: const EdgeInsets.all(8),
           child: ResultCard(
             result: _last!,
+            onInspire: ref.watch(interpretReadyProvider)
+                ? () => inspireGenResult(context, ref, _last!)
+                : null,
             onLog: () => _log(_last!.title, _last!.asText),
           ),
         ),

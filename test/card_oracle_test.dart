@@ -177,9 +177,12 @@ void main() {
       await c.read(journalProvider.future);
 
       final tg =
-          await c.read(decksProvider.notifier).drawAndLog(oracle, tarot: true);
-      final sg =
-          await c.read(decksProvider.notifier).drawAndLog(oracle, tarot: false);
+          (await c.read(decksProvider.notifier).drawAndLog(oracle, tarot: true))
+              .result;
+      final sg = (await c
+              .read(decksProvider.notifier)
+              .drawAndLog(oracle, tarot: false))
+          .result;
 
       final entries = c.read(journalProvider).valueOrNull!;
       expect(entries, hasLength(2));

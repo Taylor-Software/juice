@@ -114,7 +114,7 @@ class InlineRollDock extends ConsumerWidget {
               label: '✦ Inspire',
               bg: tk.selected,
               fg: tk.terracottaDeep,
-              onTap: () => showGenerateSheet(context),
+              onTap: () => showGenerateSheet(context, ref),
             ),
           ],
         ),

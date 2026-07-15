@@ -23,6 +23,9 @@ import 'journal_screen.dart';
 final _loopOddsProvider =
     StateProvider<SoloLikelihood>((_) => SoloLikelihood.even);
 final _loopLastProvider = StateProvider<SoloYesNo?>((_) => null);
+/// Journal entry id of the last yes/no roll — the ask logs on the spot, so Keep
+/// appends the reading to that entry instead of logging a second one.
+final _loopLastIdProvider = StateProvider<String?>((_) => null);
 final _loopQuestionProvider = StateProvider<String>((_) => '');
 final _loopCaptureProvider = StateProvider<String>((_) => '');
 final _loopTallyRollProvider = StateProvider<String?>((_) => null);
@@ -209,7 +212,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
                 key: const Key('loop-inspire'),
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('Inspire'),
-                onPressed: () => showGenerateSheet(context),
+                onPressed: () => showGenerateSheet(context, ref),
               ),
             ]),
             _step(
@@ -457,12 +460,13 @@ class _LoopBarState extends ConsumerState<LoopBar> {
     final result = soloYesNo(ref.read(_loopOddsProvider), Dice());
     ref.read(_loopLastProvider.notifier).state = result;
     final g = result.toGenResult(question: _question.text);
-    await ref.read(journalProvider.notifier).addResult(
-          g.title,
-          g.asText,
-          sourceTool: 'solo-loop',
-          payload: g.toPayload(),
-        );
+    ref.read(_loopLastIdProvider.notifier).state =
+        await ref.read(journalProvider.notifier).addResult(
+              g.title,
+              g.asText,
+              sourceTool: 'solo-loop',
+              payload: g.toPayload(),
+            );
     // The question was answered — clear the field for the next beat.
     _question.clear();
     ref.read(_loopQuestionProvider.notifier).state = '';
@@ -474,19 +478,12 @@ class _LoopBarState extends ConsumerState<LoopBar> {
     final last = ref.read(_loopLastProvider);
     if (last == null) return;
     final g = last.toGenResult();
-    final journal =
-        ref.read(journalProvider).valueOrNull ?? const <JournalEntry>[];
-    final ctx = ref.read(playContextProvider).valueOrNull;
-    final scene = activeSceneEntry(journal, ctx?.activeSceneId);
-    final settings =
-        ref.read(settingsProvider).valueOrNull ?? const CampaignSettings();
-    ref.read(_loopInterpretSeedProvider.notifier).state = OracleSeed(
-      resultText: g.asText,
-      genre: settings.genre,
-      tone: settings.tone,
-      sceneContext: scene == null ? '' : '${scene.title}\n${scene.body}'.trim(),
-      activeCharacter: ref.read(activeCharacterLineProvider),
-      systemPrimer: ref.read(systemPrimerProvider),
+    // Shared grounding: identical to the Journal's and the Run screen's reading
+    // of the same roll — recall included (this seam used to send none).
+    ref.read(_loopInterpretSeedProvider.notifier).state = buildInterpretSeed(
+      ref,
+      resultText: '${g.title}\n${g.asText}',
+      excludeId: ref.read(_loopLastIdProvider),
     );
   }
 
@@ -521,7 +518,7 @@ class _LoopBarState extends ConsumerState<LoopBar> {
       case BeatAction.interpret:
         _interpret();
       case BeatAction.inspire:
-        unawaited(showGenerateSheet(context));
+        unawaited(showGenerateSheet(context, ref));
       case BeatAction.capture:
         FocusScope.of(context).requestFocus(_captureFocus);
     }
@@ -615,11 +612,19 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
                       style: FilledButton.styleFrom(
                           minimumSize: const Size(64, 40)),
                       onPressed: () async {
-                        await ref.read(journalProvider.notifier).addResult(
-                              'Oracle reading',
-                              '(${card.lens}): ${card.reading}',
-                              sourceTool: 'interpret',
-                            );
+                        // Append to the roll's own entry (the ask already
+                        // logged it) — the shared combined roll-plus-reading
+                        // entry, not a second free-floating one.
+                        final id = ref.read(_loopLastIdProvider);
+                        final entry = (ref.read(journalProvider).valueOrNull ??
+                                const <JournalEntry>[])
+                            .where((e) => e.id == id)
+                            .firstOrNull;
+                        if (entry != null) {
+                          await ref.read(journalProvider.notifier).replace(
+                              entry.copyWith(
+                                  body: appendReading(entry.body, card)));
+                        }
                         widget.onDone();
                       },
                       child: const Text('Keep'),

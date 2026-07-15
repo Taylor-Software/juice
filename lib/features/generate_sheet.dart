@@ -11,19 +11,31 @@ import '../shared/result_card.dart';
 import '../state/providers.dart';
 import 'custom_table_editor.dart';
 import 'dice_roll_animation.dart';
+import 'inspire.dart';
 
 /// Opens the flavor-generator sheet from the journal composer.
-Future<void> showGenerateSheet(BuildContext context) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const GenerateSheet(),
-    );
+///
+/// A flavor/table chip logs and pops (one tap — the fast path), returning the
+/// new entry id. The Inspire SnackBar is shown HERE rather than inside the
+/// sheet: [showLoggedSnackBar] closes over [ref] and [context] for a tap that
+/// happens later, and the sheet's own ref dies with it. [context]/[ref] belong
+/// to the caller, which outlives the sheet.
+Future<void> showGenerateSheet(BuildContext context, WidgetRef ref) async {
+  final id = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    builder: (_) => const GenerateSheet(),
+  );
+  if (id == null || !context.mounted) return;
+  showLoggedSnackBar(context, ref, id);
+}
 
 /// The "inspire" sheet. Flavor generators (grouped by section) roll and append
-/// straight to the journal, closing the sheet. The three visual/stateful
-/// generators — Location grid, NPC Dialog walk, Abstract Icon — render their
-/// bespoke result inline and keep the sheet open.
+/// straight to the journal, closing the sheet — popping the new entry id so the
+/// opener can offer Inspire on it (see [showGenerateSheet]). The three
+/// visual/stateful generators — Location grid, NPC Dialog walk, Abstract Icon —
+/// render their bespoke result inline and keep the sheet open, so those carry
+/// their own Inspire button on the result card instead.
 class GenerateSheet extends ConsumerStatefulWidget {
   const GenerateSheet({super.key});
 
@@ -148,6 +160,11 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
             if (_lastDialog != null) ...[
               ResultCard(
                 result: _lastDialog!,
+                onInspire: ref.watch(interpretReadyProvider)
+                    ? () => inspireGenResult(context, ref, _lastDialog!,
+                        sourceTool: sourceToolFor(GenSection.npcs),
+                        payload: _lastDialog!.toPayload())
+                    : null,
                 onLog: () => _logResult(_lastDialog!, GenSection.npcs),
               ),
               const SizedBox(height: 12),
@@ -205,21 +222,24 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
                 // Category order mirrors the Ask → Tables library grouping.
                 for (final (_, group) in groupTablesByCategory(tables))
                   for (final t in group)
-                  InputChip(
-                    key: Key('table-roll-${t.id}'),
-                    label: Text(t.name.isEmpty ? '(untitled)' : t.name),
-                    onPressed: () {
-                      final r = rollCustomTable(t, Dice());
-                      ref.read(journalProvider.notifier).addResult(
-                          r.title, r.asText,
-                          sourceTool: 'custom-table', payload: r.toPayload());
-                      Navigator.of(context).pop();
-                    },
-                    // The chip's trailing button opens the edit/delete dialog.
-                    onDeleted: () => showCustomTableDialog(context, ref, t),
-                    deleteIcon: const Icon(Icons.edit, size: 16),
-                    deleteButtonTooltipMessage: 'Edit table',
-                  ),
+                    InputChip(
+                      key: Key('table-roll-${t.id}'),
+                      label: Text(t.name.isEmpty ? '(untitled)' : t.name),
+                      onPressed: () async {
+                        final r = rollCustomTable(t, Dice());
+                        final id = await ref
+                            .read(journalProvider.notifier)
+                            .addResult(r.title, r.asText,
+                                sourceTool: 'custom-table',
+                                payload: r.toPayload());
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop(id);
+                      },
+                      // The chip's trailing button opens the edit/delete dialog.
+                      onDeleted: () => showCustomTableDialog(context, ref, t),
+                      deleteIcon: const Icon(Icons.edit, size: 16),
+                      deleteButtonTooltipMessage: 'Edit table',
+                    ),
                 ActionChip(
                   key: const Key('table-new'),
                   avatar: const Icon(Icons.add, size: 16),
@@ -277,13 +297,17 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
                       ActionChip(
                         key: Key('gen-${g.label}'),
                         label: Text(g.label),
-                        onPressed: () {
+                        onPressed: () async {
                           final r = g.run(oracle);
-                          ref.read(journalProvider.notifier).addResult(
-                              r.title, r.asText,
-                              sourceTool: sourceToolFor(g.section),
-                              payload: r.toPayload());
-                          Navigator.of(context).pop();
+                          final id = await ref
+                              .read(journalProvider.notifier)
+                              .addResult(r.title, r.asText,
+                                  sourceTool: sourceToolFor(g.section),
+                                  payload: r.toPayload());
+                          if (!context.mounted) return;
+                          // Pop the id: the opener offers Inspire on it once
+                          // this sheet (and its ref) are gone.
+                          Navigator.of(context).pop(id);
                         },
                       ),
                   ],

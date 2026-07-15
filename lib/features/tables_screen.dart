@@ -9,6 +9,7 @@ import '../engine/oracle.dart';
 import '../engine/table_groups.dart';
 import '../state/providers.dart';
 import 'custom_table_editor.dart';
+import 'inspire.dart';
 
 /// Turn a snake_case table key into a readable title.
 String _titleize(String key) => key
@@ -127,14 +128,16 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     );
   }
 
-  /// Roll [t] and log the result to the journal as a `custom-table` entry.
-  void _rollCustomTable(CustomTable t) {
+  /// Roll [t] and log the result to the journal as a `custom-table` entry. The
+  /// snackbar carries Inspire, so a rolled row can be read for the story
+  /// without hunting the entry down in the journal.
+  Future<void> _rollCustomTable(CustomTable t) async {
     final r = rollCustomTable(t, Dice());
-    ref.read(journalProvider.notifier).addResult(r.title, r.asText,
+    final id = await ref.read(journalProvider.notifier).addResult(
+        r.title, r.asText,
         sourceTool: 'custom-table', payload: r.toPayload());
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Added to journal')),
-    );
+    if (!mounted) return;
+    showLoggedSnackBar(context, ref, id);
   }
 
   /// The user tables visible under the current genre filter + search query.
@@ -281,6 +284,22 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (rolled != null && ref.watch(interpretReadyProvider))
+              IconButton(
+                key: Key('table-inspire-$key'),
+                tooltip: 'Inspire — read this result for my story',
+                icon: const Icon(Icons.auto_awesome_outlined),
+                onPressed: () => inspireGenResult(
+                  context,
+                  ref,
+                  GenResult(
+                      title: title,
+                      rolls: [Roll(label: title, value: rolled.value)]),
+                  // Match the Add-to-journal body exactly: the rolled row, not
+                  // the "label: value" asText a Roll would otherwise render.
+                  body: rolled.value,
+                ),
+              ),
             if (rolled != null)
               IconButton(
                 tooltip: 'Add to journal',

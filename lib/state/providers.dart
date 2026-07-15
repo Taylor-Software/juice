@@ -173,15 +173,18 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
     ]);
   }
 
-  Future<void> addResult(
+  /// Logs a rolled result and returns its new entry id, so a caller can offer
+  /// an Inspire action on what it just wrote (see `inspire.dart`).
+  Future<String> addResult(
     String title,
     String body, {
     String? sourceTool,
     Map<String, dynamic>? payload,
   }) async {
+    final id = _newId();
     await _persist([
       JournalEntry(
-          id: _newId(),
+          id: id,
           timestamp: DateTime.now(),
           title: title,
           body: body,
@@ -190,6 +193,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
           location: await _activeLocation()),
       ...await _ready,
     ]);
+    return id;
   }
 
   Future<void> addText(String body) async {
@@ -862,15 +866,18 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
   /// tarot meaning folded in. Used by the HUD quick-draw button and the /card
   /// and /tarot slash commands (the Cards section shows the card before logging,
   /// so it uses draw() + manual log instead).
-  Future<GenResult> drawAndLog(Oracle oracle, {required bool tarot}) async {
+  /// Returns the drawn result and the id of the entry it logged, so a caller
+  /// can offer Inspire on the draw (see `inspire.dart`).
+  Future<({GenResult result, String entryId})> drawAndLog(Oracle oracle,
+      {required bool tarot}) async {
     final g = await draw(oracle, tarot: tarot);
-    await ref.read(journalProvider.notifier).addResult(
+    final id = await ref.read(journalProvider.notifier).addResult(
           g.title,
           g.asText + tarotMeaningSuffix(g.summary ?? ''),
           sourceTool: 'cards',
           payload: g.toPayload(),
         );
-    return g;
+    return (result: g, entryId: id);
   }
 
   /// Draws a [spread] from the tarot deck, persisting the advanced DeckState.
@@ -894,10 +901,12 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
   /// entry, folding each position's meaning in via spreadBody. Mirrors
   /// drawAndLog for single cards; used by the /spread slash command. (The Cards
   /// section keeps its own draw → show → manual-log flow.)
-  Future<List<({String position, String shown})>> drawSpreadAndLog(
-      Oracle oracle, TarotSpread spread) async {
+  /// Returns the positioned cards and the id of the entry it logged, so a
+  /// caller can offer Inspire on the spread (see `inspire.dart`).
+  Future<({List<({String position, String shown})> cards, String entryId})>
+      drawSpreadAndLog(Oracle oracle, TarotSpread spread) async {
     final out = await drawSpread(oracle, spread);
-    await ref.read(journalProvider.notifier).addResult(
+    final id = await ref.read(journalProvider.notifier).addResult(
       'Tarot Spread',
       spreadBody(spread.name, out.cards),
       sourceTool: 'cards',
@@ -911,7 +920,7 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
         ],
       },
     );
-    return out.cards;
+    return (cards: out.cards, entryId: id);
   }
 
   /// Clears a deck so the next draw reshuffles a full deck.

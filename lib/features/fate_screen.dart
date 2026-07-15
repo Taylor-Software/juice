@@ -10,6 +10,7 @@ import '../engine/tarot_spreads.dart';
 import '../shared/card_image.dart';
 import '../shared/result_card.dart';
 import '../state/providers.dart';
+import 'inspire.dart';
 import 'oracle_constructor.dart';
 import 'tarot_reference.dart';
 import 'tarot_spread_layout.dart';
@@ -211,6 +212,10 @@ class _FateScreenState extends ConsumerState<FateScreen> {
           if (_rhLast != null) ...[
             ResultCard(
               result: _rhLast!,
+              onInspire: ref.watch(interpretReadyProvider)
+                  ? () => inspireGenResult(context, ref, _rhLast!,
+                      sourceTool: 'roll-high', payload: _rhLast!.toPayload())
+                  : null,
               onLog: () {
                 ref.read(journalProvider.notifier).addResult(
                     _rhLast!.title, _rhLast!.asText,
@@ -289,6 +294,11 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                 if (_mythicLast != null) ...[
                   ResultCard(
                     result: _mythicLast!,
+                    onInspire: ref.watch(interpretReadyProvider)
+                        ? () => inspireGenResult(context, ref, _mythicLast!,
+                            sourceTool: 'mythic',
+                            payload: _mythicLast!.toPayload())
+                        : null,
                     onLog: () {
                       ref.read(journalProvider.notifier).addResult(
                           _mythicLast!.title, _mythicLast!.asText,
@@ -474,6 +484,14 @@ class _FateScreenState extends ConsumerState<FateScreen> {
                     const SizedBox(height: 8),
                     ResultCard(
                       result: _cardLast!,
+                      // Body override: a draw's entry folds the card meanings
+                      // in (_cardBody), and that prose is what's worth reading.
+                      onInspire: ref.watch(interpretReadyProvider)
+                          ? () => inspireGenResult(context, ref, _cardLast!,
+                              sourceTool: 'cards',
+                              payload: _cardLast!.toPayload(),
+                              body: _cardBody(_cardLast!))
+                          : null,
                       onLog: () {
                         ref.read(journalProvider.notifier).addResult(
                               _cardLast!.title,
@@ -691,6 +709,11 @@ class _FateScreenState extends ConsumerState<FateScreen> {
               padding: const EdgeInsets.only(right: 8),
               child: ResultCard(
                 result: last,
+                onInspire: ref.watch(interpretReadyProvider)
+                    ? () => inspireGenResult(context, ref, last,
+                        sourceTool: 'constructed-oracle',
+                        payload: last.toPayload())
+                    : null,
                 onLog: () {
                   ref.read(journalProvider.notifier).addResult(
                       last.title, last.asText,

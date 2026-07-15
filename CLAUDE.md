@@ -368,6 +368,55 @@ Working rules for this repo:
   (consistent with #3/#4, not the `activeSceneId` spine pointer). See
   `docs/superpowers/specs/2026-06-24-ranked-suggestions-design.md`. This
   completes the AI-expansion epic (#1–#5).
+  **Inspire — one seed, one shape, every result (2026-07-15).** Any tool that
+  produces a potential journal entry offers **Inspire**: the `interpret` seam
+  read as inspiration, not adjudication (its few-shot examples always covered
+  generator results — `result: Story: Discover / Object` — so NO new seam or
+  prompt was added). Three rules hold it together:
+  (1) **One builder.** `interpretSeedFrom` (pure) + `buildInterpretSeed(ref,…)`
+  in `play_context.dart` (mirrors `fleshOutSeedFrom`/`buildFleshOutSeed`) is the
+  ONLY way to seed an interpret. It ALWAYS populates `journalContext` — Run and
+  Loop hand-rolled their seeds and sent **no recall at all** before this.
+  Recall for a not-yet-logged roll ranks against the roll string via
+  `recallLinesFor` → `relatedEntriesForText` (the extracted core of
+  `relatedEntries`, which now delegates to it). Scene grounding goes through the
+  pure `sceneContextLine` — "Scene: <title> (Chaos N) — <description>", the
+  shape the interpret few-shot examples were authored against. Run/Loop had
+  drifted to a bare "title\nbody" that **dropped the Chaos factor**; the journal
+  format was the correct one and is now shared (journal's `_sceneContext`, used
+  by narrate/voice, delegates to it). Guarded by `test/inspire_seed_test.dart`.
+  (2) **One shape.** Accepting a reading always yields ONE combined entry — the
+  roll plus the reading — via the pure `appendReading` (the single source of the
+  `— Oracle reading (lens): …` format). `PayloadCard` already renders body past
+  its structured rolls as a remainder (`journal_entry_tile.dart`), so a combined
+  entry still renders structured + stays rerollable. Run and Loop used to log a
+  second free-floating `interpret` entry; they now append instead.
+  (3) **Two helpers, picked by whether the roll is logged yet**
+  (`lib/features/inspire.dart`): `inspireGenResult` (not logged → log the
+  combined entry; `body:` overrides `asText` where a surface's entry body
+  differs, e.g. a tarot draw's folded meanings) and `inspireEntry` (already
+  logged → append). **Getting this backwards double-logs the roll** — Run, Loop,
+  the roll sheet, and draws all log at roll time, so they use `inspireEntry`.
+  `addResult` therefore returns the new entry id (as do `drawAndLog` /
+  `drawSpreadAndLog`).
+  Surfaces: `ResultCard.onInspire` (`result-inspire`) covers fate_screen's
+  oracles, moves, map, and the generate sheet's dialog card; `table-inspire-<key>`
+  on Ask → Tables rows; `oracle-roll-inspire` in the draw sheet; and
+  `showLoggedSnackBar` adds an Inspire action to the instant-log surfaces
+  (custom tables, scenes, combat, HUD/composer draws). All gate on
+  `interpretReadyProvider`. Retry is the sheet's existing Regenerate — no new UI.
+  **GOTCHA:** `showLoggedSnackBar` closes over `ref`/`context` for a tap that
+  happens LATER, so it is only safe where that host stays mounted — never call it
+  from a dialog/sheet about to pop. Where a surface logs-and-pops, the fix is to
+  **pop the entry id and let the opener show the snackbar**: `showGenerateSheet
+  (context, ref)` (the 24 flavor chips + My Tables chips — one tap still logs and
+  closes) and `_attack`'s `showDialog<({String id, String line})>` (combat) both
+  do this, so the surviving ref belongs to the caller. Guarded by
+  `test/generate_sheet_test.dart` (taps Inspire on the popped sheet's entry — a
+  dead ref throws there). Note `JournalKind` defaults to `result` and the entry
+  menu gates Interpret on exactly that, so every logged result was ALREADY
+  interpretable from the journal; this work is about reach at the point of the
+  roll, not a missing capability.
 - The **PlayContext spine** (`lib/state/play_context.dart`, model in
   `lib/engine/models.dart`) holds per-campaign focus pointers
   (`activeCharacterId` / `activeSceneId` / `activeLocation` as a `LocationRef`,
