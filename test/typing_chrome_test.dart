@@ -154,6 +154,30 @@ void main() {
         reason: 'the dock must survive focus on a desktop');
   });
 
+  testWidgets('an empty composer is one line at any width', (tester) async {
+    // The composer's action buttons take fixed width, so on a phone they squeeze
+    // the field to ~142px. The hint inherits the field's maxLines (4), so
+    // 'Write in your journal…' wrapped to three lines and grew the EMPTY field
+    // to 120px — against 48px on a desktop. That one widget was 72px of the
+    // 152px phone/desktop chrome gap (the other 80 is the bottom nav, which the
+    // desktop puts in a vertical rail).
+    //
+    // Width-invariance is the property, not a pixel count: a placeholder must
+    // never open the field it is a placeholder for, at any width.
+    await pumpShell(tester, size: const Size(1400, 900));
+    final wide = tester.getSize(find.byKey(_composer)).height;
+
+    // Same prefs, same tree — just a narrower view, so no re-seed (which
+    // SharedPreferences would ignore anyway).
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    final narrow = tester.getSize(find.byKey(_composer)).height;
+
+    expect(narrow, wide,
+        reason: 'an empty composer must be the same height on a phone as on a '
+            'desktop — it was 120px vs 48px because the hint wrapped');
+  });
+
   testWidgets('phone: typing still works while the chrome is gone',
       (tester) async {
     // Dropping widgets out of the journal's Column while the composer has focus
