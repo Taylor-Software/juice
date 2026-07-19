@@ -78,6 +78,12 @@ const kCampaignPresets = <CampaignPreset>[
       blurb: 'Slot-based scavenging',
       systems: {'knave', 'juice', 'party'}),
   CampaignPreset(
+      id: 'solo-embark',
+      label: 'Embark 2E',
+      kind: 'Heroic, deadly OSR',
+      blurb: 'd12 + attribute, track torches',
+      systems: {'embark', 'juice', 'party'}),
+  CampaignPreset(
       id: 'solo-ose',
       label: 'OSE / B/X',
       kind: 'Classic dungeon raid',

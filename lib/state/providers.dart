@@ -443,6 +443,7 @@ class CharacterNotifier extends _PersistedList<Character> {
   Future<String> addArgosa() => addPreMadeSheet('argosa');
   Future<String> addCairn() => addPreMadeSheet('cairn');
   Future<String> addKnave() => addPreMadeSheet('knave');
+  Future<String> addEmbark() => addPreMadeSheet('embark');
   Future<String> addOse() => addPreMadeSheet('ose');
   Future<String> addKalArath() => addPreMadeSheet('kal-arath');
   Future<String> addDcc() => addPreMadeSheet('dcc');

@@ -2067,6 +2067,163 @@ class KnaveSheet {
   }
 }
 
+// ── Embark 2E ────────────────────────────────────────────────────────────────
+
+const kEmbarkStats = <String>['str', 'dex', 'wil', 'int'];
+
+const kEmbarkStatLabels = <String, String>{
+  'str': 'STR',
+  'dex': 'DEX',
+  'wil': 'WIL',
+  'int': 'INT',
+};
+
+const kEmbarkClasses = <String>[
+  'Warrior',
+  'Scout',
+  'Mage',
+  'Invoker',
+  'Bard',
+  'Barbarian',
+];
+
+/// The class's resource-pool name for the single sheet RESOURCE box (the
+/// official sheet unifies Grit / Spell Dice / Flair into one). Facts-only,
+/// non-copyrightable. Scout (Talents) and Barbarian (Feats) have no numeric
+/// pool, so a generic label. Pure.
+String embarkResourceLabel(String className) {
+  switch (className) {
+    case 'Warrior':
+      return 'Grit';
+    case 'Mage':
+    case 'Invoker':
+      return 'Spell Dice';
+    case 'Bard':
+      return 'Flair';
+    default:
+      return 'Resource';
+  }
+}
+
+/// Facts-only Embark 2E sheet. Attributes are the raw number added to a d12
+/// (range -1..4), NOT a score->modifier curve. Injuries are the 3-step death
+/// track (third = death; each is a -1 to Checks). Everything else is left
+/// freeform (Embark has no fixed skill/language lists).
+class EmbarkSheet {
+  const EmbarkSheet({
+    this.className = 'Warrior',
+    this.stats = const {
+      'str': 0,
+      'dex': 0,
+      'wil': 0,
+      'int': 0,
+    },
+    this.level = 1,
+    this.maxHp = 6,
+    this.currentHp = 6,
+    this.injuries = 0,
+    this.av = 0,
+    this.resource = 0,
+    this.resourceMax = 0,
+    this.sp = '',
+    this.skills = '',
+    this.languages = '',
+    this.notes = '',
+  });
+
+  final String className;
+  final Map<String, int> stats;
+  final int level;
+  final int maxHp;
+  final int currentHp;
+  final int injuries;
+  final int av;
+  final int resource;
+  final int resourceMax;
+  final String sp;
+  final String skills;
+  final String languages;
+  final String notes;
+
+  EmbarkSheet copyWith({
+    String? className,
+    Map<String, int>? stats,
+    int? level,
+    int? maxHp,
+    int? currentHp,
+    int? injuries,
+    int? av,
+    int? resource,
+    int? resourceMax,
+    String? sp,
+    String? skills,
+    String? languages,
+    String? notes,
+  }) {
+    final mh = (maxHp ?? this.maxHp).clamp(0, kFieldClampMax);
+    final st = stats ?? this.stats;
+    final rm = (resourceMax ?? this.resourceMax).clamp(0, 99);
+    return EmbarkSheet(
+      className: className ?? this.className,
+      stats: {
+        for (final k in kEmbarkStats)
+          k: ((st[k] ?? 0) as num).round().clamp(-1, 4)
+      },
+      level: (level ?? this.level).clamp(1, 6),
+      maxHp: mh,
+      currentHp: (currentHp ?? this.currentHp).clamp(0, mh),
+      injuries: (injuries ?? this.injuries).clamp(0, 3),
+      av: (av ?? this.av).clamp(0, 4),
+      resource: (resource ?? this.resource).clamp(0, rm),
+      resourceMax: rm,
+      sp: sp ?? this.sp,
+      skills: skills ?? this.skills,
+      languages: languages ?? this.languages,
+      notes: notes ?? this.notes,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'className': className,
+        'stats': stats,
+        'level': level,
+        'maxHp': maxHp,
+        'currentHp': currentHp,
+        'injuries': injuries,
+        'av': av,
+        'resource': resource,
+        'resourceMax': resourceMax,
+        'sp': sp,
+        'skills': skills,
+        'languages': languages,
+        'notes': notes,
+      };
+
+  static EmbarkSheet? maybeFromJson(dynamic j) {
+    if (j is! Map<String, dynamic>) return null;
+    final st = (j['stats'] as Map?) ?? {};
+    final rm = ((j['resourceMax'] as num?)?.round() ?? 0).clamp(0, 99);
+    return EmbarkSheet(
+      className: j['className'] as String? ?? 'Warrior',
+      stats: {
+        for (final k in kEmbarkStats)
+          k: ((st[k] ?? 0) as num).round().clamp(-1, 4),
+      },
+      level: ((j['level'] as num?)?.round() ?? 1).clamp(1, 6),
+      maxHp: (j['maxHp'] as num?)?.round() ?? 6,
+      currentHp: (j['currentHp'] as num?)?.round() ?? 6,
+      injuries: ((j['injuries'] as num?)?.round() ?? 0).clamp(0, 3),
+      av: ((j['av'] as num?)?.round() ?? 0).clamp(0, 4),
+      resource: ((j['resource'] as num?)?.round() ?? 0).clamp(0, rm),
+      resourceMax: rm,
+      sp: j['sp'] as String? ?? '',
+      skills: j['skills'] as String? ?? '',
+      languages: j['languages'] as String? ?? '',
+      notes: j['notes'] as String? ?? '',
+    );
+  }
+}
+
 // ── Old-School Essentials (B/X) ──────────────────────────────────────────────
 
 const kOseStats = <String>['str', 'int', 'wis', 'dex', 'con', 'cha'];
@@ -4086,6 +4243,7 @@ class FunnelSheet {
   if (c.argosa != null) return (c.argosa!.currentHp, c.argosa!.maxHp);
   if (c.cairn != null) return (c.cairn!.currentHp, c.cairn!.maxHp);
   if (c.knave != null) return (c.knave!.currentHp, c.knave!.maxHp);
+  if (c.embark != null) return (c.embark!.currentHp, c.embark!.maxHp);
   if (c.ose != null) return (c.ose!.currentHp, c.ose!.maxHp);
   if (c.kalArath != null) return (c.kalArath!.currentHp, c.kalArath!.maxHp);
   if (c.dcc != null) return (c.dcc!.currentHp, c.dcc!.maxHp);
@@ -4113,6 +4271,7 @@ class Character {
     this.argosa,
     this.cairn,
     this.knave,
+    this.embark,
     this.ose,
     this.kalArath,
     this.custom,
@@ -4158,6 +4317,9 @@ class Character {
 
   /// Bespoke Knave sheet; null unless this is a Knave PC.
   final KnaveSheet? knave;
+
+  /// Bespoke Embark 2E sheet; null unless this is an Embark PC.
+  final EmbarkSheet? embark;
 
   /// Bespoke Old-School Essentials sheet; null unless this is an OSE PC.
   final OseSheet? ose;
@@ -4217,6 +4379,8 @@ class Character {
           id: id, name: 'New Cairn character', cairn: const CairnSheet()),
       'knave' =>
         Character(id: id, name: 'New Knave', knave: const KnaveSheet()),
+      'embark' => Character(
+          id: id, name: 'New Embark character', embark: const EmbarkSheet()),
       'ose' => Character(id: id, name: 'New Adventurer', ose: const OseSheet()),
       'kal-arath' => Character(
           id: id, name: 'New Wanderer', kalArath: const KalArathSheet()),
@@ -4255,6 +4419,8 @@ class Character {
     bool clearCairn = false,
     KnaveSheet? knave,
     bool clearKnave = false,
+    EmbarkSheet? embark,
+    bool clearEmbark = false,
     OseSheet? ose,
     bool clearOse = false,
     KalArathSheet? kalArath,
@@ -4286,6 +4452,7 @@ class Character {
         argosa: clearArgosa ? null : (argosa ?? this.argosa),
         cairn: clearCairn ? null : (cairn ?? this.cairn),
         knave: clearKnave ? null : (knave ?? this.knave),
+        embark: clearEmbark ? null : (embark ?? this.embark),
         ose: clearOse ? null : (ose ?? this.ose),
         kalArath: clearKalArath ? null : (kalArath ?? this.kalArath),
         custom: clearCustom ? null : (custom ?? this.custom),
@@ -4340,6 +4507,11 @@ class Character {
           knave: knave!.copyWith(
               currentHp: (knave!.currentHp + delta).clamp(0, knave!.maxHp)));
     }
+    if (embark != null) {
+      return copyWith(
+          embark: embark!.copyWith(
+              currentHp: (embark!.currentHp + delta).clamp(0, embark!.maxHp)));
+    }
     if (ose != null) {
       return copyWith(
           ose: ose!.copyWith(
@@ -4384,6 +4556,7 @@ class Character {
         if (argosa != null) 'argosa': argosa!.toJson(),
         if (cairn != null) 'cairn': cairn!.toJson(),
         if (knave != null) 'knave': knave!.toJson(),
+        if (embark != null) 'embark': embark!.toJson(),
         if (ose != null) 'ose': ose!.toJson(),
         if (kalArath != null) 'kalArath': kalArath!.toJson(),
         if (custom != null) 'custom': custom!.toJson(),
@@ -4417,6 +4590,7 @@ class Character {
         argosa: ArgosaSheet.maybeFromJson(j['argosa']),
         cairn: CairnSheet.maybeFromJson(j['cairn']),
         knave: KnaveSheet.maybeFromJson(j['knave']),
+        embark: EmbarkSheet.maybeFromJson(j['embark']),
         ose: OseSheet.maybeFromJson(j['ose']),
         kalArath: KalArathSheet.maybeFromJson(j['kalArath']),
         custom: CustomSheet.maybeFromJson(j['custom']),
@@ -4509,6 +4683,7 @@ const kKnownSystems = <String>{
   'argosa',
   'cairn',
   'knave',
+  'embark',
   'ose',
   'kal-arath',
   'dcc',
@@ -4532,6 +4707,7 @@ const kSystemCategory = <String, SystemCategory>{
   'argosa': SystemCategory.ruleset,
   'cairn': SystemCategory.ruleset,
   'knave': SystemCategory.ruleset,
+  'embark': SystemCategory.ruleset,
   'ose': SystemCategory.ruleset,
   'kal-arath': SystemCategory.ruleset,
   'custom': SystemCategory.ruleset,
@@ -4815,6 +4991,7 @@ const _kRulesetIconKey = <String, String>{
   'argosa': 'fort',
   'cairn': 'terrain',
   'knave': 'content_cut',
+  'embark': 'flight_takeoff',
   'ose': 'auto_stories',
   'kal-arath': 'whatshot',
 };

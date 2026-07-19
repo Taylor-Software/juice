@@ -150,6 +150,30 @@ Working rules for this repo:
   (no mechanical effect in 2e). **Licensing:** CC BY 4.0 (Ben Milton / Questing
   Beast); attribution in `kSystemBlurbs['knave']` + settings sheet. See
   `docs/superpowers/specs/2026-06-24-knave-sheet-design.md`.
+- A facts-only **Embark 2E** sheet (`lib/features/embark_sheet.dart`, rendered when
+  `Character.embark` is set; opt-in `embark` system, `SystemCategory.ruleset`, NOT
+  in `kAllSystems`). Indie OSR by Infinite Fractal. Authored constants:
+  `kEmbarkStats` / `kEmbarkStatLabels` (4 attributes STR/DEX/WIL/INT, range -1..4 —
+  the raw number added to a d12, NOT a score→mod curve) + `kEmbarkClasses` (6:
+  Warrior/Scout/Mage/Invoker/Bard/Barbarian). Per-attribute **Check** buttons
+  (`embark-check-<key>`: d12 + attribute − injuries ≥ 8 → Success; snackbar
+  "STR: 11 — Success"; ephemeral, no journal log). **Injuries** stepper (0-3, 3rd =
+  death; each Injury −1 to Checks — the death track). **AV** stepper (0-4). Class
+  dropdown drives one generic **Resource** box (cur/max) relabeled by the pure
+  `embarkResourceLabel` (Warrior→Grit, Mage/Invoker→Spell Dice, Bard→Flair, else
+  "Resource" — the official sheet's single RESOURCE box). SP/Skills/Languages/Notes
+  freeform (Embark has no fixed skill/language lists; Item Slots noted 12/6/6).
+  Registered everywhere `knave` is (kKnownSystems / kSystemCategory / kSystemBlurbs
+  / kSystemShortName / `_kRulesetIconKey` `flight_takeoff` / QuickRef card /
+  system_primer + resolveSystem/resolveSystemPrimer / `solo-embark` preset /
+  `surfacesFor` / `Character.forSheet` + `addEmbark` + `withHpDelta` +
+  `characterHpPool` + a `FunnelProfile`). Created via roster `new-embark`
+  (`_newEmbark`). **Licensing:** all Embark writing/content is CC BY-SA 4.0 (Infinite
+  Fractal) — fully open, vendorable; P1 ships facts-only with a courtesy attribution
+  line in `kSystemBlurbs['embark']`. P2 (deferred, ALLOWED): spell lists (Arcane/
+  Divine/Bard Spoken-Spell d8+d100 generator), monster bestiary, magic items, NPC
+  generator, class-feature pickers, asset ruleset. See
+  `docs/superpowers/specs/2026-07-18-embark-sheet-design.md`.
 - A facts-only **OSE / B/X** sheet (`lib/features/ose_sheet.dart`, rendered when
   `Character.ose` is set; opt-in `ose` system, NOT in `kAllSystems`). Authored
   constants: `kOseStats` / `kOseStatLabels` (6: STR/INT/WIS/DEX/CON/CHA, 3-18) /
