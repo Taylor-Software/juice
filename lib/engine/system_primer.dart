@@ -33,6 +33,8 @@ const Map<String, String> kSystemPrimers = {
       'Cairn: gritty OSR adventure. Saves: roll d20 equal or under stat to pass. HP is hit protection (avoidance); at 0 HP excess damage reduces STR. Deprived characters cannot heal.',
   'knave':
       'Knave 2e: classless OSR. Saves: d20 + ability score >= 11 to pass. No classes. Wounds fill inventory slots; 10 + CON slots total.',
+  'embark':
+      'Embark 2E: heroic, deadly OSR. Resolution: d12 + attribute (STR/DEX/WIL/INT) >= 8 to succeed; advantage/disadvantage. HP with a 3-Injury death track (each Injury -1 to Checks); AV armor; classes with resource pools.',
   'ose':
       'Old-School Essentials (B/X): classic fantasy. Saves: roll d20 equal or over target (Death/Wands/Paralysis/Breath/Spells). Descending AC (9=unarmored). THAC0 for attacks.',
   'kal-arath':
@@ -58,6 +60,7 @@ String resolveSystemPrimer(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('argosa')) return _primerFor('argosa');
   if (systems.contains('cairn')) return _primerFor('cairn');
   if (systems.contains('knave')) return _primerFor('knave');
+  if (systems.contains('embark')) return _primerFor('embark');
   if (systems.contains('ose')) return _primerFor('ose');
   if (systems.contains('kal-arath')) return _primerFor('kal-arath');
   if (systems.contains('dcc')) return _primerFor('dcc');
@@ -82,6 +85,7 @@ String resolveSystem(Set<String> systems, Set<String> rulesets) {
   if (systems.contains('argosa')) return 'argosa';
   if (systems.contains('cairn')) return 'cairn';
   if (systems.contains('knave')) return 'knave';
+  if (systems.contains('embark')) return 'embark';
   if (systems.contains('ose')) return 'ose';
   if (systems.contains('kal-arath')) return 'kal-arath';
   if (systems.contains('dcc')) return 'dcc';

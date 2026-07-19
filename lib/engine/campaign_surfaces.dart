@@ -35,6 +35,7 @@ const _table = <String, List<SurfaceRow>>{
     SurfaceRow('Argosa sheet', requiresSystem: 'argosa'),
     SurfaceRow('Cairn sheet', requiresSystem: 'cairn'),
     SurfaceRow('Knave sheet', requiresSystem: 'knave'),
+    SurfaceRow('Embark 2E sheet', requiresSystem: 'embark'),
     SurfaceRow('OSE / B/X sheet', requiresSystem: 'ose'),
     SurfaceRow('Kal-Arath sheet', requiresSystem: 'kal-arath'),
     SurfaceRow('Custom / Homebrew sheet', requiresSystem: 'custom'),

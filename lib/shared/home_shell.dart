@@ -1165,6 +1165,10 @@ const kSystemBlurbs = <String, String>{
   'knave':
       'Knave 2e: d20 + score >= 11 saves, wounds fill inventory slots, 10 + CON slot budget. No classes. '
           'Based on Knave 2e by Ben Milton (Questing Beast), CC BY 4.0.',
+  'embark':
+      'Embark 2E: heroic-yet-deadly OSR. d12 + attribute (STR/DEX/WIL/INT) >= 8; '
+          '3-Injury death track, AV armor, slot inventory, 6 classes with resource pools. '
+          'Based on Embark 2E by Infinite Fractal, CC BY-SA 4.0.',
   'ose': 'OSE/B/X: classic fantasy with 7 classes, 5 saving throws, descending AC, THAC0. '
       'Compatible with Old-School Essentials by Gavin Norman (Necrotic Gnome). Not affiliated with Necrotic Gnome.',
   'kal-arath': 'Kal-Arath: sword & sorcery OSR. 2d6 + stat >= 8; five stats, '
@@ -1190,6 +1194,7 @@ const kIdentityIcons = <String, IconData>{
   'fort': Icons.fort,
   'terrain': Icons.terrain,
   'content_cut': Icons.content_cut,
+  'flight_takeoff': Icons.flight_takeoff,
   'auto_stories': Icons.auto_stories,
   'whatshot': Icons.whatshot,
   'casino': Icons.casino,
@@ -1210,6 +1215,7 @@ const kSystemShortName = <String, String>{
   'argosa': 'Argosa',
   'cairn': 'Cairn',
   'knave': 'Knave 2e',
+  'embark': 'Embark 2E',
   'ose': 'OSE/B/X',
   'kal-arath': 'Kal-Arath',
   'dcc': 'DCC',

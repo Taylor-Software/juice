@@ -18,6 +18,7 @@ import 'dnd_sheet.dart';
 import 'ironsworn_sheet.dart';
 import 'argosa_sheet.dart';
 import 'cairn_sheet.dart';
+import 'embark_sheet.dart';
 import 'knave_sheet.dart';
 import '../engine/funnel.dart';
 import 'dcc_sheet.dart';
@@ -425,6 +426,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     if (c.dcc != null) return DccSheetView(character: c, onBack: onBack);
     if (c.funnel != null) return FunnelSheetView(character: c, onBack: onBack);
     if (c.knave != null) return KnaveSheetView(character: c, onBack: onBack);
+    if (c.embark != null) return EmbarkSheetView(character: c, onBack: onBack);
     if (c.cairn != null) return CairnSheetView(character: c, onBack: onBack);
     if (c.argosa != null) return ArgosaSheetView(character: c, onBack: onBack);
     if (c.drawSteel != null) {
@@ -690,6 +692,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           label: 'Knave',
           blurb: 'Abilities, inventory slots, wounds, d20+score saves.'
         ),
+      if (systems.contains('embark'))
+        (
+          key: 'new-embark',
+          value: 'embark',
+          label: 'Embark 2E',
+          blurb: 'Attributes, d12+attr checks, Injuries, AV, class resource.'
+        ),
       if (systems.contains('cairn'))
         (
           key: 'new-cairn',
@@ -801,6 +810,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _newArgosa();
     } else if (choice == 'knave') {
       await _newKnave();
+    } else if (choice == 'embark') {
+      await _newEmbark();
     } else if (choice == 'cairn') {
       await _newCairn();
     } else if (choice == 'ose') {
@@ -870,6 +881,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
 
   Future<void> _newKnave() async {
     final id = await ref.read(charactersProvider.notifier).addKnave();
+    if (mounted) setState(() => _editingId = id);
+  }
+
+  Future<void> _newEmbark() async {
+    final id = await ref.read(charactersProvider.notifier).addEmbark();
     if (mounted) setState(() => _editingId = id);
   }
 
