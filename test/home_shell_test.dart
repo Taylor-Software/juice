@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:juice_oracle/engine/emulator_data.dart';
@@ -275,7 +276,8 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    SharedPreferences.setMockInitialValues({}); // split defaults off
+    SharedPreferences.setMockInitialValues(
+        {'flutter.juice.splitview.v1': false}); // split explicitly off
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
@@ -283,6 +285,49 @@ void main() {
     expect(find.byKey(const Key('split-journal')), findsNothing);
     expect(find.byKey(const Key('split-toggle')),
         findsOneWidget); // still offerable
+  });
+
+  testWidgets('split view is on by default on a wide screen', (tester) async {
+    tester.view.physicalSize = const Size(1400, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({}); // no stored preference
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    // Unset preference now defaults ON, so a wide window splits by default.
+    expect(find.byKey(const Key('split-journal')), findsOneWidget);
+  });
+
+  testWidgets('Ctrl+digit switches verbs and Ctrl+[ goes back', (tester) async {
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(ProviderScope(
+        overrides: [_verdantOverride, _emulatorOverride],
+        child: MaterialApp(home: HomeShell(oracle: _oracle()))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(HomeShell)));
+    expect(container.read(shellRouteProvider).destination, Destination.journal);
+    // Ctrl+5 -> Track.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.digit5);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.digit5);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(container.read(shellRouteProvider).destination, Destination.track);
+    // Ctrl+[ -> back to Journal.
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.bracketLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.bracketLeft);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pumpAndSettle();
+    expect(container.read(shellRouteProvider).destination, Destination.journal);
   });
 
   testWidgets('no split toggle on a narrow screen', (tester) async {

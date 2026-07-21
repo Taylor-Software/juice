@@ -2831,7 +2831,9 @@ class SplitViewNotifier extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_key) ?? false;
+    // Default ON: the shell only splits at >=1000px (canSplit), so this is
+    // inert on phones/tablets and gives desktop a two-pane layout by default.
+    return prefs.getBool(_key) ?? true;
   }
 
   Future<void> toggle() async {
