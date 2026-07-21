@@ -120,6 +120,10 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
   Widget _body(BuildContext context, EmulatorData data) {
     final theme = Theme.of(context);
     final chars = ref.watch(charactersProvider).valueOrNull ?? const [];
+    final system =
+        ref.watch(settingsProvider).valueOrNull?.emulatorSystem ?? 'both';
+    final showPet = system == 'both' || system == 'pet';
+    final showTripleO = system == 'both' || system == 'triple-o';
     Character? selected;
     for (final c in chars) {
       if (c.id == _characterId) selected = c;
@@ -127,7 +131,34 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('Party Emulator', style: theme.textTheme.headlineSmall),
+        Row(
+          children: [
+            Expanded(
+              child:
+                  Text('Party Emulator', style: theme.textTheme.headlineSmall),
+            ),
+            IconButton(
+              key: const Key('pe-help'),
+              icon: const Icon(Icons.help_outline),
+              tooltip: 'How the emulator works',
+              onPressed: () => _showHelp(context, system),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Which emulator system this campaign uses. 'Both' shows every card.
+        SegmentedButton<String>(
+          key: const Key('pe-system'),
+          segments: const [
+            ButtonSegment(value: 'both', label: Text('Both')),
+            ButtonSegment(value: 'triple-o', label: Text('Triple-O')),
+            ButtonSegment(value: 'pet', label: Text('PET')),
+          ],
+          selected: {system},
+          showSelectedIcon: false,
+          onSelectionChanged: (s) =>
+              ref.read(settingsProvider.notifier).setEmulatorSystem(s.first),
+        ),
         const SizedBox(height: 12),
         DropdownButton<String?>(
           key: const Key('pe-character'),
@@ -141,18 +172,22 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
           onChanged: (v) => setState(() => _characterId = v),
         ),
         const SizedBox(height: 12),
-        _emulationCard(theme, data, selected),
-        const SizedBox(height: 12),
-        _petActionsCard(theme, data, selected),
-        if (_pet != null) ...[
-          const SizedBox(height: 16),
-          _petResultCard(theme, selected),
+        if (showPet) ...[
+          _emulationCard(theme, data, selected),
+          const SizedBox(height: 12),
+          _petActionsCard(theme, data, selected),
+          if (_pet != null) ...[
+            const SizedBox(height: 16),
+            _petResultCard(theme, selected),
+          ],
+          const SizedBox(height: 12),
         ],
-        const SizedBox(height: 12),
-        _checkCard(theme),
-        if (_result != null) ...[
-          const SizedBox(height: 16),
-          _resultCard(theme, selected),
+        if (showTripleO) ...[
+          _checkCard(theme),
+          if (_result != null) ...[
+            const SizedBox(height: 16),
+            _resultCard(theme, selected),
+          ],
         ],
         const SizedBox(height: 24),
         for (final line in data.attribution)
@@ -162,6 +197,75 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
                 ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
       ],
+    );
+  }
+
+  /// Facts-only explainer for the emulator systems currently shown — how to
+  /// drive Triple-O and/or PET. Authored tool guidance, not rulebook prose.
+  void _showHelp(BuildContext context, String system) {
+    final theme = Theme.of(context);
+    Widget block(String title, List<String> lines) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            for (final l in lines)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('• $l'),
+              ),
+            const SizedBox(height: 12),
+          ],
+        );
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Using the Party Emulator',
+                  style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Text(
+                  'Let an NPC or the party act on its own. Pick a character '
+                  'above (or "No one" for the world), then drive a system:',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 12),
+              if (system != 'pet')
+                block('Triple-O (behavior)', const [
+                  'Write three courses of action: the Obvious, an Option, '
+                      'and something Odd.',
+                  'Roll a d6 (or Double-Down 2d6) to pick which course '
+                      'happens.',
+                  'Roll doubles and the behavior grows — mark a trait '
+                      'prominent or add a new one.',
+                ]),
+              if (system != 'triple-o')
+                block('PET (agenda / focus / tokens)', const [
+                  'Roll an Agenda (what the character wants) and a Focus '
+                      '(what is on their mind).',
+                  'ACT rolls their next move; acting on their agenda earns a '
+                      'token.',
+                  'Add tags (traits), then Spend a tag to bend a result your '
+                      'way.',
+                  'Session start refreshes the focus and clears spent tags.',
+                ]),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Got it'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

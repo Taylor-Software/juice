@@ -102,6 +102,33 @@ void main() {
         findsOneWidget);
   });
 
+  testWidgets('system picker filters PET / Triple-O cards', (tester) async {
+    await pump(tester, seed: 7);
+    // Default 'both': both systems visible.
+    expect(find.byKey(const Key('pe-pet-actions')), findsOneWidget);
+    expect(find.byKey(const Key('pe-obvious')), findsOneWidget);
+    // Pick Triple-O -> PET hidden. (Tap the segment label directly; tapping
+    // the SegmentedButton itself lands on the centre segment.)
+    await tester.tap(find.text('Triple-O'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pe-pet-actions')), findsNothing);
+    expect(find.byKey(const Key('pe-obvious')), findsOneWidget);
+    // Pick PET -> Triple-O hidden.
+    await tester.tap(find.text('PET'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('pe-pet-actions')), findsOneWidget);
+    expect(find.byKey(const Key('pe-obvious')), findsNothing);
+  });
+
+  testWidgets('help sheet explains the visible systems', (tester) async {
+    await pump(tester, seed: 7);
+    await tester.tap(find.byKey(const Key('pe-help')));
+    await tester.pumpAndSettle();
+    expect(find.text('Using the Party Emulator'), findsOneWidget);
+    expect(find.text('Triple-O (behavior)'), findsOneWidget);
+    expect(find.text('PET (agenda / focus / tokens)'), findsOneWidget);
+  });
+
   testWidgets('single roll renders the band, die, and matching course text',
       (tester) async {
     await pump(tester, seed: 7); // first d6 = 5 -> The Obvious
