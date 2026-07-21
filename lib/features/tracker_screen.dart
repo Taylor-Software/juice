@@ -27,6 +27,7 @@ import 'kal_arath_sheet.dart';
 import 'ose_sheet.dart';
 import 'draw_steel_sheet.dart';
 import 'custom_sheet.dart';
+import '../engine/custom_sheet.dart';
 import '../engine/custom_templates.dart';
 import 'nimble_sheet.dart';
 import 'shadowdark_sheet.dart';
@@ -1590,60 +1591,51 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           ],
         ),
         section('Stats'),
-        for (var i = 0; i < c.stats.length; i++)
-          Row(
-            children: [
-              Expanded(
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(
-                      text: c.stats[i].label,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  TextSpan(text: '  ${c.stats[i].value}'),
-                ])),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () =>
-                    _replace(c.copyWith(stats: [...c.stats]..removeAt(i))),
-              ),
-            ],
-          ),
+        for (var i = 0; i < c.stats.length; i++) _statRow(context, c, i),
         OutlinedButton.icon(
           key: const Key('add-stat'),
           icon: const Icon(Icons.add),
           label: const Text('Add stat'),
-          onPressed: () => _addStat(context, c),
+          onPressed: () => _statDialog(context, c),
         ),
         section('Tracks'),
-        for (var i = 0; i < c.tracks.length; i++)
-          Row(
-            children: [
-              Expanded(child: Text(c.tracks[i].label)),
-              IconButton(
-                key: Key('track-minus-$i'),
-                icon: const Icon(Icons.remove_circle_outline),
-                onPressed: () => _replace(c.copyWith(
-                    tracks: [...c.tracks]..[i] = c.tracks[i].adjusted(-1))),
+        for (var i = 0; i < c.tracks.length; i++) _trackRow(context, c, i),
+        Wrap(
+          spacing: 8,
+          children: [
+            OutlinedButton.icon(
+              key: const Key('add-track'),
+              icon: const Icon(Icons.add),
+              label: const Text('Add track'),
+              onPressed: () => _addTrack(context, c),
+            ),
+            if (!c.tracks.any((t) => t.label.toLowerCase() == 'hp'))
+              OutlinedButton.icon(
+                key: const Key('add-hp'),
+                icon: const Icon(Icons.favorite_border),
+                label: const Text('Add HP'),
+                onPressed: () => _addHp(context, c),
               ),
-              Text('${c.tracks[i].current}/${c.tracks[i].max}'),
-              IconButton(
-                key: Key('track-plus-$i'),
-                icon: const Icon(Icons.add_circle_outline),
-                onPressed: () => _replace(c.copyWith(
-                    tracks: [...c.tracks]..[i] = c.tracks[i].adjusted(1))),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () =>
-                    _replace(c.copyWith(tracks: [...c.tracks]..removeAt(i))),
-              ),
-            ],
-          ),
-        OutlinedButton.icon(
-          key: const Key('add-track'),
-          icon: const Icon(Icons.add),
-          label: const Text('Add track'),
-          onPressed: () => _addTrack(context, c),
+          ],
+        ),
+        section('Coins'),
+        Row(
+          children: [
+            const Expanded(child: Text('Currency')),
+            IconButton(
+              key: const Key('coins-minus'),
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: c.coins <= 0
+                  ? null
+                  : () => _replace(c.copyWith(coins: c.coins - 1)),
+            ),
+            Text('${c.coins}', key: const Key('coins-value')),
+            IconButton(
+              key: const Key('coins-plus'),
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => _replace(c.copyWith(coins: c.coins + 1)),
+            ),
+          ],
         ),
         section('Tags'),
         Wrap(
@@ -1676,20 +1668,157 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
             ),
           ),
+        const SizedBox(height: 8),
+        conditionsSection(context, ref, c, 'sheet'),
         section('Notes'),
-        Text(c.note.isEmpty ? '—' : c.note),
+        DebouncedTextField(
+          key: const Key('sheet-notes'),
+          initialValue: c.note,
+          maxLines: 4,
+          hint: 'Notes…',
+          onSave: (v) => _replace(c.copyWith(note: v)),
+        ),
       ],
     );
   }
 
-  Future<void> _addStat(BuildContext context, Character c) async {
-    final label = TextEditingController();
-    final value = TextEditingController();
-    final result = await showDialog<({String label, String value})>(
+  /// One stat row: label + value + optional derived modifier, with +/- steppers
+  /// (numeric stats only), an edit affordance, and delete.
+  Widget _statRow(BuildContext context, Character c, int i) {
+    final s = c.stats[i];
+    final n = s.numericValue;
+    final mod = s.modifier;
+    return Row(
+      children: [
+        Expanded(
+          child: Text.rich(TextSpan(children: [
+            TextSpan(
+                text: s.label,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            TextSpan(text: '  ${s.value}'),
+            if (mod != null)
+              TextSpan(
+                  text: '  (${mod >= 0 ? '+$mod' : '$mod'})',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.primary)),
+          ])),
+        ),
+        if (n != null) ...[
+          IconButton(
+            key: Key('stat-minus-$i'),
+            icon: const Icon(Icons.remove_circle_outline),
+            onPressed: () => _replace(c.copyWith(
+                stats: [...c.stats]..[i] = s.copyWith(value: '${n - 1}'))),
+          ),
+          IconButton(
+            key: Key('stat-plus-$i'),
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () => _replace(c.copyWith(
+                stats: [...c.stats]..[i] = s.copyWith(value: '${n + 1}'))),
+          ),
+        ],
+        IconButton(
+          key: Key('stat-edit-$i'),
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => _statDialog(context, c, index: i),
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () =>
+              _replace(c.copyWith(stats: [...c.stats]..removeAt(i))),
+        ),
+      ],
+    );
+  }
+
+  /// One track row. Small tracks (max <= 12) render as tappable boxes; larger
+  /// tracks keep the +/- steppers. Delete on the trailing icon either way.
+  Widget _trackRow(BuildContext context, Character c, int i) {
+    final t = c.tracks[i];
+    void set(int current) => _replace(c.copyWith(
+        tracks: [...c.tracks]..[i] = CharTrack(
+            label: t.label, current: current.clamp(0, t.max), max: t.max)));
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${t.label}  ${t.current}/${t.max}'),
+                if (t.max >= 1 && t.max <= 12)
+                  Wrap(
+                    spacing: 4,
+                    children: [
+                      for (var b = 0; b < t.max; b++)
+                        InkWell(
+                          key: Key('track-box-$i-$b'),
+                          onTap: () =>
+                              // Tap the top filled box to step down; else fill
+                              // up to the tapped box.
+                              set(t.current == b + 1 ? b : b + 1),
+                          child: Icon(
+                            b < t.current
+                                ? Icons.check_box
+                                : Icons.check_box_outline_blank,
+                            size: 22,
+                            color: b < t.current
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.outline,
+                          ),
+                        ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          if (t.max > 12) ...[
+            IconButton(
+              key: Key('track-minus-$i'),
+              icon: const Icon(Icons.remove_circle_outline),
+              onPressed: () => set(t.current - 1),
+            ),
+            IconButton(
+              key: Key('track-plus-$i'),
+              icon: const Icon(Icons.add_circle_outline),
+              onPressed: () => set(t.current + 1),
+            ),
+          ],
+          IconButton(
+            key: Key('track-delete-$i'),
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () =>
+                _replace(c.copyWith(tracks: [...c.tracks]..removeAt(i))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Friendly label for a modifier formula in the stat dialog.
+  static String _formulaLabel(StatModFormula f) => switch (f) {
+        StatModFormula.raw => 'None',
+        StatModFormula.fived => '(score − 10) ÷ 2 (D&D)',
+        StatModFormula.dccTight => 'DCC (tight)',
+        StatModFormula.scoreIsMod => 'Value is the modifier',
+        StatModFormula.halfFloor => 'Half (÷2)',
+      };
+
+  /// Add ([index] null) or edit an existing stat. Exposes label, value, and an
+  /// optional modifier formula (None = no derived modifier).
+  Future<void> _statDialog(BuildContext context, Character c,
+      {int? index}) async {
+    final existing = index == null ? null : c.stats[index];
+    final label = TextEditingController(text: existing?.label ?? '');
+    final value = TextEditingController(text: existing?.value ?? '');
+    var formula = existing?.modFormula ?? StatModFormula.raw;
+    final result =
+        await showDialog<({String label, String value, StatModFormula f})>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add stat'),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setLocal) => AlertDialog(
+          title: Text(index == null ? 'Add stat' : 'Edit stat'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1703,7 +1832,22 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               TextField(
                 key: const Key('stat-value'),
                 controller: value,
-                decoration: const InputDecoration(labelText: 'Value'),
+                keyboardType: TextInputType.text,
+                decoration: const InputDecoration(
+                    labelText: 'Value', helperText: 'A number enables +/-'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<StatModFormula>(
+                key: const Key('stat-formula'),
+                initialValue: formula,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Modifier'),
+                items: [
+                  for (final f in StatModFormula.values)
+                    DropdownMenuItem(value: f, child: Text(_formulaLabel(f))),
+                ],
+                onChanged: (v) =>
+                    setLocal(() => formula = v ?? StatModFormula.raw),
               ),
             ],
           ),
@@ -1713,22 +1857,66 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               child: const Text('Cancel'),
             ),
             FilledButton(
+              key: const Key('stat-save'),
               onPressed: () => Navigator.pop(
-                  context, (label: label.text, value: value.text)),
-              child: const Text('Add'),
+                  context, (label: label.text, value: value.text, f: formula)),
+              child: Text(index == null ? 'Add' : 'Save'),
             ),
           ],
-        );
-      },
+        ),
+      ),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       label.dispose();
       value.dispose();
     });
     if (result == null || result.label.trim().isEmpty) return;
-    await _replace(c.copyWith(stats: [
-      ...c.stats,
-      CharStat(label: result.label.trim(), value: result.value.trim()),
+    final stat = CharStat(
+      label: result.label.trim(),
+      value: result.value.trim(),
+      modFormula: result.f == StatModFormula.raw ? null : result.f,
+    );
+    if (index == null) {
+      await _replace(c.copyWith(stats: [...c.stats, stat]));
+    } else {
+      await _replace(c.copyWith(stats: [...c.stats]..[index] = stat));
+    }
+  }
+
+  /// Seeds a full HP track (current = max) at the front of the track list so
+  /// [characterHpPool] and party/encounter surfaces pick it up.
+  Future<void> _addHp(BuildContext context, Character c) async {
+    final maxCtrl = TextEditingController(text: '10');
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add HP'),
+        content: TextField(
+          key: const Key('hp-max'),
+          controller: maxCtrl,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Max HP'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, maxCtrl.text),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => maxCtrl.dispose());
+    if (result == null) return;
+    var max = int.tryParse(result.trim()) ?? 10;
+    if (max < 1) max = 1;
+    await _replace(c.copyWith(tracks: [
+      CharTrack(label: 'HP', current: max, max: max),
+      ...c.tracks,
     ]));
   }
 
