@@ -5079,23 +5079,30 @@ class CampaignSettings {
     this.tone = '',
     this.defaultOracle = 'juice',
     this.headerCollapsed = false,
+    this.emulatorSystem = 'both',
   });
   final String genre;
   final String tone;
   final String defaultOracle;
   final bool headerCollapsed;
 
+  /// Which party-emulator system the player uses: 'both' (default),
+  /// 'triple-o', or 'pet'. Filters the Party Emulator screen.
+  final String emulatorSystem;
+
   CampaignSettings copyWith({
     String? genre,
     String? tone,
     String? defaultOracle,
     bool? headerCollapsed,
+    String? emulatorSystem,
   }) =>
       CampaignSettings(
         genre: genre ?? this.genre,
         tone: tone ?? this.tone,
         defaultOracle: defaultOracle ?? this.defaultOracle,
         headerCollapsed: headerCollapsed ?? this.headerCollapsed,
+        emulatorSystem: emulatorSystem ?? this.emulatorSystem,
       );
 
   factory CampaignSettings.fromJson(Map<String, dynamic> j) => CampaignSettings(
@@ -5103,6 +5110,7 @@ class CampaignSettings {
         tone: j['tone'] as String? ?? '',
         defaultOracle: j['defaultOracle'] as String? ?? 'juice',
         headerCollapsed: (j['headerCollapsed'] as bool?) ?? false,
+        emulatorSystem: j['emulatorSystem'] as String? ?? 'both',
       );
 
   Map<String, dynamic> toJson() => {
@@ -5110,6 +5118,7 @@ class CampaignSettings {
         'tone': tone,
         'defaultOracle': defaultOracle,
         if (headerCollapsed) 'headerCollapsed': true,
+        if (emulatorSystem != 'both') 'emulatorSystem': emulatorSystem,
       };
 }
 

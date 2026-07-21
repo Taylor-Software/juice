@@ -17,6 +17,17 @@ void main() {
     expect(CampaignSettings.fromJson(const {}).tone, '');
   });
 
+  test('emulatorSystem defaults to both and round-trips; omitted when both',
+      () {
+    expect(const CampaignSettings().emulatorSystem, 'both');
+    expect(const CampaignSettings().toJson().containsKey('emulatorSystem'),
+        isFalse);
+    const s = CampaignSettings(emulatorSystem: 'pet');
+    expect(s.toJson()['emulatorSystem'], 'pet');
+    expect(CampaignSettings.fromJson(s.toJson()).emulatorSystem, 'pet');
+    expect(CampaignSettings.fromJson(const {}).emulatorSystem, 'both');
+  });
+
   test('settings persist per session and reload', () async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':

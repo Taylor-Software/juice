@@ -1822,6 +1822,11 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
     final cur = state.valueOrNull ?? await future;
     await save(cur.copyWith(headerCollapsed: collapsed));
   }
+
+  Future<void> setEmulatorSystem(String system) async {
+    final cur = state.valueOrNull ?? await future;
+    await save(cur.copyWith(emulatorSystem: system));
+  }
 }
 
 final settingsProvider =
