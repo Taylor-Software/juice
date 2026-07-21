@@ -14,12 +14,31 @@ class SettlementPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final map = ref.watch(mapProvider).valueOrNull ?? const MapState();
     final settlements = map.settlements;
     final active = map.activeSettlement;
     final notifier = ref.read(mapProvider.notifier);
 
+    // The subtab host keeps every pane mounted and measures the off-screen
+    // ones under unbounded width; Material buttons + Expanded assert there.
+    // Bound the width so the header survives the off-screen measure pass.
+    return LayoutBuilder(
+      builder: (context, c) => SizedBox(
+        width: c.maxWidth.isFinite ? c.maxWidth : 600.0,
+        child: _content(context, ref, map, settlements, active, notifier),
+      ),
+    );
+  }
+
+  Widget _content(
+    BuildContext context,
+    WidgetRef ref,
+    MapState map,
+    List<SettlementSite> settlements,
+    SettlementSite? active,
+    MapNotifier notifier,
+  ) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -27,23 +46,22 @@ class SettlementPane extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 12, 12, 4),
           child: Row(
             children: [
-              Expanded(
-                child: Text('Settlements', style: theme.textTheme.titleMedium),
+              Text('Settlements', style: theme.textTheme.titleMedium),
+              const Spacer(),
+              // IconButtons (fixed size) are immune to the subtab host's
+              // off-screen unbounded-width measure pass — see the note in build.
+              IconButton(
+                key: const Key('settlement-generate'),
+                icon: const Icon(Icons.casino_outlined),
+                tooltip: 'Generate town',
+                onPressed: () => notifier.generateSettlement(oracle),
               ),
-              Wrap(spacing: 8, children: [
-                OutlinedButton.icon(
-                  key: const Key('settlement-generate'),
-                  icon: const Icon(Icons.casino_outlined, size: 18),
-                  label: const Text('Generate town'),
-                  onPressed: () => notifier.generateSettlement(oracle),
-                ),
-                FilledButton.tonalIcon(
-                  key: const Key('settlement-new'),
-                  icon: const Icon(Icons.add),
-                  label: const Text('New'),
-                  onPressed: () => notifier.addSettlement(),
-                ),
-              ]),
+              IconButton(
+                key: const Key('settlement-new'),
+                icon: const Icon(Icons.add),
+                tooltip: 'New settlement',
+                onPressed: () => notifier.addSettlement(),
+              ),
             ],
           ),
         ),
