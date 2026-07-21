@@ -1238,6 +1238,140 @@ class MapNotifier extends AsyncNotifier<MapState> {
     await addDungeon(anchorCol: col, anchorRow: row);
   }
 
+  // -- Settlements (city/town map sites) ------------------------------------
+
+  /// Create a blank named settlement (optionally anchored) and make it active.
+  Future<String> addSettlement(
+      {String? name, String? kind, int? anchorCol, int? anchorRow}) async {
+    final s = await _ready;
+    final id = _newId();
+    await save(s.copyWith(settlements: [
+      ...s.settlements,
+      SettlementSite(
+        id: id,
+        name: name ?? 'Settlement ${s.settlements.length + 1}',
+        kind: kind ?? '',
+        anchorHexCol: anchorCol,
+        anchorHexRow: anchorRow,
+      ),
+    ], activeSettlementId: id));
+    return id;
+  }
+
+  /// Generate a settlement from the oracle: a name + [buildingCount] buildings
+  /// drawn from the authored establishment table. Made active.
+  Future<String> generateSettlement(Oracle oracle,
+      {int? anchorCol, int? anchorRow, int buildingCount = 5}) async {
+    final s = await _ready;
+    final id = _newId();
+    final buildings = [
+      for (var i = 0; i < buildingCount; i++)
+        Building(id: '${id}b$i', name: oracle.buildingType()),
+    ];
+    await save(s.copyWith(settlements: [
+      ...s.settlements,
+      SettlementSite(
+        id: id,
+        name: oracle.settlementName(),
+        kind: 'Town',
+        buildings: buildings,
+        anchorHexCol: anchorCol,
+        anchorHexRow: anchorRow,
+      ),
+    ], activeSettlementId: id));
+    return id;
+  }
+
+  /// Make settlement [id] the one the Town pane shows; unknown id = no-op.
+  Future<void> switchSettlement(String id) async {
+    final s = await _ready;
+    if (!s.settlements.any((x) => x.id == id)) return;
+    await save(s.copyWith(activeSettlementId: id));
+  }
+
+  /// The hex card's "Town here": anchors the active settlement when it has no
+  /// anchor yet, else generates a NEW settlement at ([col],[row]).
+  Future<void> anchorSettlementHere(Oracle oracle, int col, int row) async {
+    final s = await _ready;
+    final active = s.activeSettlement;
+    if (active != null && !active.hasAnchor) {
+      await _updateSettlement(
+          active.id, (x) => x.copyWith(anchorHexCol: col, anchorHexRow: row));
+      return;
+    }
+    await generateSettlement(oracle, anchorCol: col, anchorRow: row);
+  }
+
+  Future<void> unanchorSettlement(String id) =>
+      _updateSettlement(id, (x) => x.copyWith(clearAnchor: true));
+
+  Future<void> renameSettlement(String id, String name) =>
+      _updateSettlement(id, (x) => x.copyWith(name: name));
+
+  Future<void> setSettlementKind(String id, String kind) =>
+      _updateSettlement(id, (x) => x.copyWith(kind: kind));
+
+  Future<void> setSettlementNote(String id, String note) =>
+      _updateSettlement(id, (x) => x.copyWith(note: note));
+
+  Future<void> removeSettlement(String id) async {
+    final s = await _ready;
+    final rest = [
+      for (final x in s.settlements)
+        if (x.id != id) x
+    ];
+    await save(s.copyWith(
+      settlements: rest,
+      activeSettlementId: s.activeSettlementId == id
+          ? (rest.isEmpty ? null : rest.first.id)
+          : s.activeSettlementId,
+    ));
+  }
+
+  /// Adds a blank building to settlement [id] and returns its new id.
+  Future<String> addBuilding(String id,
+      {String name = '', String type = ''}) async {
+    final s = await _ready;
+    final site = s.settlements.where((x) => x.id == id).firstOrNull;
+    final bid = '${id}b${DateTime.now().microsecondsSinceEpoch}';
+    if (site != null) {
+      await _updateSettlement(
+          id,
+          (x) => x.copyWith(buildings: [
+                ...x.buildings,
+                Building(id: bid, name: name, type: type)
+              ]));
+    }
+    return bid;
+  }
+
+  Future<void> updateBuilding(String settlementId, Building b) =>
+      _updateSettlement(
+          settlementId,
+          (x) => x.copyWith(buildings: [
+                for (final old in x.buildings)
+                  if (old.id == b.id) b else old,
+              ]));
+
+  Future<void> removeBuilding(String settlementId, String buildingId) =>
+      _updateSettlement(
+          settlementId,
+          (x) => x.copyWith(buildings: [
+                for (final b in x.buildings)
+                  if (b.id != buildingId) b,
+              ]));
+
+  /// Apply [f] to settlement [id] and persist; unknown id = no-op.
+  Future<void> _updateSettlement(
+      String id, SettlementSite Function(SettlementSite) f) async {
+    final s = await _ready;
+    if (!s.settlements.any((x) => x.id == id)) return;
+    await save(s.copyWith(settlements: [
+      for (final x in s.settlements)
+        if (x.id == id) f(x) else x,
+    ]));
+  }
+
   /// Find the hex at (col,row), apply [f] to it, and persist. [f] returning
   /// null (or no hex at that cell) is a no-op — used by the guard cases.
   Future<void> _updateHex(

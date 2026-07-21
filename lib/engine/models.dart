@@ -3797,10 +3797,117 @@ class DungeonSite {
   }
 }
 
+/// One building/location inside a [SettlementSite] (facts-only: a name +
+/// freeform type + note). Deferred: a building can later link to a dungeon.
+class Building {
+  const Building(
+      {required this.id, this.name = '', this.type = '', this.note = ''});
+  final String id;
+  final String name;
+  final String type;
+  final String note;
+
+  Building copyWith({String? name, String? type, String? note}) => Building(
+        id: id,
+        name: name ?? this.name,
+        type: type ?? this.type,
+        note: note ?? this.note,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        if (name.isNotEmpty) 'name': name,
+        if (type.isNotEmpty) 'type': type,
+        if (note.isNotEmpty) 'note': note,
+      };
+
+  static Building? maybeFromJson(dynamic j) => j is Map
+      ? Building(
+          id: (j['id'] as String?) ?? '',
+          name: (j['name'] as String?) ?? '',
+          type: (j['type'] as String?) ?? '',
+          note: (j['note'] as String?) ?? '')
+      : null;
+}
+
+/// A settlement (city/town/village) on the session map — a flat list of
+/// [buildings], optionally anchored to a world hex (parallel to [DungeonSite]).
+class SettlementSite {
+  const SettlementSite({
+    required this.id,
+    this.name = 'Settlement',
+    this.kind = '',
+    this.buildings = const [],
+    this.note = '',
+    this.anchorHexCol,
+    this.anchorHexRow,
+  });
+
+  final String id;
+  final String name;
+
+  /// Freeform kind label (Village / Town / City …); empty until set.
+  final String kind;
+  final List<Building> buildings;
+  final String note;
+  final int? anchorHexCol;
+  final int? anchorHexRow;
+
+  bool get hasAnchor => anchorHexCol != null && anchorHexRow != null;
+
+  SettlementSite copyWith({
+    String? name,
+    String? kind,
+    List<Building>? buildings,
+    String? note,
+    int? anchorHexCol,
+    int? anchorHexRow,
+    bool clearAnchor = false,
+  }) =>
+      SettlementSite(
+        id: id,
+        name: name ?? this.name,
+        kind: kind ?? this.kind,
+        buildings: buildings ?? this.buildings,
+        note: note ?? this.note,
+        anchorHexCol: clearAnchor ? null : (anchorHexCol ?? this.anchorHexCol),
+        anchorHexRow: clearAnchor ? null : (anchorHexRow ?? this.anchorHexRow),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        if (kind.isNotEmpty) 'kind': kind,
+        if (buildings.isNotEmpty)
+          'buildings': buildings.map((b) => b.toJson()).toList(),
+        if (note.isNotEmpty) 'note': note,
+        if (anchorHexCol != null) 'anchorHexCol': anchorHexCol,
+        if (anchorHexRow != null) 'anchorHexRow': anchorHexRow,
+      };
+
+  static SettlementSite? maybeFromJson(dynamic j) {
+    if (j is! Map) return null;
+    return SettlementSite(
+      id: (j['id'] as String?) ?? '',
+      name: (j['name'] as String?) ?? 'Settlement',
+      kind: (j['kind'] as String?) ?? '',
+      buildings: ((j['buildings'] as List?) ?? const [])
+          .map(Building.maybeFromJson)
+          .whereType<Building>()
+          .toList(),
+      note: (j['note'] as String?) ?? '',
+      anchorHexCol: j['anchorHexCol'] as int?,
+      anchorHexRow: j['anchorHexRow'] as int?,
+    );
+  }
+}
+
 class MapState {
   const MapState({
     this.dungeons = const [],
     this.activeDungeonId,
+    this.settlements = const [],
+    this.activeSettlementId,
     this.hexes = const [],
     this.currentHexCol,
     this.currentHexRow,
@@ -3813,6 +3920,13 @@ class MapState {
   /// Which dungeon the Dungeon pane shows/edits; falls back to the first.
   final String? activeDungeonId;
 
+  /// Every settlement on the session map, each with its buildings + optional
+  /// world-hex anchor.
+  final List<SettlementSite> settlements;
+
+  /// Which settlement the Town pane shows/edits; falls back to the first.
+  final String? activeSettlementId;
+
   final List<HexCell> hexes;
   final int? currentHexCol;
   final int? currentHexRow;
@@ -3822,10 +3936,23 @@ class MapState {
       : dungeons.firstWhere((d) => d.id == activeDungeonId,
           orElse: () => dungeons.first);
 
+  SettlementSite? get activeSettlement => settlements.isEmpty
+      ? null
+      : settlements.firstWhere((s) => s.id == activeSettlementId,
+          orElse: () => settlements.first);
+
   /// The dungeon anchored at hex ([col],[row]), or null.
   DungeonSite? dungeonAnchoredAt(int col, int row) {
     for (final d in dungeons) {
       if (d.anchorHexCol == col && d.anchorHexRow == row) return d;
+    }
+    return null;
+  }
+
+  /// The settlement anchored at hex ([col],[row]), or null.
+  SettlementSite? settlementAnchoredAt(int col, int row) {
+    for (final s in settlements) {
+      if (s.anchorHexCol == col && s.anchorHexRow == row) return s;
     }
     return null;
   }
@@ -3870,6 +3997,8 @@ class MapState {
   MapState copyWith({
     List<DungeonSite>? dungeons,
     String? activeDungeonId,
+    List<SettlementSite>? settlements,
+    String? activeSettlementId,
     List<DungeonLevel>? levels,
     int? activeLevel,
     List<DungeonRoom>? rooms,
@@ -3940,6 +4069,8 @@ class MapState {
     return MapState(
       dungeons: newDungeons,
       activeDungeonId: newActiveId,
+      settlements: settlements ?? this.settlements,
+      activeSettlementId: activeSettlementId ?? this.activeSettlementId,
       hexes: hexes ?? this.hexes,
       currentHexCol:
           clearCurrentHex ? null : (currentHexCol ?? this.currentHexCol),
@@ -3952,6 +4083,9 @@ class MapState {
         if (dungeons.isNotEmpty)
           'dungeons': dungeons.map((d) => d.toJson()).toList(),
         if (activeDungeonId != null) 'activeDungeon': activeDungeonId,
+        if (settlements.isNotEmpty)
+          'settlements': settlements.map((s) => s.toJson()).toList(),
+        if (activeSettlementId != null) 'activeSettlement': activeSettlementId,
         'hexes': hexes.map((h) => h.toJson()).toList(),
         'currentHexCol': currentHexCol,
         'currentHexRow': currentHexRow,
@@ -4015,9 +4149,16 @@ class MapState {
             ];
       activeId = dungeons.isEmpty ? null : 'd1';
     }
+    final settlements = ((j['settlements'] as List?) ?? const [])
+        .map(SettlementSite.maybeFromJson)
+        .whereType<SettlementSite>()
+        .toList();
     return MapState(
       dungeons: dungeons,
       activeDungeonId: activeId,
+      settlements: settlements,
+      activeSettlementId: (j['activeSettlement'] as String?) ??
+          (settlements.isEmpty ? null : settlements.first.id),
       hexes: ((j['hexes'] as List?) ?? const [])
           .map(HexCell.maybeFromJson)
           .whereType<HexCell>()
