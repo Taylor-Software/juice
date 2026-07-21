@@ -44,7 +44,7 @@ void main() {
     // Party is now a Track subtab, not a top-level destination.
     await t.tap(find.text('Track').first);
     await t.pumpAndSettle();
-    expect(find.widgetWithText(Tab, 'Emulator'),
+    expect(find.widgetWithText(Tab, 'Party'),
         findsOneWidget); // default session has party
     final container =
         ProviderScope.containerOf(t.element(find.byType(HomeShell)));
@@ -53,7 +53,7 @@ void main() {
     await t.pumpAndSettle();
     await t.tap(find.text('Track').first);
     await t.pumpAndSettle();
-    expect(find.widgetWithText(Tab, 'Emulator'), findsNothing);
+    expect(find.widgetWithText(Tab, 'Party'), findsNothing);
     expect(find.text('Play'), findsWidgets);
   });
 
