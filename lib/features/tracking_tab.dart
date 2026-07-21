@@ -5,13 +5,11 @@ import '../engine/models.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
 import 'battle_pane.dart';
-import 'behavior_tables_screen.dart';
 import 'encounter_screen.dart';
-import 'party_emulator_screen.dart';
+import 'party_tools_pane.dart';
 import 'resources_pane.dart';
 import 'rumors_pane.dart';
 import 'scenes_pane.dart';
-import 'sidekick_screen.dart';
 import 'track_home_pane.dart';
 import 'tracker_screen.dart';
 import 'tracks_pane.dart';
@@ -41,9 +39,11 @@ class TrackingTab extends ConsumerWidget {
         const SubtabDef('encounter', 'Encounter'),
         if (rumors) const SubtabDef('rumors', 'Rumors'),
         const SubtabDef('tracks', 'Tracks'),
-        if (partyTools) const SubtabDef('emulator', 'Emulator'),
-        if (partyTools) const SubtabDef('sidekick', 'Sidekick'),
-        if (partyTools) const SubtabDef('behavior', 'Behavior'),
+        // Emulator + Behavior + Sidekick consolidated into one Party subtab
+        // (internal switch); legacy routes resolve via the aliases.
+        if (partyTools)
+          const SubtabDef('party', 'Party',
+              aliases: ['emulator', 'sidekick', 'behavior']),
         if (lonelog) const SubtabDef('resources', 'Resources'),
         if (lonelog) const SubtabDef('battle', 'Battle'),
       ],
@@ -55,9 +55,7 @@ class TrackingTab extends ConsumerWidget {
         const EncounterScreen(),
         if (rumors) const RumorsPane(),
         const TracksPane(),
-        if (partyTools) const PartyEmulatorScreen(),
-        if (partyTools) const SidekickScreen(),
-        if (partyTools) const BehaviorTablesScreen(),
+        if (partyTools) const PartyToolsPane(),
         if (lonelog) const ResourcesPane(),
         if (lonelog) const BattlePane(),
       ],

@@ -48,7 +48,7 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: TrackingTab(systems: {'party'})))));
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(Tab, 'Emulator'), findsOneWidget);
+    expect(find.widgetWithText(Tab, 'Party'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Scenes'), findsOneWidget);
   });
 
