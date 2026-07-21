@@ -39,6 +39,24 @@ import 'shell_route.dart';
 import 'tool_registry.dart';
 import 'tool_search_sheet.dart';
 
+/// Verb order for the Cmd/Ctrl+1..6 shortcuts (matches the nav order).
+const _verbShortcutOrder = [
+  Destination.journal,
+  Destination.sheet,
+  Destination.ask,
+  Destination.map,
+  Destination.track,
+  Destination.run,
+];
+const _digitKeys = [
+  LogicalKeyboardKey.digit1,
+  LogicalKeyboardKey.digit2,
+  LogicalKeyboardKey.digit3,
+  LogicalKeyboardKey.digit4,
+  LogicalKeyboardKey.digit5,
+  LogicalKeyboardKey.digit6,
+];
+
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key, required this.oracle});
   final Oracle oracle;
@@ -1106,6 +1124,20 @@ class _HomeShellState extends ConsumerState<HomeShell> {
                 CampaignHeader.quickRollDefault(context, ref),
             const SingleActivator(LogicalKeyboardKey.keyR, control: true): () =>
                 CampaignHeader.quickRollDefault(context, ref),
+            // Cmd/Ctrl+1..6 jump to the six verbs; Cmd/Ctrl+[ goes back.
+            for (var i = 0; i < _verbShortcutOrder.length; i++) ...{
+              SingleActivator(_digitKeys[i], meta: true): () => ref
+                  .read(shellRouteProvider.notifier)
+                  .goTo(_verbShortcutOrder[i]),
+              SingleActivator(_digitKeys[i], control: true): () => ref
+                  .read(shellRouteProvider.notifier)
+                  .goTo(_verbShortcutOrder[i]),
+            },
+            const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true):
+                () => ref.read(shellRouteProvider.notifier).back(),
+            const SingleActivator(LogicalKeyboardKey.bracketLeft,
+                    control: true):
+                () => ref.read(shellRouteProvider.notifier).back(),
           },
           child: Focus(
             autofocus: true,
