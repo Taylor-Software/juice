@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:juice_oracle/engine/custom_sheet.dart';
 import 'package:juice_oracle/engine/models.dart';
 
 void main() {
@@ -37,6 +38,64 @@ void main() {
     const t = CharTrack(label: 'HP', current: 5, max: 10);
     expect(t.adjusted(7).current, 10);
     expect(t.adjusted(-9).current, 0);
+  });
+
+  group('CharStat modifier + coins', () {
+    test('numericValue parses ints, null on freeform', () {
+      expect(const CharStat(label: 'STR', value: '14').numericValue, 14);
+      expect(const CharStat(label: 'STR', value: ' 8 ').numericValue, 8);
+      expect(const CharStat(label: 'STR', value: 'd6').numericValue, isNull);
+    });
+
+    test('modifier applies the formula only for numeric values', () {
+      expect(
+          const CharStat(
+                  label: 'STR', value: '14', modFormula: StatModFormula.fived)
+              .modifier,
+          2);
+      expect(
+          const CharStat(
+                  label: 'STR', value: 'big', modFormula: StatModFormula.fived)
+              .modifier,
+          isNull,
+          reason: 'no modifier for non-numeric value');
+      expect(const CharStat(label: 'STR', value: '14').modifier, isNull,
+          reason: 'no modifier without a formula');
+    });
+
+    test('modFormula round-trips through JSON; absent when null', () {
+      const s =
+          CharStat(label: 'DEX', value: '12', modFormula: StatModFormula.fived);
+      expect(s.toJson()['mod'], 'fived');
+      final back = CharStat.maybeFromJson(s.toJson());
+      expect(back!.modFormula, StatModFormula.fived);
+      // No formula -> no 'mod' key (byte-stable with legacy JSON).
+      expect(
+          const CharStat(label: 'DEX', value: '12').toJson().containsKey('mod'),
+          isFalse);
+      expect(CharStat.maybeFromJson({'label': 'x', 'value': '1'})!.modFormula,
+          isNull);
+    });
+
+    test('CharStat.copyWith updates and clears the formula', () {
+      const s =
+          CharStat(label: 'STR', value: '10', modFormula: StatModFormula.fived);
+      expect(s.copyWith(value: '18').modifier, 4);
+      expect(s.copyWith(clearFormula: true).modFormula, isNull);
+    });
+
+    test('coins round-trips and is omitted from JSON when 0', () {
+      const c = Character(id: 'k1', name: 'Rich', coins: 42);
+      expect(c.toJson()['coins'], 42);
+      expect(Character.fromJson(c.toJson()).coins, 42);
+      expect(
+          const Character(id: 'k2', name: 'Broke')
+              .toJson()
+              .containsKey('coins'),
+          isFalse);
+      expect(Character.fromJson({'id': 'k3', 'name': 'Legacy'}).coins, 0);
+      expect(const Character(id: 'k4', name: 'X').copyWith(coins: 7).coins, 7);
+    });
   });
 
   test('malformed block entries are skipped, not fatal', () {

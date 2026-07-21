@@ -55,21 +55,169 @@ void main() {
     expect(find.text('HP 7/10'), findsOneWidget);
   });
 
-  testWidgets('track steppers adjust and persist, clamped', (tester) async {
+  testWidgets('track boxes set current level and persist', (tester) async {
+    final container = await pump(tester); // HP 7/10 -> tappable boxes
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    // Tap the 8th box (index 7) to raise current to 8.
+    await tester.tap(find.byKey(const Key('track-box-0-7')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('8/10'), findsOneWidget);
+    expect(
+        (await container.read(charactersProvider.future))
+            .single
+            .tracks
+            .single
+            .current,
+        8);
+    // Tap the last box to fill to max.
+    await tester.tap(find.byKey(const Key('track-box-0-9')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('10/10'), findsOneWidget);
+    // Tap the top filled box (index 9) again to step down.
+    await tester.tap(find.byKey(const Key('track-box-0-9')));
+    await tester.pumpAndSettle();
+    expect(
+        (await container.read(charactersProvider.future))
+            .single
+            .tracks
+            .single
+            .current,
+        9);
+    // No steppers on a small track.
+    expect(find.byKey(const Key('track-plus-0')), findsNothing);
+  });
+
+  testWidgets('large track keeps +/- steppers, no boxes', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","note":"","stats":[],'
+              '"tracks":[{"label":"XP","current":5,"max":40}],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('track-plus-0')), findsOneWidget);
+    expect(find.byKey(const Key('track-box-0-0')), findsNothing);
+  });
+
+  testWidgets('numeric stat has +/- steppers and shows a modifier',
+      (tester) async {
     final container = await pump(tester);
     await tester.tap(find.text('Ash'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('track-plus-0')));
+    // Add a numeric stat with the D&D modifier formula.
+    await tester.tap(find.byKey(const Key('add-stat')));
     await tester.pumpAndSettle();
-    expect(find.text('8/10'), findsOneWidget);
-    final chars = await container.read(charactersProvider.future);
-    expect(chars.single.tracks.single.current, 8);
-    for (var i = 0; i < 5; i++) {
-      await tester.tap(find.byKey(const Key('track-plus-0')));
-      await tester.pump();
-    }
+    await tester.enterText(find.byKey(const Key('stat-label')), 'STR');
+    await tester.enterText(find.byKey(const Key('stat-value')), '14');
+    await tester.tap(find.byKey(const Key('stat-formula')));
     await tester.pumpAndSettle();
-    expect(find.text('10/10'), findsOneWidget);
+    await tester.tap(find.text('(score − 10) ÷ 2 (D&D)').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('stat-save')));
+    await tester.pumpAndSettle();
+    // Modifier (+2) renders and steppers exist.
+    expect(find.textContaining('(+2)'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('stat-plus-0')));
+    await tester.pumpAndSettle();
+    final c = (await container.read(charactersProvider.future)).single;
+    expect(c.stats.single.value, '15');
+    expect(c.stats.single.modFormula, isNotNull);
+  });
+
+  testWidgets('coins counter increments and persists', (tester) async {
+    final container = await pump(tester);
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    // Pump between taps: the handler reads the build-captured character, so a
+    // rebuild must land between presses (as it does in real use).
+    await tester.tap(find.byKey(const Key('coins-plus')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('coins-plus')));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Text>(find.byKey(const Key('coins-value'))).data, '2');
+    expect((await container.read(charactersProvider.future)).single.coins, 2);
+  });
+
+  testWidgets('notes are editable inline on the sheet', (tester) async {
+    tester.view.physicalSize = const Size(800, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final container = await pump(tester);
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+        find.byKey(const Key('sheet-notes')), 'A cautious ranger.');
+    // DebouncedTextField flushes on its 400ms timer.
+    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pumpAndSettle();
+    expect((await container.read(charactersProvider.future)).single.note,
+        'A cautious ranger.');
+  });
+
+  testWidgets('Add HP seeds an HP track at the front', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":[]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(CharactersPane)));
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add-hp')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('hp-max')), '8');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    final c = (await container.read(charactersProvider.future)).single;
+    expect(c.tracks.first.label, 'HP');
+    expect(c.tracks.first.max, 8);
+    expect(c.tracks.first.current, 8);
+    expect(characterHpPool(c), (8, 8));
+  });
+
+  testWidgets('enriched basic sheet does not overflow at 360px width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","note":"note","coins":5,'
+              '"stats":[{"label":"Strength","value":"14","mod":"fived"}],'
+              '"tracks":[{"label":"HP","current":7,"max":10},'
+              '{"label":"XP","current":5,"max":40}],'
+              '"tags":[],"conditions":["poisoned"]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('stat-plus-0')), findsOneWidget);
+    expect(find.byKey(const Key('track-box-0-0')), findsOneWidget);
+    expect(find.byKey(const Key('track-plus-1')), findsOneWidget);
   });
 
   testWidgets('add stat and tag from the editor; back returns to list',

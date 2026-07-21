@@ -275,11 +275,42 @@ class Thread {
 
 /// One labeled stat on a character sheet; value is free text ('17', '+2', 'd8').
 class CharStat {
-  const CharStat({required this.label, required this.value});
+  const CharStat({required this.label, required this.value, this.modFormula});
   final String label;
   final String value;
 
-  Map<String, dynamic> toJson() => {'label': label, 'value': value};
+  /// Optional derived-modifier formula. Null = a plain value with no modifier
+  /// (the historical behaviour); set = show a modifier beside numeric values.
+  final StatModFormula? modFormula;
+
+  /// The value parsed as an integer, or null when it isn't numeric (freeform
+  /// stats stay text). Drives the +/- steppers and the derived modifier.
+  int? get numericValue => int.tryParse(value.trim());
+
+  /// The derived modifier under [modFormula], or null when no formula is set
+  /// or the value isn't numeric.
+  int? get modifier {
+    final f = modFormula;
+    final n = numericValue;
+    return (f == null || n == null) ? null : customStatMod(f, n);
+  }
+
+  CharStat copyWith(
+          {String? label,
+          String? value,
+          StatModFormula? modFormula,
+          bool clearFormula = false}) =>
+      CharStat(
+        label: label ?? this.label,
+        value: value ?? this.value,
+        modFormula: clearFormula ? null : (modFormula ?? this.modFormula),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        'value': value,
+        if (modFormula != null) 'mod': modFormula!.name,
+      };
 
   /// Parses one stat entry; returns null for anything that isn't a map.
   /// `is Map` (not `is Map<String, dynamic>`) so Dart literal maps
@@ -287,7 +318,10 @@ class CharStat {
   static CharStat? maybeFromJson(dynamic j) => j is Map
       ? CharStat(
           label: (j['label'] as String?) ?? '',
-          value: (j['value'] as String?) ?? '')
+          value: (j['value'] as String?) ?? '',
+          modFormula: j['mod'] != null
+              ? statModFormulaFromName(j['mod'] as String?)
+              : null)
       : null;
 }
 
@@ -4280,6 +4314,7 @@ class Character {
     this.starred = false,
     this.role = CharacterRole.pc,
     this.conditions = const [],
+    this.coins = 0,
   });
   final String id;
   final String name;
@@ -4287,6 +4322,9 @@ class Character {
   final List<CharStat> stats;
   final List<CharTrack> tracks;
   final List<String> tags;
+
+  /// Currency count for the basic sheet. Omitted from JSON when 0.
+  final int coins;
 
   /// Party-emulator state; null until the Party tool writes it.
   final CharacterEmulation? emulation;
@@ -4434,6 +4472,7 @@ class Character {
     bool? starred,
     CharacterRole? role,
     List<String>? conditions,
+    int? coins,
   }) =>
       Character(
         id: id,
@@ -4461,6 +4500,7 @@ class Character {
         starred: starred ?? this.starred,
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
+        coins: coins ?? this.coins,
       );
 
   /// Applies an HP [delta] (negative = damage) to whichever HP pool this
@@ -4565,6 +4605,7 @@ class Character {
         if (starred) 'starred': true,
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
+        if (coins != 0) 'coins': coins,
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -4601,6 +4642,7 @@ class Character {
         conditions: ((j['conditions'] as List?) ?? const [])
             .whereType<String>()
             .toList(),
+        coins: (j['coins'] as int?) ?? 0,
       );
 }
 
