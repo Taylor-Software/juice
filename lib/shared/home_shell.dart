@@ -965,6 +965,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           ];
     return Scaffold(
       appBar: AppBar(
+        // Back through the verb/subtab history (empty until the user navigates).
+        leading: ref.read(shellRouteProvider.notifier).canGoBack
+            ? IconButton(
+                key: const Key('shell-back'),
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: () => ref.read(shellRouteProvider.notifier).back(),
+              )
+            : null,
         title: sessionName == null
             ? const Text("Solo Adventurer's Journal")
             : Column(

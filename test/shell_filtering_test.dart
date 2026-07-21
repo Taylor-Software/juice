@@ -34,6 +34,25 @@ List<Override> _overrides() => [
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  testWidgets('shell back button appears after navigating and returns',
+      (t) async {
+    await t.pumpWidget(ProviderScope(
+      overrides: _overrides(),
+      child: MaterialApp(home: HomeShell(oracle: _oracle())),
+    ));
+    await t.pumpAndSettle();
+    // Journal home: nothing to go back to.
+    expect(find.byKey(const Key('shell-back')), findsNothing);
+    // Navigate to a verb -> back button appears.
+    await t.tap(find.text('Track').first);
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('shell-back')), findsOneWidget);
+    // Back returns to the Journal and hides the button again.
+    await t.tap(find.byKey(const Key('shell-back')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('shell-back')), findsNothing);
+  });
+
   testWidgets('Track party subtabs hidden when party system disabled',
       (t) async {
     await t.pumpWidget(ProviderScope(
