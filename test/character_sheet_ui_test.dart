@@ -88,6 +88,29 @@ void main() {
     expect(find.byKey(const Key('track-plus-0')), findsNothing);
   });
 
+  testWidgets('compact card surfaces HP (via pool) and coins', (tester) async {
+    // A D&D character keeps HP in its sheet, not tracks.first — the compact
+    // card used to show nothing. Now it reads characterHpPool. Not active,
+    // so it renders as the compact card.
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"d1","name":"Mira","note":"","stats":[],"tracks":[],'
+              '"tags":[],"coins":12,'
+              '"dnd":{"currentHp":9,"maxHp":15}}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    final facts =
+        tester.widget<Text>(find.byKey(const Key('compact-facts-d1'))).data!;
+    expect(facts, contains('HP 9/15'));
+    expect(facts, contains('12 coins'));
+  });
+
   testWidgets('large track keeps +/- steppers, no boxes', (tester) async {
     SharedPreferences.setMockInitialValues({
       'juice.sessions.v1':

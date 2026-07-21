@@ -1337,8 +1337,29 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// the original look; lightly token-styled.
   Widget _compactCard(BuildContext context, Character c) {
     final tk = context.juice;
-    final t = c.tracks.isEmpty ? null : c.tracks.first;
+    final theme = Theme.of(context);
     final mentions = _mentionsFor(c);
+    // Glanceable facts: HP through the shared pool (works for bespoke sheets,
+    // not just the first track), then coins. Falls back to the note.
+    final hp = characterHpPool(c);
+    final facts = <String>[
+      if (hp != null) 'HP ${hp.$1}/${hp.$2}',
+      if (c.coins > 0) '${c.coins} coin${c.coins == 1 ? '' : 's'}',
+    ];
+    final statsPreview =
+        c.stats.take(4).map((s) => '${s.label} ${s.value}').join(' · ');
+    final subtitleLines = <Widget>[
+      if (facts.isNotEmpty)
+        Text(facts.join('  ·  '), key: Key('compact-facts-${c.id}'))
+      else if (c.note.isNotEmpty)
+        Text(c.note, maxLines: 1, overflow: TextOverflow.ellipsis),
+      if (statsPreview.isNotEmpty)
+        Text(statsPreview,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+    ];
     return Card(
       color: tk.raised,
       child: Column(
@@ -1346,9 +1367,13 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
         children: [
           ListTile(
             title: Text(c.name),
-            subtitle: t != null
-                ? Text('${t.label} ${t.current}/${t.max}')
-                : (c.note.isEmpty ? null : Text(c.note)),
+            subtitle: subtitleLines.isEmpty
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: subtitleLines,
+                  ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
