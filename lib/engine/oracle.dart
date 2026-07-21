@@ -263,10 +263,24 @@ class Oracle {
   }
 
   GenResult npc() => GenResult(title: 'NPC', rolls: [
+        Roll(label: 'Race', value: _pick('npc_race')),
+        Roll(label: 'Occupation', value: _pick('npc_occupation')),
+        ...npcTraits().rolls,
+      ]);
+
+  /// Personality/Need/Motive only — the note half of an NPC when race and
+  /// occupation are captured in their own fields.
+  GenResult npcTraits() => GenResult(title: 'NPC', rolls: [
         Roll(label: 'Personality', value: _pick('npc_personality')),
         Roll(label: 'Need', value: _pick('npc_need')),
         Roll(label: 'Motive', value: _pick('npc_motive')),
       ]);
+
+  /// A single ancestry pick (generic fantasy), for prefilling an NPC's race.
+  String npcRace() => _pick('npc_race');
+
+  /// A single vocation/occupation pick, for prefilling an NPC's role.
+  String npcOccupation() => _pick('npc_occupation');
 
   GenResult npcBehavior({int skew = 0}) => GenResult(
         title:

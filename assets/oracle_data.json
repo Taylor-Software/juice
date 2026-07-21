@@ -469,6 +469,30 @@
       "Precision",
       "Power"
     ],
+    "npc_race": [
+      "Human",
+      "Elf",
+      "Dwarf",
+      "Halfling",
+      "Gnome",
+      "Half-Elf",
+      "Half-Orc",
+      "Orc",
+      "Goblin",
+      "Beastfolk"
+    ],
+    "npc_occupation": [
+      "Merchant",
+      "Guard",
+      "Scholar",
+      "Priest",
+      "Farmer",
+      "Blacksmith",
+      "Innkeeper",
+      "Hunter",
+      "Sailor",
+      "Thief"
+    ],
     "settlement_name": [
       "Frost Barrow",
       "High Brook",

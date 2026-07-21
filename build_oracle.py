@@ -158,6 +158,12 @@ TABLES = {
                     "Act: Self Interest", "Takes Something", "Enters Combat"],
     "npc_combat": ["Defend", "Shift Focus", "Seize", "Intimidate", "Advantage",
                   "Coordinate", "Lure", "Destroy", "Precision", "Power"],
+    # Authored generic fantasy ancestries + vocations (original, facts-only —
+    # like the Word Oracle; no vendored/licensed content). d10 each.
+    "npc_race": ["Human", "Elf", "Dwarf", "Halfling", "Gnome", "Half-Elf",
+                "Half-Orc", "Orc", "Goblin", "Beastfolk"],
+    "npc_occupation": ["Merchant", "Guard", "Scholar", "Priest", "Farmer",
+                      "Blacksmith", "Innkeeper", "Hunter", "Sailor", "Thief"],
 
     # ---- Settlement ----
     "settlement_name": ["Frost Barrow", "High Brook", "Long Fall", "Lost Haven",

@@ -43,6 +43,7 @@ void main() {
       const n = Npc(
         id: 'n1',
         name: 'Bram',
+        race: 'Dwarf',
         role: 'Innkeeper',
         disposition: NpcDisposition.friendly,
         note: 'Knows the back roads.',
@@ -50,14 +51,17 @@ void main() {
       );
       final back = Npc.fromJson(n.toJson());
       expect(back.name, 'Bram');
+      expect(back.race, 'Dwarf');
       expect(back.role, 'Innkeeper');
       expect(back.disposition, NpcDisposition.friendly);
       expect(back.placeId, 'p1');
 
       const bare = Npc(id: 'n2', name: 'Y');
+      expect(bare.toJson().containsKey('race'), isFalse);
       expect(bare.toJson().containsKey('role'), isFalse);
       expect(bare.toJson().containsKey('disp'), isFalse);
       expect(bare.toJson().containsKey('placeId'), isFalse);
+      expect(Npc.fromJson(bare.toJson()).race, '');
       expect(Npc.fromJson(bare.toJson()).disposition, NpcDisposition.neutral);
     });
 

@@ -5320,6 +5320,7 @@ class Npc {
   const Npc({
     required this.id,
     required this.name,
+    this.race = '',
     this.role = '',
     this.disposition = NpcDisposition.neutral,
     this.note = '',
@@ -5329,7 +5330,10 @@ class Npc {
   final String id;
   final String name;
 
-  /// Freeform world role, e.g. "Innkeeper", "Caravan master".
+  /// Freeform ancestry/species, e.g. "Human", "Half-Orc". Omitted when empty.
+  final String race;
+
+  /// Freeform world role/vocation, e.g. "Innkeeper", "Caravan master".
   final String role;
   final NpcDisposition disposition;
   final String note;
@@ -5342,6 +5346,7 @@ class Npc {
 
   Npc copyWith({
     String? name,
+    String? race,
     String? role,
     NpcDisposition? disposition,
     String? note,
@@ -5352,6 +5357,7 @@ class Npc {
       Npc(
         id: id,
         name: name ?? this.name,
+        race: race ?? this.race,
         role: role ?? this.role,
         disposition: disposition ?? this.disposition,
         note: note ?? this.note,
@@ -5362,6 +5368,7 @@ class Npc {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
+        if (race.isNotEmpty) 'race': race,
         if (role.isNotEmpty) 'role': role,
         if (disposition != NpcDisposition.neutral) 'disp': disposition.name,
         if (note.isNotEmpty) 'note': note,
@@ -5373,6 +5380,7 @@ class Npc {
   factory Npc.fromJson(Map<String, dynamic> j) => Npc(
         id: j['id'] as String,
         name: (j['name'] as String?) ?? '',
+        race: (j['race'] as String?) ?? '',
         role: (j['role'] as String?) ?? '',
         disposition: _dispositionFromName(j['disp'] as String?),
         note: (j['note'] as String?) ?? '',

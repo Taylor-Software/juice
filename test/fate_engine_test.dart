@@ -226,6 +226,49 @@ void main() {
     });
   });
 
+  group('NPC race + occupation', () {
+    final o = oracleWith(7);
+    test('npc() includes Race and Occupation before the traits', () {
+      final labels = o.npc().rolls.map((r) => r.label).toList();
+      expect(labels, ['Race', 'Occupation', 'Personality', 'Need', 'Motive']);
+    });
+    test('npcTraits() is the three trait rows only', () {
+      expect(o.npcTraits().rolls.map((r) => r.label).toList(),
+          ['Personality', 'Need', 'Motive']);
+    });
+    test('npcRace and npcOccupation return from the authored d10 lists', () {
+      const races = {
+        'Human',
+        'Elf',
+        'Dwarf',
+        'Halfling',
+        'Gnome',
+        'Half-Elf',
+        'Half-Orc',
+        'Orc',
+        'Goblin',
+        'Beastfolk'
+      };
+      const jobs = {
+        'Merchant',
+        'Guard',
+        'Scholar',
+        'Priest',
+        'Farmer',
+        'Blacksmith',
+        'Innkeeper',
+        'Hunter',
+        'Sailor',
+        'Thief'
+      };
+      for (var s = 0; s < 30; s++) {
+        final oo = oracleWith(s);
+        expect(races, contains(oo.npcRace()));
+        expect(jobs, contains(oo.npcOccupation()));
+      }
+    });
+  });
+
   group('Composite generators produce results', () {
     final o = oracleWith(99);
     test('all generators return non-empty output', () {

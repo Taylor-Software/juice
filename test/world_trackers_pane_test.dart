@@ -68,13 +68,17 @@ void main() {
     await t.tap(find.byKey(const Key('people-add')));
     await t.pumpAndSettle();
     await t.enterText(find.byKey(const Key('npc-name')), 'Bram');
+    await t.enterText(find.byKey(const Key('npc-race')), 'Dwarf');
     await t.enterText(find.byKey(const Key('npc-role')), 'Innkeeper');
     await t.tap(find.byKey(const Key('npc-save')));
     await t.pumpAndSettle();
 
     final npc = c.read(npcsProvider).value!.single;
     expect(npc.name, 'Bram');
+    expect(npc.race, 'Dwarf');
     expect(npc.role, 'Innkeeper');
+    // Card subtitle folds race · role · disposition.
+    expect(find.textContaining('Dwarf'), findsOneWidget);
 
     // Promote to the party as a companion.
     await t.tap(find.byKey(Key('npc-party-${npc.id}')));
