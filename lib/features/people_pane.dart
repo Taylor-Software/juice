@@ -82,11 +82,17 @@ class PeoplePane extends ConsumerWidget {
     if (oracle == null) return;
     final name = oracle.generateName().summary ?? '';
     await _edit(context, ref, null,
-        seedName: name, seedNote: oracle.npc().asText);
+        seedName: name,
+        seedRace: oracle.npcRace(),
+        seedRole: oracle.npcOccupation(),
+        seedNote: oracle.npcTraits().asText);
   }
 
   Future<void> _edit(BuildContext context, WidgetRef ref, Npc? existing,
-      {String seedName = '', String seedNote = ''}) async {
+      {String seedName = '',
+      String seedRace = '',
+      String seedRole = '',
+      String seedNote = ''}) async {
     final places = ref.read(placesProvider).valueOrNull ?? const <Place>[];
     final allNpcs = ref.read(npcsProvider).valueOrNull ?? const <Npc>[];
     final oracle = ref.read(oracleProvider).valueOrNull;
@@ -95,6 +101,8 @@ class PeoplePane extends ConsumerWidget {
       builder: (_) => _NpcDialog(
           existing: existing,
           seedName: seedName,
+          seedRace: seedRace,
+          seedRole: seedRole,
           seedNote: seedNote,
           places: places,
           allNpcs: allNpcs,
@@ -137,6 +145,7 @@ class _NpcCard extends ConsumerWidget {
             ),
     ];
     final subtitleParts = [
+      if (npc.race.isNotEmpty) npc.race,
       if (npc.role.isNotEmpty) npc.role,
       _dispositionLabel(npc.disposition),
     ];
@@ -302,6 +311,8 @@ class _NpcDialog extends StatefulWidget {
   const _NpcDialog({
     this.existing,
     this.seedName = '',
+    this.seedRace = '',
+    this.seedRole = '',
     this.seedNote = '',
     required this.places,
     this.allNpcs = const [],
@@ -309,6 +320,8 @@ class _NpcDialog extends StatefulWidget {
   });
   final Npc? existing;
   final String seedName;
+  final String seedRace;
+  final String seedRole;
   final String seedNote;
   final List<Place> places;
 
@@ -325,8 +338,10 @@ class _NpcDialog extends StatefulWidget {
 class _NpcDialogState extends State<_NpcDialog> {
   late final _nameCtl =
       TextEditingController(text: widget.existing?.name ?? widget.seedName);
+  late final _raceCtl =
+      TextEditingController(text: widget.existing?.race ?? widget.seedRace);
   late final _roleCtl =
-      TextEditingController(text: widget.existing?.role ?? '');
+      TextEditingController(text: widget.existing?.role ?? widget.seedRole);
   late final _noteCtl =
       TextEditingController(text: widget.existing?.note ?? widget.seedNote);
   final _relLabelCtl = TextEditingController();
@@ -339,6 +354,7 @@ class _NpcDialogState extends State<_NpcDialog> {
   @override
   void dispose() {
     _nameCtl.dispose();
+    _raceCtl.dispose();
     _roleCtl.dispose();
     _noteCtl.dispose();
     _relLabelCtl.dispose();
@@ -384,10 +400,24 @@ class _NpcDialogState extends State<_NpcDialog> {
               )),
           const SizedBox(height: 8),
           TextField(
+              key: const Key('npc-race'),
+              controller: _raceCtl,
+              decoration: InputDecoration(
+                labelText: 'Race / ancestry',
+                hintText: 'Human, dwarf, half-orc…',
+                suffixIcon: _rollIcon('npc-race-roll', 'Roll a race',
+                    (o) => o.npcRace(), _raceCtl),
+              )),
+          const SizedBox(height: 8),
+          TextField(
               key: const Key('npc-role'),
               controller: _roleCtl,
-              decoration: const InputDecoration(
-                  labelText: 'Role', hintText: 'Innkeeper, caravan master…')),
+              decoration: InputDecoration(
+                labelText: 'Role / class',
+                hintText: 'Innkeeper, guard, scholar…',
+                suffixIcon: _rollIcon('npc-role-roll', 'Roll an occupation',
+                    (o) => o.npcOccupation(), _roleCtl),
+              )),
           const SizedBox(height: 8),
           DropdownButtonFormField<NpcDisposition>(
             key: const Key('npc-disposition'),
@@ -424,7 +454,7 @@ class _NpcDialogState extends State<_NpcDialog> {
               decoration: InputDecoration(
                 labelText: 'Notes',
                 suffixIcon: _rollIcon('npc-note-roll', 'Reroll characteristics',
-                    (o) => o.npc().asText, _noteCtl),
+                    (o) => o.npcTraits().asText, _noteCtl),
               )),
           ..._relationsSection(),
         ]),
@@ -442,6 +472,7 @@ class _NpcDialogState extends State<_NpcDialog> {
                     name: '');
             Navigator.of(context).pop(base.copyWith(
               name: _nameCtl.text.trim(),
+              race: _raceCtl.text.trim(),
               role: _roleCtl.text.trim(),
               disposition: _disposition,
               note: _noteCtl.text.trim(),
