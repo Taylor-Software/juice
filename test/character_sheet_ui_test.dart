@@ -191,6 +191,35 @@ void main() {
     expect(characterHpPool(c), (8, 8));
   });
 
+  testWidgets('enriched basic sheet does not overflow at 360px width',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 2000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({
+      'juice.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'juice.characters.v1.default':
+          '[{"id":"c1","name":"Ash","note":"note","coins":5,'
+              '"stats":[{"label":"Strength","value":"14","mod":"fived"}],'
+              '"tracks":[{"label":"HP","current":7,"max":10},'
+              '{"label":"XP","current":5,"max":40}],'
+              '"tags":[],"conditions":["poisoned"]}]',
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const Key('stat-plus-0')), findsOneWidget);
+    expect(find.byKey(const Key('track-box-0-0')), findsOneWidget);
+    expect(find.byKey(const Key('track-plus-1')), findsOneWidget);
+  });
+
   testWidgets('add stat and tag from the editor; back returns to list',
       (tester) async {
     final container = await pump(tester);
