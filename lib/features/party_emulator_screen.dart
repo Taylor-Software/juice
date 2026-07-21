@@ -212,7 +212,8 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
                 children: [
                   FilledButton(
                     key: const Key('pe-roll'),
-                    style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(0, 48)),
                     onPressed: _roll,
                     child: const Text('Roll d6'),
                   ),
@@ -645,7 +646,41 @@ class _PartyEmulatorScreenState extends ConsumerState<PartyEmulatorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('PET actions', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
+            if (selected == null)
+              Text('Pick a character above to spend tags.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant))
+            else ...[
+              Text('Tags — spend an unspent tag to bend a result your way.',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final t in selected.tags)
+                    Chip(
+                      key: Key('pe-tag-chip-$t'),
+                      label: Text(t),
+                      avatar: e.usedTags.contains(t)
+                          ? const Icon(Icons.check, size: 16)
+                          : null,
+                      backgroundColor: e.usedTags.contains(t)
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : null,
+                    ),
+                  ActionChip(
+                    key: const Key('pe-tag-add'),
+                    avatar: const Icon(Icons.add, size: 16),
+                    label: const Text('Add tag'),
+                    onPressed: () => _addTrait(selected),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
             Wrap(
               spacing: 8,
               runSpacing: 8,
