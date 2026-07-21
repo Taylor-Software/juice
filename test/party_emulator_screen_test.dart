@@ -409,6 +409,57 @@ void main() {
     expect(button.onPressed, isNull);
   });
 
+  testWidgets('PET card lists tags and Add tag appends without doubles',
+      (tester) async {
+    final container = await pump(tester, seed: 7);
+    await pickAsh(tester);
+    // Spendable tags surface directly in the PET actions card.
+    expect(find.byKey(const Key('pe-tag-chip-brave')), findsOneWidget);
+    expect(find.byKey(const Key('pe-tag-chip-curious')), findsOneWidget);
+    // Add a tag without rolling doubles.
+    await tester.tap(find.byKey(const Key('pe-tag-add')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('pe-trait-input')), 'sly');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.tags, ['brave', 'curious', 'sly']);
+    expect(find.byKey(const Key('pe-tag-chip-sly')), findsOneWidget);
+  });
+
+  testWidgets('adding a tag re-enables spend after all tags were spent',
+      (tester) async {
+    final container = await pump(tester,
+        seed: 7, chars: charsWith(usedTags: const ['brave', 'curious']));
+    await pickAsh(tester);
+    // All tags spent -> spend disabled.
+    expect(
+        tester
+            .widget<OutlinedButton>(find.byKey(const Key('pe-tag-spend')))
+            .onPressed,
+        isNull);
+    await tester.tap(find.byKey(const Key('pe-tag-add')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('pe-trait-input')), 'sly');
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+    // The new tag is unspent -> spend enabled again.
+    expect(
+        tester
+            .widget<OutlinedButton>(find.byKey(const Key('pe-tag-spend')))
+            .onPressed,
+        isNotNull);
+    final chars = await container.read(charactersProvider.future);
+    expect(chars.single.tags, contains('sly'));
+  });
+
+  testWidgets('PET card with no character selected: hint, no tag chips',
+      (tester) async {
+    await pump(tester, seed: 7);
+    expect(find.text('Pick a character above to spend tags.'), findsOneWidget);
+    expect(find.byKey(const Key('pe-tag-add')), findsNothing);
+  });
+
   testWidgets('session start: new focus + real-life line, clears used tags',
       (tester) async {
     final probe = Dice(Random(7));
