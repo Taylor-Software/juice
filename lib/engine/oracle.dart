@@ -301,6 +301,12 @@ class Oracle {
         Roll(label: 'News', value: _pick('settlement_news')),
       ]);
 
+  /// A settlement name pick — for seeding a settlement map site.
+  String settlementName() => _pick('settlement_name');
+
+  /// One building/establishment type pick — for populating a settlement.
+  String buildingType() => _pick('settlement_establishment');
+
   /// One stateful wilderness travel step (replaces the stateless
   /// Wilderness Step). Environment drifts by 2dF from the previous hex
   /// (header "2dF Env"); Lost/Found cycle per instructions p73:

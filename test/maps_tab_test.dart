@@ -16,7 +16,7 @@ Oracle _oracle() => Oracle(OracleData(
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('Maps tab shows World/Dungeon/Journey subtabs', (t) async {
+  testWidgets('Maps tab shows World/Town/Dungeon/Journey subtabs', (t) async {
     await t.pumpWidget(ProviderScope(
       child: MaterialApp(
           home: Scaffold(
@@ -24,6 +24,7 @@ void main() {
     ));
     await t.pumpAndSettle();
     expect(find.text('World'), findsWidgets);
+    expect(find.text('Town'), findsWidgets);
     expect(find.text('Dungeon'), findsWidgets);
     expect(find.text('Journey'), findsWidgets);
   });

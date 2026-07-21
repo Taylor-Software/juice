@@ -4,6 +4,7 @@ import '../engine/oracle.dart';
 import '../shared/destination.dart';
 import '../shared/subtab_host.dart';
 import 'map_screen.dart';
+import 'settlement_pane.dart';
 import 'verdant_screen.dart';
 import 'hexcrawl_screen.dart';
 
@@ -20,12 +21,14 @@ class MapsTab extends ConsumerWidget {
       destination: Destination.map,
       tabs: [
         const SubtabDef('world', 'World'),
+        const SubtabDef('town', 'Town'),
         const SubtabDef('dungeon', 'Dungeon'),
         if (showJourney) const SubtabDef('journey', 'Journey'),
         if (showHexcrawl) const SubtabDef('hexcrawl', 'Hexcrawl'),
       ],
       children: [
         HexMapPane(oracle: oracle),
+        SettlementPane(oracle: oracle),
         DungeonMapPane(oracle: oracle),
         if (showJourney) VerdantScreen(oracle: oracle),
         if (showHexcrawl) const HexcrawlScreen(),
