@@ -5,6 +5,7 @@ import '../engine/custom_templates.dart';
 import '../engine/funnel.dart';
 import '../engine/models.dart';
 import '../engine/system_primer.dart';
+import '../shared/design_tokens.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -106,11 +107,12 @@ class FunnelSheetView extends ConsumerWidget {
     }
 
     final dead = !p.alive;
+    final faint = context.juice.inkFaint;
     final titleStyle = p.graduated
-        ? const TextStyle(color: Colors.grey)
+        ? TextStyle(color: faint)
         : dead
-            ? const TextStyle(
-                decoration: TextDecoration.lineThrough, color: Colors.grey)
+            ? TextStyle(
+                decoration: TextDecoration.lineThrough, color: faint)
             : null;
     final statusText = p.graduated ? 'graduated' : (p.alive ? 'alive' : 'dead');
 

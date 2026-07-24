@@ -1,0 +1,695 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-24T00:00:00Z",
+  "title": "Design System: Solo Adventurer's Journal",
+  "extensions": {
+    "colorMeta": {
+      "terracotta": {
+        "role": "primary",
+        "displayName": "Lamplight Terracotta",
+        "canonical": "#9A4A22",
+        "darkValue": "#D0814F",
+        "tonalRamp": [
+          "#2A1108",
+          "#43200F",
+          "#5E2E15",
+          "#7C3A1A",
+          "#9A4A22",
+          "#BE6B3F",
+          "#DDA184",
+          "#F5DED2"
+        ]
+      },
+      "terracotta-deep": {
+        "role": "primary",
+        "displayName": "Terracotta Deep",
+        "canonical": "#7C3A1A",
+        "darkValue": "#B8693A",
+        "tonalRamp": [
+          "#210E05",
+          "#37170A",
+          "#4F2411",
+          "#653016",
+          "#7C3A1A",
+          "#A05733",
+          "#C88C6C",
+          "#EFD7CA"
+        ]
+      },
+      "chaos": {
+        "role": "secondary",
+        "displayName": "Chaos Ochre",
+        "canonical": "#B5762A",
+        "darkValue": "#D9A84E",
+        "tonalRamp": [
+          "#2C1B06",
+          "#462C0C",
+          "#5F3D13",
+          "#8A591D",
+          "#B5762A",
+          "#D19A4E",
+          "#E5C289",
+          "#F7E9CF"
+        ]
+      },
+      "gold": {
+        "role": "secondary",
+        "displayName": "Lead Gold",
+        "canonical": "#D9A84E",
+        "darkValue": "#E0BB6B",
+        "tonalRamp": [
+          "#33260C",
+          "#4E3B14",
+          "#6B521C",
+          "#A37B2E",
+          "#D9A84E",
+          "#E5C079",
+          "#EFD9A9",
+          "#F9F0DC"
+        ]
+      },
+      "sage": {
+        "role": "tertiary",
+        "displayName": "Quiet Sage",
+        "canonical": "#5B7A52",
+        "darkValue": "#89A57F",
+        "tonalRamp": [
+          "#141B11",
+          "#22301D",
+          "#31462A",
+          "#46603C",
+          "#5B7A52",
+          "#7E9C74",
+          "#A9C1A1",
+          "#DCE7D8"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Lamplit Cream",
+        "canonical": "#FBF1EB",
+        "darkValue": "#241C17",
+        "tonalRamp": [
+          "#241C17",
+          "#382C24",
+          "#4E3D32",
+          "#7A6355",
+          "#A88E7D",
+          "#D2BCAC",
+          "#EFE0D6",
+          "#FBF1EB"
+        ]
+      },
+      "sand": {
+        "role": "neutral",
+        "displayName": "Worn Sand",
+        "canonical": "#F6E2D7",
+        "darkValue": "#2E2620",
+        "tonalRamp": [
+          "#2E2620",
+          "#43372E",
+          "#5B4A3D",
+          "#856E5C",
+          "#B0947F",
+          "#D6BBA7",
+          "#EBD3C4",
+          "#F6E2D7"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Blush Card",
+        "canonical": "#FBE9E0",
+        "darkValue": "#2E2620",
+        "tonalRamp": [
+          "#2E2620",
+          "#453630",
+          "#5E4941",
+          "#8A6C60",
+          "#B59284",
+          "#D8B8AA",
+          "#EFD6CB",
+          "#FBE9E0"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Warm Raised",
+        "canonical": "#FFFBF9",
+        "darkValue": "#332A23",
+        "tonalRamp": [
+          "#332A23",
+          "#493D34",
+          "#615246",
+          "#8B7767",
+          "#B5A08E",
+          "#DAC9BB",
+          "#F2E7DF",
+          "#FFFBF9"
+        ]
+      },
+      "selected": {
+        "role": "neutral",
+        "displayName": "Selected Clay",
+        "canonical": "#F3D7C6",
+        "darkValue": "#42342A",
+        "tonalRamp": [
+          "#2C1E15",
+          "#42342A",
+          "#5C4838",
+          "#8A6C55",
+          "#B58F74",
+          "#D6B39A",
+          "#E9C9B4",
+          "#F3D7C6"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Deep Ink",
+        "canonical": "#2B2018",
+        "darkValue": "#F3E8DF",
+        "tonalRamp": [
+          "#150F0B",
+          "#2B2018",
+          "#443428",
+          "#5A4A40",
+          "#7D6759",
+          "#AD9B8C",
+          "#D8C8BC",
+          "#F3E8DF"
+        ]
+      },
+      "ink-body": {
+        "role": "neutral",
+        "displayName": "Body Ink",
+        "canonical": "#5A4A40",
+        "darkValue": "#D8C8BC",
+        "tonalRamp": [
+          "#1A1310",
+          "#2E2520",
+          "#443830",
+          "#5A4A40",
+          "#7D6759",
+          "#A48F80",
+          "#C7B5A7",
+          "#D8C8BC"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#7D6759",
+        "darkValue": "#AD9B8C",
+        "tonalRamp": [
+          "#211A15",
+          "#382C25",
+          "#4F3F35",
+          "#665145",
+          "#7D6759",
+          "#9C8474",
+          "#BFA997",
+          "#E0CFC0"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#8A7466",
+        "darkValue": "#9C8A7B",
+        "tonalRamp": [
+          "#241C16",
+          "#3B2F26",
+          "#523F35",
+          "#6E5A4C",
+          "#8A7466",
+          "#A78F80",
+          "#C6B1A2",
+          "#E4D6CA"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#EFE0D6",
+        "darkValue": "#3D3229",
+        "tonalRamp": [
+          "#251E18",
+          "#3D3229",
+          "#544539",
+          "#7A6555",
+          "#A38D7B",
+          "#CBB6A4",
+          "#E1CFC2",
+          "#EFE0D6"
+        ]
+      },
+      "border-input": {
+        "role": "neutral",
+        "displayName": "Input Border",
+        "canonical": "#E0C7B7",
+        "darkValue": "#4A3C31",
+        "tonalRamp": [
+          "#2B2119",
+          "#4A3C31",
+          "#63503F",
+          "#8A705A",
+          "#B08F76",
+          "#CBAE96",
+          "#DCC1AF",
+          "#E0C7B7"
+        ]
+      },
+      "border-hero": {
+        "role": "neutral",
+        "displayName": "Hero Border",
+        "canonical": "#EFC9B4",
+        "darkValue": "#5A4233",
+        "tonalRamp": [
+          "#301F14",
+          "#48301F",
+          "#5F412C",
+          "#8A6144",
+          "#B4835F",
+          "#D2A489",
+          "#E4BAA1",
+          "#EFC9B4"
+        ],
+        "purpose": "The outline on every gradient card (result, AI nudge, emphasized track-home). One token as of 2026-07-24; previously two literals with no dark value."
+      },
+      "m3-seed": {
+        "role": "primary",
+        "displayName": "M3 Seed Amber (legacy layer)",
+        "canonical": "#B8540E",
+        "tonalRamp": [
+          "#2F1503",
+          "#4A2105",
+          "#672E07",
+          "#8F4009",
+          "#B8540E",
+          "#D97C3B",
+          "#EBAF87",
+          "#F9E1D2"
+        ]
+      },
+      "identity-terracotta": {
+        "role": "tertiary",
+        "displayName": "Identity Terracotta",
+        "canonical": "#9A4A22",
+        "tonalRamp": [
+          "#2A1108",
+          "#43200F",
+          "#5E2E15",
+          "#7C3A1A",
+          "#9A4A22",
+          "#BE6B3F",
+          "#DDA184",
+          "#F5DED2"
+        ],
+        "purpose": "Campaign identity spine on the launcher row — a book's binding seen on a shelf."
+      },
+      "identity-sage": {
+        "role": "tertiary",
+        "displayName": "Identity Sage",
+        "canonical": "#5B7A52",
+        "tonalRamp": [
+          "#141B11",
+          "#22301D",
+          "#31462A",
+          "#46603C",
+          "#5B7A52",
+          "#7E9C74",
+          "#A9C1A1",
+          "#DCE7D8"
+        ],
+        "purpose": "Campaign identity spine on the launcher row — a book's binding seen on a shelf."
+      },
+      "identity-mulberry": {
+        "role": "tertiary",
+        "displayName": "Identity Mulberry",
+        "canonical": "#7E3B4E",
+        "tonalRamp": [
+          "#210E14",
+          "#361821",
+          "#4C222E",
+          "#66303D",
+          "#7E3B4E",
+          "#A05C6E",
+          "#C696A2",
+          "#EBD8DD"
+        ],
+        "purpose": "Campaign identity spine on the launcher row — a book's binding seen on a shelf."
+      },
+      "identity-umber": {
+        "role": "tertiary",
+        "displayName": "Identity Umber",
+        "canonical": "#59422F",
+        "tonalRamp": [
+          "#1C140E",
+          "#2E2117",
+          "#3F2E20",
+          "#4C382A",
+          "#59422F",
+          "#7C5F45",
+          "#A88B6D",
+          "#DFCDB6"
+        ],
+        "purpose": "Campaign identity spine on the launcher row — a book's binding seen on a shelf."
+      },
+      "identity-gold": {
+        "role": "tertiary",
+        "displayName": "Identity Gold",
+        "canonical": "#B5762A",
+        "tonalRamp": [
+          "#2C1B06",
+          "#462C0C",
+          "#5F3D13",
+          "#8A591D",
+          "#B5762A",
+          "#D19A4E",
+          "#E5C289",
+          "#F7E9CF"
+        ],
+        "purpose": "Campaign identity spine on the launcher row — a book's binding seen on a shelf."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Oracle Answer",
+        "purpose": "The expanded result card's answer, and nothing else. The largest type in the application, used in exactly one place."
+      },
+      "headline": {
+        "displayName": "Scene Voice",
+        "purpose": "Scene titles, resume titles, and empty-state opening lines. Italic — the signal that the fiction is talking."
+      },
+      "title": {
+        "displayName": "Card Title",
+        "purpose": "Card headings and section titles inside narrative surfaces."
+      },
+      "body": {
+        "displayName": "Journal Prose",
+        "purpose": "The player's own writing and narrative body copy. Generous 1.6 leading for long reading passes."
+      },
+      "label": {
+        "displayName": "Eyebrow",
+        "purpose": "Uppercase tracked source labels on result cards and section headers. The only uppercase in the system."
+      },
+      "label-quiet": {
+        "displayName": "UI Label",
+        "purpose": "Metadata, captions, chip text, and button labels. The machinery voice."
+      }
+    },
+    "shadows": [
+      {
+        "name": "answer-lift",
+        "value": "0 8px 22px rgba(154, 74, 34, 0.16)",
+        "purpose": "The expanded oracle result card only. Accent-tinted so it reads as lamplight, not a drop shadow. The single shipped shadow in the system."
+      },
+      {
+        "name": "primary-lift",
+        "value": "0 6px 16px rgba(154, 74, 34, 0.32)",
+        "purpose": "Sanctioned for the primary button by the original handoff spec; specified but not yet implemented. The only permitted addition to the shadow vocabulary."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ai-nudge-sheen",
+        "value": "1400ms linear, single forward pass",
+        "purpose": "A diagonal white highlight (0% → 20% → 0% alpha) sweeping once across the AI nudge card on appear. Finite, never looped — a perpetual animation hangs every pumpAndSettle in the test suite. Skipped entirely under reduced motion (no controller created)."
+      },
+      {
+        "name": "chrome-collapse",
+        "value": "200ms, AnimatedSize / AnimatedCrossFade",
+        "purpose": "The HUD's second tier and the Next panel folding away, including the automatic collapse on phone composer focus."
+      },
+      {
+        "name": "scroll-to-entry",
+        "value": "300ms cubic-bezier(0.0, 0.0, 0.58, 1.0)",
+        "purpose": "Scrolling the journal to a freshly logged entry via ScrollController.animateTo. Never Scrollable.ensureVisible on the root tree."
+      },
+      {
+        "name": "dice-tumble",
+        "value": "face-flash timer, settles on the rolled faces",
+        "purpose": "The dice roller's result animation. Reduced motion resolves it instantly to the settled value."
+      },
+      {
+        "name": "reduced-motion-gate",
+        "value": "MediaQuery.of(context).disableAnimations",
+        "purpose": "Every animation in the system checks this and degrades to a static end state. Non-optional."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "phone-floor",
+        "value": "375px"
+      },
+      {
+        "name": "journal-body-floor",
+        "value": "360px"
+      },
+      {
+        "name": "compact",
+        "value": "600px"
+      },
+      {
+        "name": "wide",
+        "value": "840px"
+      },
+      {
+        "name": "split",
+        "value": "1000px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The commitment. Terracotta fill, 48px minimum height, full-width by default — override minimumSize when it shares a Row.",
+      "html": "<button class=\"ds-btn-primary\">Continue the story</button>",
+      "css": ".ds-btn-primary { background: #9A4A22; color: #FFFBF9; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 14px; font-weight: 500; letter-spacing: 0.1px; border: none; border-radius: 12px; padding: 12px 24px; min-height: 48px; cursor: pointer; transition: background 180ms ease, box-shadow 180ms ease; } .ds-btn-primary:hover { background: #8A4020; } .ds-btn-primary:focus-visible { outline: 2px solid #9A4A22; outline-offset: 2px; } .ds-btn-primary:active { background: #7C3A1A; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The alternative. Warm raised fill, input-border stroke, terracotta label — present but never competing.",
+      "html": "<button class=\"ds-btn-secondary\">Recap so far</button>",
+      "css": ".ds-btn-secondary { background: #FFFBF9; color: #9A4A22; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.1px; border: 1px solid #E0C7B7; border-radius: 14px; padding: 10px 18px; cursor: pointer; transition: background 180ms ease, border-color 180ms ease; } .ds-btn-secondary:hover { background: #F3D7C6; border-color: #9A4A22; } .ds-btn-secondary:focus-visible { outline: 2px solid #9A4A22; outline-offset: 2px; } .ds-btn-secondary:active { background: #EFC9B4; }"
+    },
+    {
+      "name": "Oracle Result Card (expanded)",
+      "kind": "card",
+      "refersTo": "card-result-hero",
+      "description": "The system's centerpiece: gradient paper, hero border, the only shadow, the only 30px type, and the italic terracotta tail on the answer's qualifier.",
+      "html": "<article class=\"ds-result\"><header class=\"ds-result-head\"><span class=\"ds-result-tile\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#FFFBF9\"><path d=\"M19 1l-5 5v11l5-4.5V1zM1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5V6c-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6zm22 13.5V6c-.6-.45-1.25-.75-2-1v13.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5v2c1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5z\"/></svg></span><span class=\"ds-result-eyebrow\">FATE CHECK</span><span class=\"ds-result-odds\">Likely</span></header><p class=\"ds-result-answer\">Yes,<em> and the door was already open.</em></p><p class=\"ds-result-caption\">Major (d6 = 5)</p><div class=\"ds-result-actions\"><button class=\"ds-result-action\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"#9A4A22\"><path d=\"M12 2l1.9 5.7L20 9.5l-4.6 3.9 1.4 6.1L12 16.3 7.2 19.5l1.4-6.1L4 9.5l6.1-1.8L12 2z\"/></svg>Interpret</button><button class=\"ds-result-action\">Voice line</button></div></article>",
+      "css": ".ds-result { background: linear-gradient(135deg, #FDEFE6, #F8E0D2); border: 1px solid #EFC9B4; border-radius: 18px; padding: 12px 8px 8px 16px; box-shadow: 0 8px 22px rgba(154,74,34,0.16); max-width: 420px; } .ds-result-head { display: flex; align-items: center; gap: 8px; } .ds-result-tile { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 7px; background: #9A4A22; flex: none; } .ds-result-eyebrow { flex: 1; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #8A7466; } .ds-result-odds { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; color: #7D6759; padding-right: 4px; } .ds-result-answer { font-family: 'Newsreader', Georgia, serif; font-size: 30px; font-weight: 500; line-height: 1.15; color: #2B2018; margin: 8px 0 0; } .ds-result-answer em { font-style: italic; color: #9A4A22; } .ds-result-caption { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; color: #7D6759; margin: 4px 0 0; } .ds-result-actions { display: flex; gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px solid #EFE0D6; } .ds-result-action { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; border-radius: 12px; padding: 6px 10px; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; color: #9A4A22; cursor: pointer; transition: background 160ms ease; } .ds-result-action:hover { background: #F3D7C6; } .ds-result-action:focus-visible { outline: 2px solid #9A4A22; outline-offset: 1px; }"
+    },
+    {
+      "name": "Oracle Result Card (collapsed)",
+      "kind": "card",
+      "refersTo": "card-result-collapsed",
+      "description": "The same entry at rest in the journal stream: 12px corner, no shadow, one serif line plus a muted roll fragment.",
+      "html": "<article class=\"ds-result-collapsed\"><span class=\"ds-result-collapsed-line\">Yes, and the door was already open.</span><span class=\"ds-result-collapsed-roll\">Answer Yes (+04)</span></article>",
+      "css": ".ds-result-collapsed { display: flex; align-items: baseline; gap: 10px; background: linear-gradient(135deg, #FDEFE6, #F8E0D2); border: 1px solid #EFC9B4; border-radius: 12px; padding: 10px 12px; max-width: 420px; cursor: pointer; transition: border-color 160ms ease; } .ds-result-collapsed:hover { border-color: #9A4A22; } .ds-result-collapsed-line { flex: 1; font-family: 'Newsreader', Georgia, serif; font-size: 15px; line-height: 1.6; color: #2B2018; } .ds-result-collapsed-roll { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; color: #8A7466; white-space: nowrap; }"
+    },
+    {
+      "name": "Journal Composer",
+      "kind": "input",
+      "refersTo": "input-composer",
+      "description": "The widest, softest surface on the page — where the player writes. Warm raised fill, 18px corner, terracotta focus border.",
+      "html": "<div class=\"ds-composer\"><input class=\"ds-composer-input\" placeholder=\"Write in your journal…\" /><button class=\"ds-composer-send\" aria-label=\"Send\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"#FFFBF9\"><path d=\"M2.01 21L23 12 2.01 3 2 10l15 2-15 2z\"/></svg></button></div>",
+      "css": ".ds-composer { display: flex; align-items: center; gap: 8px; max-width: 420px; } .ds-composer-input { flex: 1; background: #FFFBF9; color: #2B2018; font-family: 'Newsreader', Georgia, serif; font-size: 15px; line-height: 1.6; border: 1px solid #E0C7B7; border-radius: 18px; padding: 12px 16px; transition: border-color 160ms ease; } .ds-composer-input::placeholder { color: #8A7466; font-style: italic; } .ds-composer-input:focus { outline: none; border-color: #9A4A22; } .ds-composer-send { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex: none; background: #9A4A22; border: none; border-radius: 13px; cursor: pointer; transition: background 160ms ease; } .ds-composer-send:hover { background: #8A4020; } .ds-composer-send:focus-visible { outline: 2px solid #9A4A22; outline-offset: 2px; } .ds-composer-send:active { background: #7C3A1A; }"
+    },
+    {
+      "name": "Chaos Chip",
+      "kind": "chip",
+      "refersTo": "chip-chaos",
+      "description": "The one chip with its own palette. Lives in the HUD's always-visible tier because chaos is narrative state, not a control.",
+      "html": "<span class=\"ds-chip-chaos\">Chaos 5</span>",
+      "css": ".ds-chip-chaos { display: inline-block; background: #F4D9A8; color: #7E5214; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.1px; border: none; border-radius: 12px; padding: 4px 10px; }"
+    },
+    {
+      "name": "Action Chip",
+      "kind": "chip",
+      "refersTo": "chip-selected",
+      "description": "The inline dock and suggestion chips. Selection is expressed by fill, never by an outline change alone.",
+      "html": "<button class=\"ds-chip\">Roll oracle</button><button class=\"ds-chip ds-chip--idle\">Scene test</button>",
+      "css": ".ds-chip { background: #F3D7C6; color: #9A4A22; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.1px; border: none; border-radius: 12px; padding: 8px 13px; margin-right: 6px; cursor: pointer; transition: background 160ms ease; } .ds-chip:hover { background: #EFC9B4; } .ds-chip:focus-visible { outline: 2px solid #9A4A22; outline-offset: 2px; } .ds-chip--idle { background: #FBE9E0; border: 1px solid #EFE0D6; color: #5A4A40; }"
+    },
+    {
+      "name": "AI Badge",
+      "kind": "custom",
+      "refersTo": "source-eyebrow",
+      "description": "One glyph, one meaning: this was suggested, not rolled. Marks every AI-assisted action in the application without exception.",
+      "html": "<span class=\"ds-ai-badge\"><svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"#9A4A22\"><path d=\"M12 2l1.9 5.7L20 9.5l-4.6 3.9 1.4 6.1L12 16.3 7.2 19.5l1.4-6.1L4 9.5l6.1-1.8L12 2z\"/></svg>Bring the oracle to life</span>",
+      "css": ".ds-ai-badge { display: inline-flex; align-items: center; gap: 6px; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 15px; font-weight: 600; color: #9A4A22; }"
+    },
+    {
+      "name": "Campaign Header HUD",
+      "kind": "nav",
+      "refersTo": "hud-band",
+      "description": "The persistent play-context band above every verb: scene line, chaos, quick-roll. Yields its expanded row to the keyboard on a phone.",
+      "html": "<div class=\"ds-hud\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"#9A4A22\"><path d=\"M12 2c1 4-3 5-3 9a3 3 0 006 0c0-1.5-.7-2.4-1.2-3.2C16 9.5 18 12 18 15a6 6 0 01-12 0c0-5 6-6 6-13z\"/></svg><span class=\"ds-hud-scene\">The Ancient Tower</span><span class=\"ds-chip-chaos\">Chaos 5</span><button class=\"ds-hud-roll\" aria-label=\"Quick roll\"><svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"#FFFBF9\"><path d=\"M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2zM8.5 9A1.5 1.5 0 117 7.5 1.5 1.5 0 018.5 9zm7 7a1.5 1.5 0 111.5-1.5 1.5 1.5 0 01-1.5 1.5zm0-7A1.5 1.5 0 1117 7.5 1.5 1.5 0 0115.5 9zm-7 7A1.5 1.5 0 1110 14.5 1.5 1.5 0 018.5 16zm3.5-3.5a1.5 1.5 0 111.5-1.5 1.5 1.5 0 01-1.5 1.5z\"/></svg></button></div>",
+      "css": ".ds-hud { display: flex; align-items: center; gap: 6px; background: #F6E2D7; border-radius: 12px; padding: 6px 12px; max-width: 420px; } .ds-hud-scene { flex: 1; font-family: 'Newsreader', Georgia, serif; font-size: 17px; font-style: italic; color: #2B2018; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; } .ds-hud-roll { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: none; background: #9A4A22; border: none; border-radius: 13px; cursor: pointer; transition: background 160ms ease; } .ds-hud-roll:hover { background: #8A4020; } .ds-hud-roll:focus-visible { outline: 2px solid #9A4A22; outline-offset: 2px; } .ds-hud-roll:active { background: #7C3A1A; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "button-primary",
+      "description": "Directive, never passive: one emotive serif line, a short sans body, one prominent action.",
+      "html": "<div class=\"ds-empty\"><h3 class=\"ds-empty-title\">Every story needs a hero.</h3><p class=\"ds-empty-body\">Create your first character to begin.</p><button class=\"ds-btn-primary\">Create a character</button></div>",
+      "css": ".ds-empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 28px; max-width: 360px; } .ds-empty-title { font-family: 'Newsreader', Georgia, serif; font-size: 22px; font-weight: 400; font-style: italic; color: #2B2018; margin: 0; } .ds-empty-body { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #7D6759; margin: 8px 0 18px; }"
+    },
+    {
+      "name": "Bottom Sheet",
+      "kind": "custom",
+      "refersTo": "hud-band",
+      "description": "The default modal — tools, pickers, editors, settings. A page lifting from the bottom of the book: cream fill, 18px top corners only.",
+      "html": "<section class=\"ds-sheet\"><div class=\"ds-sheet-grip\"></div><h4 class=\"ds-sheet-title\">Draw a card</h4><p class=\"ds-sheet-body\">Standard deck · 41 remaining</p></section>",
+      "css": ".ds-sheet { background: #FBF1EB; border-radius: 18px 18px 0 0; padding: 8px 16px 20px; max-width: 420px; } .ds-sheet-grip { width: 32px; height: 4px; border-radius: 3px; background: #E0C7B7; margin: 0 auto 12px; } .ds-sheet-title { font-family: 'Newsreader', Georgia, serif; font-size: 16px; font-weight: 500; color: #2B2018; margin: 0; } .ds-sheet-body { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; color: #7D6759; margin: 4px 0 0; }"
+    },
+    {
+      "name": "Snackbar",
+      "kind": "custom",
+      "refersTo": "source-eyebrow",
+      "description": "The receipt of something already done. Inverts to ink-on-cream — the page speaking back — with a terracotta action; Undo is the archetype.",
+      "html": "<div class=\"ds-snack\"><span>Logged to journal</span><button class=\"ds-snack-action\">Undo</button></div>",
+      "css": ".ds-snack { display: flex; align-items: center; gap: 16px; background: #2B2018; border-radius: 12px; padding: 12px 16px; max-width: 420px; } .ds-snack span { flex: 1; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 13px; color: #FBF1EB; } .ds-snack-action { background: none; border: none; font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 13px; font-weight: 700; color: #D0814F; cursor: pointer; } .ds-snack-action:hover { color: #E09A6E; } .ds-snack-action:focus-visible { outline: 2px solid #D0814F; outline-offset: 2px; }"
+    },
+    {
+      "name": "Scene Divider",
+      "kind": "custom",
+      "refersTo": "source-eyebrow",
+      "description": "The journal's chapter break — the one place the stream interrupts itself. Centered eyebrow between hairlines, chaos value in Chaos Ochre. Tappable: it is the scene-jump target.",
+      "html": "<div class=\"ds-divider\"><span class=\"ds-divider-label\">SCENE 3 · <b>CHAOS 5</b></span></div>",
+      "css": ".ds-divider { display: flex; align-items: center; gap: 12px; max-width: 420px; margin: 16px 0; cursor: pointer; } .ds-divider::before, .ds-divider::after { content: ''; flex: 1; height: 1px; background: #EFE0D6; } .ds-divider-label { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; color: #8A7466; } .ds-divider-label b { color: #B5762A; }"
+    },
+    {
+      "name": "Campaign Spine Row",
+      "kind": "nav",
+      "refersTo": "icon-tile",
+      "description": "How a player recognizes a campaign before reading its name: a 6px identity-hue spine, an icon tile, the name, and a quiet genre/system line.",
+      "html": "<a class=\"ds-spine-row\"><i class=\"ds-spine\"></i><span class=\"ds-spine-tile\"><svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"#9A4A22\"><path d=\"M19 1l-5 5v11l5-4.5V1zM1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5V6c-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6z\"/></svg></span><span class=\"ds-spine-text\"><b>The Ancient Tower</b><em>Gritty fantasy · Ironsworn</em></span></a>",
+      "css": ".ds-spine-row { display: flex; align-items: center; gap: 10px; background: #FFFBF9; border: 1px solid #EFE0D6; border-radius: 12px; padding: 10px 12px 10px 0; max-width: 420px; overflow: hidden; text-decoration: none; cursor: pointer; } .ds-spine-row:hover { border-color: #E0C7B7; } .ds-spine { width: 6px; align-self: stretch; background: #9A4A22; flex: none; } .ds-spine-tile { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #F3D7C6; flex: none; } .ds-spine-text { display: flex; flex-direction: column; } .ds-spine-text b { font-family: 'Newsreader', Georgia, serif; font-size: 16px; font-weight: 500; color: #2B2018; } .ds-spine-text em { font-family: 'HankenGrotesk', Inter, system-ui, sans-serif; font-size: 11px; font-style: normal; color: #8A7466; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lamplit Tome",
+    "overview": "This is a book that happens to roll dice. The whole system is organized around the fiction that the player is writing in a warm, worn campaign journal by lamplight — cream paper, terracotta ink, a serif that only the story speaks in. Everything the app does mechanically (rolling, tracking, generating) is marginalia in that book's margins: real, useful, deliberately quieter than the prose it serves. When a surface has to choose between looking capable and looking like a page, it looks like a page.\n\nThe palette is entirely warm — there is no cool gray anywhere in the system. Depth comes from paper stacking on paper (cream → card → raised), separated by hairlines rather than shadow. The single accent, Lamplight Terracotta, behaves like rubrication in a manuscript: it is not a brand color sprinkled for identity, it is reserved for the two things that matter — the action the player is about to take, and the answer the oracle just gave. When the oracle answers, the qualifier after the comma tilts into italic terracotta, and the card it sits in is the only surface in the entire application permitted to cast a shadow. That restraint is what makes the moment land.\n\nThe system currently runs on two color layers: the shipped JuiceTokens tome palette, and an underlying Material 3 ColorScheme seeded from a deep amber (#B8540E) that still governs older tool chrome, dialogs, and system widgets. Tome is the destination. The M3 layer is legacy debt, not a second design language — new work reads JuiceTokens, and touching an old surface is an opportunity to migrate it. The system is also fully dual-brightness: every tome token has a dark counterpart, and the dark theme is not an inversion but a second warm world (#241C17 lamp-dimmed brown, never black).",
+    "keyCharacteristics": [
+      "Warm-only palette; zero cool grays, zero blues.",
+      "Serif for fiction, sans for machinery — a hard, load-bearing split.",
+      "Flat by default; one shadow, at the dramatic peak.",
+      "A single accent, spent rarely and deliberately.",
+      "Chrome yields to the writer: on a phone, focusing the composer collapses the HUD, the panel, and the bottom navigation.",
+      "Every surface must be complete and good with AI turned off."
+    ],
+    "rules": [
+      {
+        "name": "The Rubrication Rule",
+        "body": "Lamplight Terracotta marks a decision — an action about to be taken, or an answer just given. If an element is neither, it is ink, not accent. Audit test: on any screen, count the terracotta elements. More than three and the accent has stopped meaning anything.",
+        "section": "colors"
+      },
+      {
+        "name": "The Migration Rule",
+        "body": "New player-facing work reads JuiceTokens via context.juice, never a raw ColorScheme role. A surface still on M3 is a to-do, not a precedent. Audit test: test/design_system_test.dart pins the count of colorScheme. uses in lib/ at its 2026-07-24 measurement (131). The number may go down — lower the ceiling when you migrate a surface — and never up.",
+        "section": "colors"
+      },
+      {
+        "name": "The Warm-Only Rule",
+        "body": "No cool gray, no blue, no pure black, no pure white in chrome. #241C17 is the darkest surface in the system and #FFFBF9 the lightest. Stock Material colors (Colors.green, Colors.grey, Colors.blue) are banned outright — status meaning belongs to Quiet Sage or the colorScheme.error role, neutrals to the ink ramp. The single carve-out is Colors.white as an on-accent glyph fill (a 14px icon inside a terracotta tile); it is a foreground, never a surface. Enforced by test/design_system_test.dart.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cartography Exception",
+        "body": "Two palettes in this app are content, not chrome, and the Warm-Only Rule does not reach them: the hex map's terrain hues (map_screen.dart — water blue, marsh teal, mountain slate) are a data encoding the player reads as terrain, and the sketch editor's swatch row (sketch_editor.dart) is the player's own ink. Their surrounding chrome — toolbars, selection indicators, borders — obeys the rule normally. These are the only two exempt files, and adding a third needs a reason written in DESIGN.md.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Meaning Rule",
+        "body": "Chaos Ochre means Mythic chaos. Lead Gold means lead PC. Quiet Sage means resolved, succeeded, or friendly. These three never get borrowed for decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two-Voice Rule",
+        "body": "Serif is the story; sans is the machinery. Scene titles, oracle answers, journal prose, and narrative empty-state lines are Newsreader. Buttons, chips, labels, counters, and captions are Hanken Grotesk. There is no third voice and no crossing over. Audit test: if a string is something the player's character could be said to have experienced, it is serif. The one carve-out is notation — monospace in the Lonelog symbol legend, where glyph alignment is the content. That is not a third voice; it is a table. Enforced by test/design_system_test.dart.",
+        "section": "typography"
+      },
+      {
+        "name": "The Italic Tail Rule",
+        "body": "In an oracle answer, everything up to and including the first comma stays upright Deep Ink; everything after it becomes italic Lamplight Terracotta. The grammar of the answer is rendered in type — the verdict is stated, the consequence is voiced.",
+        "section": "typography"
+      },
+      {
+        "name": "The Eyebrow Rule",
+        "body": "Uppercase is reserved for the 11px tracked sans eyebrow. Nothing else in the system is uppercase — not buttons, not headings, not tabs.",
+        "section": "typography"
+      },
+      {
+        "name": "The Chrome Yields Rule",
+        "body": "On a phone, focusing the journal composer collapses the HUD's expanded row, collapses the Next panel, and removes the bottom navigation entirely. A keyboard already takes half the screen; the writer gets the other half. All three collapses are visual only — persisted state is untouched and everything returns on blur.",
+        "section": "layout"
+      },
+      {
+        "name": "The 360 Floor Rule",
+        "body": "The journal body lays out at max(viewport, 360px) inside an always-present scroll view — one tree at every height, never a size-threshold branch. Below the floor the viewport scrolls over the body; above it, nothing scrolls. A layout branch keyed to height will destroy the composer's text-input connection on every keyboard cycle.",
+        "section": "layout"
+      },
+      {
+        "name": "The 375 Rule",
+        "body": "375px is the hard minimum width. Any row that can overflow there must wrap, scale (FittedBox), or scroll — verified, not assumed.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Shadow Rule",
+        "body": "If a surface is not the expanded oracle answer or the primary button, it does not cast a shadow. Separate it with a hairline or a tonal step instead. Audit test: test/design_system_test.dart fails above two BoxShadow( occurrences in lib/. As of 2026-07-24 there is exactly one.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Warm Shadow Rule",
+        "body": "Shadows are tinted with the terracotta accent, never neutral black. A gray shadow on cream paper reads as plastic.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Twelve Rule",
+        "body": "12px is the default radius. Reach past it only with reason: 18px means this is a hero surface, 8px and below mean this is a small control. An unconsidered radius is a 12.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Real Failure Rule",
+        "body": "colorScheme.error is the system's only sanctioned break from the warm family, and it is spent on actual failure — a hostile disposition, a failed tally — never on 'unavailable', 'finished', 'dimmed', or 'empty'. Those are Faint Ink. If red appears and nothing has gone wrong, the signal is spent.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "Do read colors through context.juice (JuiceTokens) on any player-facing surface, and migrate a raw ColorScheme surface when you touch it.",
+      "Do keep the serif/sans split absolute: fiction in Newsreader, machinery in Hanken Grotesk.",
+      "Do separate surfaces with a hairline (#EFE0D6 / #3D3229) or a tonal step, not a shadow.",
+      "Do default to a 12px radius and reserve 18px for hero surfaces.",
+      "Do mark every AI-assisted action with the shared AiBadge ✦, and design the surface to be complete and good with AI switched off — that is the default state.",
+      "Do verify every new row at 375px width and with the reading text-scale raised; both are shipped user-facing conditions.",
+      "Do gate every animation behind MediaQuery.disableAnimations, and prefer a finite forward() over a repeat() — a perpetual loop hangs every pumpAndSettle in the test suite.",
+      "Do give both brightnesses a real value when adding a token; there is no auto-derived dark mode here.",
+      "Do keep test/design_system_test.dart green. It codifies the four rules that are mechanically checkable — One Shadow, Warm-Only, Two-Voice, and the Migration ratchet — and it runs in the ordinary flutter test sweep. When a rule genuinely needs to widen, widen it in DESIGN.md and in the test in the same commit, with the reason.",
+      "Do open a bottom sheet by default; reserve dialogs for a question that must be answered and snackbars for a receipt of something already done.",
+      "Do hold a 44x44 hit area even where the paint is compact, and verify new rows at a raised reading text-scale as well as at 375px.",
+      "Do hide an inapplicable control rather than disabling it — the system-gating model means most disabled states shouldn't be on screen at all."
+    ],
+    "donts": [
+      "Don't introduce cool grays, blues, pure black, or pure white. The system is warm-only, and #241C17 / #FFFBF9 are its poles.",
+      "Don't spend Lamplight Terracotta on anything that is not an action or an answer, and don't borrow Chaos Ochre, Lead Gold, or Quiet Sage for decoration — each means exactly one thing.",
+      "Don't add a BoxShadow. The expanded result card holds the only one, plus the sanctioned primary-button lift.",
+      "Don't set anything in uppercase except the 11px tracked sans eyebrow.",
+      "Don't let it read as a SaaS dashboard (cool grays, blue accents, KPI card grids), a dice-roller utility (neon numerals, dark gamer chrome, glassmorphism), or default Material 3 (untouched seed colors, Roboto, stock elevation ramps). Those three are the confirmed anti-references.",
+      "Don't put a FilledButton under loose or unbounded width constraints without overriding minimumSize — the 48px full-width theme throws \"forces an infinite width\" inside a Wrap or beside a flex sibling.",
+      "Don't branch layout on a height threshold in the journal body; one tree at every height, floored at 360px.",
+      "Don't hard-code a hex where a token exists, and don't add a token that duplicates one already in JuiceTokens.",
+      "Don't remove a focus indicator, and don't rely on hover to communicate anything — desktop keyboard traversal is a real path and touch has no hover.",
+      "Don't spend colorScheme.error on 'unavailable', 'finished', or 'empty'. Those are Faint Ink. Red means something went wrong.",
+      "Don't restore the paper-grain texture. The original UX-refresh handoff specified a CustomPainter dot field (1px dots, ~5% brown, 15px grid) under the cream background. It was never built, and the tome reads as paper without it. This is a deliberate omission, not an unfinished task.",
+      "Don't treat the old handoff (docs/design_handoff_juice_ux_refresh/) as current authority. Where it and DESIGN.md disagree, DESIGN.md and the shipped code win — the muted/faint inks were darkened for WCAG AA after it was written, and the identity palette was rewarmed."
+    ]
+  }
+}

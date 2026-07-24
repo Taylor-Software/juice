@@ -59,7 +59,7 @@ class _AiNudgeCardState extends ConsumerState<AiNudgeCard>
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 12),
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: tk.aiNudgeGradient),
-        border: Border.all(color: const Color(0xFFF0CDB8)),
+        border: Border.all(color: tk.borderHero),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(

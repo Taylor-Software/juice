@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 
 import '../engine/sketch.dart';
+import '../shared/design_tokens.dart';
 
 const _paper = Color(0xFFFAF7F0);
 const _palette = <int>[
@@ -416,7 +417,9 @@ class _SketchEditorState extends State<SketchEditor> {
 
   List<double> _xy(Offset o) => [o.dx, o.dy];
 
-  Widget _toolbar() => SafeArea(
+  Widget _toolbar() {
+    final tk = context.juice;
+    return SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.all(8),
@@ -435,7 +438,7 @@ class _SketchEditorState extends State<SketchEditor> {
                         color: Color(c),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: _color == c ? Colors.blue : Colors.black26,
+                          color: _color == c ? tk.terracotta : tk.hairline,
                           width: _color == c ? 3 : 1,
                         ),
                       ),
@@ -458,7 +461,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.edit),
                   tooltip: 'Pen',
                   isSelected: _tool == _SketchTool.pen,
-                  color: _tool == _SketchTool.pen ? Colors.blue : null,
+                  color: _tool == _SketchTool.pen ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.pen),
                 ),
                 IconButton(
@@ -466,7 +469,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.auto_fix_normal),
                   tooltip: 'Eraser',
                   isSelected: _tool == _SketchTool.eraser,
-                  color: _tool == _SketchTool.eraser ? Colors.blue : null,
+                  color: _tool == _SketchTool.eraser ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.eraser),
                 ),
                 IconButton(
@@ -474,7 +477,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.remove),
                   tooltip: 'Line',
                   isSelected: _tool == _SketchTool.line,
-                  color: _tool == _SketchTool.line ? Colors.blue : null,
+                  color: _tool == _SketchTool.line ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.line),
                 ),
                 IconButton(
@@ -482,7 +485,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.crop_square),
                   tooltip: 'Rectangle',
                   isSelected: _tool == _SketchTool.rect,
-                  color: _tool == _SketchTool.rect ? Colors.blue : null,
+                  color: _tool == _SketchTool.rect ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.rect),
                 ),
                 IconButton(
@@ -490,7 +493,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.radio_button_unchecked),
                   tooltip: 'Ellipse',
                   isSelected: _tool == _SketchTool.ellipse,
-                  color: _tool == _SketchTool.ellipse ? Colors.blue : null,
+                  color: _tool == _SketchTool.ellipse ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.ellipse),
                 ),
                 IconButton(
@@ -498,7 +501,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.title),
                   tooltip: 'Text',
                   isSelected: _tool == _SketchTool.text,
-                  color: _tool == _SketchTool.text ? Colors.blue : null,
+                  color: _tool == _SketchTool.text ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.text),
                 ),
                 IconButton(
@@ -506,7 +509,7 @@ class _SketchEditorState extends State<SketchEditor> {
                   icon: const Icon(Icons.pan_tool_outlined),
                   tooltip: 'Pan & zoom',
                   isSelected: _tool == _SketchTool.pan,
-                  color: _tool == _SketchTool.pan ? Colors.blue : null,
+                  color: _tool == _SketchTool.pan ? tk.terracotta : null,
                   onPressed: () => setState(() => _tool = _SketchTool.pan),
                 ),
               ],
@@ -514,6 +517,7 @@ class _SketchEditorState extends State<SketchEditor> {
           ),
         ),
       );
+  }
 }
 
 /// Opens the editor full-screen; returns the drawing or null on cancel.

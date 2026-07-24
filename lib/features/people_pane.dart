@@ -5,6 +5,7 @@ import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../shared/ai_badge.dart';
 import '../shared/destination.dart';
+import '../shared/design_tokens.dart';
 import '../shared/shell_route.dart';
 import '../shared/undo_snackbar.dart';
 import '../state/interpreter.dart';
@@ -19,11 +20,12 @@ String _dispositionLabel(NpcDisposition d) => switch (d) {
       NpcDisposition.unknown => 'Unknown',
     };
 
-Color _dispositionColor(NpcDisposition d, ColorScheme s) => switch (d) {
-      NpcDisposition.friendly => Colors.green,
+Color _dispositionColor(NpcDisposition d, ColorScheme s, JuiceTokens tk) =>
+    switch (d) {
+      NpcDisposition.friendly => tk.sage,
       NpcDisposition.neutral => s.onSurfaceVariant,
       NpcDisposition.hostile => s.error,
-      NpcDisposition.unknown => Colors.orange,
+      NpcDisposition.unknown => tk.inkFaint,
     };
 
 /// Tracking → People: world NPCs the party has met (distinct from the roster's
@@ -153,7 +155,8 @@ class _NpcCard extends ConsumerWidget {
       child: ListTile(
         key: Key('npc-${npc.id}'),
         leading: Icon(Icons.person_outline,
-            color: _dispositionColor(npc.disposition, theme.colorScheme)),
+            color: _dispositionColor(
+                npc.disposition, theme.colorScheme, context.juice)),
         title: Text(npc.name.isEmpty ? '(unnamed NPC)' : npc.name),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
