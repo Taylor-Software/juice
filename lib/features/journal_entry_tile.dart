@@ -228,7 +228,7 @@ class _PayloadCardState extends State<PayloadCard> {
             end: Alignment.bottomRight,
             colors: tk.resultHeroGradient,
           ),
-          border: Border.all(color: const Color(0xFFEFC9B4)),
+          border: Border.all(color: tk.borderHero),
           borderRadius: BorderRadius.circular(_expanded ? 18 : 12),
           boxShadow: _expanded
               ? [

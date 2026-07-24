@@ -27,6 +27,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     required this.inkFaint,
     required this.hairline,
     required this.borderInput,
+    required this.borderHero,
     required this.chaos,
     required this.chaosChipBg,
     required this.chaosChipText,
@@ -51,6 +52,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
   final Color inkFaint;
   final Color hairline;
   final Color borderInput;
+  final Color borderHero;
   final Color chaos;
   final Color chaosChipBg;
   final Color chaosChipText;
@@ -86,6 +88,10 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     inkFaint: Color(0xFF8A7466),
     hairline: Color(0xFFEFE0D6),
     borderInput: Color(0xFFE0C7B7),
+    // The single hero-card outline. Was hard-coded light-only at four call
+    // sites (two near-identical values, 0xFFEFC9B4 / 0xFFF0CDB8) which left a
+    // pale border ringing a near-black card in dark mode.
+    borderHero: Color(0xFFEFC9B4),
     chaos: Color(0xFFB5762A),
     chaosChipBg: Color(0xFFF4D9A8),
     // Was 0xFF8A5A18 (4.3:1 on the chip bg) — darkened past 4.5:1.
@@ -114,6 +120,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     inkFaint: Color(0xFF9C8A7B),
     hairline: Color(0xFF3D3229),
     borderInput: Color(0xFF4A3C31),
+    borderHero: Color(0xFF5A4233),
     chaos: Color(0xFFD9A84E),
     chaosChipBg: Color(0xFF4A3A1E),
     chaosChipText: Color(0xFFF4D9A8),
@@ -140,6 +147,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     Color? inkFaint,
     Color? hairline,
     Color? borderInput,
+    Color? borderHero,
     Color? chaos,
     Color? chaosChipBg,
     Color? chaosChipText,
@@ -164,6 +172,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
       inkFaint: inkFaint ?? this.inkFaint,
       hairline: hairline ?? this.hairline,
       borderInput: borderInput ?? this.borderInput,
+      borderHero: borderHero ?? this.borderHero,
       chaos: chaos ?? this.chaos,
       chaosChipBg: chaosChipBg ?? this.chaosChipBg,
       chaosChipText: chaosChipText ?? this.chaosChipText,
@@ -194,6 +203,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
       inkFaint: c(inkFaint, other.inkFaint),
       hairline: c(hairline, other.hairline),
       borderInput: c(borderInput, other.borderInput),
+      borderHero: c(borderHero, other.borderHero),
       chaos: c(chaos, other.chaos),
       chaosChipBg: c(chaosChipBg, other.chaosChipBg),
       chaosChipText: c(chaosChipText, other.chaosChipText),

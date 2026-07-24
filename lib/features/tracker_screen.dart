@@ -1168,7 +1168,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFF0CDB8)),
+        side: BorderSide(color: context.juice.borderHero),
       ),
       child: Container(
         // Fill the roster row width (a Card in a ListView otherwise shrink-wraps
@@ -2175,9 +2175,9 @@ class ThreadTallyRow extends ConsumerWidget {
             ? 'Failed'
             : tally.label;
     final color = tally.won
-        ? Colors.green
+        ? context.juice.sage
         : tally.failed
-            ? Colors.red
+            ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary;
     // Wrap (not Row) + compact buttons so the chip + four controls never
     // overflow a narrow thread card (matches the progress-row density above).

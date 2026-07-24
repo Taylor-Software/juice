@@ -5144,13 +5144,21 @@ class SessionMeta {
       );
 }
 
-/// The handoff identity-hue palette (ARGB ints) for per-campaign accents.
-/// Assigned at create time, varied across campaigns. See UX-refresh #11.
+/// The identity-hue palette (ARGB ints) for per-campaign accents — the launcher
+/// spine + icon tile. Assigned at create time, varied across campaigns. See
+/// UX-refresh #11 and DESIGN.md -> Colors -> The Identity Spine.
+///
+/// Rewarmed 2026-07-24: the handoff's Indigo (0xFF4A5A8A) and Plum
+/// (0xFF8A4A6A) were the only cool values anywhere in the app's chrome, which
+/// the Warm-Only Rule bans. Mulberry and Umber replace them — five identities
+/// separated by hue AND value, all inside the warm family. Umber is the
+/// closest pair with Terracotta; it reads apart by being markedly darker and
+/// desaturated. Stored campaigns keep whatever hue they were assigned.
 const kIdentityHues = <int>[
   0xFF9A4A22, // Terracotta
   0xFF5B7A52, // Sage
-  0xFF4A5A8A, // Indigo
-  0xFF8A4A6A, // Plum
+  0xFF7E3B4E, // Mulberry (was Indigo)
+  0xFF59422F, // Umber (was Plum)
   0xFFB5762A, // Gold
 ];
 

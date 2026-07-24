@@ -6,6 +6,16 @@ Working rules for this repo:
 2. Minimum code that solves the problem. Nothing speculative.
 3. Touch only what you must. Clean up only your own mess.
 4. Define success criteria. Loop until verified.
+5. **[DESIGN.md](DESIGN.md) is the visual authority. [PRODUCT.md](PRODUCT.md)
+   is the product authority.** Read DESIGN.md before writing UI; it owns
+   colors, type, layout, depth, shape, and component doctrine, and its named
+   rules are binding. Four of them are enforced mechanically by
+   `test/design_system_test.dart` (One Shadow, Warm-Only, Two-Voice, the
+   Migration ratchet). To widen a rule, change DESIGN.md, its
+   `.impeccable/design.json` sidecar, and the test in one commit, with the
+   reason. **Colors come from `JuiceTokens` via `context.juice`** — the M3
+   `ColorScheme` layer is legacy debt being migrated out, not a second design
+   language.
 
 ## Project notes
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/content_registry.dart';
 import '../engine/models.dart';
+import '../shared/design_tokens.dart';
 import '../shared/help_nav.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
@@ -287,12 +288,12 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
           ]),
         );
       case InterpreterPhase.ready:
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 18),
-            SizedBox(width: 8),
-            Text('Ready'),
+            Icon(Icons.check_circle, color: context.juice.sage, size: 18),
+            const SizedBox(width: 8),
+            const Text('Ready'),
           ]),
         );
       case InterpreterPhase.error:

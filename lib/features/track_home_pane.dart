@@ -427,7 +427,7 @@ class TrackHomePane extends ConsumerWidget {
     final tk = context.juice;
     const radius = BorderRadius.all(Radius.circular(14));
     final bg = emphasized ? const Color(0xFFFFF6F0) : tk.card;
-    final border = emphasized ? const Color(0xFFF0CDB8) : tk.hairline;
+    final border = emphasized ? tk.borderHero : tk.hairline;
     return Material(
       color: bg,
       borderRadius: radius,
