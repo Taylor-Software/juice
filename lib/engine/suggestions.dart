@@ -5,6 +5,8 @@ import 'oracle_interpreter.dart';
 /// engine stays free of UI/routing types.
 enum SuggestionAction { inline, navigate }
 
+/// One next-move chip: a stable [id] for dismissal, its label, and the
+/// action to run when tapped.
 class Suggestion {
   const Suggestion(this.id, this.label, this.action);
   final String id;

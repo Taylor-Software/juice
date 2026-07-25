@@ -17,31 +17,6 @@ class NimbleSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(nimble: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = -9,
-    int max = 999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
@@ -78,7 +53,7 @@ class NimbleSheetView extends ConsumerWidget {
         for (final k in kNimbleStats)
           Row(children: [
             SizedBox(width: 48, child: Text(k.toUpperCase())),
-            _stepper('nimble-stat-$k', '', s.stats[k] ?? 0,
+            sheetStepper('nimble-stat-$k', '', s.stats[k] ?? 0,
                 min: -9,
                 max: 9,
                 onSet: (v) =>
@@ -98,27 +73,31 @@ class NimbleSheetView extends ConsumerWidget {
           ]),
         const SizedBox(height: 12),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('nimble-hp', 'HP', s.currentHp,
+          sheetStepper('nimble-hp', 'HP', s.currentHp,
               min: 0,
               max: s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('nimble-maxhp', 'Max HP', s.maxHp,
-              min: 0, onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
-          _stepper('nimble-wounds', 'Wounds', s.wounds,
+          sheetStepper('nimble-maxhp', 'Max HP', s.maxHp,
+              min: 0, max: 999, onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
+          sheetStepper('nimble-wounds', 'Wounds', s.wounds,
               min: 0,
               max: s.maxWounds,
               onSet: (v) => _save(ref, s.copyWith(wounds: v))),
-          _stepper('nimble-level', 'Level', s.level,
+          sheetStepper('nimble-level', 'Level', s.level,
               min: 1, max: 10, onSet: (v) => _save(ref, s.copyWith(level: v))),
-          _stepper('nimble-speed', 'Speed', s.speed,
-              min: 0, onSet: (v) => _save(ref, s.copyWith(speed: v))),
-          _stepper('nimble-hitdie', 'Hit Die d', s.hitDieSize,
-              min: 1, onSet: (v) => _save(ref, s.copyWith(hitDieSize: v))),
+          sheetStepper('nimble-speed', 'Speed', s.speed,
+              min: 0, max: 999, onSet: (v) => _save(ref, s.copyWith(speed: v))),
+          sheetStepper('nimble-hitdie', 'Hit Die d', s.hitDieSize,
+              min: 1,
+              max: 999,
+              onSet: (v) => _save(ref, s.copyWith(hitDieSize: v))),
         ]),
         const SizedBox(height: 8),
-        _stepper(
+        sheetStepper(
             'nimble-slots', 'Slots used (cap ${s.slotCap})', s.gearSlotsUsed,
-            min: 0, onSet: (v) => _save(ref, s.copyWith(gearSlotsUsed: v))),
+            min: 0,
+            max: 999,
+            onSet: (v) => _save(ref, s.copyWith(gearSlotsUsed: v))),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'nimble'),
         const SizedBox(height: 12),

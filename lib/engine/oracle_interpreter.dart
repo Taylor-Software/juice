@@ -442,6 +442,8 @@ const String _gmChatInstruction =
     '1-3 sentences of plain prose, consistent with the conversation and the '
     "established facts. Be concrete and decisive. Output only the GM's words.";
 
+/// Everything the Ask-the-Oracle conversation needs. The runtime keeps no
+/// session, so [history] is replayed into every prompt.
 class GmChatSeed {
   const GmChatSeed({
     required this.history,
@@ -574,6 +576,9 @@ String parseNarrateResponse(String raw) {
 
 // -- Flesh out an entity ------------------------------------------------------
 
+/// Grounding for fleshing out one entity (a character, room, hex site,
+/// scene, NPC, place or rumor). [existingDetail] is what the entity already
+/// says, so the model adds to it rather than contradicting it.
 class FleshOutSeed {
   const FleshOutSeed({
     required this.entityKind,
@@ -652,6 +657,8 @@ String parseFleshOutResponse(String raw) {
 
 // -- Ranked suggestions -------------------------------------------------------
 
+/// Grounding for re-ranking the assistant's fixed suggestion chips by
+/// relevance. [candidates] are chip ids; the model reorders, never invents.
 class RankSuggestionsSeed {
   const RankSuggestionsSeed({
     required this.candidates,

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/gm_chat.dart';
 import 'providers.dart';
@@ -17,7 +16,7 @@ class GmChatNotifier extends AsyncNotifier<GmChatState> {
   Future<GmChatState> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const GmChatState();
     return decodePersisted(
@@ -28,7 +27,7 @@ class GmChatNotifier extends AsyncNotifier<GmChatState> {
 
   Future<void> _save(GmChatState s) async {
     state = AsyncData(s);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
   }
 

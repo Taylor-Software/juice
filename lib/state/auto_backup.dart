@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -61,14 +62,38 @@ class AutoBackupController {
       lastPath = await writer.write(active, file.bytes, file.ext);
       _lastRun = now;
       await ref.read(lastExportProvider.notifier).stamp();
-    } catch (_) {
-      // Unavailable platform (web / tests without path_provider) or a full
-      // disk — a silent safety net never surfaces errors.
+      _report(null);
+    } on MissingPluginException {
+      // No path_provider: web, or a widget test that didn't mock it. Expected,
+      // not a fault — stay quiet.
+    } on UnsupportedError {
+      // Platform has no app-support directory. Also expected.
+    } catch (e) {
+      // A REAL fault: a full disk, a revoked directory permission, a corrupt
+      // export. This used to be swallowed with everything else, so the one
+      // feature whose whole job is data safety could fail forever in silence.
+      // The 7-day export nudge is not a substitute — it says "back up soon",
+      // not "your backups are broken".
+      _report(e.toString());
     } finally {
       _running = false;
     }
   }
+
+  /// Publishes backup health so the UI can watch it. Writes only on a change,
+  /// so a healthy backup every five minutes doesn't churn listeners.
+  void _report(String? error) {
+    final notifier = ref.read(autoBackupErrorProvider.notifier);
+    if (notifier.state != error) notifier.state = error;
+  }
 }
+
+/// The last real auto-backup failure, or null when backups are healthy.
+///
+/// Null on web and wherever path_provider is absent — those are not failures.
+/// Watched by the Settings sheet so a silently-dead safety net becomes
+/// visible without the user having to go looking for a backup file.
+final autoBackupErrorProvider = StateProvider<String?>((ref) => null);
 
 /// Activate by watching this once (the home shell does): journal changes
 /// trigger a rate-limited backup of the active campaign.

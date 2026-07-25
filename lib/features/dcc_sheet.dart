@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -24,26 +23,6 @@ class DccSheetView extends ConsumerWidget {
     final s = _s;
     return _buildLeveled(context, ref, s);
   }
-
-  // ---- shared stepper (mirrors OseSheetView._stepper) ----
-  Widget _stepper(String key, String label, int value,
-          {required ValueChanged<int> onSet, int min = 0, int max = 9999}) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
 
   String _sign(int n) => n >= 0 ? '+$n' : '$n';
 
@@ -82,13 +61,13 @@ class DccSheetView extends ConsumerWidget {
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(msg), duration: const Duration(seconds: 3)));
 
-  Future<void> _rollSave(BuildContext context, DccSheet s, String key) async {
+  Future<void> _rollSave(
+      BuildContext context, WidgetRef ref, DccSheet s, String key) async {
     final dc = await _askDc(context);
     if (dc == null || !context.mounted) return;
-    final roll = Random().nextInt(20) + 1 + (s.saves[key] ?? 0);
-    final pass = roll >= dc;
-    _snack(context,
-        '${kDccSaveLabels[key]}: $roll vs DC $dc — ${pass ? "Pass" : "Fail"}');
+    final r = dccSave(ref.read(diceProvider).dN(20), s.saves[key] ?? 0, dc);
+    _snack(
+        context, '${kDccSaveLabels[key]}: ${r.total} vs DC $dc — ${r.outcome}');
   }
 
   Widget _buildLeveled(BuildContext context, WidgetRef ref, DccSheet s) {
@@ -102,7 +81,7 @@ class DccSheetView extends ConsumerWidget {
         Row(children: [
           Chip(label: Text(s.className)),
           const SizedBox(width: 8),
-          _stepper('dcc-level', 'Level', s.level,
+          sheetStepper('dcc-level', 'Level', s.level,
               min: 1, max: 10, onSet: (v) => save(s.copyWith(level: v))),
           const SizedBox(width: 8),
           DropdownButton<String>(
@@ -131,13 +110,13 @@ class DccSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         sheetSection(context, 'Combat'),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('dcc-hp', 'HP', s.currentHp,
+          sheetStepper('dcc-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => save(s.copyWith(currentHp: v))),
-          _stepper('dcc-maxhp', 'Max', s.maxHp,
+          sheetStepper('dcc-maxhp', 'Max', s.maxHp,
               onSet: (v) => save(s.copyWith(maxHp: v))),
-          _stepper('dcc-ac', 'AC', s.ac,
+          sheetStepper('dcc-ac', 'AC', s.ac,
               min: 0, max: 30, onSet: (v) => save(s.copyWith(ac: v))),
-          _stepper('dcc-atk', 'Atk', s.attackBonus,
+          sheetStepper('dcc-atk', 'Atk', s.attackBonus,
               min: -5, max: 20, onSet: (v) => save(s.copyWith(attackBonus: v))),
           Row(mainAxisSize: MainAxisSize.min, children: [
             const Text('Action die '),
@@ -158,7 +137,7 @@ class DccSheetView extends ConsumerWidget {
         for (final k in kDccSaveKeys)
           Row(children: [
             Expanded(child: Text(kDccSaveLabels[k]!)),
-            _stepper('dcc-save-$k', '', s.saves[k] ?? 0,
+            sheetStepper('dcc-save-$k', '', s.saves[k] ?? 0,
                 min: -5,
                 max: 20,
                 onSet: (v) => save(s.copyWith(saves: {...s.saves, k: v}))),
@@ -167,7 +146,7 @@ class DccSheetView extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.casino_outlined, size: 18),
               tooltip: 'Roll vs DC',
-              onPressed: () => _rollSave(context, s, k),
+              onPressed: () => _rollSave(context, ref, s, k),
             ),
           ]),
         const SizedBox(height: 12),
@@ -204,7 +183,7 @@ class DccSheetView extends ConsumerWidget {
         children: [
           Text('${kDccStatLabels[k]} (${_sign(s.mod(k))})',
               style: const TextStyle(fontWeight: FontWeight.bold)),
-          _stepper('dcc-stat-$k', '', s.stats[k] ?? 10,
+          sheetStepper('dcc-stat-$k', '', s.stats[k] ?? 10,
               min: 3,
               max: 18,
               onSet: (v) => save(s.copyWith(stats: {...s.stats, k: v}))),
@@ -248,12 +227,15 @@ class DccSheetView extends ConsumerWidget {
           icon: const Icon(Icons.casino_outlined, size: 18),
           label: const Text('Attack + Deed'),
           onPressed: () {
-            final atk = Random().nextInt(20) + 1 + s.attackBonus;
-            final deedSides = int.parse(s.deedDie.substring(1));
-            final deed = Random().nextInt(deedSides) + 1;
-            final ok = deed >= kDccDeedSuccessMin;
+            final dice = ref.read(diceProvider);
+            final r = dccDeed(
+              dice.dN(20),
+              s.attackBonus,
+              dice.dN(int.parse(s.deedDie.substring(1))),
+              kDccDeedSuccessMin,
+            );
             _snack(context,
-                'Attack: $atk, Deed: $deed — ${ok ? "Deed succeeds!" : "no deed"}');
+                'Attack: ${r.attack}, Deed: ${r.deed} — ${r.deedSucceeds ? "Deed succeeds!" : "no deed"}');
           },
         ),
       ]),
@@ -270,7 +252,7 @@ class DccSheetView extends ConsumerWidget {
           Column(mainAxisSize: MainAxisSize.min, children: [
             Text('${kDccStatLabels[k]}  ${s.effectiveScore(k)}',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
-            _stepper('dcc-burn-$k', 'burn', s.burned(k),
+            sheetStepper('dcc-burn-$k', 'burn', s.burned(k),
                 min: 0,
                 max: 18,
                 onSet: (v) =>
@@ -297,14 +279,17 @@ class DccSheetView extends ConsumerWidget {
               onPressed: () async {
                 final dc = await _askDc(context);
                 if (dc == null || !context.mounted) return;
-                final sides = int.parse(s.actionDie.substring(1));
-                final base = Random().nextInt(sides) +
-                    1 +
-                    s.level +
-                    dccAbilityMod(s.stats[castStat] ?? 10);
-                final total = base + s.totalSpellburn;
+                final r = dccSpellCheck(
+                  actionDie: ref
+                      .read(diceProvider)
+                      .dN(int.parse(s.actionDie.substring(1))),
+                  level: s.level,
+                  abilityMod: dccAbilityMod(s.stats[castStat] ?? 10),
+                  spellburn: s.totalSpellburn,
+                  dc: dc,
+                );
                 _snack(context,
-                    'Spell check: $total (base $base + ${s.totalSpellburn} spellburn) vs DC $dc — ${total >= dc ? "Success" : "Fail"}');
+                    'Spell check: ${r.total} (base ${r.base} + ${s.totalSpellburn} spellburn) vs DC $dc — ${r.success ? "Success" : "Fail"}');
               },
             ),
           ]),
@@ -339,10 +324,10 @@ class DccSheetView extends ConsumerWidget {
               icon: const Icon(Icons.casino_outlined, size: 18),
               label: const Text('Check'),
               onPressed: () {
-                final roll = Random().nextInt(20) + 1;
-                final bad = roll <= s.disapprovalRange;
+                final r = dccDisapproval(
+                    ref.read(diceProvider).dN(20), s.disapprovalRange);
                 _snack(context,
-                    'Disapproval check: $roll vs 1–${s.disapprovalRange} — ${bad ? "Disapproval!" : "Safe"}');
+                    'Disapproval check: ${r.roll} vs 1–${s.disapprovalRange} — ${r.disapproves ? "Disapproval!" : "Safe"}');
               },
             ),
           ]),

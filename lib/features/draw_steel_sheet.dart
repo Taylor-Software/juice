@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -23,44 +22,14 @@ class DrawSteelSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(drawSteel: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _roll(BuildContext context, String charKey) {
-    final score = _s.characteristics[charKey] ?? 0;
-    final rng = Random();
-    final total = rng.nextInt(10) + 1 + rng.nextInt(10) + 1 + score;
-    final tier = total <= 11
-        ? 'Tier 1'
-        : total <= 16
-            ? 'Tier 2'
-            : 'Tier 3';
+  void _roll(BuildContext context, WidgetRef ref, String charKey) {
+    final dice = ref.read(diceProvider);
+    final r = drawSteelPowerRoll(
+        dice.dN(10), dice.dN(10), _s.characteristics[charKey] ?? 0);
     final label = charKey[0].toUpperCase() + charKey.substring(1);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $total — $tier'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -101,7 +70,7 @@ class DrawSteelSheetView extends ConsumerWidget {
           onSave: (v) => _save(ref, s.copyWith(ancestry: v)),
         ),
         const SizedBox(height: 8),
-        _stepper('draw-steel-level', 'Level', s.level,
+        sheetStepper('draw-steel-level', 'Level', s.level,
             min: 1, max: 10, onSet: (v) => _save(ref, s.copyWith(level: v))),
 
         // ── Characteristics + Power Roll ────────────────────────────────────
@@ -118,7 +87,7 @@ class DrawSteelSheetView extends ConsumerWidget {
               width: 80,
               child: Text(k[0].toUpperCase() + k.substring(1)),
             ),
-            _stepper(
+            sheetStepper(
               'draw-steel-char-$k',
               '',
               s.characteristics[k] ?? 0,
@@ -133,7 +102,7 @@ class DrawSteelSheetView extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.casino_outlined, size: 18),
               tooltip: 'Roll 2d10 + $k',
-              onPressed: () => _roll(context, k),
+              onPressed: () => _roll(context, ref, k),
             ),
           ]),
 
@@ -141,10 +110,10 @@ class DrawSteelSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text('Stamina', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('draw-steel-stamina', 'Current', s.currentStamina,
+          sheetStepper('draw-steel-stamina', 'Current', s.currentStamina,
               max: s.maxStamina,
               onSet: (v) => _save(ref, s.copyWith(currentStamina: v))),
-          _stepper('draw-steel-max-stamina', 'Max', s.maxStamina,
+          sheetStepper('draw-steel-max-stamina', 'Max', s.maxStamina,
               onSet: (v) => _save(ref, s.copyWith(maxStamina: v))),
         ]),
 
@@ -152,21 +121,21 @@ class DrawSteelSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text('Recoveries', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('draw-steel-recoveries', 'Used', s.recoveries,
+          sheetStepper('draw-steel-recoveries', 'Used', s.recoveries,
               onSet: (v) => _save(ref, s.copyWith(recoveries: v))),
-          _stepper('draw-steel-max-recoveries', 'Max', s.maxRecoveries,
+          sheetStepper('draw-steel-max-recoveries', 'Max', s.maxRecoveries,
               onSet: (v) => _save(ref, s.copyWith(maxRecoveries: v))),
         ]),
 
         // ── Stability ────────────────────────────────────────────────────────
         const SizedBox(height: 12),
-        _stepper('draw-steel-stability', 'Stability', s.stability,
+        sheetStepper('draw-steel-stability', 'Stability', s.stability,
             onSet: (v) => _save(ref, s.copyWith(stability: v))),
 
         // ── Heroic Resource ──────────────────────────────────────────────────
         const SizedBox(height: 12),
         Text(s.resourceLabel, style: theme.textTheme.titleMedium),
-        _stepper('draw-steel-resource', '', s.heroicResource,
+        sheetStepper('draw-steel-resource', '', s.heroicResource,
             onSet: (v) => _save(ref, s.copyWith(heroicResource: v))),
 
         // ── Conditions ───────────────────────────────────────────────────────

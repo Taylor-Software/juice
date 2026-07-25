@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -19,39 +18,12 @@ class OseSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(ose: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _rollSave(BuildContext context, String saveKey) {
-    final target = _s.saves[saveKey] ?? 12;
-    final roll = Random().nextInt(20) + 1;
-    final result = roll >= target ? 'Pass' : 'Fail';
+  void _rollSave(BuildContext context, WidgetRef ref, String saveKey) {
+    final r = oseSave(ref.read(diceProvider).dN(20), _s.saves[saveKey] ?? 12);
     final label = kOseSaveLabels[saveKey] ?? saveKey;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $roll — $result'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -101,7 +73,7 @@ class OseSheetView extends ConsumerWidget {
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          _stepper('ose-level', 'Level', s.level,
+          sheetStepper('ose-level', 'Level', s.level,
               min: 1, max: 20, onSet: (v) => _save(ref, s.copyWith(level: v))),
           const SizedBox(width: 16),
           Expanded(
@@ -121,7 +93,7 @@ class OseSheetView extends ConsumerWidget {
             Column(mainAxisSize: MainAxisSize.min, children: [
               Text(kOseStatLabels[k]!,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              _stepper(
+              sheetStepper(
                 'ose-stat-$k',
                 '',
                 s.stats[k] ?? 10,
@@ -141,7 +113,7 @@ class OseSheetView extends ConsumerWidget {
         for (final k in kOseSaveKeys)
           Row(children: [
             Expanded(child: Text(kOseSaveLabels[k]!)),
-            _stepper(
+            sheetStepper(
               'ose-save-$k',
               '',
               s.saves[k] ?? 12,
@@ -154,20 +126,20 @@ class OseSheetView extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.casino_outlined, size: 18),
               tooltip: 'Roll vs ${s.saves[k] ?? 12}',
-              onPressed: () => _rollSave(context, k),
+              onPressed: () => _rollSave(context, ref, k),
             ),
           ]),
         const SizedBox(height: 12),
         Text('Hit Points', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('ose-hp', 'HP', s.currentHp,
+          sheetStepper('ose-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('ose-maxhp', 'Max', s.maxHp,
+          sheetStepper('ose-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
         ]),
         const SizedBox(height: 12),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('ose-ac', 'AC', s.ac,
+          sheetStepper('ose-ac', 'AC', s.ac,
               min: -10, max: 20, onSet: (v) => _save(ref, s.copyWith(ac: v))),
           SizedBox(
             width: 100,

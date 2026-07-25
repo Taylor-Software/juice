@@ -11,6 +11,7 @@ import '../shared/destination.dart';
 import '../shared/empty_state.dart';
 import '../shared/shell_route.dart';
 import '../shared/undo_snackbar.dart';
+import '../shared/tag_dialog.dart';
 import '../state/interpreter.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
@@ -482,8 +483,12 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           return ListView(
             padding: const EdgeInsets.all(12),
             children: [
+              // Partition once per group rather than re-filtering the roster
+              // three times (membership test, Effect target list, and the
+              // cards themselves all asked the same question).
               for (final (label, role) in groups)
-                if (chars.any((c) => c.role == role)) ...[
+                if (chars.where((c) => c.role == role).toList()
+                    case final members when members.isNotEmpty) ...[
                   Padding(
                     padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
                     child: Row(children: [
@@ -493,19 +498,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                       ),
                       // One gesture to apply damage/heal/conditions across a
                       // group (e.g. a fireball hitting the party).
-                      if (chars.where((c) => c.role == role).length > 1)
+                      if (members.length > 1)
                         TextButton.icon(
                           key: Key('party-effect-${role.name}'),
                           style: TextButton.styleFrom(
                               visualDensity: VisualDensity.compact),
                           icon: const Icon(Icons.bolt_outlined, size: 16),
                           label: const Text('Effect'),
-                          onPressed: () => _partyEffect(context,
-                              chars.where((c) => c.role == role).toList()),
+                          onPressed: () => _partyEffect(context, members),
                         ),
                     ]),
                   ),
-                  for (final c in chars.where((c) => c.role == role))
+                  for (final c in members)
                     _rosterCard(context, c, isLead: c.id == active),
                 ],
             ],
@@ -1999,34 +2003,9 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   }
 
   Future<void> _addTag(BuildContext context, Character c) async {
-    final tagCtrl = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add tag'),
-          content: TextField(
-            key: const Key('tag-input'),
-            controller: tagCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Tag'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, tagCtrl.text),
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
-    final tag = result?.trim() ?? '';
-    if (tag.isEmpty || c.tags.contains(tag)) return;
+    final tag = await promptForTag(context,
+        title: 'Add tag', label: 'Tag', fieldKey: 'tag-input');
+    if (tag == null || c.tags.contains(tag)) return;
     await _replace(c.copyWith(tags: [...c.tags, tag]));
   }
 }

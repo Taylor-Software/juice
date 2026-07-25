@@ -3,6 +3,8 @@
 // by the exact card names in kTarotDeck (lib/engine/models.dart). These are
 // generic starting points, not a reproduction of any published deck's text.
 
+/// The two authored readings for a tarot card. Original text — the app
+/// vendors no divinatory prose.
 class TarotMeaning {
   const TarotMeaning(this.upright, this.reversed);
   final String upright;

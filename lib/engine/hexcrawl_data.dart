@@ -1,3 +1,5 @@
+/// One terrain type in the generic hexcrawl toolkit: its climates, travel
+/// difficulty and the features that can appear in it. Authored, system-agnostic.
 class HexTerrain {
   const HexTerrain(
       {required this.key,

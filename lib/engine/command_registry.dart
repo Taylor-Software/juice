@@ -22,6 +22,9 @@ class CommandResult {
   final Map<String, dynamic> payload;
 }
 
+/// One slash command: how it matches, what it needs, and what it does.
+/// [arg] declares whether the command takes a trailing argument; [toolId]
+/// links it to a tool surface when the command navigates instead of acting.
 class CommandDef {
   const CommandDef({
     required this.id,

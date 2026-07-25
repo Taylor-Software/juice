@@ -52,7 +52,7 @@ Future<ProviderContainer> _pumpSheet(WidgetTester tester) async {
 }
 
 void main() {
-  void _bigView(WidgetTester tester) {
+  void bigView(WidgetTester tester) {
     tester.view.physicalSize = const Size(1200, 5000);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
@@ -61,7 +61,7 @@ void main() {
 
   testWidgets('embark-sheet renders with name and system label',
       (tester) async {
-    _bigView(tester);
+    bigView(tester);
     await _pumpSheet(tester);
     expect(find.byKey(const Key('embark-sheet')), findsOneWidget);
     expect(find.text('Ash'), findsOneWidget);
@@ -71,7 +71,7 @@ void main() {
   });
 
   testWidgets('HP stepper persists', (tester) async {
-    _bigView(tester);
+    bigView(tester);
     final c = await _pumpSheet(tester);
     await tester.tap(find.byKey(const Key('embark-hp-minus')));
     await tester.pumpAndSettle();
@@ -80,7 +80,7 @@ void main() {
   });
 
   testWidgets('Injuries stepper persists', (tester) async {
-    _bigView(tester);
+    bigView(tester);
     final c = await _pumpSheet(tester);
     await tester.tap(find.byKey(const Key('embark-injuries-plus')));
     await tester.pumpAndSettle();
@@ -90,7 +90,7 @@ void main() {
 
   testWidgets('class dropdown change persists and relabels resource',
       (tester) async {
-    _bigView(tester);
+    bigView(tester);
     final c = await _pumpSheet(tester);
     await tester.tap(find.byKey(const Key('embark-class')));
     await tester.pumpAndSettle();
@@ -102,7 +102,7 @@ void main() {
   });
 
   testWidgets('check button shows snackbar with em-dash', (tester) async {
-    _bigView(tester);
+    bigView(tester);
     await _pumpSheet(tester);
     await tester.tap(find.byKey(const Key('embark-check-str')));
     await tester.pump();

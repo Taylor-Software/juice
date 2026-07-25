@@ -23,6 +23,7 @@ import 'journal_screen.dart';
 final _loopOddsProvider =
     StateProvider<SoloLikelihood>((_) => SoloLikelihood.even);
 final _loopLastProvider = StateProvider<SoloYesNo?>((_) => null);
+
 /// Journal entry id of the last yes/no roll — the ask logs on the spot, so Keep
 /// appends the reading to that entry instead of logging a second one.
 final _loopLastIdProvider = StateProvider<String?>((_) => null);
@@ -140,216 +141,236 @@ class _LoopBarState extends ConsumerState<LoopBar> {
               },
             ),
           ),
-        ExpansionTile(
-          key: const Key('loop-steps'),
-          title: const Text('Steps'),
-          initiallyExpanded: false,
-          // Stretch, or the default (center) alignment shrinks each step Card
-          // to its content width and floats it in dead gutters.
-          expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-          children: [
-            _step(context, '1 · Scene',
-                scene == null ? 'No scene yet.' : scene.title, [
-              FilledButton.tonalIcon(
-                key: const Key('loop-new-scene'),
-                // Natural width in the _step Wrap (the app-wide filledButtonTheme
-                // full-width Size.fromHeight minimumSize would otherwise stretch
-                // it to the whole run).
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                icon: const Icon(Icons.add),
-                label: const Text('New scene'),
-                onPressed: _newScene,
+        _stepsTile(context,
+            scene: scene,
+            tallied: tallied,
+            threads: threads,
+            journal: journal,
+            odds: odds,
+            last: last,
+            tallyRoll: tallyRoll),
+      ],
+    );
+  }
+
+  /// The five-step solo-loop checklist. Extracted from build() — it was
+  /// ~210 of its ~290 lines, which buried the beat/interpret chrome above it.
+  Widget _stepsTile(
+    BuildContext context, {
+    required JournalEntry? scene,
+    required List<Thread> tallied,
+    required List<Thread> threads,
+    required List<JournalEntry> journal,
+    required SoloLikelihood odds,
+    required SoloYesNo? last,
+    required String? tallyRoll,
+  }) {
+    return ExpansionTile(
+      key: const Key('loop-steps'),
+      title: const Text('Steps'),
+      initiallyExpanded: false,
+      // Stretch, or the default (center) alignment shrinks each step Card
+      // to its content width and floats it in dead gutters.
+      expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      children: [
+        _step(context, '1 · Scene',
+            scene == null ? 'No scene yet.' : scene.title, [
+          FilledButton.tonalIcon(
+            key: const Key('loop-new-scene'),
+            // Natural width in the _step Wrap (the app-wide filledButtonTheme
+            // full-width Size.fromHeight minimumSize would otherwise stretch
+            // it to the whole run).
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+            icon: const Icon(Icons.add),
+            label: const Text('New scene'),
+            onPressed: _newScene,
+          ),
+        ]),
+        _step(context, '2 · Ask a question',
+            'Type your question, pick the odds, roll a d10.', [
+          SizedBox(
+            width: 360,
+            child: TextField(
+              key: const Key('loop-ask-question'),
+              controller: _question,
+              decoration: const InputDecoration(
+                isDense: true,
+                hintText: 'e.g. Is the bridge guarded?',
               ),
-            ]),
-            _step(context, '2 · Ask a question',
-                'Type your question, pick the odds, roll a d10.', [
-              SizedBox(
-                width: 360,
-                child: TextField(
-                  key: const Key('loop-ask-question'),
-                  controller: _question,
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    hintText: 'e.g. Is the bridge guarded?',
-                  ),
-                  onChanged: (v) =>
-                      ref.read(_loopQuestionProvider.notifier).state = v,
-                  onSubmitted: (_) => _ask(),
-                ),
-              ),
-              SegmentedButton<SoloLikelihood>(
-                segments: const [
-                  ButtonSegment(
-                      value: SoloLikelihood.unlikely, label: Text('Unlikely')),
-                  ButtonSegment(
-                      value: SoloLikelihood.even, label: Text('Even')),
-                  ButtonSegment(
-                      value: SoloLikelihood.likely, label: Text('Likely')),
-                ],
-                selected: {odds},
-                onSelectionChanged: (s) =>
-                    ref.read(_loopOddsProvider.notifier).state = s.first,
-              ),
-              FilledButton(
-                key: const Key('loop-ask'),
-                style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
-                onPressed: _ask,
-                child: const Text('Ask'),
-              ),
-              if (last != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    '${last.phrase} (d10=${last.roll})',
-                    key: const Key('loop-ask-result'),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-            ]),
-            _step(context, '3 · Inspire', 'Open the generators for a prompt.', [
-              OutlinedButton.icon(
-                key: const Key('loop-inspire'),
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('Inspire'),
-                onPressed: () => showGenerateSheet(context, ref),
-              ),
-            ]),
-            _step(
-              context,
-              '4 · Tasks',
-              tallied.isEmpty ? 'No tasks yet — name one below.' : null,
-              [
-                for (final t in tallied)
-                  ListTile(
-                    key: Key('loop-task-${t.id}'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(t.title),
-                    subtitle: Text(t.tally!.won
-                        ? 'Success'
-                        : t.tally!.failed
-                            ? 'Failed'
-                            : t.tally!.label),
-                    trailing: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          IconButton(
-                            key: Key('loop-task-dec-${t.id}'),
-                            icon: const Icon(Icons.remove),
-                            onPressed: () => ref
-                                .read(threadsProvider.notifier)
-                                .adjustTally(t.id, -1),
-                          ),
-                          IconButton(
-                            key: Key('loop-task-inc-${t.id}'),
-                            icon: const Icon(Icons.add),
-                            onPressed: () => ref
-                                .read(threadsProvider.notifier)
-                                .adjustTally(t.id, 1),
-                          ),
-                          IconButton(
-                            key: Key('loop-task-roll-${t.id}'),
-                            icon: const Icon(Icons.casino_outlined),
-                            tooltip: 'Tally roll',
-                            onPressed: () => _tallyRoll(t),
-                          ),
-                        ]),
-                  ),
-                if (tallyRoll != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Text(
-                      tallyRoll,
-                      key: const Key('loop-tally-roll-result'),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          key: const Key('loop-task-name'),
-                          controller: _taskName,
-                          decoration: const InputDecoration(
-                            hintText: 'New task name…',
-                            isDense: true,
-                            border: OutlineInputBorder(),
-                          ),
-                          onSubmitted: (_) => _newTask(),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        width: 150,
-                        child: DropdownButton<(String, int, int)>(
-                          key: const Key('loop-task-preset'),
-                          value: _preset,
-                          isExpanded: true,
-                          items: [
-                            for (final p in kTallyPresets)
-                              DropdownMenuItem(
-                                value: p,
-                                child: Text('${p.$1} ${p.$2}(${p.$3})',
-                                    overflow: TextOverflow.ellipsis),
-                              ),
-                          ],
-                          onChanged: (p) =>
-                              setState(() => _preset = p ?? _preset),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: FilledButton.tonalIcon(
-                      key: const Key('loop-task-new'),
-                      icon: const Icon(Icons.add_task),
-                      label: const Text('Track it'),
-                      onPressed: _newTask,
-                    ),
-                  ),
-                ),
-              ],
+              onChanged: (v) =>
+                  ref.read(_loopQuestionProvider.notifier).state = v,
+              onSubmitted: (_) => _ask(),
             ),
-            _step(context, '5 · Capture', null, [
-              SizedBox(
-                width: double.infinity,
-                child: TextField(
-                  key: const Key('loop-capture-field'),
-                  controller: _capture,
-                  focusNode: _captureFocus,
-                  decoration: InputDecoration(
-                    hintText: 'Quick note to the journal…',
-                    border: const OutlineInputBorder(),
-                    suffixIcon: IconButton(
-                      key: const Key('loop-capture-send'),
-                      icon: const Icon(Icons.send),
-                      tooltip: 'Log',
-                      onPressed: _captureNote,
-                    ),
-                  ),
-                  onChanged: (v) =>
-                      ref.read(_loopCaptureProvider.notifier).state = v,
-                  onSubmitted: (_) => _captureNote(),
+          ),
+          SegmentedButton<SoloLikelihood>(
+            segments: const [
+              ButtonSegment(
+                  value: SoloLikelihood.unlikely, label: Text('Unlikely')),
+              ButtonSegment(value: SoloLikelihood.even, label: Text('Even')),
+              ButtonSegment(
+                  value: SoloLikelihood.likely, label: Text('Likely')),
+            ],
+            selected: {odds},
+            onSelectionChanged: (s) =>
+                ref.read(_loopOddsProvider.notifier).state = s.first,
+          ),
+          FilledButton(
+            key: const Key('loop-ask'),
+            style: FilledButton.styleFrom(minimumSize: const Size(0, 48)),
+            onPressed: _ask,
+            child: const Text('Ask'),
+          ),
+          if (last != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '${last.phrase} (d10=${last.roll})',
+                key: const Key('loop-ask-result'),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+        ]),
+        _step(context, '3 · Inspire', 'Open the generators for a prompt.', [
+          OutlinedButton.icon(
+            key: const Key('loop-inspire'),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('Inspire'),
+            onPressed: () => showGenerateSheet(context, ref),
+          ),
+        ]),
+        _step(
+          context,
+          '4 · Tasks',
+          tallied.isEmpty ? 'No tasks yet — name one below.' : null,
+          [
+            for (final t in tallied)
+              ListTile(
+                key: Key('loop-task-${t.id}'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.title),
+                subtitle: Text(t.tally!.won
+                    ? 'Success'
+                    : t.tally!.failed
+                        ? 'Failed'
+                        : t.tally!.label),
+                trailing: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      IconButton(
+                        key: Key('loop-task-dec-${t.id}'),
+                        icon: const Icon(Icons.remove),
+                        onPressed: () => ref
+                            .read(threadsProvider.notifier)
+                            .adjustTally(t.id, -1),
+                      ),
+                      IconButton(
+                        key: Key('loop-task-inc-${t.id}'),
+                        icon: const Icon(Icons.add),
+                        onPressed: () => ref
+                            .read(threadsProvider.notifier)
+                            .adjustTally(t.id, 1),
+                      ),
+                      IconButton(
+                        key: Key('loop-task-roll-${t.id}'),
+                        icon: const Icon(Icons.casino_outlined),
+                        tooltip: 'Tally roll',
+                        onPressed: () => _tallyRoll(t),
+                      ),
+                    ]),
+              ),
+            if (tallyRoll != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  tallyRoll,
+                  key: const Key('loop-tally-roll-result'),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ),
-            ]),
-            const SizedBox(height: 16),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: Text(
-                'Solo loop inspired by Cairn Solo (CC-BY-SA 4.0, Andrew Cavanagh, EpicEmpires.org).',
-                key: const Key('loop-credit'),
-                style: Theme.of(context).textTheme.bodySmall,
+              padding: const EdgeInsets.only(top: 4),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('loop-task-name'),
+                      controller: _taskName,
+                      decoration: const InputDecoration(
+                        hintText: 'New task name…',
+                        isDense: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      onSubmitted: (_) => _newTask(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 150,
+                    child: DropdownButton<(String, int, int)>(
+                      key: const Key('loop-task-preset'),
+                      value: _preset,
+                      isExpanded: true,
+                      items: [
+                        for (final p in kTallyPresets)
+                          DropdownMenuItem(
+                            value: p,
+                            child: Text('${p.$1} ${p.$2}(${p.$3})',
+                                overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: (p) => setState(() => _preset = p ?? _preset),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: FilledButton.tonalIcon(
+                  key: const Key('loop-task-new'),
+                  icon: const Icon(Icons.add_task),
+                  label: const Text('Track it'),
+                  onPressed: _newTask,
+                ),
               ),
             ),
           ],
+        ),
+        _step(context, '5 · Capture', null, [
+          SizedBox(
+            width: double.infinity,
+            child: TextField(
+              key: const Key('loop-capture-field'),
+              controller: _capture,
+              focusNode: _captureFocus,
+              decoration: InputDecoration(
+                hintText: 'Quick note to the journal…',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  key: const Key('loop-capture-send'),
+                  icon: const Icon(Icons.send),
+                  tooltip: 'Log',
+                  onPressed: _captureNote,
+                ),
+              ),
+              onChanged: (v) =>
+                  ref.read(_loopCaptureProvider.notifier).state = v,
+              onSubmitted: (_) => _captureNote(),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: Text(
+            'Solo loop inspired by Cairn Solo (CC-BY-SA 4.0, Andrew Cavanagh, EpicEmpires.org).',
+            key: const Key('loop-credit'),
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
         ),
       ],
     );
@@ -621,9 +642,8 @@ class _InterpretCardState extends ConsumerState<_InterpretCard> {
                             .where((e) => e.id == id)
                             .firstOrNull;
                         if (entry != null) {
-                          await ref.read(journalProvider.notifier).replace(
-                              entry.copyWith(
-                                  body: appendReading(entry.body, card)));
+                          await ref.read(journalProvider.notifier).replace(entry
+                              .copyWith(body: appendReading(entry.body, card)));
                         }
                         widget.onDone();
                       },
@@ -707,7 +727,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                   child: Row(
                     children: [
-                      Icon(Icons.bolt, size: 16, color: theme.colorScheme.primary),
+                      Icon(Icons.bolt,
+                          size: 16, color: theme.colorScheme.primary),
                       const SizedBox(width: 6),
                       Text('Next', style: theme.textTheme.labelMedium),
                       const Spacer(),

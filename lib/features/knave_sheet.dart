@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -19,40 +18,12 @@ class KnaveSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(knave: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _rollSave(BuildContext context, String statKey) {
-    final score = _s.stats[statKey] ?? 0;
-    final roll = Random().nextInt(20) + 1;
-    final total = roll + score;
-    final result = total >= 11 ? 'Pass' : 'Fail';
+  void _rollSave(BuildContext context, WidgetRef ref, String statKey) {
+    final r = knaveSave(ref.read(diceProvider).dN(20), _s.stats[statKey] ?? 0);
     final label = kKnaveStatLabels[statKey] ?? statKey.toUpperCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $total — $result'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -82,7 +53,7 @@ class KnaveSheetView extends ConsumerWidget {
         visualDensity: VisualDensity.compact,
         icon: const Icon(Icons.casino_outlined, size: 18),
         tooltip: '$label save (d20+$value >= 11)',
-        onPressed: () => _rollSave(context, key),
+        onPressed: () => _rollSave(context, ref, key),
       ),
     ]);
   }
@@ -107,7 +78,7 @@ class KnaveSheetView extends ConsumerWidget {
           onSave: (v) => _save(ref, s.copyWith(career: v)),
         ),
         const SizedBox(height: 8),
-        _stepper('knave-level', 'Level', s.level,
+        sheetStepper('knave-level', 'Level', s.level,
             min: 1, max: 20, onSet: (v) => _save(ref, s.copyWith(level: v))),
         const SizedBox(height: 12),
         Text('Ability Scores', style: theme.textTheme.titleMedium),
@@ -130,16 +101,16 @@ class KnaveSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text('Hit Points', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('knave-hp', 'HP', s.currentHp,
+          sheetStepper('knave-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('knave-maxhp', 'Max', s.maxHp,
+          sheetStepper('knave-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
         ]),
         const SizedBox(height: 12),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('knave-ac', 'AC', s.ac,
+          sheetStepper('knave-ac', 'AC', s.ac,
               onSet: (v) => _save(ref, s.copyWith(ac: v))),
-          _stepper('knave-wounds', 'Wounds', s.wounds,
+          sheetStepper('knave-wounds', 'Wounds', s.wounds,
               onSet: (v) => _save(ref, s.copyWith(wounds: v))),
           Text('${s.inventorySlots} slots',
               style: const TextStyle(fontSize: 14)),

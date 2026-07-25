@@ -3,6 +3,8 @@
 /// stored here — the generator assigns it from the type die (see spec).
 library;
 
+/// A compass edge of a grid cell. Rotation maps these one quarter-turn
+/// clockwise.
 enum Side { n, e, s, w }
 
 Side _rotSide(Side s) => switch (s) {
@@ -20,14 +22,18 @@ Side oppositeSide(Side s) => switch (s) {
       Side.w => Side.e,
     };
 
+/// A place a footprint can connect: which of its cells, and which edge.
 class Opening {
   const Opening(this.cell, this.side);
   final (int, int) cell;
   final Side side;
 }
 
+/// How a placed connection reads on the map: locked, a plain door, or an
+/// open archway. Comes from the room-type die, NOT from the footprint.
 enum DoorKind { locked, door, open }
 
+/// A placed door: an absolute cell edge and what kind of door sits there.
 class DoorEdge {
   const DoorEdge(this.cell, this.side, this.kind);
   final (int, int) cell;
@@ -41,6 +47,8 @@ class DoorEdge {
       DoorKind.values[j['k'] as int]);
 }
 
+/// A room shape: the cells it occupies and the edges it can connect through,
+/// in local coordinates. Authored catalog — NOT the zine's 132 shapes.
 class RoomFootprint {
   const RoomFootprint(
       {required this.family, required this.cells, required this.openings});

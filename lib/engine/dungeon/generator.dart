@@ -16,6 +16,8 @@ import 'footprint.dart';
 import 'tables.dart';
 import 'treasure.dart';
 
+/// The four room shapes a generated space can take, two per branch
+/// (corridor/chamber built, tunnel/cave natural).
 enum RoomType { corridor, chamber, tunnel, cave }
 
 /// Which side of the complex a room belongs to: the built dungeon (A-C
@@ -29,6 +31,8 @@ DungeonBranch branchOfRoomType(String? roomType) =>
         ? DungeonBranch.cave
         : DungeonBranch.dungeon;
 
+/// Everything one room roll needs. [roomId] is minted by the CALLER before
+/// generating, so factions can record real room ids as they are rolled.
 class DungeonGenContext {
   const DungeonGenContext(
       {required this.branch,
@@ -56,6 +60,8 @@ class DungeonGenContext {
   final String roomId;
 }
 
+/// A rolled room: its shape and entry door, the expanded detail text, any
+/// factions it placed, and level movement ([levelDelta] / [crossoverTo]).
 class RoomResult {
   const RoomResult(
       {required this.type,

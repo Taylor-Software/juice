@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -23,47 +22,20 @@ class EmbarkSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(embark: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _rollCheck(BuildContext context, String statKey) {
-    final score = _s.stats[statKey] ?? 0;
-    final roll = Random().nextInt(12) + 1;
-    final total = roll + score - _s.injuries;
-    final result = total >= 8 ? 'Success' : 'Failure';
+  void _rollCheck(BuildContext context, WidgetRef ref, String statKey) {
+    final r = embarkCheck(
+        ref.read(diceProvider).dN(12), _s.stats[statKey] ?? 0, _s.injuries);
     final label = kEmbarkStatLabels[statKey] ?? statKey.toUpperCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $total — $result'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
   }
 
-  Widget _statBlock(BuildContext context, String key, String label, int value,
-      ValueChanged<int> onSet) {
+  Widget _statBlock(BuildContext context, WidgetRef ref, String key,
+      String label, int value, ValueChanged<int> onSet) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       Row(mainAxisSize: MainAxisSize.min, children: [
@@ -86,7 +58,7 @@ class EmbarkSheetView extends ConsumerWidget {
         visualDensity: VisualDensity.compact,
         icon: const Icon(Icons.casino_outlined, size: 18),
         tooltip: '$label check (d12 + $value >= 8)',
-        onPressed: () => _rollCheck(context, key),
+        onPressed: () => _rollCheck(context, ref, key),
       ),
     ]);
   }
@@ -124,7 +96,7 @@ class EmbarkSheetView extends ConsumerWidget {
                       _save(ref, s.copyWith(className: v ?? s.className)),
                 ),
               ]),
-              _stepper('embark-level', 'Level', s.level,
+              sheetStepper('embark-level', 'Level', s.level,
                   min: 1,
                   max: 6,
                   onSet: (v) => _save(ref, s.copyWith(level: v))),
@@ -140,6 +112,7 @@ class EmbarkSheetView extends ConsumerWidget {
           for (final k in kEmbarkStats)
             _statBlock(
               context,
+              ref,
               k,
               kEmbarkStatLabels[k]!,
               s.stats[k] ?? 0,
@@ -149,13 +122,13 @@ class EmbarkSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text('Health', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('embark-hp', 'HP', s.currentHp,
+          sheetStepper('embark-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('embark-maxhp', 'Max', s.maxHp,
+          sheetStepper('embark-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
         ]),
         const SizedBox(height: 4),
-        _stepper('embark-injuries', 'Injuries', s.injuries,
+        sheetStepper('embark-injuries', 'Injuries', s.injuries,
             max: 3, onSet: (v) => _save(ref, s.copyWith(injuries: v))),
         const Text(
           '3rd Injury = death; each Injury is -1 to Checks.',
@@ -163,17 +136,17 @@ class EmbarkSheetView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('embark-av', 'AV', s.av,
+          sheetStepper('embark-av', 'AV', s.av,
               max: 4, onSet: (v) => _save(ref, s.copyWith(av: v))),
         ]),
         const SizedBox(height: 12),
         Text(embarkResourceLabel(s.className),
             style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('embark-resource', 'Current', s.resource,
+          sheetStepper('embark-resource', 'Current', s.resource,
               max: s.resourceMax,
               onSet: (v) => _save(ref, s.copyWith(resource: v))),
-          _stepper('embark-resourcemax', 'Max', s.resourceMax,
+          sheetStepper('embark-resourcemax', 'Max', s.resourceMax,
               onSet: (v) => _save(ref, s.copyWith(resourceMax: v))),
         ]),
         const SizedBox(height: 12),

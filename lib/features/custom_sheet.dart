@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -307,9 +306,9 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
       promptTarget = await _promptInt('Target / DC');
       if (promptTarget == null) return;
     }
-    final rng = Random();
+    final rng = ref.read(diceProvider);
     final dice = [
-      for (var i = 0; i < cfg.diceCount; i++) rng.nextInt(cfg.diceSides) + 1
+      for (var i = 0; i < cfg.diceCount; i++) rng.dN(cfg.diceSides)
     ];
     final out = resolveRoll(cfg, bonus, dice, promptTarget: promptTarget);
     if (!mounted) return;

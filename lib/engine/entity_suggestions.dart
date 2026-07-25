@@ -6,8 +6,11 @@ library;
 import 'mention_parser.dart';
 import 'models.dart';
 
+/// The two entity kinds the journal offers to start tracking.
 enum SuggestionKind { character, thread }
 
+/// A name the journal noticed that isn't tracked yet. Keyed for dedupe and
+/// dismissal by [suggestionKey].
 class EntitySuggestion {
   const EntitySuggestion(this.name, this.kind);
   final String name;

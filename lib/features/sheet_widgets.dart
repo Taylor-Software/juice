@@ -111,27 +111,58 @@ Widget meterStepper({
       ),
     ]);
 
+/// Compact −/+ stepper for one integer sheet field. Keys are `<key>-minus` and
+/// `<key>-plus`; [label] is omitted when empty.
+///
+/// Bounds DISABLE the buttons rather than clamping, so a value already outside
+/// the range (an older sheet, or a max lowered under the current value) is
+/// never silently rewritten — the player walks it back themselves. A null
+/// bound means unbounded in that direction. [enabled] false locks both buttons
+/// regardless of bounds (a graduated funnel peasant's frozen stats).
+///
+/// This is the single stepper for the pre-made sheets; [intStepper] is the
+/// unbounded outline-icon variant used by the Ironsworn-family sheets.
+Widget sheetStepper(
+  String key,
+  String label,
+  int value, {
+  required ValueChanged<int> onSet,
+  int? min = 0,
+  int? max = 9999,
+  bool outlined = false,
+  bool enabled = true,
+}) =>
+    Row(mainAxisSize: MainAxisSize.min, children: [
+      if (label.isNotEmpty) Text('$label '),
+      IconButton(
+        key: Key('$key-minus'),
+        visualDensity: VisualDensity.compact,
+        icon: Icon(outlined ? Icons.remove_circle_outline : Icons.remove),
+        onPressed: enabled && (min == null || value > min)
+            ? () => onSet(value - 1)
+            : null,
+      ),
+      Text('$value'),
+      IconButton(
+        key: Key('$key-plus'),
+        visualDensity: VisualDensity.compact,
+        icon: Icon(outlined ? Icons.add_circle_outline : Icons.add),
+        onPressed: enabled && (max == null || value < max)
+            ? () => onSet(value + 1)
+            : null,
+      ),
+    ]);
+
+/// Unbounded outline-icon stepper keyed `<prefix>-<fieldKey>-minus/plus`.
+/// A thin naming shim over [sheetStepper] for the Ironsworn-family sheets.
 Widget intStepper({
   required String prefix,
   required String fieldKey,
   required int value,
   required ValueChanged<int> onSet,
 }) =>
-    Row(mainAxisSize: MainAxisSize.min, children: [
-      IconButton(
-        key: Key('$prefix-$fieldKey-minus'),
-        visualDensity: VisualDensity.compact,
-        icon: const Icon(Icons.remove_circle_outline),
-        onPressed: () => onSet(value - 1),
-      ),
-      Text('$value'),
-      IconButton(
-        key: Key('$prefix-$fieldKey-plus'),
-        visualDensity: VisualDensity.compact,
-        icon: const Icon(Icons.add_circle_outline),
-        onPressed: () => onSet(value + 1),
-      ),
-    ]);
+    sheetStepper('$prefix-$fieldKey', '', value,
+        onSet: onSet, min: null, max: null, outlined: true);
 
 Widget momentumRow({
   required BuildContext context,

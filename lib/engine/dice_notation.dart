@@ -209,6 +209,7 @@ sealed class _Term {
   String get bareLabel;
 }
 
+/// A flat modifier term (the `+3` in `2d6+3`).
 class _ModTerm extends _Term {
   _ModTerm(super.sign, this.value);
   final int value;
@@ -216,12 +217,16 @@ class _ModTerm extends _Term {
   String get bareLabel => '$value';
 }
 
+/// A keep/drop qualifier: keep-highest, keep-lowest, drop-highest,
+/// drop-lowest, and how many dice it applies to.
 class _Keep {
   _Keep(this.op, this.n);
   final String op; // 'kh' | 'kl' | 'dh' | 'dl'
   final int n;
 }
 
+/// A dice term: N dice of M sides (or Fate dice), with optional keep/drop
+/// and explode qualifiers.
 class _DiceTerm extends _Term {
   _DiceTerm(super.sign, this.count, this.sides,
       {required this.fate, this.keep, this.explode = false});
@@ -244,6 +249,8 @@ class _DiceTerm extends _Term {
 // Parser
 // ---------------------------------------------------------------------------
 
+/// Recursive-descent parser for dice notation. Throws [FormatException] on
+/// anything it doesn't recognise — callers surface that to the player.
 class _Parser {
   _Parser(this.src);
   final String src;

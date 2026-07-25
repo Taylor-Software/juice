@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -19,44 +18,13 @@ class ArgosaSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(argosa: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _roll(BuildContext context, String statKey) {
-    final score = _s.stats[statKey] ?? 10;
-    final half = score ~/ 2;
-    final roll = Random().nextInt(20) + 1;
-    final result = roll <= half
-        ? 'Great Success'
-        : roll <= score
-            ? 'Success'
-            : 'Failure';
+  void _roll(BuildContext context, WidgetRef ref, String statKey) {
+    final r =
+        argosaRollUnder(ref.read(diceProvider).dN(20), _s.stats[statKey] ?? 10);
     final label = kArgosaStatLabels[statKey] ?? statKey;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $roll — $result'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -90,7 +58,7 @@ class ArgosaSheetView extends ConsumerWidget {
           onChanged: (v) =>
               v == null ? null : _save(ref, s.copyWith(className: v)),
         ),
-        _stepper('argosa-level', 'Level', s.level,
+        sheetStepper('argosa-level', 'Level', s.level,
             min: 1, max: 9, onSet: (v) => _save(ref, s.copyWith(level: v))),
         const SizedBox(height: 12),
         Text('Stats', style: theme.textTheme.titleMedium),
@@ -102,7 +70,7 @@ class ArgosaSheetView extends ConsumerWidget {
         for (final k in kArgosaStats)
           Row(children: [
             SizedBox(width: 48, child: Text(k.toUpperCase())),
-            _stepper(
+            sheetStepper(
               'argosa-stat-$k',
               '',
               s.stats[k] ?? 10,
@@ -116,15 +84,15 @@ class ArgosaSheetView extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
               icon: const Icon(Icons.casino_outlined, size: 18),
               tooltip: 'Roll d20 under ${k.toUpperCase()}',
-              onPressed: () => _roll(context, k),
+              onPressed: () => _roll(context, ref, k),
             ),
           ]),
         const SizedBox(height: 12),
         Text('Hit Points', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('argosa-hp', 'Current', s.currentHp,
+          sheetStepper('argosa-hp', 'Current', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('argosa-maxhp', 'Max', s.maxHp,
+          sheetStepper('argosa-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
           if (isStaggered)
             Chip(
@@ -136,7 +104,7 @@ class ArgosaSheetView extends ConsumerWidget {
         const SizedBox(height: 12),
         Text('Luck', style: theme.textTheme.titleMedium),
         Row(children: [
-          _stepper('argosa-luck', '', s.luck,
+          sheetStepper('argosa-luck', '', s.luck,
               onSet: (v) => _save(ref, s.copyWith(luck: v))),
           const SizedBox(width: 8),
           TextButton(
@@ -146,7 +114,7 @@ class ArgosaSheetView extends ConsumerWidget {
           ),
         ]),
         const SizedBox(height: 12),
-        _stepper('argosa-rescues', 'Rescues', s.rescues,
+        sheetStepper('argosa-rescues', 'Rescues', s.rescues,
             onSet: (v) => _save(ref, s.copyWith(rescues: v))),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'argosa'),

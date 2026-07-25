@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -19,43 +18,17 @@ class CairnSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(cairn: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _rollSave(BuildContext context, String statKey) {
+  void _rollSave(BuildContext context, WidgetRef ref, String statKey) {
     final score = statKey == 'str'
         ? _s.str
         : statKey == 'dex'
             ? _s.dex
             : _s.wil;
-    final roll = Random().nextInt(20) + 1;
-    final result = roll <= score ? 'Pass' : 'Fail';
+    final r = cairnSave(ref.read(diceProvider).dN(20), score);
     final label = kCairnStatLabels[statKey] ?? statKey.toUpperCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label save: $roll — $result'),
+        content: Text('$label save: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -85,7 +58,7 @@ class CairnSheetView extends ConsumerWidget {
         visualDensity: VisualDensity.compact,
         icon: const Icon(Icons.casino_outlined, size: 18),
         tooltip: '$label save (d20 ≤ $value)',
-        onPressed: () => _rollSave(context, key),
+        onPressed: () => _rollSave(context, ref, key),
       ),
     ]);
   }
@@ -141,11 +114,11 @@ class CairnSheetView extends ConsumerWidget {
         ),
         const SizedBox(height: 4),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('cairn-hp', 'HP', s.currentHp,
+          sheetStepper('cairn-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('cairn-maxhp', 'Max', s.maxHp,
+          sheetStepper('cairn-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
-          _stepper('cairn-armor', 'Armor', s.armor,
+          sheetStepper('cairn-armor', 'Armor', s.armor,
               min: 0, max: 3, onSet: (v) => _save(ref, s.copyWith(armor: v))),
         ]),
         const SizedBox(height: 12),
@@ -161,7 +134,7 @@ class CairnSheetView extends ConsumerWidget {
               child: Text('(cannot recover HP or ability scores)',
                   style: TextStyle(fontSize: 11))),
         ]),
-        _stepper('cairn-fatigue', 'Fatigue slots', s.fatigue,
+        sheetStepper('cairn-fatigue', 'Fatigue slots', s.fatigue,
             max: 10, onSet: (v) => _save(ref, s.copyWith(fatigue: v))),
         const SizedBox(height: 12),
         DebouncedTextField(

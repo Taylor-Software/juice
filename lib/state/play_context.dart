@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/journal_search.dart';
 import '../engine/loop_kit.dart';
@@ -17,7 +16,7 @@ class PlayContextNotifier extends AsyncNotifier<PlayContext> {
   Future<PlayContext> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const PlayContext();
     return decodePersisted(
@@ -29,7 +28,7 @@ class PlayContextNotifier extends AsyncNotifier<PlayContext> {
   Future<PlayContext> get _ready async => state.valueOrNull ?? await future;
 
   Future<void> _save(PlayContext c) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(c.toJson()));
     state = AsyncData(c);
   }

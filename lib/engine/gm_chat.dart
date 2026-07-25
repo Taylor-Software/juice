@@ -1,8 +1,11 @@
 // A multi-turn GM conversation: ordered player/GM turns. Pure; JSON round-trips
 // for per-campaign persistence (see GmChatNotifier).
 
+/// Who spoke a turn in the Ask-the-Oracle thread.
 enum ChatRole { player, gm }
 
+/// One line of the Oracle conversation. JSON keys are terse ('r'/'t')
+/// because the whole transcript is persisted per campaign.
 class ChatTurn {
   const ChatTurn(this.role, this.text);
   final ChatRole role;
@@ -16,6 +19,8 @@ class ChatTurn {
       );
 }
 
+/// The persisted Ask-the-Oracle transcript. The runtime keeps no LLM session,
+/// so these turns ARE the conversation — they get replayed into each prompt.
 class GmChatState {
   const GmChatState({this.turns = const []});
   final List<ChatTurn> turns;
