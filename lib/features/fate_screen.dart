@@ -129,473 +129,487 @@ class _FateScreenState extends ConsumerState<FateScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Fate Check',
-              key: _fateCheckKey, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 4),
-          Text('Ask a yes/no question, then roll 2dF + 1d6.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-          const SizedBox(height: 16),
-          SegmentedButton<Likelihood>(
-            segments: const [
-              ButtonSegment(
-                  value: Likelihood.unlikely, label: Text('Unlikely')),
-              ButtonSegment(value: Likelihood.normal, label: Text('Normal')),
-              ButtonSegment(value: Likelihood.likely, label: Text('Likely')),
-            ],
-            selected: {_likelihood},
-            onSelectionChanged: (s) => setState(() {
-              _likelihood = s.first;
-              // Tap-to-roll: selecting a likelihood rolls immediately
-              // (validated demand — juice-roll issue #4). The Roll button
-              // stays for re-rolls at the same likelihood.
-              _last = widget.oracle.fateCheck(_likelihood);
-            }),
-          ),
-          const SizedBox(height: 16),
-          if (last != null) _FateResultCard(result: last, glyph: _glyph),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _roll,
-            icon: const Icon(Icons.casino_outlined),
-            label: const Text('Roll Fate Check'),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _logGen(widget.oracle.randomEvent()),
-                  child: const Text('Random Event'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => _logGen(widget.oracle.payThePrice()),
-                  child: const Text('Pay the Price'),
-                ),
-              ),
-            ],
-          ),
+          ..._fateCheckSection(theme, last),
           const SizedBox(height: 24),
           const Divider(),
-          Text('Roll High Oracle',
-              key: _rollHighKey, style: theme.textTheme.headlineSmall),
-          Text(
-            'Roll high = yes. Pick a die and the odds.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'd100', label: Text('d100')),
-              ButtonSegment(value: 'd20', label: Text('d20')),
-              ButtonSegment(value: '2d6', label: Text('2d6')),
-            ],
-            selected: {_rhDie},
-            onSelectionChanged: (s) => setState(() => _rhDie = s.first),
-          ),
-          const SizedBox(height: 12),
-          DropdownMenu<int>(
-            initialSelection: _rhOdds,
-            label: const Text('Odds'),
-            dropdownMenuEntries: [
-              for (var i = 0; i < widget.oracle.data.rollHighOdds.length; i++)
-                DropdownMenuEntry(
-                    value: i, label: widget.oracle.data.rollHighOdds[i]),
-            ],
-            onSelected: (v) => setState(() => _rhOdds = v ?? _rhOdds),
-          ),
-          const SizedBox(height: 12),
-          if (_rhLast != null) ...[
-            ResultCard(
-              result: _rhLast!,
-              onInspire: ref.watch(interpretReadyProvider)
-                  ? () => inspireGenResult(context, ref, _rhLast!,
-                      sourceTool: 'roll-high', payload: _rhLast!.toPayload())
-                  : null,
-              onLog: () {
-                ref.read(journalProvider.notifier).addResult(
-                    _rhLast!.title, _rhLast!.asText,
-                    sourceTool: 'roll-high', payload: _rhLast!.toPayload());
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Added to journal')),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-          FilledButton.icon(
-            onPressed: () => setState(
-                () => _rhLast = widget.oracle.rollHigh(_rhDie, _rhOdds)),
-            icon: const Icon(Icons.casino_outlined),
-            label: const Text('Roll Oracle'),
-          ),
+          ..._rollHighSection(theme),
           const SizedBox(height: 24),
           const Divider(),
           _myOraclesSection(theme),
           const SizedBox(height: 24),
           const Divider(),
-          Text('Mythic GME',
-              key: _mythicKey, style: theme.textTheme.headlineSmall),
-          Text(
-            'Mythic Game Master Emulator © Word Mill Games (wordmillgames.com), '
-            'used under CC-BY-NC 4.0.',
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          const SizedBox(height: 12),
-          Builder(builder: (context) {
-            final crawl =
-                ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
-            final chaos = crawl.chaosFactor.clamp(1, 9);
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text('Chaos Factor: $chaos',
-                        style: theme.textTheme.titleMedium),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle_outline),
-                      onPressed: chaos > 1
-                          ? () => ref
-                              .read(crawlProvider.notifier)
-                              .save(crawl.copyWith(chaosFactor: chaos - 1))
-                          : null,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle_outline),
-                      onPressed: chaos < 9
-                          ? () => ref
-                              .read(crawlProvider.notifier)
-                              .save(crawl.copyWith(chaosFactor: chaos + 1))
-                          : null,
-                    ),
-                  ],
-                ),
-                DropdownMenu<int>(
-                  initialSelection: _oddsIndex,
-                  label: const Text('Odds'),
-                  dropdownMenuEntries: [
-                    for (var i = 0;
-                        i < widget.oracle.data.mythicOdds.length;
-                        i++)
-                      DropdownMenuEntry(
-                          value: i, label: widget.oracle.data.mythicOdds[i]),
-                  ],
-                  onSelected: (v) =>
-                      setState(() => _oddsIndex = v ?? _oddsIndex),
-                ),
-                const SizedBox(height: 12),
-                if (_mythicLast != null) ...[
-                  ResultCard(
-                    result: _mythicLast!,
-                    onInspire: ref.watch(interpretReadyProvider)
-                        ? () => inspireGenResult(context, ref, _mythicLast!,
-                            sourceTool: 'mythic',
-                            payload: _mythicLast!.toPayload())
-                        : null,
-                    onLog: () {
-                      ref.read(journalProvider.notifier).addResult(
-                          _mythicLast!.title, _mythicLast!.asText,
-                          sourceTool: 'mythic',
-                          payload: _mythicLast!.toPayload());
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Added to journal')),
-                      );
-                    },
-                    actions: [
-                      // One-tap Mythic random event (Focus + Action + Subject)
-                      // — the canonical follow-up, in place of chaining the
-                      // Event Focus + two Meaning buttons by hand.
-                      ResultAction(
-                        label: 'Random Event',
-                        icon: Icons.bolt_outlined,
-                        tooltip: 'Roll a Mythic random event',
-                        onPressed: () => setState(() => _mythicLast =
-                            widget.oracle.mythicRandomEvent(
-                                threads: _openThreadTitles(),
-                                characters: _characterNames())),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-                FilledButton.icon(
-                  onPressed: () => setState(() => _mythicLast =
-                      widget.oracle.mythicFate(_oddsIndex, chaos)),
-                  icon: const Icon(Icons.casino_outlined),
-                  label: const Text('Fate Chart'),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() =>
-                            _mythicLast = widget.oracle.mythicSceneTest(chaos)),
-                        child: const Text('Scene Test'),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() => _mythicLast =
-                            widget.oracle.mythicEventFocus(
-                                threads: _openThreadTitles(),
-                                characters: _characterNames())),
-                        child: const Text('Event Focus'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownMenu<String>(
-                        initialSelection: _meaningId,
-                        label: const Text('Meaning table'),
-                        expandedInsets: EdgeInsets.zero,
-                        dropdownMenuEntries: [
-                          for (final t in widget.oracle.data.mythicMeaning)
-                            DropdownMenuEntry(
-                                value: t['id'] as String,
-                                label: t['name'] as String),
-                        ],
-                        onSelected: (v) =>
-                            setState(() => _meaningId = v ?? _meaningId),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Flexible bounds the button: a bare Material button as a
-                    // non-flex Row child next to a flex sibling is measured at
-                    // maxWidth:Infinity and throws under the loose tool host.
-                    Flexible(
-                      child: OutlinedButton(
-                        onPressed: () => setState(() => _mythicLast =
-                            widget.oracle.mythicMeaning(_meaningId)),
-                        child: const Text('Meaning'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            );
-          }),
+          ..._mythicSection(theme),
           if (systems.contains('cards')) ...[
             const SizedBox(height: 24),
             const Divider(),
-            Text('Cards', key: _cardsKey, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text(
-              'Draw from a deck as an oracle. Log a card, then interpret it '
-              'yourself or via the journal entry.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-            ),
-            const SizedBox(height: 12),
-            Consumer(builder: (context, ref, _) {
-              final decks =
-                  ref.watch(decksProvider).valueOrNull ?? const DecksState();
-              final deckLen = decks.jokers
-                  ? kPlayingDeckWithJokers.length
-                  : kPlayingDeck.length;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        key: const Key('cards-draw'),
-                        icon: const Icon(Icons.style_outlined),
-                        label: const Text('Draw card'),
-                        onPressed: () => _drawCard(tarot: false),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        key: const Key('cards-draw-tarot'),
-                        icon: const Icon(Icons.auto_awesome),
-                        label: const Text('Draw tarot'),
-                        onPressed: () => _drawCard(tarot: true),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 8),
-                  // Wrap (not Row) so the readout + reshuffle reflow instead of
-                  // overflowing on a narrow phone.
-                  Wrap(
-                    spacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                          'Deck ${decks.standard.remainingOf(deckLen)}/$deckLen',
-                          style: theme.textTheme.bodySmall),
-                      TextButton(
-                        key: const Key('cards-reshuffle'),
-                        onPressed: () => ref
-                            .read(decksProvider.notifier)
-                            .reshuffle(tarot: false),
-                        child: const Text('Reshuffle'),
-                      ),
-                      FilterChip(
-                        key: const Key('cards-jokers-toggle'),
-                        label: const Text('Jokers'),
-                        selected: decks.jokers,
-                        onSelected: (v) =>
-                            ref.read(decksProvider.notifier).setJokers(v),
-                      ),
-                      Text(
-                          'Tarot ${decks.tarot.remainingOf(kTarotDeck.length)}'
-                          '/${kTarotDeck.length}',
-                          style: theme.textTheme.bodySmall),
-                      TextButton(
-                        key: const Key('cards-reshuffle-tarot'),
-                        onPressed: () => ref
-                            .read(decksProvider.notifier)
-                            .reshuffle(tarot: true),
-                        child: const Text('Reshuffle'),
-                      ),
-                    ],
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      key: const Key('cards-reference'),
-                      icon: const Icon(Icons.menu_book_outlined),
-                      label: const Text('Card meanings'),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => Scaffold(
-                            appBar: AppBar(title: const Text('Tarot meanings')),
-                            body: const TarotReference(),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_cardLast != null) ...[
-                    const SizedBox(height: 8),
-                    ResultCard(
-                      result: _cardLast!,
-                      // Body override: a draw's entry folds the card meanings
-                      // in (_cardBody), and that prose is what's worth reading.
-                      onInspire: ref.watch(interpretReadyProvider)
-                          ? () => inspireGenResult(context, ref, _cardLast!,
-                              sourceTool: 'cards',
-                              payload: _cardLast!.toPayload(),
-                              body: _cardBody(_cardLast!))
-                          : null,
-                      onLog: () {
-                        ref.read(journalProvider.notifier).addResult(
-                              _cardLast!.title,
-                              _cardBody(_cardLast!),
-                              sourceTool: 'cards',
-                              payload: _cardLast!.toPayload(),
-                            );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Added to journal')),
-                        );
-                      },
-                    ),
-                    Builder(builder: (context) {
-                      final r = readTarot(_cardLast!.summary ?? '');
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: CardImage(r.name,
-                              reversed: r.reversed, showLabel: true),
-                        ),
-                      );
-                    }),
-                    _cardMeaning(theme, _cardLast!),
-                  ],
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  Text('Spreads', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: DropdownButton<TarotSpread>(
-                          key: const Key('spread-picker'),
-                          isExpanded: true,
-                          value: _spread,
-                          items: [
-                            for (final s in kTarotSpreads)
-                              DropdownMenuItem(
-                                value: s,
-                                child: Text('${s.name}  (${s.count})'),
-                              ),
-                          ],
-                          onChanged: (s) {
-                            if (s != null) setState(() => _spread = s);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FilledButton.icon(
-                        key: const Key('cards-draw-spread'),
-                        icon: const Icon(Icons.dashboard_outlined),
-                        label: const Text('Draw spread'),
-                        // The app-wide FilledButton theme sets a full-width
-                        // minimumSize (Size.fromHeight in theme.dart => infinite
-                        // min-width). As a non-flex child of a Row with an
-                        // Expanded sibling (the picker), the flex sizing pass
-                        // measures this button with unbounded width, so that
-                        // infinite min-width throws "forces an infinite width".
-                        // Pin a finite min-width so it sits natural-width beside
-                        // the dropdown.
-                        style: FilledButton.styleFrom(
-                            minimumSize: const Size(64, 48)),
-                        onPressed: _drawSpread,
-                      ),
-                    ],
-                  ),
-                  if (_spreadLast != null) ...[
-                    const SizedBox(height: 12),
-                    TarotSpreadLayout(
-                      spread: _spreadLast!.spread,
-                      cards: _spreadLast!.cards,
-                      cardHeight: 110,
-                      detail: true,
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: FilledButton.tonalIcon(
-                        key: const Key('spread-log'),
-                        icon: const Icon(Icons.bookmark_add_outlined),
-                        label: const Text('Log spread'),
-                        onPressed: () {
-                          ref.read(journalProvider.notifier).addResult(
-                                'Tarot Spread',
-                                spreadBody(_spreadLast!.spread.name,
-                                    _spreadLast!.cards),
-                                sourceTool: 'cards',
-                              );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Added to journal')),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ],
-              );
-            }),
+            ..._cardsSection(theme),
           ],
         ],
       ),
     );
   }
+
+  /// Fate Check: 2dF + 1d6 read against the likelihood ladder.
+  List<Widget> _fateCheckSection(ThemeData theme, FateResult? last) => [
+        Text('Fate Check',
+            key: _fateCheckKey, style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 4),
+        Text('Ask a yes/no question, then roll 2dF + 1d6.',
+            style: theme.textTheme.bodyMedium
+                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 16),
+        SegmentedButton<Likelihood>(
+          segments: const [
+            ButtonSegment(value: Likelihood.unlikely, label: Text('Unlikely')),
+            ButtonSegment(value: Likelihood.normal, label: Text('Normal')),
+            ButtonSegment(value: Likelihood.likely, label: Text('Likely')),
+          ],
+          selected: {_likelihood},
+          onSelectionChanged: (s) => setState(() {
+            _likelihood = s.first;
+            // Tap-to-roll: selecting a likelihood rolls immediately
+            // (validated demand — juice-roll issue #4). The Roll button
+            // stays for re-rolls at the same likelihood.
+            _last = widget.oracle.fateCheck(_likelihood);
+          }),
+        ),
+        const SizedBox(height: 16),
+        if (last != null) _FateResultCard(result: last, glyph: _glyph),
+        const SizedBox(height: 16),
+        FilledButton.icon(
+          onPressed: _roll,
+          icon: const Icon(Icons.casino_outlined),
+          label: const Text('Roll Fate Check'),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _logGen(widget.oracle.randomEvent()),
+                child: const Text('Random Event'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => _logGen(widget.oracle.payThePrice()),
+                child: const Text('Pay the Price'),
+              ),
+            ),
+          ],
+        ),
+      ];
+
+  /// Roll High: pick a die and the odds; high is yes.
+  List<Widget> _rollHighSection(ThemeData theme) => [
+        Text('Roll High Oracle',
+            key: _rollHighKey, style: theme.textTheme.headlineSmall),
+        Text(
+          'Roll high = yes. Pick a die and the odds.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'd100', label: Text('d100')),
+            ButtonSegment(value: 'd20', label: Text('d20')),
+            ButtonSegment(value: '2d6', label: Text('2d6')),
+          ],
+          selected: {_rhDie},
+          onSelectionChanged: (s) => setState(() => _rhDie = s.first),
+        ),
+        const SizedBox(height: 12),
+        DropdownMenu<int>(
+          initialSelection: _rhOdds,
+          label: const Text('Odds'),
+          dropdownMenuEntries: [
+            for (var i = 0; i < widget.oracle.data.rollHighOdds.length; i++)
+              DropdownMenuEntry(
+                  value: i, label: widget.oracle.data.rollHighOdds[i]),
+          ],
+          onSelected: (v) => setState(() => _rhOdds = v ?? _rhOdds),
+        ),
+        const SizedBox(height: 12),
+        if (_rhLast != null) ...[
+          ResultCard(
+            result: _rhLast!,
+            onInspire: ref.watch(interpretReadyProvider)
+                ? () => inspireGenResult(context, ref, _rhLast!,
+                    sourceTool: 'roll-high', payload: _rhLast!.toPayload())
+                : null,
+            onLog: () {
+              ref.read(journalProvider.notifier).addResult(
+                  _rhLast!.title, _rhLast!.asText,
+                  sourceTool: 'roll-high', payload: _rhLast!.toPayload());
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Added to journal')),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+        ],
+        FilledButton.icon(
+          onPressed: () =>
+              setState(() => _rhLast = widget.oracle.rollHigh(_rhDie, _rhOdds)),
+          icon: const Icon(Icons.casino_outlined),
+          label: const Text('Roll Oracle'),
+        ),
+      ];
+
+  /// Mythic GME: chaos factor, fate chart, event meaning.
+  List<Widget> _mythicSection(ThemeData theme) => [
+        Text('Mythic GME',
+            key: _mythicKey, style: theme.textTheme.headlineSmall),
+        Text(
+          'Mythic Game Master Emulator © Word Mill Games (wordmillgames.com), '
+          'used under CC-BY-NC 4.0.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        Builder(builder: (context) {
+          final crawl =
+              ref.watch(crawlProvider).valueOrNull ?? const CrawlState();
+          final chaos = crawl.chaosFactor.clamp(1, 9);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('Chaos Factor: $chaos',
+                      style: theme.textTheme.titleMedium),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: chaos > 1
+                        ? () => ref
+                            .read(crawlProvider.notifier)
+                            .save(crawl.copyWith(chaosFactor: chaos - 1))
+                        : null,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: chaos < 9
+                        ? () => ref
+                            .read(crawlProvider.notifier)
+                            .save(crawl.copyWith(chaosFactor: chaos + 1))
+                        : null,
+                  ),
+                ],
+              ),
+              DropdownMenu<int>(
+                initialSelection: _oddsIndex,
+                label: const Text('Odds'),
+                dropdownMenuEntries: [
+                  for (var i = 0; i < widget.oracle.data.mythicOdds.length; i++)
+                    DropdownMenuEntry(
+                        value: i, label: widget.oracle.data.mythicOdds[i]),
+                ],
+                onSelected: (v) => setState(() => _oddsIndex = v ?? _oddsIndex),
+              ),
+              const SizedBox(height: 12),
+              if (_mythicLast != null) ...[
+                ResultCard(
+                  result: _mythicLast!,
+                  onInspire: ref.watch(interpretReadyProvider)
+                      ? () => inspireGenResult(context, ref, _mythicLast!,
+                          sourceTool: 'mythic',
+                          payload: _mythicLast!.toPayload())
+                      : null,
+                  onLog: () {
+                    ref.read(journalProvider.notifier).addResult(
+                        _mythicLast!.title, _mythicLast!.asText,
+                        sourceTool: 'mythic',
+                        payload: _mythicLast!.toPayload());
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Added to journal')),
+                    );
+                  },
+                  actions: [
+                    // One-tap Mythic random event (Focus + Action + Subject)
+                    // — the canonical follow-up, in place of chaining the
+                    // Event Focus + two Meaning buttons by hand.
+                    ResultAction(
+                      label: 'Random Event',
+                      icon: Icons.bolt_outlined,
+                      tooltip: 'Roll a Mythic random event',
+                      onPressed: () => setState(() => _mythicLast =
+                          widget.oracle.mythicRandomEvent(
+                              threads: _openThreadTitles(),
+                              characters: _characterNames())),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+              ],
+              FilledButton.icon(
+                onPressed: () => setState(() =>
+                    _mythicLast = widget.oracle.mythicFate(_oddsIndex, chaos)),
+                icon: const Icon(Icons.casino_outlined),
+                label: const Text('Fate Chart'),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() =>
+                          _mythicLast = widget.oracle.mythicSceneTest(chaos)),
+                      child: const Text('Scene Test'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _mythicLast =
+                          widget.oracle.mythicEventFocus(
+                              threads: _openThreadTitles(),
+                              characters: _characterNames())),
+                      child: const Text('Event Focus'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownMenu<String>(
+                      initialSelection: _meaningId,
+                      label: const Text('Meaning table'),
+                      expandedInsets: EdgeInsets.zero,
+                      dropdownMenuEntries: [
+                        for (final t in widget.oracle.data.mythicMeaning)
+                          DropdownMenuEntry(
+                              value: t['id'] as String,
+                              label: t['name'] as String),
+                      ],
+                      onSelected: (v) =>
+                          setState(() => _meaningId = v ?? _meaningId),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Flexible bounds the button: a bare Material button as a
+                  // non-flex Row child next to a flex sibling is measured at
+                  // maxWidth:Infinity and throws under the loose tool host.
+                  Flexible(
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _mythicLast =
+                          widget.oracle.mythicMeaning(_meaningId)),
+                      child: const Text('Meaning'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        }),
+      ];
+
+  /// Card/tarot draws and positional spreads.
+  List<Widget> _cardsSection(ThemeData theme) => [
+        Text('Cards', key: _cardsKey, style: theme.textTheme.headlineSmall),
+        const SizedBox(height: 4),
+        Text(
+          'Draw from a deck as an oracle. Log a card, then interpret it '
+          'yourself or via the journal entry.',
+          style: theme.textTheme.bodyMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 12),
+        Consumer(builder: (context, ref, _) {
+          final decks =
+              ref.watch(decksProvider).valueOrNull ?? const DecksState();
+          final deckLen = decks.jokers
+              ? kPlayingDeckWithJokers.length
+              : kPlayingDeck.length;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('cards-draw'),
+                    icon: const Icon(Icons.style_outlined),
+                    label: const Text('Draw card'),
+                    onPressed: () => _drawCard(tarot: false),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const Key('cards-draw-tarot'),
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Draw tarot'),
+                    onPressed: () => _drawCard(tarot: true),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 8),
+              // Wrap (not Row) so the readout + reshuffle reflow instead of
+              // overflowing on a narrow phone.
+              Wrap(
+                spacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text('Deck ${decks.standard.remainingOf(deckLen)}/$deckLen',
+                      style: theme.textTheme.bodySmall),
+                  TextButton(
+                    key: const Key('cards-reshuffle'),
+                    onPressed: () => ref
+                        .read(decksProvider.notifier)
+                        .reshuffle(tarot: false),
+                    child: const Text('Reshuffle'),
+                  ),
+                  FilterChip(
+                    key: const Key('cards-jokers-toggle'),
+                    label: const Text('Jokers'),
+                    selected: decks.jokers,
+                    onSelected: (v) =>
+                        ref.read(decksProvider.notifier).setJokers(v),
+                  ),
+                  Text(
+                      'Tarot ${decks.tarot.remainingOf(kTarotDeck.length)}'
+                      '/${kTarotDeck.length}',
+                      style: theme.textTheme.bodySmall),
+                  TextButton(
+                    key: const Key('cards-reshuffle-tarot'),
+                    onPressed: () =>
+                        ref.read(decksProvider.notifier).reshuffle(tarot: true),
+                    child: const Text('Reshuffle'),
+                  ),
+                ],
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const Key('cards-reference'),
+                  icon: const Icon(Icons.menu_book_outlined),
+                  label: const Text('Card meanings'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => Scaffold(
+                        appBar: AppBar(title: const Text('Tarot meanings')),
+                        body: const TarotReference(),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              if (_cardLast != null) ...[
+                const SizedBox(height: 8),
+                ResultCard(
+                  result: _cardLast!,
+                  // Body override: a draw's entry folds the card meanings
+                  // in (_cardBody), and that prose is what's worth reading.
+                  onInspire: ref.watch(interpretReadyProvider)
+                      ? () => inspireGenResult(context, ref, _cardLast!,
+                          sourceTool: 'cards',
+                          payload: _cardLast!.toPayload(),
+                          body: _cardBody(_cardLast!))
+                      : null,
+                  onLog: () {
+                    ref.read(journalProvider.notifier).addResult(
+                          _cardLast!.title,
+                          _cardBody(_cardLast!),
+                          sourceTool: 'cards',
+                          payload: _cardLast!.toPayload(),
+                        );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Added to journal')),
+                    );
+                  },
+                ),
+                Builder(builder: (context) {
+                  final r = readTarot(_cardLast!.summary ?? '');
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: CardImage(r.name,
+                          reversed: r.reversed, showLabel: true),
+                    ),
+                  );
+                }),
+                _cardMeaning(theme, _cardLast!),
+              ],
+              const SizedBox(height: 16),
+              const Divider(),
+              Text('Spreads', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButton<TarotSpread>(
+                      key: const Key('spread-picker'),
+                      isExpanded: true,
+                      value: _spread,
+                      items: [
+                        for (final s in kTarotSpreads)
+                          DropdownMenuItem(
+                            value: s,
+                            child: Text('${s.name}  (${s.count})'),
+                          ),
+                      ],
+                      onChanged: (s) {
+                        if (s != null) setState(() => _spread = s);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    key: const Key('cards-draw-spread'),
+                    icon: const Icon(Icons.dashboard_outlined),
+                    label: const Text('Draw spread'),
+                    // The app-wide FilledButton theme sets a full-width
+                    // minimumSize (Size.fromHeight in theme.dart => infinite
+                    // min-width). As a non-flex child of a Row with an
+                    // Expanded sibling (the picker), the flex sizing pass
+                    // measures this button with unbounded width, so that
+                    // infinite min-width throws "forces an infinite width".
+                    // Pin a finite min-width so it sits natural-width beside
+                    // the dropdown.
+                    style:
+                        FilledButton.styleFrom(minimumSize: const Size(64, 48)),
+                    onPressed: _drawSpread,
+                  ),
+                ],
+              ),
+              if (_spreadLast != null) ...[
+                const SizedBox(height: 12),
+                TarotSpreadLayout(
+                  spread: _spreadLast!.spread,
+                  cards: _spreadLast!.cards,
+                  cardHeight: 110,
+                  detail: true,
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FilledButton.tonalIcon(
+                    key: const Key('spread-log'),
+                    icon: const Icon(Icons.bookmark_add_outlined),
+                    label: const Text('Log spread'),
+                    onPressed: () {
+                      ref.read(journalProvider.notifier).addResult(
+                            'Tarot Spread',
+                            spreadBody(
+                                _spreadLast!.spread.name, _spreadLast!.cards),
+                            sourceTool: 'cards',
+                          );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Added to journal')),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ],
+          );
+        }),
+      ];
 
   List<String> _openThreadTitles() =>
       (ref.read(threadsProvider).valueOrNull ?? const <Thread>[])

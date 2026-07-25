@@ -1,8 +1,11 @@
 import 'models.dart';
 import 'spell.dart';
 
+/// Which slice of the content library a surface wants.
 enum ContentType { all, monsters, spells, rules }
 
+/// The two content lists a search returns, kept separate so a caller can
+/// render them under their own headings without re-partitioning.
 class ContentResults {
   const ContentResults({required this.monsters, required this.spells});
   final List<Creature> monsters;

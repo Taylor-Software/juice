@@ -5,6 +5,7 @@ import '../engine/content_registry.dart';
 import '../engine/models.dart';
 import '../shared/design_tokens.dart';
 import '../shared/help_nav.dart';
+import '../state/auto_backup.dart';
 import '../state/interpreter.dart';
 import '../state/providers.dart';
 
@@ -195,6 +196,31 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
                 openHelp(context, ref, topic: 'credits');
               },
             ),
+            // Only present when the rolling auto-backup is actually broken.
+            // A safety net that has quietly stopped working is worse than no
+            // safety net, because the player believes they are covered.
+            if (ref.watch(autoBackupErrorProvider) case final backupError?) ...[
+              const SizedBox(height: 16),
+              // Tome palette, not a raw ColorScheme role: terracotta IS this
+              // app's alarm colour (DESIGN.md Warm-Only), and new player-facing
+              // work reads JuiceTokens.
+              Card(
+                key: const Key('settings-backup-error'),
+                color: context.juice.raised,
+                child: ListTile(
+                  leading: Icon(Icons.warning_amber_outlined,
+                      color: context.juice.terracotta),
+                  title: Text('Automatic backups are failing',
+                      style: TextStyle(color: context.juice.terracottaDeep)),
+                  subtitle: Text(
+                    'Export your campaign manually from the campaigns drawer.\n'
+                    '$backupError',
+                    style:
+                        TextStyle(fontSize: 12, color: context.juice.inkBody),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Text('Bestiary', style: theme.textTheme.labelLarge),
             const SizedBox(height: 4),

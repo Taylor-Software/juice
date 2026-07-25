@@ -1,6 +1,7 @@
 import 'models.dart';
 import 'oracle.dart';
 
+/// The five headings the generate sheet groups its generators under.
 enum GenSection { story, npcs, exploration, encounters, details }
 
 extension GenSectionLabel on GenSection {
@@ -21,6 +22,7 @@ String sourceToolFor(GenSection s) => switch (s) {
       GenSection.details => 'gen-details',
     };
 
+/// One generator: its label, its section, and the [Oracle] call behind it.
 class GeneratorDef {
   const GeneratorDef(this.label, this.section, this.run);
   final String label;

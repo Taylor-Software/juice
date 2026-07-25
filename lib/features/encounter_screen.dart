@@ -5,6 +5,7 @@ import '../engine/combat.dart';
 import '../engine/dice_notation.dart';
 import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
+import '../shared/tag_dialog.dart';
 import '../state/providers.dart';
 import 'inspire.dart';
 import 'quick_ref_view.dart';
@@ -129,36 +130,14 @@ class EncounterScreen extends ConsumerWidget {
         name = '${c.name} (missing)';
       } else {
         final linked = char;
-        if (linked.dnd != null) {
-          curHp = linked.dnd!.currentHp;
-          maxHp = linked.dnd!.maxHp;
-        } else if (linked.shadowdark != null) {
-          curHp = linked.shadowdark!.currentHp;
-          maxHp = linked.shadowdark!.maxHp;
-        } else if (linked.nimble != null) {
-          curHp = linked.nimble!.currentHp;
-          maxHp = linked.nimble!.maxHp;
-        } else if (linked.kalArath != null) {
-          curHp = linked.kalArath!.currentHp;
-          maxHp = linked.kalArath!.maxHp;
-        } else if (linked.ose != null) {
-          curHp = linked.ose!.currentHp;
-          maxHp = linked.ose!.maxHp;
-        } else if (linked.knave != null) {
-          curHp = linked.knave!.currentHp;
-          maxHp = linked.knave!.maxHp;
-        } else if (linked.cairn != null) {
-          curHp = linked.cairn!.currentHp;
-          maxHp = linked.cairn!.maxHp;
-        } else if (linked.argosa != null) {
-          curHp = linked.argosa!.currentHp;
-          maxHp = linked.argosa!.maxHp;
-        } else if (linked.drawSteel != null) {
-          curHp = linked.drawSteel!.currentStamina;
-          maxHp = linked.drawSteel!.maxStamina;
-        } else if (linked.tracks.isNotEmpty) {
-          curHp = linked.tracks.first.current;
-          maxHp = linked.tracks.first.max;
+        // Use the shared resolver rather than re-deriving the ladder: the copy
+        // that used to live here had drifted and was missing Embark and DCC,
+        // so a linked character on either sheet showed no HP at all here while
+        // the roster showed it fine.
+        final pool = characterHpPool(linked);
+        if (pool != null) {
+          curHp = pool.$1;
+          maxHp = pool.$2;
         }
         if (curHp != null) {
           minus = () => ref
@@ -335,10 +314,8 @@ class EncounterScreen extends ConsumerWidget {
   }
 
   /// Live (non-defeated) combatants other than [attacker] — eligible targets.
-  List<Combatant> _liveTargets(EncounterState s, Combatant attacker) => s
-      .combatants
-      .where((x) => x.id != attacker.id && !x.defeated)
-      .toList();
+  List<Combatant> _liveTargets(EncounterState s, Combatant attacker) =>
+      s.combatants.where((x) => x.id != attacker.id && !x.defeated).toList();
 
   Future<void> _attack(BuildContext context, WidgetRef ref, Combatant attacker,
       List<Combatant> targets, List<Character> chars) async {
@@ -358,10 +335,14 @@ class EncounterScreen extends ConsumerWidget {
     final systems =
         ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    final cairnFoes =
-        systems.contains('cairn') ? (ref.watch(systemFoesProvider('cairn')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
-    final oseFoes =
-        systems.contains('ose') ? (ref.watch(systemFoesProvider('ose')).valueOrNull ?? const <Creature>[]) : const <Creature>[];
+    final cairnFoes = systems.contains('cairn')
+        ? (ref.watch(systemFoesProvider('cairn')).valueOrNull ??
+            const <Creature>[])
+        : const <Creature>[];
+    final oseFoes = systems.contains('ose')
+        ? (ref.watch(systemFoesProvider('ose')).valueOrNull ??
+            const <Creature>[])
+        : const <Creature>[];
     final refMonsters =
         ref.watch(contentMonstersProvider).valueOrNull ?? const <Creature>[];
     return Padding(
@@ -512,8 +493,7 @@ class EncounterScreen extends ConsumerWidget {
     await ref.read(journalProvider.notifier).add('Encounter ended', fullBody);
     // Optionally advance a linked thread's progress clock in the same gesture.
     if (result.threadId != null && result.progressDelta != 0) {
-      final threads =
-          ref.read(threadsProvider).valueOrNull ?? const <Thread>[];
+      final threads = ref.read(threadsProvider).valueOrNull ?? const <Thread>[];
       final t = threads.where((e) => e.id == result.threadId).firstOrNull;
       if (t != null) {
         await ref
@@ -530,34 +510,9 @@ class EncounterScreen extends ConsumerWidget {
   }
 
   Future<void> _addTag(BuildContext context, WidgetRef ref, Combatant c) async {
-    final tagCtrl = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add status'),
-          content: TextField(
-            key: const Key('enc-tag-input'),
-            controller: tagCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Status'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, tagCtrl.text),
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
-    final tag = result?.trim() ?? '';
-    if (tag.isEmpty || c.tags.contains(tag)) return;
+    final tag = await promptForTag(context,
+        title: 'Add status', label: 'Status', fieldKey: 'enc-tag-input');
+    if (tag == null || c.tags.contains(tag)) return;
     await ref
         .read(encounterProvider.notifier)
         .updateCombatant(c.copyWith(tags: [...c.tags, tag]));
@@ -697,6 +652,7 @@ class EncounterScreen extends ConsumerWidget {
           track: CharTrack(label: 'HP', current: max, max: max),
         ));
   }
+
   Future<void> _editStatBlock(
       BuildContext context, WidgetRef ref, Combatant c) async {
     final result = await showDialog<StatBlock>(
@@ -724,8 +680,8 @@ class EncounterScreen extends ConsumerWidget {
           maxHp: c.track?.max ?? 0,
         ));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Saved ${c.name} to bestiary')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Saved ${c.name} to bestiary')));
     }
   }
 
@@ -777,9 +733,7 @@ class EncounterScreen extends ConsumerWidget {
           initiative: 0,
           track: creature.maxHp > 0
               ? CharTrack(
-                  label: 'HP',
-                  current: creature.maxHp,
-                  max: creature.maxHp)
+                  label: 'HP', current: creature.maxHp, max: creature.maxHp)
               : null,
           statBlock: creature.statBlock,
         ));
@@ -914,6 +868,7 @@ class _EndEncounterDialogState extends ConsumerState<_EndEncounterDialog> {
 class _StatBlockDialog extends StatefulWidget {
   const _StatBlockDialog({this.initial, this.onSaveTobestiary});
   final StatBlock? initial;
+
   /// Called with the current block when the user taps "Save to bestiary".
   /// Null = no save button shown (e.g. called outside an encounter context).
   final void Function(StatBlock)? onSaveTobestiary;
@@ -922,8 +877,8 @@ class _StatBlockDialog extends StatefulWidget {
 }
 
 class _StatBlockDialogState extends State<_StatBlockDialog> {
-  late final TextEditingController _ac =
-      TextEditingController(text: (widget.initial?.ac ?? 0) == 0 ? '' : '${widget.initial!.ac}');
+  late final TextEditingController _ac = TextEditingController(
+      text: (widget.initial?.ac ?? 0) == 0 ? '' : '${widget.initial!.ac}');
   late final TextEditingController _saves =
       TextEditingController(text: widget.initial?.saves ?? '');
   late final TextEditingController _speed =
@@ -933,7 +888,10 @@ class _StatBlockDialogState extends State<_StatBlockDialog> {
   // Each attack = a (name, detail) controller pair.
   late final List<(TextEditingController, TextEditingController)> _attacks = [
     for (final a in widget.initial?.attacks ?? const <Attack>[])
-      (TextEditingController(text: a.name), TextEditingController(text: a.detail)),
+      (
+        TextEditingController(text: a.name),
+        TextEditingController(text: a.detail)
+      ),
   ];
 
   @override
@@ -976,7 +934,8 @@ class _StatBlockDialogState extends State<_StatBlockDialog> {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: Text('Attacks', style: Theme.of(context).textTheme.labelLarge),
+            child:
+                Text('Attacks', style: Theme.of(context).textTheme.labelLarge),
           ),
           for (var i = 0; i < _attacks.length; i++)
             Row(children: [
@@ -1183,9 +1142,8 @@ class _FoePickerDialog extends StatelessWidget {
     final items = <Object>[];
     String? lastSection;
     for (final col in collections) {
-      final section = col.ruleset.isNotEmpty
-          ? '${col.ruleset} › ${col.name}'
-          : col.name;
+      final section =
+          col.ruleset.isNotEmpty ? '${col.ruleset} › ${col.name}' : col.name;
       if (section != lastSection) {
         items.add(section);
         lastSection = section;
@@ -1408,8 +1366,8 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
     try {
       return parseDice(notation.trim()).roll(oracle.dice).total;
     } on FormatException {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid dice notation')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Invalid dice notation')));
       return null;
     }
   }
@@ -1478,7 +1436,10 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
   /// the CALLER's job: this dialog pops immediately after, and an Inspire action
   /// on the snackbar must close over a `ref` that outlives it.
   Future<({String id, String line})> _log(
-      {required int total, required bool hit, int? damage, (int, int)? hp}) async {
+      {required int total,
+      required bool hit,
+      int? damage,
+      (int, int)? hp}) async {
     final line = combatLogLine(
       attacker: widget.attacker.name,
       target: _target.name,
@@ -1499,8 +1460,8 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
     if (total == null || _hit != true) return;
     final damage = _roll(_dmg.text);
     if (damage == null) return;
-    final out =
-        await _log(total: total, hit: true, damage: damage, hp: _applyDamage(damage));
+    final out = await _log(
+        total: total, hit: true, damage: damage, hp: _applyDamage(damage));
     if (!mounted) return;
     Navigator.of(context).pop(out);
   }
@@ -1562,8 +1523,7 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
                         key: Key('attack-pick-$i'),
                         label: Text(a.name.isEmpty ? a.detail : a.name),
                         visualDensity: VisualDensity.compact,
-                        materialTapTargetSize:
-                            MaterialTapTargetSize.shrinkWrap,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         onPressed: () => _pickAttack(a),
                       ),
                   ],
@@ -1576,8 +1536,7 @@ class _AttackDialogState extends ConsumerState<_AttackDialog> {
                   child: TextField(
                     key: const Key('attack-roll'),
                     controller: _atk,
-                    decoration:
-                        const InputDecoration(labelText: 'Attack roll'),
+                    decoration: const InputDecoration(labelText: 'Attack roll'),
                     onSubmitted: (_) => _rollAttack(),
                   ),
                 ),

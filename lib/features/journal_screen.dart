@@ -32,6 +32,7 @@ import '../shared/mention_text.dart';
 import '../shared/entry_preview.dart';
 import '../shared/shell_route.dart';
 import '../shared/undo_snackbar.dart';
+import '../shared/tag_dialog.dart';
 import '../state/blob_store.dart';
 import '../state/interpreter.dart';
 import '../state/pdf_rasterizer.dart';
@@ -838,16 +839,109 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         .firstWhere((t) => t.id == id,
             orElse: () => Thread(id: id, title: '(closed thread)'))
         .title;
-    // The fixed chrome above/below the entry list — the assistant rail, the
-    // (conditional) slash/mention/ask panel, the suggestion row, the inline
-    // roll dock, and the composer. At comfortable heights these take their
-    // natural size and the entry list fills the gap via an Expanded. At very
-    // short heights their sum alone can exceed the viewport; an Expanded would
-    // then collapse to 0 and the fixed siblings overflow (the OUTER body case).
-    // Below a threshold we instead scroll the WHOLE body and give the entry
-    // list a bounded height, so nothing overflows and the composer stays
-    // reachable at the bottom of the scroll.
-    final entryRegion = async.when(
+    final entryRegion = _entryRegion(async, threads, threadTitle, lonelog);
+
+    // Typing on a phone, the roll dock and the "Track …?" chips are 104px of
+    // tools the writer isn't reaching for — and the keyboard has already taken
+    // half the screen, leaving the journal ~34px. Yield them while the composer
+    // has focus so the entries do; both return on blur. Nothing is lost
+    // meanwhile: a trailing '?' still raises the ask chip and '/' still opens
+    // the slash palette, so rolling mid-sentence stays a keystroke away.
+    //
+    // The slash / mention / ask panel above is a TYPING affordance — it stays.
+    // The composer stays LAST: Element.updateChildren syncs the tail bottom-up,
+    // so dropping children ABOVE it keeps its EditableText (and the keyboard)
+    // alive. Anything that displaces it from last risks #301 all over again.
+    final typingOnPhone = MediaQuery.sizeOf(context).width < kCompactWidth &&
+        ref.watch(journalComposerFocusProvider);
+    final belowEntry = <Widget>[
+      if (_slashActive)
+        _slashPalette()
+      else if (_mentionQuery != null)
+        _mentionPanel()
+      else if (_askActive)
+        _askChip(),
+      if (!typingOnPhone) _suggestionRow(),
+      if (!typingOnPhone) InlineRollDock(onRolled: _revealNewest),
+      _composerBar(),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // The fixed chrome (panel + suggestion row + dock + composer) can sum
+        // taller than a squeezed viewport — on a phone the keyboard shrinks the
+        // journal to roughly half this. Rather than swap layouts at a
+        // threshold, the body is laid out at `max(viewport, kJournalMinBody)`
+        // inside a scroll view that is always present: at comfortable heights
+        // the box equals the viewport, the content fits exactly and nothing
+        // scrolls (identical to a plain Column + Expanded); when squeezed the
+        // box holds its floor and the viewport scrolls over it, so the entry
+        // list keeps a usable slice and the composer stays reachable.
+        //
+        // This must stay ONE tree at every height. The keyboard drags the
+        // journal across any height threshold on every focus, so a branch here
+        // rebuilds the subtree mid-keystroke: the composer's EditableText is
+        // destroyed and recreated, dropping its text-input connection while
+        // this State's _composerFocus keeps focus — no focus-change event
+        // fires, so the keyboard never reopens and keystrokes go nowhere
+        // (#301). Only the box's height changes with the viewport; every
+        // element identity below is stable.
+        const kJournalMinBody = 360.0;
+        // Journal-scoped keyboard shortcuts (fire while focus is inside the
+        // journal, e.g. the composer): Cmd/Ctrl+Enter logs the composer,
+        // Cmd/Ctrl+Shift+N opens the New-scene dialog.
+        Widget shortcuts(Widget child) => CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter, meta: true):
+                    _send,
+                const SingleActivator(LogicalKeyboardKey.enter, control: true):
+                    _send,
+                const SingleActivator(LogicalKeyboardKey.keyN,
+                    meta: true, shift: true): _newScene,
+                const SingleActivator(LogicalKeyboardKey.keyN,
+                    control: true, shift: true): _newScene,
+              },
+              child: child,
+            );
+        // An unbounded journal region would make the box infinitely tall (and
+        // Expanded unsatisfiable), so fall back to the floor. The shell always
+        // bounds this in practice.
+        final bodyHeight = constraints.maxHeight.isFinite
+            ? math.max(constraints.maxHeight, kJournalMinBody)
+            : kJournalMinBody;
+        return shortcuts(SingleChildScrollView(
+          child: SizedBox(
+            height: bodyHeight,
+            child: Column(
+              children: [
+                Expanded(child: entryRegion),
+                ...belowEntry,
+              ],
+            ),
+          ),
+        ));
+      },
+    );
+  }
+
+  /// The scrolling entry list — the journal proper.
+  ///
+  /// The fixed chrome above/below the entry list — the assistant rail, the
+  /// (conditional) slash/mention/ask panel, the suggestion row, the inline
+  /// roll dock, and the composer. At comfortable heights these take their
+  /// natural size and the entry list fills the gap via an Expanded. At very
+  /// short heights their sum alone can exceed the viewport; an Expanded would
+  /// then collapse to 0 and the fixed siblings overflow (the OUTER body case).
+  /// Below a threshold we instead scroll the WHOLE body and give the entry
+  /// list a bounded height, so nothing overflows and the composer stays
+  /// reachable at the bottom of the scroll.
+  Widget _entryRegion(
+    AsyncValue<List<JournalEntry>> async,
+    List<Thread> threads,
+    String Function(String) threadTitle,
+    bool lonelog,
+  ) {
+    return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
       data: (entries) {
@@ -1012,88 +1106,6 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
             ],
           ),
         );
-      },
-    );
-
-    // Typing on a phone, the roll dock and the "Track …?" chips are 104px of
-    // tools the writer isn't reaching for — and the keyboard has already taken
-    // half the screen, leaving the journal ~34px. Yield them while the composer
-    // has focus so the entries do; both return on blur. Nothing is lost
-    // meanwhile: a trailing '?' still raises the ask chip and '/' still opens
-    // the slash palette, so rolling mid-sentence stays a keystroke away.
-    //
-    // The slash / mention / ask panel above is a TYPING affordance — it stays.
-    // The composer stays LAST: Element.updateChildren syncs the tail bottom-up,
-    // so dropping children ABOVE it keeps its EditableText (and the keyboard)
-    // alive. Anything that displaces it from last risks #301 all over again.
-    final typingOnPhone = MediaQuery.sizeOf(context).width < kCompactWidth &&
-        ref.watch(journalComposerFocusProvider);
-    final belowEntry = <Widget>[
-      if (_slashActive)
-        _slashPalette()
-      else if (_mentionQuery != null)
-        _mentionPanel()
-      else if (_askActive)
-        _askChip(),
-      if (!typingOnPhone) _suggestionRow(),
-      if (!typingOnPhone) InlineRollDock(onRolled: _revealNewest),
-      _composerBar(),
-    ];
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // The fixed chrome (panel + suggestion row + dock + composer) can sum
-        // taller than a squeezed viewport — on a phone the keyboard shrinks the
-        // journal to roughly half this. Rather than swap layouts at a
-        // threshold, the body is laid out at `max(viewport, kJournalMinBody)`
-        // inside a scroll view that is always present: at comfortable heights
-        // the box equals the viewport, the content fits exactly and nothing
-        // scrolls (identical to a plain Column + Expanded); when squeezed the
-        // box holds its floor and the viewport scrolls over it, so the entry
-        // list keeps a usable slice and the composer stays reachable.
-        //
-        // This must stay ONE tree at every height. The keyboard drags the
-        // journal across any height threshold on every focus, so a branch here
-        // rebuilds the subtree mid-keystroke: the composer's EditableText is
-        // destroyed and recreated, dropping its text-input connection while
-        // this State's _composerFocus keeps focus — no focus-change event
-        // fires, so the keyboard never reopens and keystrokes go nowhere
-        // (#301). Only the box's height changes with the viewport; every
-        // element identity below is stable.
-        const kJournalMinBody = 360.0;
-        // Journal-scoped keyboard shortcuts (fire while focus is inside the
-        // journal, e.g. the composer): Cmd/Ctrl+Enter logs the composer,
-        // Cmd/Ctrl+Shift+N opens the New-scene dialog.
-        Widget shortcuts(Widget child) => CallbackShortcuts(
-              bindings: {
-                const SingleActivator(LogicalKeyboardKey.enter, meta: true):
-                    _send,
-                const SingleActivator(LogicalKeyboardKey.enter, control: true):
-                    _send,
-                const SingleActivator(LogicalKeyboardKey.keyN,
-                    meta: true, shift: true): _newScene,
-                const SingleActivator(LogicalKeyboardKey.keyN,
-                    control: true, shift: true): _newScene,
-              },
-              child: child,
-            );
-        // An unbounded journal region would make the box infinitely tall (and
-        // Expanded unsatisfiable), so fall back to the floor. The shell always
-        // bounds this in practice.
-        final bodyHeight = constraints.maxHeight.isFinite
-            ? math.max(constraints.maxHeight, kJournalMinBody)
-            : kJournalMinBody;
-        return shortcuts(SingleChildScrollView(
-          child: SizedBox(
-            height: bodyHeight,
-            child: Column(
-              children: [
-                Expanded(child: entryRegion),
-                ...belowEntry,
-              ],
-            ),
-          ),
-        ));
       },
     );
   }
@@ -2809,35 +2821,9 @@ class _TagsDialogState extends State<_TagsDialog> {
   late final List<String> _tags = [...widget.initial];
 
   Future<void> _addTag() async {
-    final tagCtrl = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Add tag'),
-          content: TextField(
-            key: const Key('tag-input'),
-            controller: tagCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Tag'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, tagCtrl.text),
-              child: const Text('Add'),
-            ),
-          ],
-        );
-      },
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) => tagCtrl.dispose());
-    // Preserve case (search compares case-insensitively); dedupe exact.
-    final tag = result?.trim() ?? '';
-    if (tag.isEmpty || _tags.contains(tag)) return;
+    final tag = await promptForTag(context,
+        title: 'Add tag', label: 'Tag', fieldKey: 'tag-input');
+    if (tag == null || _tags.contains(tag)) return;
     setState(() => _tags.add(tag));
   }
 

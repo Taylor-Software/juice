@@ -3,8 +3,12 @@
 /// `@[Place](place:ID)`, or `@[Name](npc:ID)`.
 library;
 
+/// What a parsed journal segment refers to. [MentionKind.text] is the
+/// ordinary prose between mentions.
 enum MentionKind { text, character, thread, place, npc }
 
+/// One piece of a parsed journal body: either plain text or a resolved
+/// `@[Name](kind:id)` mention carrying the entity [id] to navigate to.
 class MentionSegment {
   const MentionSegment(this.text, this.kind, [this.id]);
   final String text;

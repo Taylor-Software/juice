@@ -9,8 +9,11 @@
 /// re-highlighted; legend examples are written one symbol per line.
 library;
 
+/// The token classes Lonelog notation highlighting distinguishes.
 enum LonelogSpanKind { symbol, actor, tag, block, meta, text }
 
+/// One highlighted run of an entry body. Value-equal so widget tests can
+/// assert the whole span list at once.
 class LonelogSpan {
   const LonelogSpan(this.text, this.kind);
   final String text;

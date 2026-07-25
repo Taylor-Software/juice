@@ -101,10 +101,19 @@ void main() {
   // family. "Warm" here is mechanical: the red channel leads the blue one.
   // The handoff's original Indigo (#4A5A8A) and Plum (#8A4A6A) both failed this.
   test('The Identity Spine stays inside the warm family', () {
-    final src = File('lib/engine/models.dart').readAsStringSync();
+    // models.dart is a `part` library now, so scan it AND its parts rather
+    // than assuming which file holds the constant.
+    final src = [
+      File('lib/engine/models.dart'),
+      ...Directory('lib/engine/models')
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart')),
+    ].map((f) => f.readAsStringSync()).join('\n');
     final block = RegExp(r'const kIdentityHues = <int>\[(.*?)\];', dotAll: true)
         .firstMatch(src);
-    expect(block, isNotNull, reason: 'kIdentityHues not found in models.dart');
+    expect(block, isNotNull,
+        reason: 'kIdentityHues not found in the models library');
     final hues = RegExp(r'0x([0-9A-Fa-f]{8})')
         .allMatches(block!.group(1)!)
         .map((m) => int.parse(m.group(1)!, radix: 16))

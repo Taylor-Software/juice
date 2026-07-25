@@ -45,6 +45,8 @@ class A2Type {
       );
 }
 
+/// One monster row: what it is, how many appear, and whether the group is
+/// organized (which the stocking rules read differently).
 class MonsterRow {
   const MonsterRow(
       {required this.text, required this.count, required this.organized});
@@ -57,6 +59,8 @@ class MonsterRow {
       organized: j['organized'] as bool? ?? false);
 }
 
+/// The loaded Roll 4 Ruin table set, keyed by the zine's own table names
+/// (a1, a2, b2 …). Generated from build_dungeon.py — never hand-edited.
 class DungeonTables {
   const DungeonTables({
     required this.a1,

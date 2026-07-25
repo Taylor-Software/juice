@@ -46,6 +46,9 @@ class Ironsworn {
   }
 }
 
+/// A resolved Ironsworn action roll: the action total against both challenge
+/// dice, the resulting [outcome], and whether the challenge dice matched
+/// (which the rules treat as a twist).
 class IronswornRoll {
   const IronswornRoll({
     required this.total,

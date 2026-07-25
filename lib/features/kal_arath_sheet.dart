@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/models.dart';
+import '../engine/sheet_rolls.dart';
 import '../state/providers.dart';
 import 'sheet_widgets.dart';
 
@@ -19,48 +18,13 @@ class KalArathSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(kalArath: next));
 
-  Widget _stepper(
-    String key,
-    String label,
-    int value, {
-    required ValueChanged<int> onSet,
-    int min = 0,
-    int max = 9999,
-  }) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
-  void _roll(BuildContext context, String statKey) {
-    final score = _s.stats[statKey] ?? 0;
-    final d1 = Random().nextInt(6) + 1;
-    final d2 = Random().nextInt(6) + 1;
-    final total = d1 + d2 + score;
-    final String result;
-    if (d1 == 6 && d2 == 6) {
-      result = 'Critical Success';
-    } else if (d1 == 1 && d2 == 1) {
-      result = 'Critical Failure';
-    } else {
-      result = total >= 8 ? 'Success' : 'Failure';
-    }
+  void _roll(BuildContext context, WidgetRef ref, String statKey) {
+    final dice = ref.read(diceProvider);
+    final r = kalArathRoll(dice.dN(6), dice.dN(6), _s.stats[statKey] ?? 0);
     final label = kKalArathStatLabels[statKey] ?? statKey.toUpperCase();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label: $total — $result'),
+        content: Text('$label: ${r.total} — ${r.outcome}'),
         duration: const Duration(seconds: 3),
       ),
     );
@@ -112,7 +76,7 @@ class KalArathSheetView extends ConsumerWidget {
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          _stepper('kal-arath-level', 'Level', s.level,
+          sheetStepper('kal-arath-level', 'Level', s.level,
               min: 1, max: 9, onSet: (v) => _save(ref, s.copyWith(level: v))),
           const SizedBox(width: 16),
           Expanded(
@@ -136,7 +100,7 @@ class KalArathSheetView extends ConsumerWidget {
             Column(mainAxisSize: MainAxisSize.min, children: [
               Text(kKalArathStatLabels[k]!,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              _stepper(
+              sheetStepper(
                 'kal-arath-stat-$k',
                 '',
                 s.stats[k] ?? 0,
@@ -149,23 +113,23 @@ class KalArathSheetView extends ConsumerWidget {
                 visualDensity: VisualDensity.compact,
                 icon: const Icon(Icons.casino_outlined, size: 18),
                 tooltip: 'Roll 2d6 + ${kKalArathStatLabels[k]}',
-                onPressed: () => _roll(context, k),
+                onPressed: () => _roll(context, ref, k),
               ),
             ]),
         ]),
         const SizedBox(height: 12),
         Text('Hit Points', style: theme.textTheme.titleMedium),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('kal-arath-hp', 'HP', s.currentHp,
+          sheetStepper('kal-arath-hp', 'HP', s.currentHp,
               max: s.maxHp, onSet: (v) => _save(ref, s.copyWith(currentHp: v))),
-          _stepper('kal-arath-maxhp', 'Max', s.maxHp,
+          sheetStepper('kal-arath-maxhp', 'Max', s.maxHp,
               onSet: (v) => _save(ref, s.copyWith(maxHp: v))),
         ]),
         const SizedBox(height: 12),
         Wrap(spacing: 16, runSpacing: 8, children: [
-          _stepper('kal-arath-fate', 'Fate Points', s.fatePoints,
+          sheetStepper('kal-arath-fate', 'Fate Points', s.fatePoints,
               max: 99, onSet: (v) => _save(ref, s.copyWith(fatePoints: v))),
-          _stepper('kal-arath-dr', 'Damage Reduction', s.damageReduction,
+          sheetStepper('kal-arath-dr', 'Damage Reduction', s.damageReduction,
               max: 99,
               onSet: (v) => _save(ref, s.copyWith(damageReduction: v))),
         ]),

@@ -21,28 +21,6 @@ class FunnelSheetView extends ConsumerWidget {
       .read(charactersProvider.notifier)
       .replace(character.copyWith(funnel: next));
 
-  Widget _stepper(String key, String label, int value,
-          {required ValueChanged<int> onSet,
-          int min = 0,
-          int max = 9999,
-          bool enabled = true}) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (label.isNotEmpty) Text('$label '),
-        IconButton(
-          key: Key('$key-minus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.remove),
-          onPressed: enabled && value > min ? () => onSet(value - 1) : null,
-        ),
-        Text('$value'),
-        IconButton(
-          key: Key('$key-plus'),
-          visualDensity: VisualDensity.compact,
-          icon: const Icon(Icons.add),
-          onPressed: enabled && value < max ? () => onSet(value + 1) : null,
-        ),
-      ]);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (character.funnel == null) return const SizedBox.shrink();
@@ -144,7 +122,7 @@ class FunnelSheetView extends ConsumerWidget {
               onSave: (v) => setP(p.copyWith(flavor: {...p.flavor, f.key: v})),
             ),
           const SizedBox(height: 8),
-          _stepper('funnel-peasant-$i-hp', 'HP', p.hp,
+          sheetStepper('funnel-peasant-$i-hp', 'HP', p.hp,
               min: schema.hpMin,
               max: schema.hpMax,
               enabled: !p.graduated,
@@ -155,7 +133,7 @@ class FunnelSheetView extends ConsumerWidget {
               Column(mainAxisSize: MainAxisSize.min, children: [
                 Text(st.label,
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                _stepper('funnel-peasant-$i-${st.key}', '',
+                sheetStepper('funnel-peasant-$i-${st.key}', '',
                     p.stats[st.key] ?? schema.statDefault,
                     min: schema.statMin,
                     max: schema.statMax,

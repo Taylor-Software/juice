@@ -52,6 +52,24 @@ final oracleProvider = FutureProvider<Oracle>((ref) async {
   return Oracle(OracleData(jsonDecode(raw) as Map<String, dynamic>));
 });
 
+/// The app's SharedPreferences handle — the one seam for every persisted
+/// read and write.
+///
+/// `ref.read(prefsProvider.future)` already caches internally, so this is not
+/// about avoiding repeated work: it is about there being a single place where
+/// storage enters the app, instead of ~60 direct platform-channel calls that
+/// can only be influenced via `setMockInitialValues`.
+final prefsProvider = FutureProvider<SharedPreferences>(
+    (ref) async => SharedPreferences.getInstance());
+
+/// The shared dice source for UI-level rolls (the character sheets).
+///
+/// Synchronous on purpose: a sheet's roll button must resolve in the tap
+/// handler without awaiting, and [oracleProvider] is a FutureProvider that
+/// reads as AsyncLoading on a cold first read. Override this with a seeded
+/// `Dice(Random(n))` to make a sheet roll deterministic in a test.
+final diceProvider = Provider<Dice>((ref) => Dice());
+
 /// Loads the Roll 4 Ruin tables asset (dungeon + cave branches) once.
 final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
   final raw = await rootBundle.loadString('assets/dungeon_data.json');
@@ -94,6 +112,35 @@ List<T> decodePersistedList<T>(
   }
 }
 
+/// App-global boolean flag behind one SharedPreferences key.
+///
+/// Deliberately NOT session-scoped and NOT exported: these are per-device
+/// preferences (the AI enable gate, one-time "seen" markers, view toggles),
+/// so they neither vary per campaign nor ride along in a campaign file.
+/// Subclasses supply the key plus the verb their callers read best
+/// (`setEnabled` / `markSeen` / `toggle`).
+abstract class _PersistedFlag extends AsyncNotifier<bool> {
+  String get prefsKey;
+
+  /// Value when the key was never written. Defaults to false.
+  bool get defaultValue => false;
+
+  @override
+  Future<bool> build() async =>
+      (await ref.read(prefsProvider.future)).getBool(prefsKey) ?? defaultValue;
+
+  Future<void> _set(bool value) async {
+    await (await ref.read(prefsProvider.future)).setBool(prefsKey, value);
+    state = AsyncData(value);
+  }
+}
+
+/// A [_PersistedFlag] that only ever latches true — a one-time "the user has
+/// seen this" marker for a card, nudge, or offer that must never nag twice.
+abstract class _SeenFlag extends _PersistedFlag {
+  Future<void> markSeen() => _set(true);
+}
+
 /// Generic persisted list backed by a JSON string in SharedPreferences.
 abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   String get prefsKey;
@@ -106,14 +153,14 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
   Future<List<T>> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$prefsKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return <T>[];
     return decodePersistedList(raw, fromJson);
   }
 
   Future<void> _persist(List<T> items) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(
       _scopedKey,
       jsonEncode(items.map(toJsonMap).toList()),
@@ -151,7 +198,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
   /// key scheme; tolerant of missing/garbage state (returns null).
   Future<LocationRef?> _activeLocation() async {
     final sessions = await ref.read(sessionsProvider.future);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString('juice.context.v1.${sessions.active}');
     if (raw == null || raw.isEmpty) return null;
     try {
@@ -790,7 +837,7 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
   Future<CrawlState> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const CrawlState();
     return decodePersisted(
@@ -800,7 +847,7 @@ class CrawlNotifier extends AsyncNotifier<CrawlState> {
   }
 
   Future<void> save(CrawlState s) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
@@ -826,7 +873,7 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
   Future<DecksState> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const DecksState();
     return decodePersisted(
@@ -839,7 +886,7 @@ class DecksNotifier extends AsyncNotifier<DecksState> {
     // Update in-memory state BEFORE the async persist so a rapid second draw
     // (fired during this persist) reads the new deck, not the stale one.
     state = AsyncData(s);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
   }
 
@@ -954,7 +1001,7 @@ class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
   Future<FactionRegistry> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     return (raw == null || raw.isEmpty)
         ? const FactionRegistry()
@@ -964,13 +1011,13 @@ class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
 
   Future<void> save(FactionRegistry reg) async {
     state = AsyncData(reg);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(reg.toJson()));
   }
 
   Future<void> reset() async {
     state = const AsyncData(FactionRegistry());
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.remove(_scopedKey);
   }
 }
@@ -988,14 +1035,14 @@ class LightNotifier extends AsyncNotifier<int> {
   Future<int> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     return int.tryParse(prefs.getString(_scopedKey) ?? '') ?? 0;
   }
 
   Future<void> set(int value) async {
     final v = value.clamp(0, 9999);
     state = AsyncData(v);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, '$v');
   }
 }
@@ -1013,7 +1060,7 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
   Future<EncounterState> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const EncounterState();
     return decodePersisted(
@@ -1023,7 +1070,7 @@ class EncounterNotifier extends AsyncNotifier<EncounterState> {
   }
 
   Future<void> save(EncounterState s) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
@@ -1151,7 +1198,7 @@ class MapNotifier extends AsyncNotifier<MapState> {
   Future<MapState> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const MapState();
     return decodePersisted(raw,
@@ -1159,7 +1206,7 @@ class MapNotifier extends AsyncNotifier<MapState> {
   }
 
   Future<void> save(MapState s) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
@@ -1930,7 +1977,7 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
   Future<CampaignSettings> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const CampaignSettings();
     return decodePersisted(
@@ -1942,7 +1989,7 @@ class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
   Future<void> save(CampaignSettings s) async {
     // Await build() so an early save cannot throw on _scopedKey.
     state.valueOrNull ?? await future;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
@@ -1968,17 +2015,11 @@ final settingsProvider =
         SettingsNotifier.new);
 
 // -- AI enable (app-global; NOT per-campaign, NOT exported) -----------------
-class AiEnabledNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.ai_enabled.v1';
-
+class AiEnabledNotifier extends _PersistedFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+  String get prefsKey => 'juice.ai_enabled.v1';
 
-  Future<void> setEnabled(bool value) async {
-    await (await SharedPreferences.getInstance()).setBool(_key, value);
-    state = AsyncData(value);
-  }
+  Future<void> setEnabled(bool value) => _set(value);
 }
 
 final aiEnabledProvider =
@@ -1992,7 +2033,7 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
 
   @override
   Future<List<Creature>> build() async {
-    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    final raw = (await ref.read(prefsProvider.future)).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
     return decodePersisted(
         raw,
@@ -2006,7 +2047,7 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
   Future<List<Creature>> get _ready async => state.valueOrNull ?? await future;
 
   Future<void> _save(List<Creature> list) async {
-    await (await SharedPreferences.getInstance())
+    await (await ref.read(prefsProvider.future))
         .setString(_key, jsonEncode(list.map((c) => c.toJson()).toList()));
     state = AsyncData(list);
   }
@@ -2036,7 +2077,7 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
 
   @override
   Future<List<CustomTable>> build() async {
-    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    final raw = (await ref.read(prefsProvider.future)).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
     return decodePersisted(
         raw,
@@ -2051,7 +2092,7 @@ class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
       state.valueOrNull ?? await future;
 
   Future<void> _save(List<CustomTable> list) async {
-    await (await SharedPreferences.getInstance())
+    await (await ref.read(prefsProvider.future))
         .setString(_key, jsonEncode(list.map((t) => t.toJson()).toList()));
     state = AsyncData(list);
   }
@@ -2097,7 +2138,7 @@ class ConstructedOraclesNotifier
 
   @override
   Future<List<ConstructedOracle>> build() async {
-    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    final raw = (await ref.read(prefsProvider.future)).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
     return decodePersisted(
         raw,
@@ -2112,7 +2153,7 @@ class ConstructedOraclesNotifier
       state.valueOrNull ?? await future;
 
   Future<void> _save(List<ConstructedOracle> list) async {
-    await (await SharedPreferences.getInstance())
+    await (await ref.read(prefsProvider.future))
         .setString(_key, jsonEncode(list.map((o) => o.toJson()).toList()));
     state = AsyncData(list);
   }
@@ -2166,7 +2207,7 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
 
   @override
   Future<List<UserRefCard>> build() async {
-    final raw = (await SharedPreferences.getInstance()).getString(_key);
+    final raw = (await ref.read(prefsProvider.future)).getString(_key);
     if (raw == null || raw.isEmpty) return const [];
     return decodePersisted(
         raw,
@@ -2181,7 +2222,7 @@ class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
       state.valueOrNull ?? await future;
 
   Future<void> _save(List<UserRefCard> list) async {
-    await (await SharedPreferences.getInstance())
+    await (await ref.read(prefsProvider.future))
         .setString(_key, jsonEncode(list.map((c) => c.toJson()).toList()));
     state = AsyncData(list);
   }
@@ -2242,18 +2283,9 @@ final kitsProvider = FutureProvider<List<LoopKit>>((ref) async {
 /// One-shot "the contextual AI-enable nudge has been seen/dismissed" flag.
 /// App-global (NOT session-scoped, NOT exported) — same posture as
 /// [aiEnabledProvider]: the nudge is a per-device first-run affordance.
-class AiNudgeSeenNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.ai_nudge_seen.v1';
-
+class AiNudgeSeenNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.ai_nudge_seen.v1';
 }
 
 final aiNudgeSeenProvider =
@@ -2266,10 +2298,10 @@ class LastExportNotifier extends AsyncNotifier<int?> {
 
   @override
   Future<int?> build() async =>
-      (await SharedPreferences.getInstance()).getInt(_key);
+      (await ref.read(prefsProvider.future)).getInt(_key);
 
   Future<void> stamp() async {
-    final p = await SharedPreferences.getInstance();
+    final p = await ref.read(prefsProvider.future);
     final now = DateTime.now().millisecondsSinceEpoch;
     await p.setInt(_key, now);
     state = AsyncData(now);
@@ -2281,18 +2313,9 @@ final lastExportProvider =
 
 /// App-global flag: the first-launch welcome card has been dismissed.
 /// Same posture as [aiNudgeSeenProvider] — per-device, NOT session-scoped.
-class WelcomeSeenNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.welcome_seen.v1';
-
+class WelcomeSeenNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.welcome_seen.v1';
 }
 
 final welcomeSeenProvider =
@@ -2302,18 +2325,9 @@ final welcomeSeenProvider =
 /// been shown once (accepted or dismissed). Same posture as
 /// [welcomeSeenProvider] — per-device, NOT session-scoped, NOT exported. Keeps
 /// the offer to a single appearance so it never nags.
-class AiOfferSeenNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.ai_offer_seen.v1';
-
+class AiOfferSeenNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.ai_offer_seen.v1';
 }
 
 final aiOfferSeenProvider =
@@ -2321,18 +2335,9 @@ final aiOfferSeenProvider =
 
 /// App-global flag: the Track-home orientation card has been dismissed.
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
-class TrackHelpSeenNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.track_help_seen.v1';
-
+class TrackHelpSeenNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.track_help_seen.v1';
 }
 
 final trackHelpSeenProvider =
@@ -2341,18 +2346,9 @@ final trackHelpSeenProvider =
 
 /// App-global flag: the journal's tracking-chip explainer ("Track Kara?")
 /// has been dismissed. Same posture as [trackHelpSeenProvider].
-class ChipHelpSeenNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.chip_help_seen.v1';
-
+class ChipHelpSeenNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.chip_help_seen.v1';
 }
 
 final chipHelpSeenProvider =
@@ -2365,11 +2361,11 @@ class TextScaleNotifier extends AsyncNotifier<double> {
 
   @override
   Future<double> build() async =>
-      (await SharedPreferences.getInstance()).getDouble(_key) ?? 1.0;
+      (await ref.read(prefsProvider.future)).getDouble(_key) ?? 1.0;
 
   Future<void> set(double value) async {
     final v = value.clamp(0.85, 1.4);
-    final p = await SharedPreferences.getInstance();
+    final p = await ref.read(prefsProvider.future);
     await p.setDouble(_key, v);
     state = AsyncData(v);
   }
@@ -2387,11 +2383,11 @@ class FavoriteDiceNotifier extends AsyncNotifier<List<String>> {
 
   @override
   Future<List<String>> build() async =>
-      (await SharedPreferences.getInstance()).getStringList(_key) ??
+      (await ref.read(prefsProvider.future)).getStringList(_key) ??
       const <String>[];
 
   Future<void> _saveList(List<String> v) async {
-    final p = await SharedPreferences.getInstance();
+    final p = await ref.read(prefsProvider.future);
     await p.setStringList(_key, v);
     state = AsyncData(v);
   }
@@ -2418,18 +2414,9 @@ final favoriteDiceProvider =
 
 /// App-global flag: the recap banner has been permanently suppressed ("Never").
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
-class RecapSuppressedNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.recap_suppressed.v1';
-
+class RecapSuppressedNotifier extends _SeenFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
-
-  Future<void> markSeen() async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, true);
-    state = const AsyncData(true);
-  }
+  String get prefsKey => 'juice.recap_suppressed.v1';
 }
 
 final recapSuppressedProvider =
@@ -2445,18 +2432,11 @@ final recapSuppressedProvider =
 /// Replaces the separate loop-bar and assistant-rail flags: the two panels
 /// were merged into one, which also retired their "opening one closes the
 /// other" cross-talk and the rail's viewport-dependent default.
-class PlayPanelExpandedNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.play_panel_expanded.v1';
-
+class PlayPanelExpandedNotifier extends _PersistedFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+  String get prefsKey => 'juice.play_panel_expanded.v1';
 
-  Future<void> setExpanded(bool value) async {
-    final p = await SharedPreferences.getInstance();
-    await p.setBool(_key, value);
-    state = AsyncData(value);
-  }
+  Future<void> setExpanded(bool value) => _set(value);
 }
 
 final playPanelExpandedProvider =
@@ -2513,17 +2493,11 @@ final cloudKeyStoreProvider =
 final cloudApiKeyProvider =
     FutureProvider<String?>((ref) => ref.watch(cloudKeyStoreProvider).read());
 
-class CloudInterpretEnabledNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.cloud_interpret_enabled.v1';
-
+class CloudInterpretEnabledNotifier extends _PersistedFlag {
   @override
-  Future<bool> build() async =>
-      (await SharedPreferences.getInstance()).getBool(_key) ?? false;
+  String get prefsKey => 'juice.cloud_interpret_enabled.v1';
 
-  Future<void> setEnabled(bool value) async {
-    await (await SharedPreferences.getInstance()).setBool(_key, value);
-    state = AsyncData(value);
-  }
+  Future<void> setEnabled(bool value) => _set(value);
 }
 
 final cloudInterpretEnabledProvider =
@@ -2576,7 +2550,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
 
   @override
   Future<SessionsState> build() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_key);
     if (raw != null && raw.isNotEmpty) {
       try {
@@ -2602,7 +2576,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   }
 
   Future<void> _save(SessionsState s) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_key, jsonEncode(s.toJson()));
     state = AsyncData(s);
   }
@@ -2629,7 +2603,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       genre: genre.isEmpty ? null : genre,
     );
     if (genre.isNotEmpty || tone.isNotEmpty) {
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await ref.read(prefsProvider.future);
       await prefs.setString('juice.settings.v1.${meta.id}',
           jsonEncode(CampaignSettings(genre: genre, tone: tone).toJson()));
     }
@@ -2659,7 +2633,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       genre: src.genre,
       dndEdition: src.dndEdition,
     );
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final settings = prefs.getString('juice.settings.v1.$sourceId');
     if (settings != null && settings.isNotEmpty) {
       await prefs.setString('juice.settings.v1.$id', settings);
@@ -2704,7 +2678,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   Future<void> remove(String id) async {
     final s = state.valueOrNull;
     if (s == null || s.sessions.length <= 1) return; // keep at least one
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     for (final base in sessionScopedKeys) {
       await prefs.remove('$base.$id');
     }
@@ -2716,7 +2690,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
   /// Serialize the active session to the campaign file format.
   Future<String> exportActive() async {
     final s = state.valueOrNull ?? await future;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final rawByKey = <String, String>{};
     for (final base in sessionScopedKeys) {
       final raw = prefs.getString('$base.${s.active}');
@@ -2738,7 +2712,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final plain = (bytes: utf8.encode(json), ext: 'json');
     if (!ref.read(blobStoreAvailableProvider)) return plain;
     final s = state.valueOrNull ?? await future;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final journalRaw = prefs.getString('juice.journal.v2.${s.active}');
     final ids = referencedBlobIds(
         {if (journalRaw != null) 'juice.journal.v2': journalRaw});
@@ -2787,7 +2761,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       systems: parsed.systems,
       genre: (parsed.genre?.isEmpty ?? true) ? null : parsed.genre,
     );
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     for (final e in parsed.rawByKey.entries) {
       await prefs.setString('${e.key}.${meta.id}', e.value);
     }
@@ -2824,7 +2798,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final all = await store.list();
     if (all.isEmpty) return 0;
     final s = state.valueOrNull ?? await future;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final referenced = <String>{};
     for (final meta in s.sessions) {
       final j = prefs.getString('juice.journal.v2.${meta.id}');
@@ -2858,7 +2832,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       name: doc.campaignName,
       genre: doc.genre.isEmpty ? null : doc.genre,
     );
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final rawByKey = <String, String>{
       'juice.journal.v2':
           jsonEncode(doc.entries.map((e) => e.toJson()).toList()),
@@ -2898,7 +2872,7 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
 
   @override
   Future<Set<String>> build() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return <String>{};
     return decodePersisted(
@@ -2928,7 +2902,7 @@ class RulesetsNotifier extends AsyncNotifier<Set<String>> {
       current.remove(id);
       current.removeWhere((r) => _expansionOf[r] == id);
     }
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_key, jsonEncode(current.toList()));
     state = AsyncData(current);
   }
@@ -2960,22 +2934,16 @@ final systemQuickRefProvider = Provider<QuickRefCard?>(
     (ref) => kSystemQuickRefs[ref.watch(resolvedSystemProvider)]);
 
 // -- Split view (global layout preference, not session-scoped) ---------------
-class SplitViewNotifier extends AsyncNotifier<bool> {
-  static const _key = 'juice.splitview.v1';
+class SplitViewNotifier extends _PersistedFlag {
   @override
-  Future<bool> build() async {
-    final prefs = await SharedPreferences.getInstance();
-    // Default ON: the shell only splits at >=1000px (canSplit), so this is
-    // inert on phones/tablets and gives desktop a two-pane layout by default.
-    return prefs.getBool(_key) ?? true;
-  }
+  String get prefsKey => 'juice.splitview.v1';
 
-  Future<void> toggle() async {
-    final next = !(state.valueOrNull ?? false);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_key, next);
-    state = AsyncData(next);
-  }
+  // Default ON: the shell only splits at >=1000px (canSplit), so this is
+  // inert on phones/tablets and gives desktop a two-pane layout by default.
+  @override
+  bool get defaultValue => true;
+
+  Future<void> toggle() => _set(!(state.valueOrNull ?? false));
 }
 
 final splitViewProvider =
@@ -2988,7 +2956,7 @@ class ToolMruNotifier extends AsyncNotifier<List<String>> {
 
   @override
   Future<List<String>> build() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_key);
     if (raw == null || raw.isEmpty) return const [];
     try {
@@ -3005,7 +2973,7 @@ class ToolMruNotifier extends AsyncNotifier<List<String>> {
     current.remove(toolId);
     current.insert(0, toolId);
     final capped = current.take(_cap).toList();
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_key, jsonEncode(capped));
     state = AsyncData(capped);
   }
@@ -3189,7 +3157,7 @@ class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
   Future<Set<String>> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const <String>{};
     try {
@@ -3202,7 +3170,7 @@ class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
   Future<void> dismiss(String key) async {
     final current = {...(state.valueOrNull ?? await future)};
     current.add(key);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(current.toList()));
     state = AsyncData(current);
   }
@@ -3212,7 +3180,7 @@ class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
   Future<void> undismiss(String key) async {
     final current = {...(state.valueOrNull ?? await future)};
     current.remove(key);
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(current.toList()));
     state = AsyncData(current);
   }
@@ -3232,7 +3200,7 @@ class RecapCacheNotifier extends AsyncNotifier<RecapCache> {
   Future<RecapCache> build() async {
     final sessions = await ref.watch(sessionsProvider.future);
     _scopedKey = '$_baseKey.${sessions.active}';
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     final raw = prefs.getString(_scopedKey);
     if (raw == null || raw.isEmpty) return const RecapCache();
     try {
@@ -3244,7 +3212,7 @@ class RecapCacheNotifier extends AsyncNotifier<RecapCache> {
 
   Future<void> _save(RecapCache c) async {
     state.valueOrNull ?? await future;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await ref.read(prefsProvider.future);
     await prefs.setString(_scopedKey, jsonEncode(c.toJson()));
     state = AsyncData(c);
   }

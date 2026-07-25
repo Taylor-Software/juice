@@ -369,27 +369,42 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     }
   }
 
-  Future<void> _importCampaign(BuildContext dialogContext) async {
+  /// Picks one file and returns its bytes — null if the user cancelled OR the
+  /// platform denied access. A denial is reported and closes [dialogContext]
+  /// (the campaigns drawer); pass null to leave the host open. Shared by every
+  /// import path so a revoked file permission behaves identically in all of
+  /// them, which is exactly what drifted while this was copy-pasted.
+  Future<Uint8List?> _pickBytes(
+    BuildContext? dialogContext, {
+    required String title,
+    required List<String> extensions,
+  }) async {
     final FilePickerResult? result;
     try {
       result = await FilePicker.pickFiles(
-        dialogTitle: 'Import campaign',
+        dialogTitle: title,
         type: FileType.custom,
-        allowedExtensions: ['json', 'zip'],
+        allowedExtensions: extensions,
         withData: true,
       );
     } on PlatformException catch (e) {
-      if (!mounted) return;
+      if (!mounted) return null;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not access files: ${e.message}')),
       );
-      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-      return;
+      if (dialogContext != null && dialogContext.mounted) {
+        Navigator.of(dialogContext).pop();
+      }
+      return null;
     }
-    final bytes = (result == null || result.files.isEmpty)
-        ? null
-        : result.files.first.bytes;
-    if (bytes == null) return; // user cancelled
+    if (result == null || result.files.isEmpty) return null; // user cancelled
+    return result.files.first.bytes;
+  }
+
+  Future<void> _importCampaign(BuildContext dialogContext) async {
+    final bytes = await _pickBytes(dialogContext,
+        title: 'Import campaign', extensions: ['json', 'zip']);
+    if (bytes == null) return;
     try {
       await ref.read(sessionsProvider.notifier).importCampaignData(bytes);
       // Land on the imported campaign (or its encounter, if any).
@@ -410,26 +425,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _importLonelog(BuildContext dialogContext) async {
-    final FilePickerResult? result;
-    try {
-      result = await FilePicker.pickFiles(
-        dialogTitle: 'Import Lonelog',
-        type: FileType.custom,
-        allowedExtensions: ['md'],
-        withData: true,
-      );
-    } on PlatformException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not access files: ${e.message}')),
-      );
-      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-      return;
-    }
-    final bytes = (result == null || result.files.isEmpty)
-        ? null
-        : result.files.first.bytes;
-    if (bytes == null) return; // user cancelled
+    final bytes = await _pickBytes(dialogContext,
+        title: 'Import Lonelog', extensions: ['md']);
+    if (bytes == null) return;
     try {
       await ref
           .read(sessionsProvider.notifier)
@@ -479,26 +477,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _importTablePack(BuildContext dialogContext) async {
-    final FilePickerResult? result;
-    try {
-      result = await FilePicker.pickFiles(
-        dialogTitle: 'Import table pack',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        withData: true,
-      );
-    } on PlatformException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not access files: ${e.message}')),
-      );
-      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-      return;
-    }
-    final bytes = (result == null || result.files.isEmpty)
-        ? null
-        : result.files.first.bytes;
-    if (bytes == null) return; // user cancelled
+    final bytes = await _pickBytes(dialogContext,
+        title: 'Import table pack', extensions: ['json']);
+    if (bytes == null) return;
     try {
       final decoded = decodeTablePack(utf8.decode(bytes));
       if (decoded.isEmpty) {
@@ -559,26 +540,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<void> _importOraclePack(BuildContext dialogContext) async {
-    final FilePickerResult? result;
-    try {
-      result = await FilePicker.pickFiles(
-        dialogTitle: 'Import oracle pack',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        withData: true,
-      );
-    } on PlatformException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not access files: ${e.message}')),
-      );
-      if (dialogContext.mounted) Navigator.of(dialogContext).pop();
-      return;
-    }
-    final bytes = (result == null || result.files.isEmpty)
-        ? null
-        : result.files.first.bytes;
-    if (bytes == null) return; // user cancelled
+    final bytes = await _pickBytes(dialogContext,
+        title: 'Import oracle pack', extensions: ['json']);
+    if (bytes == null) return;
     try {
       final decoded = decodeOraclePack(utf8.decode(bytes));
       if (decoded.isEmpty) {
@@ -706,25 +670,9 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 
   Future<String?> _pickLoopKitFile() async {
-    final FilePickerResult? result;
-    try {
-      result = await FilePicker.pickFiles(
-        dialogTitle: 'Import loop kit',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        withData: true,
-      );
-    } on PlatformException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not access files: ${e.message}')),
-        );
-      }
-      return null;
-    }
-    final bytes = (result == null || result.files.isEmpty)
-        ? null
-        : result.files.first.bytes;
+    // null host: the kit picker owns its own flow and stays open on a denial.
+    final bytes =
+        await _pickBytes(null, title: 'Import loop kit', extensions: ['json']);
     return bytes == null ? null : utf8.decode(bytes);
   }
 

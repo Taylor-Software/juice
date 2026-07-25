@@ -145,10 +145,16 @@ class CustomSheet {
 // them in, so outcomes are deterministic in tests.
 // ---------------------------------------------------------------------------
 
+/// Whether a custom roll wants a HIGH total (d20 + mod vs DC) or a LOW one
+/// (roll-under). This flips the meaning of every band threshold.
 enum RollDirection { high, low }
 
+/// Where a roll's target number comes from: baked into the config, asked at
+/// roll time, or read live off the row being rolled against.
 enum RollTargetKind { fixed, prompt, rowValue }
 
+/// What counts as a critical: nothing, matching dice (doubles), or a natural
+/// max/min on a single die.
 enum RollCrit { none, matchingDice, natural }
 
 /// One degree-of-success band. For [RollDirection.high] [threshold] is a
@@ -167,6 +173,9 @@ class RollBand {
   }
 }
 
+/// A user-authored roll: the dice, the direction, the target, the
+/// degree-of-success bands, and the crit rule. Resolved by [resolveRoll],
+/// which is pure — there is deliberately no expression parser here.
 class RollConfig {
   const RollConfig({
     this.diceCount = 1,
@@ -218,6 +227,7 @@ class RollConfig {
   }
 }
 
+/// A resolved custom roll: the number to show and the band it landed in.
 class RollOutcome {
   const RollOutcome(this.total, this.label);
   final int total;

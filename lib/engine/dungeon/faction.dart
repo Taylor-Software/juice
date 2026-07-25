@@ -5,6 +5,9 @@ library;
 
 import '../dice.dart';
 
+/// A tracked dungeon faction: a named group of one monster type, plus every
+/// room it has been placed in. Rooms accumulate so a faction reads as a
+/// presence across the level rather than a one-off encounter.
 class DungeonFaction {
   const DungeonFaction(
       {required this.id,
@@ -34,6 +37,8 @@ class DungeonFaction {
       );
 }
 
+/// All factions rolled so far in the current dungeon. Dungeon-wide (shared
+/// across sites and levels) and cleared on dungeon reset.
 class FactionRegistry {
   const FactionRegistry({this.factions = const []});
   final List<DungeonFaction> factions;

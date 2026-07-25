@@ -6,6 +6,8 @@ library;
 import '../dice.dart';
 import 'footprint.dart';
 
+/// A footprint successfully fitted onto the map: its absolute cells, the
+/// door back to where we came from, and the openings still free to explore.
 class Placement {
   const Placement(
       {required this.cells, required this.entryDoor, required this.openDoors});

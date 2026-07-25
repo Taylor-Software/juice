@@ -17,8 +17,11 @@ extension SoloLikelihoodX on SoloLikelihood {
       };
 }
 
+/// The complication/boon rider a solo yes/no can carry alongside its answer.
 enum SoloTwist { none, boon, complication }
 
+/// A resolved solo yes/no: the answer, any [twist], the raw die and the odds
+/// it was read against.
 class SoloYesNo {
   const SoloYesNo({
     required this.yes,

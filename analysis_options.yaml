@@ -9,6 +9,25 @@ linter:
     cancel_subscriptions: true
     close_sinks: true
     cast_nullable_to_non_nullable: true
+    # Added 2026-07-24. Every rule below was already at ZERO violations across
+    # lib/ and test/ when enabled, so this locks in quality the codebase
+    # already has rather than opening a migration.
+    always_declare_return_types: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_single_quotes: true
+    sort_child_properties_last: true
+    use_super_parameters: true
+    avoid_unused_constructor_parameters: true
+    # Deliberately NOT enabled, with counts measured on 2026-07-24:
+    #   avoid_redundant_argument_values (169) — an explicit default is often
+    #     clearer at a call site than an invisible one.
+    #   directives_ordering (142) — pure cosmetic churn across nearly every
+    #     file; the same reason this repo does not run a repo-wide format.
+    #   avoid_positional_boolean_parameters (13) — real signature changes.
+    #   unnecessary_parenthesis (19), unnecessary_lambdas (14) — several of
+    #     these parens/lambdas are load-bearing for readability.
+    # Revisit any of them as a standalone, single-purpose commit.
 
 analyzer:
   language:
