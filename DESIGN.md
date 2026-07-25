@@ -446,16 +446,18 @@ one `BoxShadow` in the entire codebase, and it belongs to the expanded oracle
 result card. That scarcity is doctrine, not an oversight: the shadow *is* the
 punctuation on the moment the story turns.
 
-The one sanctioned expansion is the primary button lift, specified in the
-original handoff and not yet implemented. It may be added; nothing else may.
+The one sanctioned expansion is the primary button lift, now shipped as a
+themed `elevation: 3` with a terracotta `shadowColor` rather than a literal
+`BoxShadow` — so the button lifts without spending the system's one-shadow
+budget. Nothing else may cast.
 
 ### Shadow Vocabulary
 
 - **Answer lift** (`BoxShadow(color: terracotta @ 16%, blurRadius: 22, offset: (0, 8))`):
   the expanded result card only. Tinted with the accent rather than black, so it
   reads as lamplight rather than a drop shadow.
-- **Primary lift** (`BoxShadow(color: rgba(154,74,34,.32), blurRadius: 16, offset: (0, 6))`):
-  sanctioned for the primary button. Specified, not yet shipped.
+- **Primary lift** (`FilledButton` `elevation: 3`, `shadowColor: terracotta @ 32%`):
+  the primary button only, applied at the theme so no call site hand-rolls it.
 
 ### Named Rules
 
@@ -500,8 +502,13 @@ page, not something floating above it.
 ### Buttons
 
 - **Shape:** softly rounded (12px primary, 14px secondary).
-- **Primary** (`FilledButton`): terracotta fill, near-white label, themed to a
-  48px minimum height so it reads as a full-width commitment by default.
+- **Primary** (`FilledButton`): terracotta fill in **both** brightnesses, set at
+  the theme rather than left to the seeded `ColorScheme` — M3 derives a *light*
+  `primary` for dark schemes, which made the app's most important control a pale
+  peach in dark mode, the one thing on screen not wearing the accent. The label
+  flips per brightness (near-white ink on the deep light clay, page-dark ink on
+  the lifted dark clay). Themed to a 48px minimum height so it reads as a
+  full-width commitment by default, and carries the primary lift.
   **Gotcha:** the theme sets `minimumSize: Size.fromHeight(48)`, which forces
   infinite width under loose constraints — inside a `Wrap`, or beside a flex
   sibling in a `Row`, override with `minimumSize: Size(0, 44)` or wrap in
