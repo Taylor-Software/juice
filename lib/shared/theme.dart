@@ -27,8 +27,27 @@ class AppTheme {
     return base.copyWith(
       textTheme: tt,
       extensions: <ThemeExtension<dynamic>>[tokens],
+      // The primary lift — the second and last shadow the system sanctions
+      // (DESIGN.md -> Elevation & Depth). Warm-tinted per The Warm Shadow Rule:
+      // a neutral shadow on cream paper reads as plastic. Elevation, not a
+      // BoxShadow, so The One Shadow Rule's count is untouched.
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          // The primary action wears the accent in BOTH brightnesses. Left to
+          // the seeded ColorScheme this was a pale peach in dark mode (M3
+          // derives a light `primary` for dark schemes), so the app's most
+          // important control was the one thing not wearing Lamplight
+          // Terracotta — a Rubrication Rule break that light mode hid, because
+          // the amber seed's light `primary` happens to land near the token.
+          backgroundColor: tokens.terracotta,
+          // Label reads against the accent per brightness: near-white ink on
+          // the deep light clay, page-dark ink on the lifted dark clay.
+          foregroundColor:
+              brightness == Brightness.light ? tokens.raised : tokens.cream,
+          elevation: 3,
+          shadowColor: tokens.terracotta.withValues(alpha: 0.32),
+        ),
       ),
       // Modal containers. Sheets and dialogs are this app's second-most-common
       // container after the card (60+ call sites) and were rendering at raw M3
