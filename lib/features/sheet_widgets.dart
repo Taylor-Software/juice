@@ -685,6 +685,33 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
         onChanged: (v) => ctrl.setMana(pgChar.id, v),
         onRest: () => ctrl.rest(pgChar.id),
       ),
+      const SizedBox(height: 8),
+      SizedBox(
+        height: 320,
+        child: pg.SpellbookList(
+          spells: lib.spellsFor(pgChar.id),
+          currentMana: pgChar.currentMana,
+          spellLevel: pgChar.spellLevel,
+          castLevelCap: pgChar.gatedCasting ? pgChar.spellLevel : null,
+          school: pgChar.school,
+          enforceSchool: pgChar.enforceSchool,
+          onCast: (s, trigger) => ctrl.cast(s, trigger: trigger),
+          onEdit: (s) => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => pg.SpellBuilderScreen(
+              characterId: pgChar.id,
+              spellLevel: pgChar.spellLevel,
+              currentMana: pgChar.currentMana,
+              school: pgChar.school,
+              enforceSchool: pgChar.enforceSchool,
+              existing: s,
+              onSave: ctrl.upsertSpell,
+            ),
+          )),
+          onDelete: (s) => ctrl.deleteSpell(s.id),
+          onToggleFavorite: ctrl.toggleFavorite,
+          onDuplicate: ctrl.duplicateSpell,
+        ),
+      ),
     ],
   );
 }
