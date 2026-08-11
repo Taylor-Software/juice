@@ -712,6 +712,55 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
           onDuplicate: ctrl.duplicateSpell,
         ),
       ),
+      const SizedBox(height: 4),
+      Wrap(
+        spacing: 8,
+        children: [
+          TextButton.icon(
+            key: const Key('magic-build'),
+            icon: const Icon(Icons.add),
+            label: const Text('Build spell'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => pg.SpellBuilderScreen(
+                characterId: pgChar.id,
+                spellLevel: pgChar.spellLevel,
+                currentMana: pgChar.currentMana,
+                school: pgChar.school,
+                enforceSchool: pgChar.enforceSchool,
+                onSave: ctrl.upsertSpell,
+              ),
+            )),
+          ),
+          TextButton.icon(
+            key: const Key('magic-reference'),
+            icon: const Icon(Icons.menu_book_outlined),
+            label: const Text('Card reference'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const pg.CardReferenceScreen(),
+            )),
+          ),
+          if (pg.gameSystemById(pgChar.systemId) != null)
+            TextButton.icon(
+              key: const Key('magic-convert'),
+              icon: const Icon(Icons.calculate_outlined),
+              label: const Text('Conversion'),
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => pg.ConversionCalculator(
+                  system: pg.gameSystemById(pgChar.systemId)!,
+                ),
+              )),
+            ),
+          TextButton.icon(
+            key: const Key('magic-guide'),
+            icon: const Icon(Icons.help_outline),
+            label: const Text('User guide'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const pg.UserGuideScreen(),
+            )),
+          ),
+        ],
+      ),
     ],
   );
 }
