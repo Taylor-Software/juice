@@ -2537,6 +2537,7 @@ const sessionScopedKeys = [
   'loreseer.settings.v1',
   'loreseer.context.v1',
   'loreseer.decks.v1',
+  'loreseer.magic.v1',
   'loreseer.gmchat.v1',
   'loreseer.light.v1',
   // Session-scoped UX caches: registered so campaign delete purges them and
@@ -2840,7 +2841,8 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
           jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
       'loreseer.characters.v1':
           jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
-      'loreseer.tracks.v1': jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
+      'loreseer.tracks.v1':
+          jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
       'loreseer.settings.v1': jsonEncode(
           CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
     };
