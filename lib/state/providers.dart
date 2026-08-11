@@ -624,8 +624,18 @@ class CharacterNotifier extends _PersistedList<Character> {
     ]);
   }
 
+  /// Removes character [id]. If the character had Polarity Grammar casting
+  /// enabled, also cascades the delete to its linked pg.Character (and their
+  /// spells/history) in the campaign's magic Library — otherwise that data
+  /// would be orphaned forever (never reachable via any polarityId).
   Future<void> remove(String id) async {
-    await _persist((await _ready).where((c) => c.id != id).toList());
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c?.polarityId != null) {
+      await ref.read(magicProvider.future);
+      await ref.read(magicProvider.notifier).deleteCharacter(c!.polarityId!);
+    }
+    await _persist(list.where((c) => c.id != id).toList());
   }
 }
 

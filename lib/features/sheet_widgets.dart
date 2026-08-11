@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 
 import '../engine/models.dart';
+import '../shared/design_tokens.dart';
 import '../state/magic_controller.dart';
 import '../state/providers.dart';
 
@@ -669,21 +670,93 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
       ],
     );
   }
-  final lib = ref.watch(magicProvider).valueOrNull;
-  final pgChar = lib?.characters.where((x) => x.id == c.polarityId).firstOrNull;
-  if (lib == null || pgChar == null) return const SizedBox.shrink();
+  final libAsync = ref.watch(magicProvider);
+
+  if (libAsync.isLoading && !libAsync.hasValue) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        const SizedBox(
+          key: Key('magic-loading'),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ],
+    );
+  }
+
+  if (libAsync.hasError) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        Text(
+          'Could not load magic data: ${libAsync.error}',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 4),
+        TextButton.icon(
+          key: const Key('magic-retry'),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Retry'),
+          onPressed: () => ref.invalidate(magicProvider),
+        ),
+      ],
+    );
+  }
+
+  final lib = libAsync.value!;
+  final pgChar = lib.characters.where((x) => x.id == c.polarityId).firstOrNull;
+  if (pgChar == null) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        Text(
+          "This character's magic data is missing — casting was likely "
+          'disabled or the link is broken.',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: context.lore.inkMuted),
+        ),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          key: const Key('magic-disable'),
+          icon: const Icon(Icons.link_off),
+          label: const Text('Clear broken link'),
+          onPressed: () =>
+              ref.read(charactersProvider.notifier).disableMagic(c.id),
+        ),
+      ],
+    );
+  }
   final ctrl = ref.read(magicProvider.notifier);
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       sheetSection(context, 'Magic'),
-      pg.ManaBar(
-        key: const Key('magic-mana-bar'),
-        current: pgChar.currentMana,
-        max: pgChar.availableMana,
-        caption: 'Spell Level ${pg.kRoman[pgChar.spellLevel]}',
-        onChanged: (v) => ctrl.setMana(pgChar.id, v),
-        onRest: () => ctrl.rest(pgChar.id),
+      Row(
+        children: [
+          Expanded(
+            child: pg.ManaBar(
+              key: const Key('magic-mana-bar'),
+              current: pgChar.currentMana,
+              max: pgChar.availableMana,
+              caption: 'Spell Level ${pg.kRoman[pgChar.spellLevel]}',
+              onChanged: (v) => ctrl.setMana(pgChar.id, v),
+              onRest: () => ctrl.rest(pgChar.id),
+            ),
+          ),
+          IconButton(
+            key: const Key('magic-disable'),
+            icon: const Icon(Icons.link_off),
+            tooltip: 'Disable magic casting',
+            onPressed: () => _confirmDisableMagic(context, ref, c),
+          ),
+        ],
       ),
       const SizedBox(height: 8),
       SizedBox(
@@ -763,6 +836,32 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
       ),
     ],
   );
+}
+
+/// Confirms + disables Polarity Grammar casting on [c] — this deletes the
+/// character's spellbook and cast history, so it asks first (mirrors the
+/// map screen's "Reset dungeon?" confirm-then-act dialog).
+Future<void> _confirmDisableMagic(
+    BuildContext context, WidgetRef ref, Character c) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Disable magic casting?'),
+      content: Text("This removes ${c.name}'s spellbook and mana history."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Disable'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  await ref.read(charactersProvider.notifier).disableMagic(c.id);
 }
 
 /// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
