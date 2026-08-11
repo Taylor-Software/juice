@@ -758,6 +758,12 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
             ),
           ),
           IconButton(
+            key: const Key('magic-settings'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Caster settings',
+            onPressed: () => _showCasterSettings(context, ref, pgChar),
+          ),
+          IconButton(
             key: const Key('magic-disable'),
             icon: const Icon(Icons.link_off),
             tooltip: 'Disable magic casting',
@@ -885,6 +891,198 @@ Future<void> _confirmDisableMagic(
   );
   if (ok != true) return;
   await ref.read(charactersProvider.notifier).disableMagic(c.id);
+}
+
+/// Opens the caster-settings dialog for [pgChar] — the only place Base Mana,
+/// Spell Level, the linked game system, School, and the two casting-strictness
+/// flags can be edited after `enableMagic` hardcodes them at creation. Setting
+/// a game system here is what unlocks the `magic-convert` Conversion
+/// Calculator button, which is otherwise permanently unreachable.
+Future<void> _showCasterSettings(
+    BuildContext context, WidgetRef ref, pg.Character pgChar) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => _CasterSettingsDialog(pgChar: pgChar),
+  );
+}
+
+class _CasterSettingsDialog extends ConsumerStatefulWidget {
+  const _CasterSettingsDialog({required this.pgChar});
+
+  final pg.Character pgChar;
+
+  @override
+  ConsumerState<_CasterSettingsDialog> createState() =>
+      _CasterSettingsDialogState();
+}
+
+class _CasterSettingsDialogState extends ConsumerState<_CasterSettingsDialog> {
+  late int _baseMana;
+  late int _spellLevel;
+  late String? _systemId;
+  late pg.School? _school;
+  late bool _gatedCasting;
+  late bool _enforceSchool;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.pgChar;
+    _baseMana = c.baseMana;
+    _spellLevel = c.spellLevel;
+    _systemId = c.systemId;
+    _school = c.school;
+    _gatedCasting = c.gatedCasting;
+    _enforceSchool = c.enforceSchool;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Caster settings'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(child: Text('Base Mana')),
+                IconButton(
+                  key: const Key('magic-settings-basemana-minus'),
+                  icon: const Icon(Icons.remove),
+                  onPressed: () =>
+                      setState(() => _baseMana = (_baseMana - 1).clamp(1, 999)),
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$_baseMana',
+                    key: const Key('magic-settings-basemana'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('magic-settings-basemana-plus'),
+                  icon: const Icon(Icons.add),
+                  onPressed: () =>
+                      setState(() => _baseMana = (_baseMana + 1).clamp(1, 999)),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text('Spell Level')),
+                IconButton(
+                  key: const Key('magic-settings-spelllevel-minus'),
+                  icon: const Icon(Icons.remove),
+                  onPressed: () => setState(
+                      () => _spellLevel = (_spellLevel - 1).clamp(1, 6)),
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$_spellLevel',
+                    key: const Key('magic-settings-spelllevel'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('magic-settings-spelllevel-plus'),
+                  icon: const Icon(Icons.add),
+                  onPressed: () => setState(
+                      () => _spellLevel = (_spellLevel + 1).clamp(1, 6)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Expanded(child: Text('Game system')),
+                DropdownButton<String?>(
+                  key: const Key('magic-settings-system'),
+                  value: _systemId,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    for (final s in pg.kGameSystems)
+                      DropdownMenuItem<String?>(
+                        value: s.id,
+                        child: Text(s.name),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _systemId = v),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text('School')),
+                DropdownButton<pg.School?>(
+                  key: const Key('magic-settings-school'),
+                  value: _school,
+                  items: [
+                    const DropdownMenuItem<pg.School?>(
+                      value: null,
+                      child: Text('Unrestricted'),
+                    ),
+                    for (final s in pg.School.values)
+                      DropdownMenuItem<pg.School?>(
+                        value: s,
+                        child: Text(s.label),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _school = v),
+                ),
+              ],
+            ),
+            CheckboxListTile(
+              key: const Key('magic-settings-gated'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Gated casting'),
+              subtitle: const Text('Cap castable intensity at the Spell Level'),
+              value: _gatedCasting,
+              onChanged: (v) => setState(() => _gatedCasting = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const Key('magic-settings-enforceschool'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Enforce school'),
+              subtitle: const Text('Hard-limit the builder to the School'),
+              value: _enforceSchool,
+              onChanged: (v) => setState(() => _enforceSchool = v ?? false),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('magic-settings-save'),
+          onPressed: () async {
+            final ctrl = ref.read(magicProvider.notifier);
+            await ctrl.upsertCharacter(widget.pgChar.copyWith(
+              baseMana: _baseMana,
+              spellLevel: _spellLevel,
+              systemId: () => _systemId,
+              school: () => _school,
+              gatedCasting: _gatedCasting,
+              enforceSchool: _enforceSchool,
+            ));
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
 }
 
 /// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
