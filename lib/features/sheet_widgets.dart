@@ -694,7 +694,10 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
         sheetSection(context, 'Magic'),
         Text(
           'Could not load magic data: ${libAsync.error}',
-          style: Theme.of(context).textTheme.bodySmall,
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.error),
         ),
         const SizedBox(height: 4),
         TextButton.icon(
@@ -720,7 +723,7 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
           style: Theme.of(context)
               .textTheme
               .bodyMedium
-              ?.copyWith(color: context.lore.inkMuted),
+              ?.copyWith(color: context.lore.inkFaint),
         ),
         const SizedBox(height: 8),
         FilledButton.icon(
