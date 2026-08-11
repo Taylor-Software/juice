@@ -162,6 +162,7 @@ class DccSheetView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'dcc'),
+        magicSection(context, ref, character),
         const SizedBox(height: 12),
         DebouncedTextField(
           key: const Key('dcc-notes'),

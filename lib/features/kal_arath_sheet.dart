@@ -149,6 +149,7 @@ class KalArathSheetView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'kal-arath'),
+        magicSection(context, ref, character),
         const SizedBox(height: 12),
         DebouncedTextField(
           key: const Key('kal-arath-notes'),

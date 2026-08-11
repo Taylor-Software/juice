@@ -289,6 +289,7 @@ class DndSheetView extends ConsumerWidget {
         ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
+        magicSection(context, ref, character),
       ],
     );
   }

@@ -71,6 +71,7 @@ class FunnelSheetView extends ConsumerWidget {
             ),
           ),
         ],
+        magicSection(context, ref, character),
       ],
     );
   }
@@ -89,8 +90,7 @@ class FunnelSheetView extends ConsumerWidget {
     final titleStyle = p.graduated
         ? TextStyle(color: faint)
         : dead
-            ? TextStyle(
-                decoration: TextDecoration.lineThrough, color: faint)
+            ? TextStyle(decoration: TextDecoration.lineThrough, color: faint)
             : null;
     final statusText = p.graduated ? 'graduated' : (p.alive ? 'alive' : 'dead');
 

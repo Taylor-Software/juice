@@ -98,6 +98,7 @@ class _CustomSheetViewState extends ConsumerState<CustomSheetView> {
               onPressed: _addBlock,
             ),
           ),
+        magicSection(context, ref, widget.character),
       ],
     );
   }

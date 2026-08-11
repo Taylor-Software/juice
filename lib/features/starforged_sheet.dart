@@ -208,9 +208,9 @@ class StarforgedSheetView extends ConsumerWidget {
                 ref,
                 s.copyWith(
                     assets: [...s.assets]..[i] = s.assets[i].copyWith(meters: [
-                          for (final m in s.assets[i].meters)
-                            m.key == key ? m.copyWith(value: value) : m,
-                        ]))),
+                        for (final m in s.assets[i].meters)
+                          m.key == key ? m.copyWith(value: value) : m,
+                      ]))),
             onDelete: () =>
                 _save(ref, s.copyWith(assets: [...s.assets]..removeAt(i))),
           ),
@@ -227,6 +227,7 @@ class StarforgedSheetView extends ConsumerWidget {
         ),
         sheetSection(context, 'Notes'),
         Text(character.note.isEmpty ? '—' : character.note),
+        magicSection(context, ref, character),
       ],
     );
   }
