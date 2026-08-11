@@ -136,6 +136,14 @@ flutter run               # pick a device, or: flutter run -d chrome / -d macos
 `flutter create .` is non-destructive to your `lib/`, `pubspec.yaml`, and
 `assets/` — it only fills in the missing platform scaffolding.
 
+**Private dependency:** `pubspec.yaml` pins `polarity_grammar` to a private
+git repo (`Taylor-Software/practical-magic`). `flutter pub get` needs read
+access to that repo — make sure your local git credentials (SSH key or PAT)
+can clone it. In CI, this repo's workflows (`.github/workflows/ci.yml` and
+`deploy.yml`) authenticate via a `PRACTICAL_MAGIC_PAT` repo secret (a GitHub
+PAT with read access to `Taylor-Software/practical-magic`), configured under
+this repo's Settings → Secrets and variables → Actions.
+
 ## Verify it
 
 ```bash
