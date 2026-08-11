@@ -96,9 +96,11 @@ character already has.
 There is **no shared sheet wrapper** in juice — 15 independent `*SheetView`
 files (`lib/features/*.dart`) each build their own `ListView`. The existing
 precedent for "one shared per-character block dropped into every sheet type"
-is `conditionsSection()` (`lib/shared/sheet_widgets.dart:617`), called from 11
-of the 15 sheet files today (D&D/Ironsworn/Starforged omit it — this
-integration adds it to all 15, since Polarity Grammar applies uniformly).
+is `conditionsSection()` (`lib/features/sheet_widgets.dart:614`), called from 10
+of the 15 sheet files today (`CustomSheetView`, `DndSheetView`, `FunnelSheetView`,
+`IronswornSheetView`, `StarforgedSheetView` omit it — the other 10 call it
+unconditionally — this integration adds `magicSection` to all 15, since
+Polarity Grammar applies uniformly).
 
 A new `magicSection(BuildContext context, WidgetRef ref, Character c)` in
 `sheet_widgets.dart`:
@@ -132,9 +134,11 @@ touches juice's `Character` type directly — only `polarityId` bridges them.
 - `JuiceMagicStore implements TextLibraryStore` (thin adapter — the package
   already owns JSON (de)serialization, quarantine-on-corrupt, and
   schema-too-new handling via `TextLibraryStore`).
-- Key: `juice.magic.v1.<sessionId>`, registered in `sessionScopedKeys` →
-  auto-exported with the campaign file, same posture as every other
-  per-campaign store (threads, npcs, decks, etc).
+- Key: `loreseer.magic.v1.<sessionId>` (current session-scoped keys all use
+  the `loreseer.` prefix, not `juice.` — CLAUDE.md's note that `juice.*` keys
+  are kept for stability is stale as of this writing), registered in
+  `sessionScopedKeys` → auto-exported with the campaign file, same posture as
+  every other per-campaign store (threads, npcs, decks, etc).
 - One `Library` holds every opted-in character's `pg.Character` + their
   spellbook + cast history for that campaign.
 
@@ -143,12 +147,12 @@ touches juice's `Character` type directly — only `polarityId` bridges them.
 | File | Change |
 |------|--------|
 | `pubspec.yaml` | add `polarity_grammar` git dependency |
-| `lib/engine/models.dart` | `Character.polarityId` (String?, ctor/copyWith/toJson/fromJson) |
+| `lib/engine/models/character.dart` | `Character.polarityId` (String?, ctor/copyWith/toJson/fromJson) |
 | `lib/state/providers.dart` | `JuiceMagicStore` adapter; `magicLibraryProvider` (session-scoped, mirrors e.g. `decksProvider`); enable/disable + create-`pg.Character` actions on `CharacterNotifier` (or a sibling notifier) |
-| `lib/shared/sheet_widgets.dart` | new `magicSection()` |
+| `lib/features/sheet_widgets.dart` | new `magicSection()` |
 | all 15 `lib/features/*_sheet.dart` (`ArgosaSheetView`, `CairnSheetView`, `CustomSheetView`, `DccSheetView`, `DndSheetView`, `DrawSteelSheetView`, `EmbarkSheetView`, `FunnelSheetView`, `IronswornSheetView`, `KalArathSheetView`, `KnaveSheetView`, `NimbleSheetView`, `OseSheetView`, `ShadowdarkSheetView`, `StarforgedSheetView`) | one-line insertion of `magicSection(context, ref, character)` into each `ListView`, applied uniformly (including funnel peasants — the per-character toggle makes no sheet-type exception) |
 | new: `lib/features/magic_screen.dart` (or similar) | pushed-route wiring for `spell_builder`/`card_reference`/`conversion_calculator`/`user_guide` |
-| `sessionScopedKeys` registry | add `juice.magic.v1` |
+| `sessionScopedKeys` registry | add `loreseer.magic.v1` |
 
 ## Testing
 
@@ -161,7 +165,7 @@ touches juice's `Character` type directly — only `polarityId` bridges them.
 - Smoke-test the pushed routes open (spell builder, card reference) without
   wiring every internal package widget test — those already pass in
   `packages/polarity_grammar` and aren't re-tested here.
-- Export/import round-trip: a campaign file with `juice.magic.v1` data
+- Export/import round-trip: a campaign file with `loreseer.magic.v1` data
   survives export → import (mirrors `test/persistence_tolerance_test.dart`
   conventions).
 
