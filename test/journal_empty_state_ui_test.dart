@@ -5,26 +5,26 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A campaign session with no journal key → an empty journal.
 const _emptyPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
 /// A non-empty journal: one prose entry.
 const _nonEmptyPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-  'juice.journal.v2.default': '[{'
+  'loreseer.journal.v2.default': '[{'
       '"id":"e1","timestamp":"2026-06-12T10:00:00.000Z",'
       '"title":"","body":"A line already written.","kind":"text","tags":[]'
       '}]',

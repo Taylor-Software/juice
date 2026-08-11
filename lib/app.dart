@@ -6,15 +6,15 @@ import 'shared/home_shell.dart';
 import 'shared/theme.dart';
 import 'state/providers.dart';
 
-class JuiceApp extends ConsumerWidget {
-  const JuiceApp({super.key});
+class LoreSeerApp extends ConsumerWidget {
+  const LoreSeerApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final oracle = ref.watch(oracleProvider);
     final textScale = ref.watch(textScaleProvider).valueOrNull ?? 1.0;
     return MaterialApp(
-      title: "Solo Adventurer's Journal",
+      title: 'LoreSeer',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

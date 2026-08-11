@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> pumpJournal(WidgetTester tester) async {
@@ -16,7 +16,7 @@ void main() {
   testWidgets('composer adds a text entry; scene divider renders chaos',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await tester.pumpWidget(const ProviderScope(
@@ -42,9 +42,9 @@ void main() {
 
   testWidgets('New session adds and renders a session divider', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"","body":"First","kind":"text"}]',
     });
     await tester.pumpWidget(const ProviderScope(
@@ -62,9 +62,9 @@ void main() {
   testWidgets('entries display oldest first (reverse of storage)',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"b","timestamp":"2026-06-11T10:00:00.000","title":"","body":"Second","kind":"text"},'
               '{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"","body":"First","kind":"text"}]',
     });
@@ -78,7 +78,7 @@ void main() {
 
   testWidgets('whitespace-only send adds no entry', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await tester.pumpWidget(const ProviderScope(
@@ -97,7 +97,7 @@ void main() {
 
   testWidgets('editing a text entry body persists', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await tester.pumpWidget(const ProviderScope(
@@ -128,9 +128,9 @@ void main() {
 
   testWidgets('a sketch entry renders a CustomPaint thumbnail', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s1","timestamp":"2026-06-18T00:00:00.000","title":"Sketch",'
               '"body":"","kind":"sketch","tags":[],'
               '"payload":{"v":1,"sketch":{"v":1,"w":300,"h":200,"strokes":'
@@ -143,9 +143,9 @@ void main() {
 
   testWidgets('composer offers draw behind the attach menu', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     await pumpJournal(tester);
     // Draw moved off the composer row into the '+' menu — inline it crowded the

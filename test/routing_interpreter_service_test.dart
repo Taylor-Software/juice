@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/state/cloud_interpreter.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/state/cloud_interpreter.dart';
+import 'package:loreseer/state/interpreter.dart';
 
 import 'fake_interpreter.dart';
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/tarot_spreads.dart';
-import 'package:juice_oracle/features/tarot_spread_layout.dart';
-import 'package:juice_oracle/shared/card_image.dart';
+import 'package:loreseer/engine/tarot_spreads.dart';
+import 'package:loreseer/features/tarot_spread_layout.dart';
+import 'package:loreseer/shared/card_image.dart';
 
 List<({String position, String shown})> _cardsFor(TarotSpread s) =>
     [for (final p in s.positions) (position: p, shown: 'The Fool')];

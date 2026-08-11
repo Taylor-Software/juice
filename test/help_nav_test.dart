@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/help_data.dart';
-import 'package:juice_oracle/features/help_screen.dart';
-import 'package:juice_oracle/shared/help_nav.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/help_data.dart';
+import 'package:loreseer/features/help_screen.dart';
+import 'package:loreseer/shared/help_nav.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';

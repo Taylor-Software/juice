@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/launcher_screen.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/launcher_screen.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -26,8 +26,8 @@ ProviderContainer _container(SessionsState sessions,
     {Map<String, Object> prefs = const {}}) {
   SharedPreferences.setMockInitialValues({
     // Welcome + AI offer are not under test; keep them out of the way.
-    'juice.welcome_seen.v1': true,
-    'juice.ai_offer_seen.v1': true,
+    'loreseer.welcome_seen.v1': true,
+    'loreseer.ai_offer_seen.v1': true,
     ...prefs,
   });
   return ProviderContainer(overrides: [
@@ -61,7 +61,7 @@ void main() {
 
   testWidgets('a journaled Campaign 1 gets the normal launcher', (t) async {
     final c = _container(_pristineState, prefs: {
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"e1","timestamp":"2026-07-11T00:00:00.000",'
               '"title":"Played","body":"played","kind":"text"}]',
     });

@@ -3,20 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
 Future<ProviderContainer> _pump(WidgetTester t, {required double width}) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.ai_nudge_seen.v1': true,
-    'juice.chip_help_seen.v1': true,
-    'juice.journal.v2.default':
+    'loreseer.ai_nudge_seen.v1': true,
+    'loreseer.chip_help_seen.v1': true,
+    'loreseer.journal.v2.default':
         '[{"id":"e1","timestamp":"2026-07-11T10:00:00.000","title":"",'
             '"body":"The burned mill looms.","kind":"text"}]',
   });

@@ -5,15 +5,15 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/features/scenes_pane.dart';
-import 'package:juice_oracle/shared/ai_badge.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/features/scenes_pane.dart';
+import 'package:loreseer/shared/ai_badge.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'fake_interpreter.dart';
 
@@ -25,9 +25,9 @@ Oracle _oracle() => Oracle(
 void main() {
   testWidgets('journal renders a scene body when present', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"A cold mist clings.","kind":"scene"},'
               '{"id":"s2","timestamp":"2026-06-12T10:01:00.000","title":"Empty","body":"","kind":"scene"}]',
     });
@@ -45,7 +45,7 @@ void main() {
 
   testWidgets('scenes pane shows the description in the row', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -66,7 +66,7 @@ void main() {
 
   testWidgets('bare scene (no chaos, no body) has no subtitle', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -84,9 +84,9 @@ void main() {
   Future<ProviderContainer> pumpScenes(WidgetTester tester,
       {required bool aiReady}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      if (aiReady) 'juice.ai_enabled.v1': true,
+      if (aiReady) 'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: InterpreterStatus(

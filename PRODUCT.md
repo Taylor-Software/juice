@@ -144,14 +144,14 @@ Inspire · system · ruleset · funnel · quick-roll · HUD.
 
 ## Brand Commitments
 
-- **Product name: "Solo Adventurer's Journal."** This is the display name in
+- **Product name: "LoreSeer."** This is the display name in
   all in-app titles, platform manifests, web title/manifest, and the README H1.
 - **"Juice" is not the product name and must never be renamed away where it is
   correct:** the Juice *oracle system* by jrruethe that the app implements
   (`'juice'` oracle id, `fate-juice`, the Juice-oracle opt-in and badge), and
   the internal identifiers kept for stability (the `juice_oracle` Dart package,
   `juice.*` preference keys, the `juice-oracle` campaign-file marker,
-  `.juice.json` / `.juice.zip`, and the `net.taylorsoftware.juice` bundle id).
+  `.juice.json` / `.juice.zip`, and the `net.taylorsoftware.loreseer` bundle id).
 - **Voice:** in service of the player's fiction, not over it. The app narrates
   procedure, never the story; the player writes the story.
 - No confirmed logo system, color story, or type commitment is recorded here —

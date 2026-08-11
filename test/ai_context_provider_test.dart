@@ -1,18 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('activeCharacterLineProvider resolves the active PC, else empty',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Taurin","role":"pc","conditions":["wounded"]}]',
-      'juice.context.v1.default': '{"activeCharacterId":"c1"}',
+      'loreseer.context.v1.default': '{"activeCharacterId":"c1"}',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -24,7 +24,7 @@ void main() {
   test('activeCharacterLineProvider is empty when no active character',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();

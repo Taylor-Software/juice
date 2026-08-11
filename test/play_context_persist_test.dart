@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/play_context.dart';
+import 'package:loreseer/state/play_context.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('sets and persists the active character per session', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -17,14 +17,14 @@ void main() {
     expect(c.read(playContextProvider).valueOrNull?.activeCharacterId, 'c1');
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('juice.context.v1.default'), isNotNull);
+    expect(prefs.getString('loreseer.context.v1.default'), isNotNull);
   });
 
   test('reload restores persisted context', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.context.v1.default': '{"activeSceneId":"s9"}',
+      'loreseer.context.v1.default': '{"activeSceneId":"s9"}',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -34,9 +34,9 @@ void main() {
 
   test('setActiveCharacter(null) clears only that pointer', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.context.v1.default':
+      'loreseer.context.v1.default':
           '{"activeCharacterId":"c1","activeSceneId":"s1"}',
     });
     final c = ProviderContainer();
@@ -50,20 +50,20 @@ void main() {
 
   test('context is scoped per session id', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"a","sessions":[{"id":"a","name":"A"},{"id":"b","name":"B"}]}',
-      'juice.context.v1.a': '{"activeCharacterId":"ca"}',
-      'juice.context.v1.b': '{"activeCharacterId":"cb"}',
+      'loreseer.context.v1.a': '{"activeCharacterId":"ca"}',
+      'loreseer.context.v1.b': '{"activeCharacterId":"cb"}',
     });
     final ca = ProviderContainer();
     addTearDown(ca.dispose);
     expect((await ca.read(playContextProvider.future)).activeCharacterId, 'ca');
 
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"b","sessions":[{"id":"a","name":"A"},{"id":"b","name":"B"}]}',
-      'juice.context.v1.a': '{"activeCharacterId":"ca"}',
-      'juice.context.v1.b': '{"activeCharacterId":"cb"}',
+      'loreseer.context.v1.a': '{"activeCharacterId":"ca"}',
+      'loreseer.context.v1.b': '{"activeCharacterId":"cb"}',
     });
     final cb = ProviderContainer();
     addTearDown(cb.dispose);

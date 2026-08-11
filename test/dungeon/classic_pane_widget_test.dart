@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/faction.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/dungeon/tables.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/map_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dungeon/faction.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/dungeon/tables.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/map_screen.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -26,7 +26,7 @@ void main() {
   Future<ProviderContainer> pump(WidgetTester tester,
       {bool classic = true}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': jsonEncode({
+      'loreseer.sessions.v1': jsonEncode({
         'active': 'default',
         'sessions': [
           {

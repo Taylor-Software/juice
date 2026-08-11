@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_sheet.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/custom_sheet.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   test('legacy character JSON parses with empty blocks', () {

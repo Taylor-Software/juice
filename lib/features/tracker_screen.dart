@@ -118,7 +118,7 @@ class ThreadsPane extends ConsumerWidget {
                   itemCount: threads.length,
                   itemBuilder: (context, i) {
                     final t = threads[i];
-                    final tk = context.juice;
+                    final tk = context.lore;
                     return Card(
                       child: ListTile(
                         isThreeLine: true,
@@ -1122,7 +1122,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// A single labeled vitals bar: label · cur/max value (terracotta) over a
   /// thin LinearProgressIndicator.
   Widget _vitalsBar(BuildContext context, String label, int cur, int max) {
-    final tk = context.juice;
+    final tk = context.lore;
     final frac = max <= 0 ? 0.0 : (cur / max).clamp(0.0, 1.0);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -1163,7 +1163,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Rich lead-PC card: vitals bars + quick actions. Renders only for the
   /// active PC (isLead).
   Widget _leadCard(BuildContext context, Character c) {
-    final tk = context.juice;
+    final tk = context.lore;
     final mentions = _mentionsFor(c);
     final vitals = _leadVitals(c);
     final roleLabel =
@@ -1172,7 +1172,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(18),
-        side: BorderSide(color: context.juice.borderHero),
+        side: BorderSide(color: context.lore.borderHero),
       ),
       child: Container(
         // Fill the roster row width (a Card in a ListView otherwise shrink-wraps
@@ -1340,7 +1340,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Compact roster row for companions / NPCs (and any non-active PC). Keeps
   /// the original look; lightly token-styled.
   Widget _compactCard(BuildContext context, Character c) {
-    final tk = context.juice;
+    final tk = context.lore;
     final theme = Theme.of(context);
     final mentions = _mentionsFor(c);
     // Glanceable facts: HP through the shared pool (works for bespoke sheets,
@@ -2154,7 +2154,7 @@ class ThreadTallyRow extends ConsumerWidget {
             ? 'Failed'
             : tally.label;
     final color = tally.won
-        ? context.juice.sage
+        ? context.lore.sage
         : tally.failed
             ? Theme.of(context).colorScheme.error
             : Theme.of(context).colorScheme.primary;

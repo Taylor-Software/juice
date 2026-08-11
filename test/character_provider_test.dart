@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -40,9 +40,9 @@ void main() {
     test('setRole + setConditions persist', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.characters.v1.default':
+        'loreseer.characters.v1.default':
             '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
       });
       final c = ProviderContainer();
@@ -63,9 +63,9 @@ void main() {
         () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.characters.v1.default': '['
+        'loreseer.characters.v1.default': '['
             '{"id":"p1","name":"A","tracks":[{"label":"HP","current":9,"max":10}]},'
             '{"id":"p2","name":"B","tracks":[{"label":"HP","current":9,"max":10}],"conditions":["hidden"]},'
             '{"id":"npc","name":"N","tracks":[{"label":"HP","current":9,"max":10}]}'
@@ -97,7 +97,7 @@ void main() {
   test('addIronsworn prepends a premade Ironsworn character', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -113,7 +113,7 @@ void main() {
   test('addStarforged prepends a premade Starforged character', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -129,7 +129,7 @@ void main() {
   test('addDnd prepends a premade D&D character', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -145,7 +145,7 @@ void main() {
   test('addShadowdark prepends a premade Shadowdark character', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();

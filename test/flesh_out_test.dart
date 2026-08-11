@@ -5,17 +5,17 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
-import 'package:juice_oracle/engine/map_builder.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/map_screen.dart';
-import 'package:juice_oracle/features/tracker_screen.dart';
-import 'package:juice_oracle/shared/ai_badge.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
+import 'package:loreseer/engine/map_builder.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/map_screen.dart';
+import 'package:loreseer/features/tracker_screen.dart';
+import 'package:loreseer/shared/ai_badge.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -44,11 +44,11 @@ Future<ProviderContainer> _pumpCharacters(
     WidgetTester tester, FakeInterpreterService fake,
     {bool aiEnabled = true}) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.characters.v1.default':
+    'loreseer.characters.v1.default':
         '[{"id":"c1","name":"Ash","note":"A scout.","stats":[],"tracks":[],"tags":[],"role":"npc"}]',
-    if (aiEnabled) 'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'loreseer.ai_enabled.v1': true,
   });
   await tester.pumpWidget(ProviderScope(
     overrides: [interpreterServiceProvider.overrideWithValue(fake)],
@@ -90,11 +90,11 @@ void main() {
   testWidgets('thread flesh-out appends detail to the note', (tester) async {
     final fake = _fake();
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.threads.v1.default':
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","note":"Rumored lost.","open":true}]',
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     await tester.pumpWidget(ProviderScope(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
@@ -136,8 +136,8 @@ void main() {
       activeDungeonId: 'd1',
     );
     SharedPreferences.setMockInitialValues({
-      'flutter.juice.map.v1.default': jsonEncode(seeded.toJson()),
-      'juice.ai_enabled.v1': true,
+      'flutter.loreseer.map.v1.default': jsonEncode(seeded.toJson()),
+      'loreseer.ai_enabled.v1': true,
     });
     final c = ProviderContainer(overrides: [
       hexcrawlDataProvider.overrideWith((ref) async => _hexData()),
@@ -177,8 +177,8 @@ void main() {
       currentHexRow: 0,
     );
     SharedPreferences.setMockInitialValues({
-      'flutter.juice.map.v1.default': jsonEncode(seeded.toJson()),
-      'juice.ai_enabled.v1': true,
+      'flutter.loreseer.map.v1.default': jsonEncode(seeded.toJson()),
+      'loreseer.ai_enabled.v1': true,
     });
     final c = ProviderContainer(overrides: [
       hexcrawlDataProvider.overrideWith((ref) async => _hexData()),

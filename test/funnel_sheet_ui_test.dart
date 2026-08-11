@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/funnel_sheet.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/funnel_sheet.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet,
@@ -18,9 +18,9 @@ Future<ProviderContainer> _pump(WidgetTester tester, FunnelSheet sheet,
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.characters.v1.default': jsonEncode([
+    'loreseer.characters.v1.default': jsonEncode([
       {
         'id': 'f1',
         'name': '0-Level Funnel',

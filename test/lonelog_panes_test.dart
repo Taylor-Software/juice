@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/battle_pane.dart';
-import 'package:juice_oracle/features/resources_pane.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/battle_pane.dart';
+import 'package:loreseer/features/resources_pane.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The two Lonelog addon panes sat at ~1% line coverage with no test importing
@@ -13,7 +13,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// was just a gap.
 Future<ProviderContainer> _pump(WidgetTester tester, Widget pane) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
   });
   final container = ProviderContainer();

@@ -12,7 +12,7 @@ third-party table text is reproduced (community collections such as
 r/BehindTheTables carry no reuse license, so their rows are not vendorable).
 
 Output shape = the app's portable table-pack format (see
-lib/engine/custom_table.dart): {kind: 'juice-table-pack', v: 1, tables: [...]}
+lib/engine/custom_table.dart): {kind: 'loreseer-table-pack', v: 1, tables: [...]}
 with rows as plain strings (uniform mode) and the #262 library metadata
 (cat/src; genre left empty = generic).
 """
@@ -475,7 +475,7 @@ def verify():
 
 def main():
     verify()
-    pack = {"kind": "juice-table-pack", "v": 1, "tables": T}
+    pack = {"kind": "loreseer-table-pack", "v": 1, "tables": T}
     out = "assets/starter_tables.json"
     with open(out, "w") as f:
         json.dump(pack, f, ensure_ascii=False, indent=1)

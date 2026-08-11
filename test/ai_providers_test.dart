@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -17,11 +17,11 @@ void main() {
     expect(c.read(aiEnabledProvider).valueOrNull, isTrue);
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('juice.ai_enabled.v1'), isTrue);
+    expect(prefs.getBool('loreseer.ai_enabled.v1'), isTrue);
   });
 
   test('aiEnabledProvider reads an existing true pref', () async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final c = ProviderContainer();
     addTearDown(c.dispose);
     expect(await c.read(aiEnabledProvider.future), isTrue);
@@ -29,7 +29,7 @@ void main() {
 
   group('gates', () {
     ProviderContainer make(InterpreterStatus initial, {bool enabled = false}) {
-      SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': enabled});
+      SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': enabled});
       final fake = FakeInterpreterService(initial: initial);
       final c = ProviderContainer(overrides: [
         interpreterServiceProvider.overrideWithValue(fake),

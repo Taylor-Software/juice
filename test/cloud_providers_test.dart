@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_cloud_key_store.dart';
@@ -17,7 +17,7 @@ void main() {
     await c.read(cloudInterpretEnabledProvider.notifier).setEnabled(true);
     expect(c.read(cloudInterpretEnabledProvider).valueOrNull, isTrue);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('juice.cloud_interpret_enabled.v1'), isTrue);
+    expect(prefs.getBool('loreseer.cloud_interpret_enabled.v1'), isTrue);
   });
 
   test('cloudApiKeyProvider reads through the overridden key store', () async {
@@ -38,8 +38,8 @@ void main() {
       String? cloudKey,
     }) {
       SharedPreferences.setMockInitialValues({
-        'juice.ai_enabled.v1': onDeviceEnabled,
-        'juice.cloud_interpret_enabled.v1': cloudEnabled,
+        'loreseer.ai_enabled.v1': onDeviceEnabled,
+        'loreseer.cloud_interpret_enabled.v1': cloudEnabled,
       });
       final fakeInterpreter =
           FakeInterpreterService(initial: InterpreterStatus(onDevicePhase));

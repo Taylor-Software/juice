@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/state/cloud_interpreter.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/state/cloud_interpreter.dart';
 
 http.Client _mockAnthropicClient(String responseText, {int status = 200}) {
   return MockClient((request) async {

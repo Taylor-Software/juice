@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/sheet_widgets.dart';
+import 'package:loreseer/features/sheet_widgets.dart';
 
 void main() {
   Widget host(Widget child) => MaterialApp(home: Scaffold(body: child));

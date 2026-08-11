@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/sketch.dart';
+import 'package:loreseer/engine/sketch.dart';
 
 void main() {
   group('SketchData', () {

@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/features/scene_jump_sheet.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/features/scene_jump_sheet.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
 import 'fake_interpreter.dart';
 
 /// Newest-first journal: an old scene buried under 40 filler entries.
@@ -38,11 +38,11 @@ void main() {
   testWidgets('scene jump scroll-hunts the reverse list to an old scene',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.ai_nudge_seen.v1': true,
-      'juice.recap_suppressed.v1': true,
-      'juice.journal.v2.default': _journalJson(),
+      'loreseer.ai_nudge_seen.v1': true,
+      'loreseer.recap_suppressed.v1': true,
+      'loreseer.journal.v2.default': _journalJson(),
     });
     final c = ProviderContainer(overrides: [
       interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),

@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/launcher_screen.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/engine/loop_kit.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/launcher_screen.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -25,7 +25,7 @@ ProviderContainer _container() {
   // every launcher test must supply the fake interpreter — never the real Gemma
   // service. Mark the first-run AI offer already-seen so it doesn't pop over
   // tests that aren't about it.
-  SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
+  SharedPreferences.setMockInitialValues({'loreseer.ai_offer_seen.v1': true});
   return ProviderContainer(overrides: [
     interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
     sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
@@ -90,7 +90,7 @@ void main() {
   });
 
   ProviderContainer modedContainer() {
-    SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_offer_seen.v1': true});
     return ProviderContainer(overrides: [
       interpreterServiceProvider.overrideWithValue(FakeInterpreterService()),
       sessionsProvider.overrideWith(() => _FixedSessions(const SessionsState(
@@ -234,7 +234,7 @@ void main() {
           ]),
     ]);
     addTearDown(c.dispose);
-    SharedPreferences.setMockInitialValues({'juice.ai_offer_seen.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_offer_seen.v1': true});
     await _pump(t, c);
 
     await t.tap(find.byKey(const Key('launcher-new')));

@@ -1,17 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
-import 'package:juice_oracle/state/suggestions_provider.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
+import 'package:loreseer/state/suggestions_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('empty campaign → roll-oracle + start-scene', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.threads.v1.default': '[]',
+      'loreseer.journal.v2.default': '[]',
+      'loreseer.threads.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -25,11 +25,11 @@ void main() {
 
   test('open thread + a scene → advance-thread + scene-event', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s1","timestamp":"2026-06-18T00:00:00.000","title":"Scene","body":"","kind":"scene","tags":[]}]',
-      'juice.threads.v1.default':
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find it","note":"","open":true,"pinned":false}]',
     });
     final c = ProviderContainer();
@@ -42,14 +42,14 @@ void main() {
 
   // Ironsworn family + focus character: make-move is present regardless of mode.
   Map<String, Object> seedMove(String mode) => {
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1",'
                 '"systems":["ironsworn"],"mode":"$mode"}]}',
-        'juice.journal.v2.default':
+        'loreseer.journal.v2.default':
             '[{"id":"s1","timestamp":"2026-06-18T00:00:00.000","title":"Scene","body":"","kind":"scene","tags":[]}]',
-        'juice.threads.v1.default': '[]',
-        'juice.rulesets.v1': '["classic"]',
-        'juice.context.v1.default': '{"activeCharacterId":"c1"}',
+        'loreseer.threads.v1.default': '[]',
+        'loreseer.rulesets.v1': '["classic"]',
+        'loreseer.context.v1.default': '{"activeCharacterId":"c1"}',
       };
 
   Future<List<String>> resolveIds(ProviderContainer c) async {

@@ -15,15 +15,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
-import 'package:juice_oracle/features/inline_roll_dock.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/verdant_data.dart';
+import 'package:loreseer/features/inline_roll_dock.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -65,15 +65,15 @@ void main() {
     addTearDown(t.view.resetDevicePixelRatio);
     addTearDown(t.view.resetViewInsets);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // Not a first-run user: the one-time cards are dismissed, so this
       // measures the steady state rather than the nudge.
-      'juice.ai_offer_seen.v1': true,
-      'juice.welcome_seen.v1': true,
-      'juice.ai_nudge_seen.v1': true,
-      'juice.chip_help_seen.v1': true,
-      'juice.journal.v2.default': '['
+      'loreseer.ai_offer_seen.v1': true,
+      'loreseer.welcome_seen.v1': true,
+      'loreseer.ai_nudge_seen.v1': true,
+      'loreseer.chip_help_seen.v1': true,
+      'loreseer.journal.v2.default': '['
           '${_entry('e1', 'Gorath met Mira near the Vault.')},'
           '${_entry('e2', 'The Vault held secrets.')},'
           '${_entry('e3', 'Mira drew her blade.')}'

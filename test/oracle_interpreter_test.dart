@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/gm_chat.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
+import 'package:loreseer/engine/gm_chat.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
 
 import 'fake_interpreter.dart';
 

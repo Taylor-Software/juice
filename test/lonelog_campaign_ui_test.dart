@@ -5,14 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
-import 'package:juice_oracle/engine/lonelog_data.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
+import 'package:loreseer/engine/lonelog_data.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/verdant_data.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/state/providers.dart';
 
 Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())

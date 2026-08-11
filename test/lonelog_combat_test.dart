@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/lonelog_combat.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/lonelog_combat.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   test('renders a [COMBAT] block with foe tags and the outcome', () {

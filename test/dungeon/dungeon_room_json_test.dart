@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   test('legacy single-cell room round-trips and defaults footprint to [(0,0)]',

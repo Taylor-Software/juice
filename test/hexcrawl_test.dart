@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/hexcrawl.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/hexcrawl.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
 
 HexcrawlData _data() => HexcrawlData(
     jsonDecode(File('assets/hexcrawl_data.json').readAsStringSync())

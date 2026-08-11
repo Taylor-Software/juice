@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/launcher_screen.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/launcher_screen.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -45,7 +45,7 @@ Future<ProviderContainer> _pump(
 void main() {
   // welcomeSeen=true → the welcome card is gone → the offer gate is free to
   // fire on first run.
-  const firstRunPrefs = {'juice.welcome_seen.v1': true};
+  const firstRunPrefs = {'loreseer.welcome_seen.v1': true};
 
   testWidgets('offer appears on first run when AI is supported and unenabled',
       (t) async {
@@ -94,16 +94,16 @@ void main() {
 
   testWidgets('offer does not reappear once seen', (t) async {
     await _pump(t, prefs: const {
-      'juice.welcome_seen.v1': true,
-      'juice.ai_offer_seen.v1': true,
+      'loreseer.welcome_seen.v1': true,
+      'loreseer.ai_offer_seen.v1': true,
     });
     expect(find.byKey(const Key('ai-offer-dialog')), findsNothing);
   });
 
   testWidgets('offer does not appear when AI is already enabled', (t) async {
     await _pump(t, prefs: const {
-      'juice.welcome_seen.v1': true,
-      'juice.ai_enabled.v1': true,
+      'loreseer.welcome_seen.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     expect(find.byKey(const Key('ai-offer-dialog')), findsNothing);
   });

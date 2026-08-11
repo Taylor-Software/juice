@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -20,12 +20,12 @@ void main() {
   Future<ProviderContainer> pump(WidgetTester tester,
       {bool emptyJournal = false}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // Suppress the contextual AI-enable nudge — it would occupy the top of
       // the entry area and push the oldest entry offscreen in this short list.
-      'juice.ai_nudge_seen.v1': true,
-      if (!emptyJournal) 'juice.journal.v2.default': journalJson,
+      'loreseer.ai_nudge_seen.v1': true,
+      if (!emptyJournal) 'loreseer.journal.v2.default': journalJson,
     });
     final fake = FakeInterpreterService();
     await tester.pumpWidget(ProviderScope(

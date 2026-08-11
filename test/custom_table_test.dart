@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/engine/dice.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/engine/dice.dart';
 
 void main() {
   group('CustomTable JSON', () {

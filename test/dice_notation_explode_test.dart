@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dice_notation.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dice_notation.dart';
 
 void main() {
   test('parses and normalizes exploding notation (! leading or trailing)', () {

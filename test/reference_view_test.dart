@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/spell.dart';
-import 'package:juice_oracle/features/reference_view.dart';
-import 'package:juice_oracle/features/sheet_widgets.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/spell.dart';
+import 'package:loreseer/features/reference_view.dart';
+import 'package:loreseer/features/sheet_widgets.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   testWidgets('SpellCard renders name, level/school, and description', (t) async {

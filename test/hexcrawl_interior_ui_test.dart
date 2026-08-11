@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
-import 'package:juice_oracle/engine/map_builder.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/map_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
+import 'package:loreseer/engine/map_builder.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/map_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 Oracle _oracle() => Oracle(OracleData(
     jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -41,7 +41,7 @@ Future<void> _pump(WidgetTester t, {required bool hexcrawl}) async {
     currentHexRow: 0,
   );
   SharedPreferences.setMockInitialValues({
-    'flutter.juice.map.v1.default': jsonEncode(seeded.toJson()),
+    'flutter.loreseer.map.v1.default': jsonEncode(seeded.toJson()),
   });
   await t.pumpWidget(ProviderScope(
     overrides: [

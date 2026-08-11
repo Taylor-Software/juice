@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/verdant.dart';
-import 'package:juice_oracle/state/verdant.dart';
+import 'package:loreseer/engine/verdant.dart';
+import 'package:loreseer/state/verdant.dart';
 
 void main() {
   test('defaults', () {

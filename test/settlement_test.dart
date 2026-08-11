@@ -5,11 +5,11 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/state/providers.dart';
 
 Oracle _oracle([int seed = 3]) => Oracle(
     OracleData(jsonDecode(File('assets/oracle_data.json').readAsStringSync())

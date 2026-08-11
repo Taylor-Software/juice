@@ -3,10 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/kal_arath_sheet.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/kal_arath_sheet.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<ProviderContainer> _pump(WidgetTester tester) async {
@@ -18,9 +18,9 @@ Future<ProviderContainer> _pump(WidgetTester tester) async {
     fatePoints: 1,
   );
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.characters.v1.default': jsonEncode([
+    'loreseer.characters.v1.default': jsonEncode([
       {
         'id': 'c1',
         'name': 'Vorr',
@@ -117,9 +117,9 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     var back = false;
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': jsonEncode([
+      'loreseer.characters.v1.default': jsonEncode([
         {
           'id': 'c1',
           'name': 'Vorr',

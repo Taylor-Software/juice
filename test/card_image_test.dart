@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/shared/card_image.dart';
+import 'package:loreseer/shared/card_image.dart';
 
 Widget _host(Widget child) =>
     MaterialApp(home: Scaffold(body: Center(child: child)));

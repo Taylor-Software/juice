@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/subtab_host.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/subtab_host.dart';
 
 Widget _host() => const ProviderScope(
       child: MaterialApp(

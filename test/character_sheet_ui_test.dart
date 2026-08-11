@@ -4,13 +4,13 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/shadowdark_sheet.dart';
-import 'package:juice_oracle/features/tracker_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/shadowdark_sheet.dart';
+import 'package:loreseer/features/tracker_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,9 +21,9 @@ void main() {
   // tests pump the public panes directly.
   Future<ProviderContainer> pump(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': seeded,
+      'loreseer.characters.v1.default': seeded,
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -36,9 +36,9 @@ void main() {
 
   Future<ProviderContainer> pumpThreads(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.threads.v1.default':
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","open":true}]',
     });
     await tester.pumpWidget(ProviderScope(
@@ -93,9 +93,9 @@ void main() {
     // card used to show nothing. Now it reads characterHpPool. Not active,
     // so it renders as the compact card.
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"d1","name":"Mira","note":"","stats":[],"tracks":[],'
               '"tags":[],"coins":12,'
               '"dnd":{"currentHp":9,"maxHp":15}}]',
@@ -113,9 +113,9 @@ void main() {
 
   testWidgets('large track keeps +/- steppers, no boxes', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","note":"","stats":[],'
               '"tracks":[{"label":"XP","current":5,"max":40}],"tags":[]}]',
     });
@@ -188,9 +188,9 @@ void main() {
 
   testWidgets('Add HP seeds an HP track at the front', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":[]}]',
     });
     await tester.pumpWidget(ProviderScope(
@@ -221,9 +221,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","note":"note","coins":5,'
               '"stats":[{"label":"Strength","value":"14","mod":"fived"}],'
               '"tracks":[{"label":"HP","current":7,"max":10},'
@@ -272,9 +272,9 @@ void main() {
   testWidgets('sheet shows the emulation summary only when emulation exists',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":[]},'
               '{"id":"c2","name":"Em","note":"","stats":[],"tracks":[],"tags":["brave"],'
               '"emulation":{"tokens":3,"prominentTags":["brave","bold"],"usedTags":[]}}]',
@@ -340,10 +340,10 @@ void main() {
     required String chars,
   }) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': chars,
-      'juice.context.v1.default': '{"activeCharacterId":"$activeId"}',
+      'loreseer.characters.v1.default': chars,
+      'loreseer.context.v1.default': '{"activeCharacterId":"$activeId"}',
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -466,10 +466,10 @@ void main() {
           '"health":5,"spirit":5,"supply":5,"momentum":2,'
           '"xpEarned":0,"xpSpent":0,"bonds":0}'}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"iw","name":"Ulla","note":"","stats":[],"tracks":[],'
               '"tags":[],"ironsworn":$iron}]',
     });
@@ -555,11 +555,11 @@ void main() {
   testWidgets('pick an asset from the ruleset and toggle an ability',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.rulesets.v1': '["classic"]',
-      'juice.characters.v1.default':
+      'loreseer.rulesets.v1': '["classic"]',
+      'loreseer.characters.v1.default':
           '[{"id":"iw","name":"Ulla","note":"","stats":[],"tracks":[],'
               '"tags":[],"ironsworn":{"edge":3,"heart":2,"iron":2,"shadow":1,'
               '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
@@ -626,10 +626,10 @@ void main() {
   testWidgets('create flow makes a pre-made Ironsworn character',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -653,10 +653,10 @@ void main() {
           '"health":5,"spirit":5,"supply":5,"momentum":2,"xpEarned":0,'
           '"xpSpent":0,"questsLegacy":0,"bondsLegacy":0,"discoveriesLegacy":0}'}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"sf","name":"Nova","note":"","stats":[],"tracks":[],'
               '"tags":[],"starforged":$sf}]',
     });
@@ -738,10 +738,10 @@ void main() {
   testWidgets('create flow offers Starforged and makes a premade SF character',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -803,11 +803,11 @@ void main() {
 
   testWidgets('SF pick an asset and toggle an ability', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.rulesets.v1': '["starforged"]',
-      'juice.characters.v1.default':
+      'loreseer.rulesets.v1': '["starforged"]',
+      'loreseer.characters.v1.default':
           '[{"id":"sf","name":"Nova","note":"","stats":[],"tracks":[],'
               '"tags":[],"starforged":{"edge":3,"heart":2,"iron":2,"shadow":1,'
               '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
@@ -882,10 +882,10 @@ void main() {
           '"saveProficiencies":["str","con"],'
           '"skillProficiencies":["athletics","perception"]}'}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["dnd"]}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"dd","name":"Tarin","note":"","stats":[],"tracks":[],'
               '"tags":[],"dnd":$dnd}]',
     });
@@ -945,10 +945,10 @@ void main() {
 
   testWidgets('create flow makes a premade D&D character', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["dnd"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1018,10 +1018,10 @@ void main() {
   testWidgets('create flow makes a Sundered Isles character with SI label',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1046,10 +1046,10 @@ void main() {
           '"cha":10},"className":"Fighter","ancestry":"Human",'
           '"alignment":"Neutral","level":1,"ac":13,"currentHp":8,"maxHp":8}'}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["shadowdark"]}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"sd","name":"Mort","note":"","stats":[],"tracks":[],'
               '"tags":[],"shadowdark":$sd}]',
     });
@@ -1109,10 +1109,10 @@ void main() {
   testWidgets('create flow makes a premade Shadowdark character',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["shadowdark"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1249,11 +1249,11 @@ void main() {
 
   testWidgets('Sundered Isles picker lists SI assets', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.rulesets.v1': '["starforged","sundered_isles"]',
-      'juice.characters.v1.default':
+      'loreseer.rulesets.v1': '["starforged","sundered_isles"]',
+      'loreseer.characters.v1.default':
           '[{"id":"si","name":"Mara","note":"","stats":[],"tracks":[],'
               '"tags":[],"starforged":{"edge":3,"heart":2,"iron":2,"shadow":1,'
               '"wits":1,"health":5,"spirit":5,"supply":5,"momentum":2,'
@@ -1307,10 +1307,10 @@ void main() {
       'sheet picker hides Ironsworn family when ironsworn system is off',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["dnd"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1334,10 +1334,10 @@ void main() {
   testWidgets('sheet picker hints how to enable D&D/Shadowdark when off',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1356,10 +1356,10 @@ void main() {
       'sheet picker omits the hint when D&D, Shadowdark, Nimble, Draw Steel, Tales of Argosa, Cairn, Knave, OSE, Kal-Arath, and Custom are on',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["dnd","shadowdark","nimble","draw-steel","argosa","cairn","knave","ose","kal-arath","custom"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1400,10 +1400,10 @@ void main() {
     addTearDown(() => FlutterError.onError = prev);
 
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["ironsworn","shadowdark"]}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -1430,9 +1430,9 @@ void main() {
 
   testWidgets('Generate NPC prefills and creates a character', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -1461,9 +1461,9 @@ void main() {
   testWidgets('Generate NPC dialog dice re-rolls the name field',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -1506,9 +1506,9 @@ void main() {
 
   testWidgets('roster groups by role with headers', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]},'
               '{"id":"n1","name":"Veyra","role":"npc","stats":[],"tracks":[],"tags":[]}]',
     });
@@ -1524,9 +1524,9 @@ void main() {
 
   testWidgets('role dropdown re-tags a character', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[]}]',
     });
     await tester.pumpWidget(ProviderScope(
@@ -1549,9 +1549,9 @@ void main() {
   testWidgets('condition badges show and inline editor toggles them',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"p1","name":"Tarin","stats":[],"tracks":[],"tags":[],'
               '"conditions":["poisoned"]}]',
     });
@@ -1577,9 +1577,9 @@ void main() {
 
   testWidgets('Generate NPC creates an npc-role character', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -1612,9 +1612,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': jsonEncode([
+      'loreseer.characters.v1.default': jsonEncode([
         {
           'id': 'sd1',
           'name': 'Mort',
@@ -1650,9 +1650,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': jsonEncode([
+      'loreseer.characters.v1.default': jsonEncode([
         {
           'id': 'sd1',
           'name': 'Mort',
@@ -1684,9 +1684,9 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '['
+      'loreseer.characters.v1.default': '['
           '{"id":"p1","name":"Aldra","tracks":[{"label":"HP","current":10,"max":10}]},'
           '{"id":"p2","name":"Bryn","tracks":[{"label":"HP","current":10,"max":10}]}'
           ']',
@@ -1720,11 +1720,11 @@ void main() {
   testWidgets('roster shows a mentions backlink chip and opens the list',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"e1","timestamp":"2026-06-11T10:00:00.000","title":"","body":"Met @[Ash](char:c1) at the gate.","kind":"text"}]',
     });
     await tester.pumpWidget(ProviderScope(

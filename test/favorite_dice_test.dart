@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/features/dice_roller_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/features/dice_roller_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   test('favorites add/dedupe/cap/remove persist', () async {
@@ -33,7 +33,7 @@ void main() {
     expect(c.read(favoriteDiceProvider).value, isNot(contains('d12')));
 
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getStringList('juice.favorite_dice.v1'),
+    expect(prefs.getStringList('loreseer.favorite_dice.v1'),
         c.read(favoriteDiceProvider).value);
   });
 

@@ -3,11 +3,11 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/dungeon/generator.dart';
-import 'package:juice_oracle/engine/dungeon/tables.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/dungeon/generator.dart';
+import 'package:loreseer/engine/dungeon/tables.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 DungeonTables _tables() => DungeonTables.fromJson(jsonDecode('''
@@ -104,6 +104,6 @@ void main() {
   });
 
   test('dungeon_factions key is session-scoped (registered for export)', () {
-    expect(sessionScopedKeys, contains('juice.dungeon_factions.v1'));
+    expect(sessionScopedKeys, contains('loreseer.dungeon_factions.v1'));
   });
 }

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/features/assistant_rail.dart';
-import 'package:juice_oracle/features/gm_chat_screen.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/features/assistant_rail.dart';
+import 'package:loreseer/features/gm_chat_screen.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -25,12 +25,12 @@ Future<ProviderContainer> _pumpRankSection(
   // (start-scene, advance-thread) to rank. Inline rolls moved to the dock, so
   // ranking now reorders navigate chips only.
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.journal.v2.default': '[]',
-    'juice.threads.v1.default':
+    'loreseer.journal.v2.default': '[]',
+    'loreseer.threads.v1.default':
         '[{"id":"t1","title":"The missing heir","open":true}]',
-    if (aiEnabled) 'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'loreseer.ai_enabled.v1': true,
   });
   final c = ProviderContainer(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)]);
@@ -46,10 +46,10 @@ Future<ProviderContainer> _pumpRankSection(
 
 Future<ProviderContainer> pumpSection(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.journal.v2.default': '[]',
-    'juice.threads.v1.default': '[]',
+    'loreseer.journal.v2.default': '[]',
+    'loreseer.threads.v1.default': '[]',
   });
   final c = ProviderContainer();
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -109,11 +109,11 @@ void main() {
 
   testWidgets('ask-the-Oracle box opens the multi-turn GM chat', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.threads.v1.default': '[]',
-      'juice.ai_enabled.v1': true,
+      'loreseer.journal.v2.default': '[]',
+      'loreseer.threads.v1.default': '[]',
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready),
@@ -144,11 +144,11 @@ void main() {
   testWidgets('ask-the-Oracle box is hidden when the model is not ready',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.threads.v1.default': '[]',
-      'juice.ai_enabled.v1': true, // enabled, but model not downloaded
+      'loreseer.journal.v2.default': '[]',
+      'loreseer.threads.v1.default': '[]',
+      'loreseer.ai_enabled.v1': true, // enabled, but model not downloaded
     });
     final fake = FakeInterpreterService(); // default: needsDownload
     final c = ProviderContainer(overrides: [

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 // Simple int provider to stand in for "how many sessions exist".
 final _sessionCountProvider = StateProvider<int>((ref) => 1);

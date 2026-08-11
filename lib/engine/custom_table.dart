@@ -190,7 +190,7 @@ class CustomTable {
 }
 
 /// Stable marker for an exported table pack file.
-const kTablePackKind = 'juice-table-pack';
+const kTablePackKind = 'loreseer-table-pack';
 
 /// Serialize [tables] to a portable pack JSON string.
 String encodeTablePack(List<CustomTable> tables) => jsonEncode({

@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/help_data.dart';
-import 'package:juice_oracle/features/help_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/shared/tool_registry.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/help_data.dart';
+import 'package:loreseer/features/help_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/shared/tool_registry.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   final data = HelpData(

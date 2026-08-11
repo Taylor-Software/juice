@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/campaign_io.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/campaign_io.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +46,7 @@ void main() {
       // An older (pre-profile) file omits systems; legacy files may carry a
       // retired 'mode' key — both parse, mode is ignored.
       final raw = jsonEncode({
-        'app': 'juice-oracle',
+        'app': 'loreseer',
         'schemaVersion': 3,
         'name': 'Legacy',
         'mode': 'gm',
@@ -62,18 +62,18 @@ void main() {
         name: 'West Marches',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.threads.v1':
+          'loreseer.threads.v1':
               '[{"id":"t1","title":"Vow","note":"","open":true}]',
-          'juice.crawl.v1':
+          'loreseer.crawl.v1':
               '{"envRow":7,"lost":true,"dialogRow":2,"dialogCol":2}',
         },
       );
       final parsed = parseCampaign(encoded);
       expect(parsed.name, 'West Marches');
       expect(parsed.rawByKey.keys,
-          unorderedEquals(['juice.threads.v1', 'juice.crawl.v1']));
-      expect(parsed.rawByKey['juice.threads.v1'], contains('"title":"Vow"'));
-      expect(parsed.rawByKey['juice.crawl.v1'], contains('"envRow":7'));
+          unorderedEquals(['loreseer.threads.v1', 'loreseer.crawl.v1']));
+      expect(parsed.rawByKey['loreseer.threads.v1'], contains('"title":"Vow"'));
+      expect(parsed.rawByKey['loreseer.crawl.v1'], contains('"envRow":7'));
     });
 
     test('parseCampaign extracts genre from the settings store, else null', () {
@@ -81,7 +81,7 @@ void main() {
         name: 'West Marches',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.settings.v1': jsonEncode(
+          'loreseer.settings.v1': jsonEncode(
               const CampaignSettings(genre: 'Dark fantasy').toJson()),
         },
       );
@@ -92,7 +92,7 @@ void main() {
         name: 'Plain',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.settings.v1': jsonEncode(const CampaignSettings().toJson()),
+          'loreseer.settings.v1': jsonEncode(const CampaignSettings().toJson()),
         },
       );
       expect(parseCampaign(blank).genre, isNull);
@@ -113,46 +113,43 @@ void main() {
       );
       expect(
         () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":4,"name":"x","data":{}}'),
+            '{"app":"loreseer","schemaVersion":4,"name":"x","data":{}}'),
         throwsFormatException,
       );
       expect(
         () => parseCampaign(
-            '{"app":"juice-oracle","schemaVersion":1,"name":"x","data":[]}'),
+            '{"app":"loreseer","schemaVersion":1,"name":"x","data":[]}'),
         throwsFormatException,
       );
     });
 
     test('unknown data keys are ignored on parse', () {
       final parsed =
-          parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-              '"data":{"juice.threads.v1":[],"someday.v9":{}}}');
-      expect(parsed.rawByKey.keys, ['juice.threads.v1']);
+          parseCampaign('{"app":"loreseer","schemaVersion":1,"name":"x",'
+              '"data":{"loreseer.threads.v1":[],"someday.v9":{}}}');
+      expect(parsed.rawByKey.keys, ['loreseer.threads.v1']);
     });
 
     test('non-string name falls back instead of throwing', () {
       final parsed = parseCampaign(
-          '{"app":"juice-oracle","schemaVersion":1,"name":42,"data":{}}');
+          '{"app":"loreseer","schemaVersion":1,"name":42,"data":{}}');
       expect(parsed.name, 'Imported campaign');
     });
 
     test('rejects data payloads of the wrong shape', () {
       expect(
-        () =>
-            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-                '"data":{"juice.threads.v1":"garbage"}}'),
+        () => parseCampaign('{"app":"loreseer","schemaVersion":1,"name":"x",'
+            '"data":{"loreseer.threads.v1":"garbage"}}'),
         throwsFormatException,
       );
       expect(
-        () =>
-            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-                '"data":{"juice.threads.v1":[{"nope":true}]}}'),
+        () => parseCampaign('{"app":"loreseer","schemaVersion":1,"name":"x",'
+            '"data":{"loreseer.threads.v1":[{"nope":true}]}}'),
         throwsFormatException,
       );
       expect(
-        () =>
-            parseCampaign('{"app":"juice-oracle","schemaVersion":1,"name":"x",'
-                '"data":{"juice.crawl.v1":[1,2,3]}}'),
+        () => parseCampaign('{"app":"loreseer","schemaVersion":1,"name":"x",'
+            '"data":{"loreseer.crawl.v1":[1,2,3]}}'),
         throwsFormatException,
       );
     });
@@ -162,13 +159,13 @@ void main() {
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
         rawByKey: {
-          'juice.journal.v2':
+          'loreseer.journal.v2':
               '[{"id":"a","timestamp":"2026-06-11T09:00:00.000","title":"T","body":"B","kind":"text"}]',
         },
       );
       final decoded = jsonDecode(out) as Map<String, dynamic>;
       expect(decoded['schemaVersion'], 3);
-      expect(decoded['data'], contains('juice.journal.v2'));
+      expect(decoded['data'], contains('loreseer.journal.v2'));
     });
 
     test('rumors round-trip through campaign files', () {
@@ -176,11 +173,11 @@ void main() {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.rumors.v1': rumors},
+        rawByKey: {'loreseer.rumors.v1': rumors},
       );
       final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('juice.rumors.v1'));
-      final back = (jsonDecode(parsed.rawByKey['juice.rumors.v1']!) as List)
+      expect(parsed.rawByKey, contains('loreseer.rumors.v1'));
+      final back = (jsonDecode(parsed.rawByKey['loreseer.rumors.v1']!) as List)
           .cast<Map<String, dynamic>>()
           .map(Rumor.fromJson)
           .single;
@@ -194,11 +191,11 @@ void main() {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.tracks.v1': tracks},
+        rawByKey: {'loreseer.tracks.v1': tracks},
       );
       final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('juice.tracks.v1'));
-      final back = (jsonDecode(parsed.rawByKey['juice.tracks.v1']!) as List)
+      expect(parsed.rawByKey, contains('loreseer.tracks.v1'));
+      final back = (jsonDecode(parsed.rawByKey['loreseer.tracks.v1']!) as List)
           .cast<Map<String, dynamic>>()
           .map(Track.fromJson)
           .single;
@@ -209,19 +206,19 @@ void main() {
 
     test('v2 file without rumors key imports fine', () {
       final v2 = jsonEncode({
-        'app': 'juice-oracle',
+        'app': 'loreseer',
         'schemaVersion': 2,
         'savedAt': '2026-06-11T00:00:00.000',
         'name': 'Old campaign',
         'data': {
-          'juice.threads.v1': [
+          'loreseer.threads.v1': [
             {'id': 't1', 'title': 'Vow', 'note': '', 'open': true},
           ],
         },
       });
       final parsed = parseCampaign(v2);
-      expect(parsed.rawByKey.containsKey('juice.rumors.v1'), isFalse);
-      expect(parsed.rawByKey, contains('juice.threads.v1'));
+      expect(parsed.rawByKey.containsKey('loreseer.rumors.v1'), isFalse);
+      expect(parsed.rawByKey, contains('loreseer.threads.v1'));
     });
 
     test('character sheets round-trip through campaign files', () {
@@ -232,13 +229,14 @@ void main() {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.characters.v1': sheet},
+        rawByKey: {'loreseer.characters.v1': sheet},
       );
       final parsed = parseCampaign(out);
-      final back = (jsonDecode(parsed.rawByKey['juice.characters.v1']!) as List)
-          .cast<Map<String, dynamic>>()
-          .map(Character.fromJson)
-          .single;
+      final back =
+          (jsonDecode(parsed.rawByKey['loreseer.characters.v1']!) as List)
+              .cast<Map<String, dynamic>>()
+              .map(Character.fromJson)
+              .single;
       expect(back.stats.single.value, '+2');
       expect(back.tracks.single.max, 10);
       expect(back.tags, ['wounded']);
@@ -246,12 +244,12 @@ void main() {
 
     test('rejects malformed journal payloads', () {
       final bad = jsonEncode({
-        'app': 'juice-oracle',
+        'app': 'loreseer',
         'schemaVersion': 2,
         'savedAt': '2026-06-11T00:00:00.000',
         'name': 'X',
         'data': {
-          'juice.journal.v2': [
+          'loreseer.journal.v2': [
             {'id': 42}
           ],
         },
@@ -259,23 +257,23 @@ void main() {
       expect(() => parseCampaign(bad), throwsFormatException);
     });
 
-    test('campaign export/import carries juice.settings.v1', () {
+    test('campaign export/import carries loreseer.settings.v1', () {
       final encoded = encodeCampaign(
         name: 'S',
         savedAt: DateTime(2026, 6, 11),
         rawByKey: {
-          'juice.settings.v1': '{"genre":"grimdark","tone":"tense"}',
+          'loreseer.settings.v1': '{"genre":"grimdark","tone":"tense"}',
         },
       );
       final parsed = parseCampaign(encoded);
-      expect(parsed.rawByKey['juice.settings.v1'], contains('grimdark'));
+      expect(parsed.rawByKey['loreseer.settings.v1'], contains('grimdark'));
     });
 
     test('malformed settings section rejects the file', () {
       final encoded = encodeCampaign(
         name: 'S',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.settings.v1': '[1,2]'},
+        rawByKey: {'loreseer.settings.v1': '[1,2]'},
       );
       expect(() => parseCampaign(encoded), throwsFormatException);
     });
@@ -284,9 +282,9 @@ void main() {
   group('Provider export/import', () {
     test('exportActive embeds the active session data', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"Campaign 1"}]}',
-        'juice.threads.v1.default':
+        'loreseer.threads.v1.default':
             '[{"id":"t1","title":"Slay the wyrm","note":"","open":true}]',
       });
       final container = ProviderContainer();
@@ -294,7 +292,7 @@ void main() {
       await container.read(sessionsProvider.future);
       final file =
           await container.read(sessionsProvider.notifier).exportActive();
-      expect(file, contains('"app": "juice-oracle"'));
+      expect(file, contains('"app": "loreseer"'));
       expect(file, contains('Slay the wyrm'));
       expect(file, contains('"name": "Campaign 1"'));
     });
@@ -309,7 +307,7 @@ void main() {
         name: 'From File',
         savedAt: DateTime.utc(2026, 6, 11),
         rawByKey: {
-          'juice.threads.v1':
+          'loreseer.threads.v1':
               '[{"id":"x","title":"Imported vow","note":"","open":true}]',
         },
       );

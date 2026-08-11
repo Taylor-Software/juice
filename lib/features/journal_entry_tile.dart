@@ -47,7 +47,7 @@ class DiceLogRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     // Prefer the structured summary ("2d6 = 7"); else the title/body.
     final summary = entry.payload?['summary'] as String?;
     final line = (summary != null && summary.trim().isNotEmpty)
@@ -166,7 +166,7 @@ class _PayloadCardState extends State<PayloadCard> {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     final entry = widget.entry;
     final p = entry.payload!;
     final summary = p['summary'] as String?;
@@ -433,7 +433,7 @@ class _PayloadCardState extends State<PayloadCard> {
 
   /// The always-visible header row shown while expanded: icon tile + source
   /// label + sub-label + reroll/open-in-tool + menu.
-  Widget _expandedHeader(JuiceTokens tk, String? subLabel) {
+  Widget _expandedHeader(LoreTokens tk, String? subLabel) {
     final entry = widget.entry;
     return Row(
       children: [
@@ -498,7 +498,7 @@ class _PayloadCardState extends State<PayloadCard> {
   /// visible collapsed) + the overflow menu. Tapping the row body expands it.
   /// The collapsed-row body: rolled icons or drawn tarot cards render as image
   /// thumbnails (the result IS the image); everything else is a text one-liner.
-  Widget _collapsedContent(JuiceTokens tk, JournalEntry entry, String oneLiner,
+  Widget _collapsedContent(LoreTokens tk, JournalEntry entry, String oneLiner,
       String? rollSummary) {
     final p = entry.payload;
     if (p?['icons'] case final List<dynamic> icons when icons.isNotEmpty) {
@@ -563,7 +563,7 @@ class _PayloadCardState extends State<PayloadCard> {
     );
   }
 
-  Widget _collapsedRow(JuiceTokens tk, JournalEntry entry, String oneLiner,
+  Widget _collapsedRow(LoreTokens tk, JournalEntry entry, String oneLiner,
       String? rollSummary) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 6, 4, 6),
@@ -607,7 +607,7 @@ class _PayloadCardState extends State<PayloadCard> {
   /// The big serif answer. If the summary has a comma, the trailing qualifier
   /// (e.g. "and…", "but…") renders italic in terracotta; otherwise the whole
   /// summary renders normal.
-  Widget _answer(JuiceTokens tk, String summary) {
+  Widget _answer(LoreTokens tk, String summary) {
     final base = tk.narrative.copyWith(
       fontSize: 30,
       fontWeight: FontWeight.w500,

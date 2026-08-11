@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/lonelog_export.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/lonelog_export.dart';
+import 'package:loreseer/engine/models.dart';
 
 String _export({
   String name = 'My Campaign',
@@ -44,7 +44,7 @@ void main() {
     expect(out, contains('title: "West Marches"'));
     expect(out, contains('genre: "sword & sorcery"'));
     expect(out, isNot(contains('tone:')));
-    expect(out, contains('tools: juice-oracle'));
+    expect(out, contains('tools: loreseer'));
     expect(out, contains('exported: 2026-06-14'));
   });
 

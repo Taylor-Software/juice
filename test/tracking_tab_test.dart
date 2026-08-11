@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/features/tracking_tab.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/features/tracking_tab.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final _emulatorData = EmulatorData(
@@ -22,7 +22,7 @@ void main() {
   testWidgets('Track shows the core subtabs including Rumors always',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -51,7 +51,7 @@ void main() {
 
   testWidgets('Rumors always shown regardless of mode', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["party"],"mode":"party"}]}',
     });
@@ -77,7 +77,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["party"]}]}',
     });
@@ -105,7 +105,7 @@ void main() {
 
   testWidgets('Party tools gated by system, not mode', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["party"],"mode":"gm"}]}',
     });

@@ -5,12 +5,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/party_emulator.dart';
-import 'package:juice_oracle/features/party_emulator_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/party_emulator.dart';
+import 'package:loreseer/features/party_emulator_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -51,9 +51,9 @@ void main() {
   Future<ProviderContainer> pump(WidgetTester tester,
       {required int seed, String chars = seededChar}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': chars,
+      'loreseer.characters.v1.default': chars,
     });
     tester.view.physicalSize = const Size(900, 2400);
     tester.view.devicePixelRatio = 1.0;

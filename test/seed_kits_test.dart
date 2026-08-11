@@ -1,8 +1,8 @@
 // test/seed_kits_test.dart
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/state/providers.dart' show kKitAssetPaths;
+import 'package:loreseer/engine/loop_kit.dart';
+import 'package:loreseer/state/providers.dart' show kKitAssetPaths;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

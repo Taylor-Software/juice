@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:juice_oracle/engine/journal_search.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/journal_search.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   JournalEntry entry({

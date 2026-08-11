@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +46,7 @@ void main() {
 
   test('loads legacy string-row tables from prefs', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.custom_tables.v1':
+      'loreseer.custom_tables.v1':
           '[{"id":"old","name":"Legacy","rows":["A","B"]}]',
     });
     final c = ProviderContainer();

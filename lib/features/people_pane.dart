@@ -20,7 +20,7 @@ String _dispositionLabel(NpcDisposition d) => switch (d) {
       NpcDisposition.unknown => 'Unknown',
     };
 
-Color _dispositionColor(NpcDisposition d, ColorScheme s, JuiceTokens tk) =>
+Color _dispositionColor(NpcDisposition d, ColorScheme s, LoreTokens tk) =>
     switch (d) {
       NpcDisposition.friendly => tk.sage,
       NpcDisposition.neutral => s.onSurfaceVariant,
@@ -156,7 +156,7 @@ class _NpcCard extends ConsumerWidget {
         key: Key('npc-${npc.id}'),
         leading: Icon(Icons.person_outline,
             color: _dispositionColor(
-                npc.disposition, theme.colorScheme, context.juice)),
+                npc.disposition, theme.colorScheme, context.lore)),
         title: Text(npc.name.isEmpty ? '(unnamed NPC)' : npc.name),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

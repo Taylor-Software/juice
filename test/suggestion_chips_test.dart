@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -23,9 +23,9 @@ OracleData _loadData() {
 
 /// Two text entries each mentioning 'Brannoc' → triggers suggestion.
 const _sessionWithBrannoc = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-  'juice.journal.v2.default':
+  'loreseer.journal.v2.default':
       '[{"id":"2","timestamp":"2026-06-12T10:01:00.000","title":"","body":"Brannoc warned us about the road.","kind":"text"},'
           '{"id":"1","timestamp":"2026-06-12T10:00:00.000","title":"","body":"We met Brannoc by the well.","kind":"text"}]',
 };
@@ -104,7 +104,7 @@ void main() {
     // Re-pump same prefs (dismissal is persisted): chip still absent
     await pumpSuggestions(tester, data, prefs: {
       ..._sessionWithBrannoc,
-      'juice.suggestDismissed.default': '["character:brannoc"]',
+      'loreseer.suggestDismissed.default': '["character:brannoc"]',
     });
     expect(find.byKey(const Key('suggest-character-brannoc')), findsNothing);
   });
@@ -123,7 +123,7 @@ void main() {
     // Persisted: a fresh pump with the flag set never shows the explainer.
     await pumpSuggestions(tester, data, prefs: {
       ..._sessionWithBrannoc,
-      'juice.chip_help_seen.v1': true,
+      'loreseer.chip_help_seen.v1': true,
     });
     expect(find.byKey(const Key('chip-help')), findsNothing);
   });

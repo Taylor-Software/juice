@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('lightProvider: set persists (scoped) + clamps; default 0', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -24,6 +24,6 @@ void main() {
   });
 
   test('light key is session-scoped (exported with the campaign)', () {
-    expect(sessionScopedKeys, contains('juice.light.v1'));
+    expect(sessionScopedKeys, contains('loreseer.light.v1'));
   });
 }

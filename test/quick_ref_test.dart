@@ -1,6 +1,6 @@
 // test/quick_ref_test.dart
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/quick_ref.dart';
+import 'package:loreseer/engine/quick_ref.dart';
 
 void main() {
   group('resolveSystemQuickRef', () {

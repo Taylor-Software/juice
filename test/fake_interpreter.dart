@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/state/interpreter.dart';
 
 /// Scriptable fake. Tests drive [status] directly and queue results.
 class FakeInterpreterService implements InterpreterService {

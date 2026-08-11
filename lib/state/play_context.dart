@@ -9,7 +9,7 @@ import '../engine/oracle_interpreter.dart';
 import 'providers.dart';
 
 class PlayContextNotifier extends AsyncNotifier<PlayContext> {
-  static const _baseKey = 'juice.context.v1';
+  static const _baseKey = 'loreseer.context.v1';
   late String _scopedKey;
 
   @override

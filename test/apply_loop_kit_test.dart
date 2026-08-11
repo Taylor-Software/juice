@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/quick_ref.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/engine/loop_kit.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/quick_ref.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 
 Future<WidgetRef> _pumpRef(WidgetTester tester) async {
   late WidgetRef captured;
@@ -31,7 +31,7 @@ void main() {
       'applyLoopKit appends tables/cards and activates the starter scene',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"s1","sessions":[{"id":"s1","name":"Test"}]}',
     });
     final ref = await _pumpRef(tester);
@@ -73,7 +73,7 @@ void main() {
   testWidgets('a kit with no scene text does not create a journal entry',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"s1","sessions":[{"id":"s1","name":"Test"}]}',
     });
     final ref = await _pumpRef(tester);

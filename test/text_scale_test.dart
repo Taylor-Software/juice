@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   test('text scale defaults to 1.0, persists, and clamps', () async {
@@ -14,7 +14,7 @@ void main() {
     await c.read(textScaleProvider.notifier).set(1.2);
     expect(c.read(textScaleProvider).value, 1.2);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getDouble('juice.text_scale.v1'), 1.2);
+    expect(prefs.getDouble('loreseer.text_scale.v1'), 1.2);
 
     await c.read(textScaleProvider.notifier).set(9.0);
     expect(c.read(textScaleProvider).value, 1.4); // clamped
@@ -23,7 +23,7 @@ void main() {
   });
 
   test('persisted scale loads on build', () async {
-    SharedPreferences.setMockInitialValues({'juice.text_scale.v1': 1.15});
+    SharedPreferences.setMockInitialValues({'loreseer.text_scale.v1': 1.15});
     final c = ProviderContainer();
     addTearDown(c.dispose);
     expect(await c.read(textScaleProvider.future), 1.15);

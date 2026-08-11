@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/table_groups.dart';
+import 'package:loreseer/engine/table_groups.dart';
 
 void main() {
   test('groups by prefix; singletons and no-underscore keys go to General', () {

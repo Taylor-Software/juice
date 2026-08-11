@@ -8,7 +8,7 @@ import '../engine/mention_parser.dart';
 /// Renders journal prose with `@`-mentions as tappable links. When [lonelog]
 /// is true, non-mention text is additionally syntax-highlighted as Lonelog
 /// notation (symbols/tags/blocks/etc.) via [highlight]. Mentions are
-/// pre-extracted by [parseMentions], so juice's `@[..](..)` markup never
+/// pre-extracted by [parseMentions], so loreseer's `@[..](..)` markup never
 /// collides with Lonelog's bare `@` action symbol.
 class MentionText extends StatefulWidget {
   const MentionText(

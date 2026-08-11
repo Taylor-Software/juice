@@ -20,14 +20,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import '../test/fake_interpreter.dart';
 
@@ -44,9 +44,9 @@ Future<(ProviderContainer, FakeInterpreterService)> _pumpShell(
     WidgetTester tester,
     {Map<String, Object> extraPrefs = const {}}) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.ai_enabled.v1': true,
+    'loreseer.ai_enabled.v1': true,
     ...extraPrefs,
   });
   final fake = FakeInterpreterService(
@@ -108,7 +108,7 @@ void main() {
   testWidgets('scene flesh-out: Track > Scenes appends to the scene body',
       (tester) async {
     await _pumpShell(tester, extraPrefs: {
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"At the gate","body":"","kind":"scene"}]',
     });
     // Navigate Journal → Track verb, then open the Scenes subtab. (Track now
@@ -132,7 +132,7 @@ void main() {
   testWidgets('character flesh-out: Sheet roster appends to the note',
       (tester) async {
     final (c, _) = await _pumpShell(tester, extraPrefs: {
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"ch1","name":"Ash","note":"A scout.","stats":[],"tracks":[],"tags":[],"role":"npc"}]',
     });
     await tester.tap(find.text('Sheet'));
@@ -152,7 +152,7 @@ void main() {
   testWidgets('thread flesh-out: Track > Threads appends to the note',
       (tester) async {
     final (c, _) = await _pumpShell(tester, extraPrefs: {
-      'juice.threads.v1.default':
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","note":"Rumored lost.","open":true}]',
     });
     await tester.tap(find.text('Track'));

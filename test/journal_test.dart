@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/sketch.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/sketch.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -165,9 +165,9 @@ void main() {
   group('JournalNotifier cold-start mutation', () {
     test('add before any read keeps previously persisted entries', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.journal.v2.default':
+        'loreseer.journal.v2.default':
             '[{"id":"old","timestamp":"2026-06-11T09:00:00.000","title":"Old","body":"kept"}]',
       });
       final container = ProviderContainer();
@@ -177,7 +177,7 @@ void main() {
       final entries = await container.read(journalProvider.future);
       expect(entries.map((e) => e.title), ['New', 'Old']);
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString('juice.journal.v2.default')!;
+      final raw = prefs.getString('loreseer.journal.v2.default')!;
       expect(raw, contains('Old')); // not clobbered
       expect(raw, contains('New'));
     });
@@ -186,7 +186,7 @@ void main() {
   group('JournalNotifier typed adds', () {
     test('addText and addScene append typed entries', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final container = ProviderContainer();
@@ -224,9 +224,9 @@ void main() {
   group('JournalNotifier auto-stamps the active location', () {
     test('addText/addResult/addScene pick up the spine location', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
+        'loreseer.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -241,9 +241,9 @@ void main() {
 
     test('addSessionBreak and addSketch do NOT get stamped', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
+        'loreseer.context.v1.default': '{"activeLocation":{"roomId":"r1"}}',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -257,7 +257,7 @@ void main() {
 
     test('no active location leaves entries unstamped', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final container = ProviderContainer();
@@ -394,9 +394,9 @@ void main() {
 
   test('addSketch creates a sketch entry with payload', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);

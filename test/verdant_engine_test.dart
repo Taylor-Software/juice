@@ -3,9 +3,9 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/verdant.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/verdant.dart';
+import 'package:loreseer/engine/verdant_data.dart';
 
 void main() {
   final data = VerdantData(

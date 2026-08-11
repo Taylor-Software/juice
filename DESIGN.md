@@ -1,5 +1,5 @@
 ---
-name: Solo Adventurer's Journal
+name: LoreSeer
 description: A lamplit campaign tome for solo tabletop RPGs — cream paper, terracotta ink, and a serif that only the story is allowed to speak in.
 colors:
   cream: "#FBF1EB"
@@ -163,7 +163,7 @@ components:
     padding: "6px 12px"
 ---
 
-# Design System: Solo Adventurer's Journal
+# Design System: LoreSeer
 
 ## Overview
 
@@ -187,11 +187,11 @@ the qualifier after the comma tilts into italic terracotta, and the card it
 sits in is the only surface in the entire application permitted to cast a
 shadow. That restraint is what makes the moment land.
 
-The system currently runs on two color layers: the shipped `JuiceTokens` tome
+The system currently runs on two color layers: the shipped `LoreTokens` tome
 palette, and an underlying Material 3 `ColorScheme` seeded from a deep amber
 (`#B8540E`) that still governs older tool chrome, dialogs, and system widgets.
 **Tome is the destination.** The M3 layer is legacy debt, not a second design
-language — new work reads `JuiceTokens`, and touching an old surface is an
+language — new work reads `LoreTokens`, and touching an old surface is an
 opportunity to migrate it. The system is also fully dual-brightness: every tome
 token has a dark counterpart, and the dark theme is not an inversion but a
 second warm world (`#241C17` lamp-dimmed brown, never black).
@@ -263,7 +263,7 @@ narrow-purpose accents borrowed from a candle and a leaf.
   near-identical hard-coded values (`#EFC9B4` / `#F0CDB8`) at four call sites
   with **no dark value at all** until 2026-07-24, which meant a pale peach ring
   around a near-black card in dark mode. It is now one token,
-  `JuiceTokens.borderHero`.
+  `LoreTokens.borderHero`.
 
 ### Status
 
@@ -297,8 +297,8 @@ about to be taken, or an answer just given. If an element is neither, it is ink,
 not accent. Audit test: on any screen, count the terracotta elements. More than
 three and the accent has stopped meaning anything.
 
-**The Migration Rule.** New player-facing work reads `JuiceTokens` via
-`context.juice`, never a raw `ColorScheme` role. A surface still on M3 is a
+**The Migration Rule.** New player-facing work reads `LoreTokens` via
+`context.lore`, never a raw `ColorScheme` role. A surface still on M3 is a
 to-do, not a precedent. Audit test: `test/design_system_test.dart` pins the
 count of `colorScheme.` uses in `lib/` at its 2026-07-24 measurement (131). The
 number may go down — lower the ceiling when you migrate a surface — and never up.
@@ -672,7 +672,7 @@ Out, Inspire, Ask. One glyph, one meaning: this was suggested, not rolled.
 
 ### Do:
 
-- **Do** read colors through `context.juice` (`JuiceTokens`) on any
+- **Do** read colors through `context.lore` (`LoreTokens`) on any
   player-facing surface, and migrate a raw `ColorScheme` surface when you touch
   it.
 - **Do** keep the serif/sans split absolute: fiction in Newsreader, machinery in
@@ -722,7 +722,7 @@ Out, Inspire, Ask. One glyph, one meaning: this was suggested, not rolled.
 - **Don't** branch layout on a height threshold in the journal body; one tree at
   every height, floored at 360px.
 - **Don't** hard-code a hex where a token exists, and don't add a token that
-  duplicates one already in `JuiceTokens`. The hero border spent months as two
+  duplicates one already in `LoreTokens`. The hero border spent months as two
   near-identical literals at four call sites with no dark value; that is what
   this rule is for.
 - **Don't** remove a focus indicator, and don't rely on hover to communicate

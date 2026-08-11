@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/generate_sheet.dart';
-import 'package:juice_oracle/shared/result_card.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/generate_sheet.dart';
+import 'package:loreseer/shared/result_card.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -21,9 +21,9 @@ Oracle _oracle() => Oracle(OracleData(
         as Map<String, dynamic>));
 
 const _basePrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-  'juice.journal.v2.default': '[]',
+  'loreseer.journal.v2.default': '[]',
 };
 
 Future<ProviderContainer> _makeContainer() async {
@@ -273,7 +273,7 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues({
       ..._basePrefs,
-      'juice.custom_tables.v1':
+      'loreseer.custom_tables.v1':
           '[{"id":"t1","name":"Weather","rows":["Rain","Sun"]}]',
     });
     final c = ProviderContainer(overrides: [

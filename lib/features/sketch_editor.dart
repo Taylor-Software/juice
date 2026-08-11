@@ -418,7 +418,7 @@ class _SketchEditorState extends State<SketchEditor> {
   List<double> _xy(Offset o) => [o.dx, o.dy];
 
   Widget _toolbar() {
-    final tk = context.juice;
+    final tk = context.lore;
     return SafeArea(
         top: false,
         child: Padding(

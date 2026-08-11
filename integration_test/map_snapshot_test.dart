@@ -17,11 +17,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/map_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/map_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -32,9 +32,9 @@ void main() {
     // RepaintBoundary the snapshot captures) renders instead of the empty state.
     const map = MapState(hexes: [HexCell(col: 0, row: 0, envRow: 1)]);
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.map.v1.default': jsonEncode(map.toJson()),
+      'loreseer.map.v1.default': jsonEncode(map.toJson()),
     });
 
     final oracle = Oracle(OracleData(

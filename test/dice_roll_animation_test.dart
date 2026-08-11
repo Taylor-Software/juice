@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dice_notation.dart';
-import 'package:juice_oracle/features/dice_roll_animation.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dice_notation.dart';
+import 'package:loreseer/features/dice_roll_animation.dart';
 
 void main() {
   final result = parseDice('2d6+1').roll(Dice(Random(1)));

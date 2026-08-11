@@ -21,7 +21,7 @@ class SessionResumeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tk = context.juice;
+    final tk = context.lore;
     final entries = ref.watch(journalProvider).valueOrNull ?? const [];
     final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
         .where((t) => t.open)
@@ -101,7 +101,7 @@ class SessionResumeScreen extends ConsumerWidget {
 
   Widget _header(
     BuildContext context,
-    JuiceTokens tk, {
+    LoreTokens tk, {
     required String sceneTitle,
     required String campaignName,
     required String? relative,
@@ -151,7 +151,7 @@ class SessionResumeScreen extends ConsumerWidget {
   }
 
   Widget _statTiles(
-    JuiceTokens tk, {
+    LoreTokens tk, {
     required String sceneLabel,
     required String chaos,
     required String light,
@@ -172,7 +172,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _statTile(JuiceTokens tk, String label, String value, Color valueC) {
+  Widget _statTile(LoreTokens tk, String label, String value, Color valueC) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
@@ -207,7 +207,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _openThreads(JuiceTokens tk, List<Thread> threads) {
+  Widget _openThreads(LoreTokens tk, List<Thread> threads) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -277,7 +277,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _lastEntry(JuiceTokens tk, JournalEntry e) {
+  Widget _lastEntry(LoreTokens tk, JournalEntry e) {
     final text = e.title.trim().isEmpty
         ? e.body.trim()
         : (e.body.trim().isEmpty ? e.title.trim() : e.body.trim());
@@ -299,7 +299,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _continueButton(BuildContext context, WidgetRef ref, JuiceTokens tk) {
+  Widget _continueButton(BuildContext context, WidgetRef ref, LoreTokens tk) {
     return SizedBox(
       width: double.infinity,
       child: FilledButton(
@@ -318,7 +318,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _secondaryRow(BuildContext context, WidgetRef ref, JuiceTokens tk) {
+  Widget _secondaryRow(BuildContext context, WidgetRef ref, LoreTokens tk) {
     final style = OutlinedButton.styleFrom(
       foregroundColor: tk.terracotta,
       side: BorderSide(color: tk.borderInput),
@@ -348,7 +348,7 @@ class SessionResumeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _eyebrow(JuiceTokens tk, String text) => Text(
+  Widget _eyebrow(LoreTokens tk, String text) => Text(
         text,
         style: tk.uiLabel.copyWith(
           fontSize: 11.5,

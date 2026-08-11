@@ -2,18 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   test('duplicateSetup copies systems/genre/edition/settings, not play state',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"src","sessions":[{"id":"src",'
+      'loreseer.sessions.v1': '{"active":"src","sessions":[{"id":"src",'
           '"name":"Ironlands","systems":["ironsworn","juice"],'
           '"genre":"grim fantasy","dndEdition":"5.1"}]}',
-      'juice.settings.v1.src':
+      'loreseer.settings.v1.src':
           '{"genre":"grim fantasy","tone":"bleak","defaultOracle":"mythic"}',
-      'juice.journal.v2.src': '[{"id":"e1","timestamp":'
+      'loreseer.journal.v2.src': '[{"id":"e1","timestamp":'
           '"2026-07-11T10:00:00.000","title":"","body":"old story",'
           '"kind":"text"}]',
     });
@@ -35,15 +35,15 @@ void main() {
 
     final prefs = await SharedPreferences.getInstance();
     // Settings blob copied…
-    expect(prefs.getString('juice.settings.v1.${dup.id}'),
-        prefs.getString('juice.settings.v1.src'));
+    expect(prefs.getString('loreseer.settings.v1.${dup.id}'),
+        prefs.getString('loreseer.settings.v1.src'));
     // …but play state is fresh (no journal key for the new id).
-    expect(prefs.getString('juice.journal.v2.${dup.id}'), isNull);
+    expect(prefs.getString('loreseer.journal.v2.${dup.id}'), isNull);
   });
 
   test('duplicateSetup no-ops on an unknown id', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"a","sessions":[{"id":"a","name":"One"}]}',
     });
     final c = ProviderContainer();

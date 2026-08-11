@@ -25,7 +25,7 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     final tt = Theme.of(context).textTheme;
     return Center(
       child: Padding(

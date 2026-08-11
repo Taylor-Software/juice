@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/features/oracle_interpretation_sheet.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/features/oracle_interpretation_sheet.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -27,12 +27,12 @@ void main() {
       void Function(OracleInterpretation)? onAccept,
       OracleSeed seedOverride = seed}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // The sheet's readiness gate now routes through interpretReadyProvider
       // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
       // alone — so tests exercising the "ready" path need the toggle on too.
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(initial: initial);
     await tester.pumpWidget(ProviderScope(
@@ -136,12 +136,12 @@ void main() {
 
   testWidgets('interpret error shows retry', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // The sheet's readiness gate now routes through interpretReadyProvider
       // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
       // alone — so tests exercising the "ready" path need the toggle on too.
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -164,12 +164,12 @@ void main() {
   testWidgets('settings load failure shows retry, not a stuck spinner',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // The sheet's readiness gate now routes through interpretReadyProvider
       // -> aiReadyProvider (enabled && phase==ready), not raw on-device status
       // alone — so tests exercising the "ready" path need the toggle on too.
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));

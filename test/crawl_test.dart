@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/state/providers.dart';
 
 OracleData _loadData() {
   final raw = File('assets/oracle_data.json').readAsStringSync();
@@ -140,7 +140,7 @@ void main() {
   group('Crawl provider persistence', () {
     test('loads persisted state and saves updates', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.crawl.v1.default':
+        'loreseer.crawl.v1.default':
             '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
       });
       final container = ProviderContainer();
@@ -154,12 +154,12 @@ void main() {
           .read(crawlProvider.notifier)
           .save(const CrawlState(envRow: 9, lost: false));
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.crawl.v1.default'), contains('"envRow":9'));
+      expect(prefs.getString('loreseer.crawl.v1.default'), contains('"envRow":9'));
     });
 
     test('reset returns to defaults and persists them', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.crawl.v1.default': '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
+        'loreseer.crawl.v1.default': '{"envRow":4,"lost":true,"dialogRow":1,"dialogCol":3}',
       });
       final container = ProviderContainer();
       addTearDown(container.dispose);

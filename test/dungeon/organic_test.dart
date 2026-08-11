@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/organic.dart';
+import 'package:loreseer/engine/dungeon/organic.dart';
 
 void main() {
   test('perimeter of a 2x1 footprint is a closed jittered loop', () {

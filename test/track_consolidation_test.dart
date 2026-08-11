@@ -3,15 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/features/tracker_screen.dart';
-import 'package:juice_oracle/features/world_pane.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/tracker_screen.dart';
+import 'package:loreseer/features/world_pane.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/state/providers.dart';
 
 void _seed(Map<String, String> scoped) {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     ...scoped,
   });
@@ -21,7 +21,7 @@ void main() {
   testWidgets('New-task flow on ThreadsPane creates a tallied thread',
       (t) async {
     _seed({
-      'juice.threads.v1.default': '[{"id":"a","title":"A plain thread"}]',
+      'loreseer.threads.v1.default': '[{"id":"a","title":"A plain thread"}]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -49,8 +49,8 @@ void main() {
   testWidgets('WorldPane toggles People/Places and honors legacy routes',
       (t) async {
     _seed({
-      'juice.npcs.v1.default': '[{"id":"n1","name":"Brannoc"}]',
-      'juice.places.v1.default': '[{"id":"p1","name":"The Vault"}]',
+      'loreseer.npcs.v1.default': '[{"id":"n1","name":"Brannoc"}]',
+      'loreseer.places.v1.default': '[{"id":"p1","name":"The Vault"}]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);
@@ -89,7 +89,7 @@ void main() {
 
   testWidgets('WorldPane mounts on the routed segment', (t) async {
     _seed({
-      'juice.places.v1.default': '[{"id":"p1","name":"The Vault"}]',
+      'loreseer.places.v1.default': '[{"id":"p1","name":"The Vault"}]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// OUTER-chrome vertical-overflow harness for the Journal body.
@@ -20,7 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// height is the axis under test.
 
 const _sessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
@@ -41,10 +41,10 @@ const _entryJson = '{'
 
 Map<String, Object> _prefs() => {
       ..._sessionPrefs,
-      'juice.journal.v2.default': '[$_entryJson]',
+      'loreseer.journal.v2.default': '[$_entryJson]',
       // AI off (default) but mark the nudge seen so the tall nudge card does
       // not render — this isolates the OUTER chrome, not the nudge case.
-      'juice.ai_nudge_seen.v1': true,
+      'loreseer.ai_nudge_seen.v1': true,
     };
 
 Future<void> pumpJournalAt(WidgetTester tester, double height,
@@ -53,8 +53,8 @@ Future<void> pumpJournalAt(WidgetTester tester, double height,
     ..._prefs(),
     // A first-run user has neither one-time card dismissed, so the header group
     // renders the AI nudge + chip-help card and is at its tallest.
-    if (firstRun) 'juice.ai_nudge_seen.v1': false,
-    if (firstRun) 'juice.chip_help_seen.v1': false,
+    if (firstRun) 'loreseer.ai_nudge_seen.v1': false,
+    if (firstRun) 'loreseer.chip_help_seen.v1': false,
   });
   await tester.pumpWidget(ProviderScope(
     child: MaterialApp(

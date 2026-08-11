@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/settings_sheet.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/features/settings_sheet.dart';
+import 'package:loreseer/state/interpreter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
 
 Future<void> pump(WidgetTester tester) async {
-  SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': false});
+  SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': false});
   final fake =
       FakeInterpreterService(initial: const InterpreterStatus(InterpreterPhase.unsupported));
   await tester.pumpWidget(ProviderScope(

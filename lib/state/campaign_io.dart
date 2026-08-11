@@ -8,7 +8,7 @@ import 'verdant.dart' show VerdantJourney;
 /// Campaign file format version this build writes and the max it reads.
 const campaignSchemaVersion = 3;
 
-const _appMarker = 'juice-oracle';
+const _appMarker = 'loreseer';
 
 /// Parsed campaign file: session name + raw JSON string per base key,
 /// ready to write into session-scoped SharedPreferences entries.
@@ -30,7 +30,7 @@ class CampaignImport {
   final String? genre;
 }
 
-/// Encode a campaign to the .juice.json file content.
+/// Encode a campaign to the .loreseer.json file content.
 /// [rawByKey] holds the stores' persisted JSON strings by base key;
 /// null/absent stores are omitted. [systems] carries the campaign profile so
 /// an import restores it (additive keys — older readers ignore them; legacy
@@ -66,8 +66,7 @@ CampaignImport parseCampaign(String raw) {
     throw const FormatException('Not a campaign file');
   }
   if (decoded['app'] != _appMarker) {
-    throw const FormatException(
-        "Not a Solo Adventurer's Journal campaign file");
+    throw const FormatException('Not a LoreSeer campaign file');
   }
   final version = decoded['schemaVersion'];
   if (version is! int || version > campaignSchemaVersion) {
@@ -84,61 +83,61 @@ CampaignImport parseCampaign(String raw) {
     if (!data.containsKey(key)) continue;
     final value = data[key];
     try {
-      if (key == 'juice.journal.v2') {
+      if (key == 'loreseer.journal.v2') {
         (value as List)
             .map((e) => JournalEntry.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.threads.v1') {
+      } else if (key == 'loreseer.threads.v1') {
         (value as List)
             .map((e) => Thread.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.characters.v1') {
+      } else if (key == 'loreseer.characters.v1') {
         (value as List)
             .map((e) => Character.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.crawl.v1') {
+      } else if (key == 'loreseer.crawl.v1') {
         CrawlState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.encounter.v1') {
+      } else if (key == 'loreseer.encounter.v1') {
         EncounterState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.map.v1') {
+      } else if (key == 'loreseer.map.v1') {
         MapState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.rumors.v1') {
+      } else if (key == 'loreseer.rumors.v1') {
         (value as List)
             .map((e) => Rumor.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.places.v1') {
+      } else if (key == 'loreseer.places.v1') {
         (value as List)
             .map((e) => Place.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.npcs.v1') {
+      } else if (key == 'loreseer.npcs.v1') {
         (value as List)
             .map((e) => Npc.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.tracks.v1') {
+      } else if (key == 'loreseer.tracks.v1') {
         (value as List)
             .map((e) => Track.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.inventory.v1') {
+      } else if (key == 'loreseer.inventory.v1') {
         (value as List)
             .map((e) => InvItem.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.units.v1') {
+      } else if (key == 'loreseer.units.v1') {
         (value as List)
             .map((e) => Unit.fromJson(e as Map<String, dynamic>))
             .toList();
-      } else if (key == 'juice.settings.v1') {
+      } else if (key == 'loreseer.settings.v1') {
         final settings =
             CampaignSettings.fromJson(value as Map<String, dynamic>);
         if (settings.genre.isNotEmpty) genre = settings.genre;
-      } else if (key == 'juice.verdant.v1') {
+      } else if (key == 'loreseer.verdant.v1') {
         VerdantJourney.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.context.v1') {
+      } else if (key == 'loreseer.context.v1') {
         PlayContext.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.decks.v1') {
+      } else if (key == 'loreseer.decks.v1') {
         DecksState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.gmchat.v1') {
+      } else if (key == 'loreseer.gmchat.v1') {
         GmChatState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'juice.light.v1') {
+      } else if (key == 'loreseer.light.v1') {
         // Persisted as a bare int (see LightNotifier).
         value as int;
       }

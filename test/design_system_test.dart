@@ -69,7 +69,7 @@ void main() {
     expect(
       hits,
       isEmpty,
-      reason: 'Use JuiceTokens via context.juice (sage / inkFaint / hairline / '
+      reason: 'Use LoreTokens via context.lore (sage / inkFaint / hairline / '
           'terracotta) or a ColorScheme role. The palette is warm-only and '
           'each accent means exactly one thing.\n${hits.join('\n')}',
     );
@@ -159,7 +159,7 @@ void main() {
     expect(
       hits.length,
       lessThanOrEqualTo(ceiling),
-      reason: 'New player-facing work reads JuiceTokens via context.juice, '
+      reason: 'New player-facing work reads LoreTokens via context.lore, '
           'not a raw ColorScheme role. ${hits.length - ceiling} new use(s) '
           'crossed the line — migrate them, or if this is a deliberate '
           'system-widget exception, raise the ceiling in one commit that says '

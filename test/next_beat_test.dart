@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/next_beat.dart';
+import 'package:loreseer/engine/next_beat.dart';
 
 void main() {
   test('no scene -> only name the scene', () {

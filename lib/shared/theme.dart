@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'design_tokens.dart';
 
 /// Material 3 theme seeded from a deep amber ("juice"), extended with the
-/// JuiceTokens warm "tome" palette and a serif(narrative)/sans(UI) TextTheme.
+/// LoreTokens warm "tome" palette and a serif(narrative)/sans(UI) TextTheme.
 class AppTheme {
-  static ThemeData light() => _base(Brightness.light, JuiceTokens.light);
-  static ThemeData dark() => _base(Brightness.dark, JuiceTokens.dark);
+  static ThemeData light() => _base(Brightness.light, LoreTokens.light);
+  static ThemeData dark() => _base(Brightness.dark, LoreTokens.dark);
 
-  static ThemeData _base(Brightness brightness, JuiceTokens tokens) {
+  static ThemeData _base(Brightness brightness, LoreTokens tokens) {
     final scheme = ColorScheme.fromSeed(
       seedColor: const Color(0xFFB8540E),
       brightness: brightness,

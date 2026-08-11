@@ -1,5 +1,5 @@
 /// Pure renderer that turns a campaign into a faithful Lonelog `.md` document
-/// (YAML front matter + a juice-defined [STATE] block + journal beats). No
+/// (YAML front matter + a loreseer-defined [STATE] block + journal beats). No
 /// Flutter, no clock — `exportedAt` is passed in. Mirrors journal_export.dart.
 /// Export only; Lonelog import is P2b.
 library;
@@ -24,7 +24,7 @@ String campaignToLonelog({
   if (genre.isNotEmpty) buf.writeln('genre: ${_yaml(genre)}');
   if (tone.isNotEmpty) buf.writeln('tone: ${_yaml(tone)}');
   buf
-    ..writeln('tools: juice-oracle')
+    ..writeln('tools: loreseer')
     ..writeln('exported: ${_date(exportedAt)}')
     ..writeln('---')
     ..writeln()

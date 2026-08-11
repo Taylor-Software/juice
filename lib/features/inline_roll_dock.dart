@@ -33,7 +33,7 @@ class InlineRollDock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tk = context.juice;
+    final tk = context.lore;
     final suggestions = ref.watch(suggestionsProvider);
     // The dock surfaces only the inline-action suggestions; navigate chips stay
     // in the assistant rail. scene-event appears only when its suggestion is

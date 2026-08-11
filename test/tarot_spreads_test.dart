@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/tarot_spreads.dart';
+import 'package:loreseer/engine/tarot_spreads.dart';
 
 void main() {
   test('kTarotSpreads: unique ids, count matches positions, non-empty', () {

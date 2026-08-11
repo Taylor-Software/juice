@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 
 /// Audit F3: corrupt user-persisted storage (partial write, manual edit)
 /// must degrade to the default state — never leave a provider in permanent
@@ -20,7 +20,7 @@ void main() {
   }
 
   test('corrupt sessions registry rebuilds a fresh default', () async {
-    final c = container({'juice.sessions.v1': garbage});
+    final c = container({'loreseer.sessions.v1': garbage});
     addTearDown(c.dispose);
     final s = await c.read(sessionsProvider.future);
     expect(s.active, 'default');
@@ -29,16 +29,16 @@ void main() {
 
   test('corrupt session-scoped blobs yield defaults, not AsyncError', () async {
     final c = container({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.crawl.v1.default': garbage,
-      'juice.decks.v1.default': garbage,
-      'juice.encounter.v1.default': garbage,
-      'juice.map.v1.default': garbage,
-      'juice.settings.v1.default': garbage,
-      'juice.context.v1.default': garbage,
-      'juice.journal.v2.default': garbage,
-      'juice.threads.v1.default': garbage,
+      'loreseer.crawl.v1.default': garbage,
+      'loreseer.decks.v1.default': garbage,
+      'loreseer.encounter.v1.default': garbage,
+      'loreseer.map.v1.default': garbage,
+      'loreseer.settings.v1.default': garbage,
+      'loreseer.context.v1.default': garbage,
+      'loreseer.journal.v2.default': garbage,
+      'loreseer.threads.v1.default': garbage,
     });
     addTearDown(c.dispose);
 
@@ -56,10 +56,10 @@ void main() {
 
   test('a corrupt row is skipped; surviving rows load', () async {
     final c = container({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       // Row 1 is fine; row 2 is missing required fields; row 3 isn't a map.
-      'juice.journal.v2.default': '['
+      'loreseer.journal.v2.default': '['
           '{"id":"good","timestamp":"2026-07-11T00:00:00.000",'
           '"title":"Kept","body":"x","kind":"text"},'
           '{"id":"bad"},'
@@ -73,13 +73,13 @@ void main() {
 
   test('corrupt app-global stores yield empty defaults', () async {
     final c = container({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.bestiary.v1': garbage,
-      'juice.custom_tables.v1': garbage,
-      'juice.oracles.v1': garbage,
-      'juice.userrefcards.v1': garbage,
-      'juice.rulesets.v1': garbage,
+      'loreseer.bestiary.v1': garbage,
+      'loreseer.custom_tables.v1': garbage,
+      'loreseer.oracles.v1': garbage,
+      'loreseer.userrefcards.v1': garbage,
+      'loreseer.rulesets.v1': garbage,
     });
     addTearDown(c.dispose);
     expect(await c.read(bestiaryProvider.future), isEmpty);
@@ -90,22 +90,22 @@ void main() {
   });
 
   test('suggestDismissed + recap are registered session-scoped keys', () {
-    expect(sessionScopedKeys, contains('juice.suggestDismissed'));
-    expect(sessionScopedKeys, contains('juice.recap'));
+    expect(sessionScopedKeys, contains('loreseer.suggestDismissed'));
+    expect(sessionScopedKeys, contains('loreseer.recap'));
   });
 
   test('deleting a campaign purges its suggestDismissed/recap keys', () async {
     final c = container({
-      'juice.sessions.v1': '{"active":"a","sessions":['
+      'loreseer.sessions.v1': '{"active":"a","sessions":['
           '{"id":"a","name":"A"},{"id":"b","name":"B"}]}',
-      'juice.suggestDismissed.b': '["chip"]',
-      'juice.recap.b': '{"sinceId":"x","text":"y"}',
+      'loreseer.suggestDismissed.b': '["chip"]',
+      'loreseer.recap.b': '{"sinceId":"x","text":"y"}',
     });
     addTearDown(c.dispose);
     await c.read(sessionsProvider.future);
     await c.read(sessionsProvider.notifier).remove('b');
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getString('juice.suggestDismissed.b'), isNull);
-    expect(prefs.getString('juice.recap.b'), isNull);
+    expect(prefs.getString('loreseer.suggestDismissed.b'), isNull);
+    expect(prefs.getString('loreseer.recap.b'), isNull);
   });
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/generator_registry.dart';
+import 'package:loreseer/engine/generator_registry.dart';
 
 void main() {
   test('registry holds all 29 generators', () {

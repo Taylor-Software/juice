@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -22,14 +22,14 @@ OracleData _loadData() {
 }
 
 const _juiceSessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
 const _mythicSessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1","systems":["mythic"]}]}',
-  'juice.settings.v1.default':
+  'loreseer.settings.v1.default':
       '{"genre":"","tone":"","defaultOracle":"mythic"}',
 };
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/tables.dart';
+import 'package:loreseer/engine/dungeon/tables.dart';
 
 void main() {
   test('parses shipped dungeon_data.json', () {

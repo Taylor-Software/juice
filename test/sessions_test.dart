@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/shared/home_shell.dart' show campaignSubtitle;
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/shared/home_shell.dart' show campaignSubtitle;
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,7 +120,7 @@ void main() {
   group('Sessions provider', () {
     test('first run migrates legacy keys into a default session', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.threads.v1':
+        'loreseer.threads.v1':
             '[{"id":"t1","title":"Old vow","note":"","open":true}]',
       });
       final container = ProviderContainer();
@@ -129,8 +129,8 @@ void main() {
       expect(s.active, 'default');
       expect(s.sessions.single.name, 'Campaign 1');
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.threads.v1'), isNull);
-      expect(prefs.getString('juice.threads.v1.default'), contains('Old vow'));
+      expect(prefs.getString('loreseer.threads.v1'), isNull);
+      expect(prefs.getString('loreseer.threads.v1.default'), contains('Old vow'));
     });
 
     test('fresh install creates the default session with no key shuffling',
@@ -158,19 +158,19 @@ void main() {
       final newId = s.active;
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('juice.threads.v1.$newId', '["junk"]');
+      await prefs.setString('loreseer.threads.v1.$newId', '["junk"]');
       await notifier.remove(newId);
       s = await container.read(sessionsProvider.future);
       expect(s.sessions.length, 1);
       expect(s.active, 'default');
-      expect(prefs.getString('juice.threads.v1.$newId'), isNull);
+      expect(prefs.getString('loreseer.threads.v1.$newId'), isNull);
     });
 
     test('exportActive carries journal v2', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-        'juice.journal.v2.default':
+        'loreseer.journal.v2.default':
             '[{"id":"n","timestamp":"2026-06-11T10:00:00.000","title":"New","body":"x","kind":"text"}]',
       });
       final container = ProviderContainer();
@@ -180,7 +180,7 @@ void main() {
           await container.read(sessionsProvider.notifier).exportActive();
       final data = (jsonDecode(file) as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
-      expect(data, contains('juice.journal.v2'));
+      expect(data, contains('loreseer.journal.v2'));
     });
 
     test('cannot remove the last session', () async {
@@ -208,11 +208,11 @@ void main() {
 
     test('exportActiveAsLonelog renders title + a thread tag', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"Lonelog Camp"}]}',
-        'juice.threads.v1.default':
+        'loreseer.threads.v1.default':
             '[{"id":"t1","title":"Slay the wyrm","note":"","open":true}]',
-        'juice.journal.v2.default':
+        'loreseer.journal.v2.default':
             '[{"id":"n","timestamp":"2026-06-11T10:00:00.000","title":"Note","body":"hi","kind":"text"}]',
       });
       final container = ProviderContainer();
@@ -241,7 +241,7 @@ void main() {
       final s = await container.read(sessionsProvider.future);
       expect(s.activeMeta.name, 'Imported Game');
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.threads.v1.${s.active}'),
+      expect(prefs.getString('loreseer.threads.v1.${s.active}'),
           contains('Find the heir'));
     });
 

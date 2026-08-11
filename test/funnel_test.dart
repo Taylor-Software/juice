@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/campaign_presets.dart';
-import 'package:juice_oracle/engine/funnel.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/campaign_presets.dart';
+import 'package:loreseer/engine/funnel.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -362,7 +362,7 @@ void main() {
 
   group('CharacterNotifier funnel', () {
     setUp(() => SharedPreferences.setMockInitialValues({
-          'juice.sessions.v1':
+          'loreseer.sessions.v1':
               '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
         }));
 

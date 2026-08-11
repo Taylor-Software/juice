@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/encounter_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/encounter_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 String _emptyEnc() => jsonEncode({'combatants': [], 'round': 1});
 
@@ -16,9 +16,9 @@ Future<ProviderContainer> _pump(
   required List<Creature> refMonsters,
 }) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.encounter.v1.default': _emptyEnc(),
+    'loreseer.encounter.v1.default': _emptyEnc(),
   });
   final container = ProviderContainer(overrides: [
     contentMonstersProvider.overrideWith((_) async => refMonsters),

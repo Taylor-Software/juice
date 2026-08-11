@@ -5,34 +5,34 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/ai_nudge_card.dart';
-import 'package:juice_oracle/shared/card_image.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/verdant_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/ai_nudge_card.dart';
+import 'package:loreseer/shared/card_image.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/state/interpreter.dart';
 
 /// Session + one payload entry seeded into shared prefs.
 const _sessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
 Map<String, String> _journalPrefs(String entryJson) => {
       ..._sessionPrefs,
-      'juice.journal.v2.default': '[$entryJson]',
+      'loreseer.journal.v2.default': '[$entryJson]',
     };
 
 // A fate-check payload entry fixture.
@@ -186,7 +186,7 @@ void main() {
         '"loc":{"sketch":"s1"}}';
     await pumpJournal(tester, {
       ..._sessionPrefs,
-      'juice.journal.v2.default': '[$noteJson,$sketchJson]',
+      'loreseer.journal.v2.default': '[$noteJson,$sketchJson]',
     });
 
     // The stamped note shows a place chip labeled with the sketch title.
@@ -569,7 +569,7 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues({
       ..._journalPrefs(_entryJson),
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -595,7 +595,7 @@ void main() {
       (tester) async {
     SharedPreferences.setMockInitialValues({
       ..._journalPrefs(_entryJson),
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));

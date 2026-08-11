@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
+import 'package:loreseer/engine/loop_kit.dart';
+import 'package:loreseer/shared/home_shell.dart';
 
 typedef NewCampaignResult = ({
   String name,

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/system_primer.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/system_primer.dart';
 
 void main() {
   group('LocationRef', () {

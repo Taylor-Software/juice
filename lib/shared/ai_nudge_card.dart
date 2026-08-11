@@ -48,7 +48,7 @@ class _AiNudgeCardState extends ConsumerState<AiNudgeCard>
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     final card = Container(
       key: const Key('ai-nudge-card'),
       // Fill the available width rather than shrink-wrapping the button Row

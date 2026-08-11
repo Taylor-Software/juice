@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/spell.dart';
+import 'package:loreseer/engine/spell.dart';
 
 void main() {
   test('round-trips through json', () {

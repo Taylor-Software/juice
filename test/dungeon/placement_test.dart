@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/dungeon/placement.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/dungeon/placement.dart';
 
 void main() {
   test('places a straight corridor south of an existing cell, no overlap', () {
