@@ -737,6 +737,10 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
     );
   }
   final ctrl = ref.read(magicProvider.notifier);
+  final myHanging =
+      lib.hanging.where((h) => h.characterId == pgChar.id).toList();
+  final myRunning =
+      lib.running.where((r) => r.characterId == pgChar.id).toList();
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -788,6 +792,22 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
           onDuplicate: ctrl.duplicateSpell,
         ),
       ),
+      if (myHanging.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        pg.HangingList(
+          hanging: myHanging,
+          cap: pgChar.spellLevel,
+          onFired: (h) => ctrl.dismissHanging(h.id),
+          onDefused: (h) => ctrl.dismissHanging(h.id),
+        ),
+      ],
+      if (myRunning.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        pg.RunningList(
+          running: myRunning,
+          onEnded: (r) => ctrl.endRunning(r.id),
+        ),
+      ],
       const SizedBox(height: 4),
       Wrap(
         spacing: 8,
