@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 
 import '../engine/models.dart';
+import '../state/magic_controller.dart';
 import '../state/providers.dart';
 
 /// Shared building blocks for the bespoke system sheets (Ironsworn, Starforged).
@@ -647,6 +649,45 @@ Widget conditionsSection(
         ),
       ],
     );
+
+/// A "Magic" section for the open sheets, mirroring [conditionsSection]:
+/// an enable button when [c] hasn't opted into Polarity Grammar casting, or
+/// the live mana bar (+ Task 8's spellbook) once it has.
+Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
+  if (c.polarityId == null) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        FilledButton.icon(
+          key: const Key('magic-enable'),
+          icon: const Icon(Icons.auto_fix_high_outlined),
+          label: const Text('Enable Polarity Grammar casting'),
+          onPressed: () =>
+              ref.read(charactersProvider.notifier).enableMagic(c.id),
+        ),
+      ],
+    );
+  }
+  final lib = ref.watch(magicProvider).valueOrNull;
+  final pgChar = lib?.characters.where((x) => x.id == c.polarityId).firstOrNull;
+  if (lib == null || pgChar == null) return const SizedBox.shrink();
+  final ctrl = ref.read(magicProvider.notifier);
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      sheetSection(context, 'Magic'),
+      pg.ManaBar(
+        key: const Key('magic-mana-bar'),
+        current: pgChar.currentMana,
+        max: pgChar.availableMana,
+        caption: 'Spell Level ${pg.kRoman[pgChar.spellLevel]}',
+        onChanged: (v) => ctrl.setMana(pgChar.id, v),
+        onRest: () => ctrl.rest(pgChar.id),
+      ),
+    ],
+  );
+}
 
 /// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
 /// + [index] key the controls (e.g. 'custom-b1' -> 'custom-b1-roll-0'). The
