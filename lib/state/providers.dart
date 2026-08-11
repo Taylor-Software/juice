@@ -2682,6 +2682,15 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await ref.read(prefsProvider.future);
     for (final base in sessionScopedKeys) {
       await prefs.remove('$base.$id');
+      // A few stores (e.g. JuiceMagicStore, via pg.TextLibraryStore) also
+      // write up-to-kQuarantineKeep sub-keys beyond the exact
+      // '<base>.<sessionId>' shape when they quarantine corrupt data. Sweep
+      // those too — a harmless no-op for every other store, which never
+      // writes them, and future-proofs any store that later adopts the same
+      // quarantine pattern.
+      for (var i = 0; i < 3; i++) {
+        await prefs.remove('$base.$id.quarantine.$i');
+      }
     }
     final remaining = s.sessions.where((m) => m.id != id).toList();
     final active = s.active == id ? remaining.first.id : s.active;
