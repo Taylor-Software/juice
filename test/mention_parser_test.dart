@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/mention_parser.dart';
+import 'package:loreseer/engine/mention_parser.dart';
 
 void main() {
   group('parseComposerState', () {

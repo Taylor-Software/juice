@@ -4,15 +4,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/oracles_tab.dart';
-import 'package:juice_oracle/features/sheet_tab.dart';
-import 'package:juice_oracle/features/tracker_screen.dart';
-import 'package:juice_oracle/features/tracking_tab.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/oracles_tab.dart';
+import 'package:loreseer/features/sheet_tab.dart';
+import 'package:loreseer/features/tracker_screen.dart';
+import 'package:loreseer/features/tracking_tab.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final testOracle = Oracle(OracleData(
@@ -23,9 +23,9 @@ void main() {
   testWidgets('SheetTab with no family renders the roster only',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -39,7 +39,7 @@ void main() {
   testWidgets('Track shows party subtabs only when party system is on',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["party"]}]}',
     });
@@ -54,7 +54,7 @@ void main() {
 
   testWidgets('Ask defaults to Tables for D&D', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
               '"systems":["dnd"]}]}',
     });
@@ -74,9 +74,9 @@ void main() {
   testWidgets('opening a character sets the active character in context',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
     });
     final c = ProviderContainer();
@@ -98,13 +98,13 @@ void main() {
     // rich lead card *in the list* (vitals + quick actions read without a sheet
     // round-trip), while the others stay compact rows.
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]},'
               '{"id":"c2","name":"Birch","stats":[],'
               '"tracks":[{"label":"HP","current":3,"max":6}],"tags":[]}]',
-      'juice.context.v1.default': '{"activeCharacterId":"c2"}',
+      'loreseer.context.v1.default': '{"activeCharacterId":"c2"}',
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -123,12 +123,12 @@ void main() {
   testWidgets('tapping the lead card opens the full sheet; back returns',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]},'
               '{"id":"c2","name":"Birch","stats":[],"tracks":[],"tags":[]}]',
-      'juice.context.v1.default': '{"activeCharacterId":"c2"}',
+      'loreseer.context.v1.default': '{"activeCharacterId":"c2"}',
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -151,9 +151,9 @@ void main() {
   testWidgets('Sheet shows Moves whenever family is non-empty (no mode gate)',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1","mode":"gm"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final fixture = {
       'meta': {
@@ -183,9 +183,9 @@ void main() {
   testWidgets('Sheet shows Moves in party mode (positive case)',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': '[]',
+      'loreseer.characters.v1.default': '[]',
     });
     final fixture = {
       'meta': {

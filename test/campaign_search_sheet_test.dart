@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/campaign_search_sheet.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/campaign_search_sheet.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// campaign_search_test.dart covers the pure `searchCampaign`. This covers the
@@ -15,9 +15,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// unexercised even though the feature shipped.
 Future<ProviderContainer> _pump(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.journal.v2.default': jsonEncode([
+    'loreseer.journal.v2.default': jsonEncode([
       {
         'id': 'j1',
         'timestamp': DateTime(2026, 1, 1).toIso8601String(),
@@ -25,7 +25,7 @@ Future<ProviderContainer> _pump(WidgetTester tester) async {
         'body': 'Reeds and standing water.',
       },
     ]),
-    'juice.threads.v1.default': jsonEncode([
+    'loreseer.threads.v1.default': jsonEncode([
       {'id': 't1', 'title': 'Find the salt road', 'open': true},
     ]),
   });

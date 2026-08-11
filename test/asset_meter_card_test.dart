@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/sheet_widgets.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/sheet_widgets.dart';
 
 void main() {
   testWidgets('assetCard renders a meter stepper and reports changes',

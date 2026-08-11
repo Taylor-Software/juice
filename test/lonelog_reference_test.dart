@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/lonelog_data.dart';
-import 'package:juice_oracle/features/lonelog_reference_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/lonelog_data.dart';
+import 'package:loreseer/features/lonelog_reference_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 LonelogData _data() =>
     LonelogData(jsonDecode(File('assets/lonelog_data.json').readAsStringSync())

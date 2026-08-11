@@ -6,12 +6,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
-import 'package:juice_oracle/features/verdant_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
-import 'package:juice_oracle/state/verdant.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/verdant_data.dart';
+import 'package:loreseer/features/verdant_screen.dart';
+import 'package:loreseer/state/providers.dart';
+import 'package:loreseer/state/verdant.dart';
 
 void main() {
   final oracleData = OracleData(
@@ -23,7 +23,7 @@ void main() {
 
   Future<ProviderContainer> pump(WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await tester.pumpWidget(ProviderScope(

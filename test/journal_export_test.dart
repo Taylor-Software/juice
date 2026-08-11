@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:juice_oracle/engine/journal_export.dart';
-import 'package:juice_oracle/engine/mention_parser.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/journal_export.dart';
+import 'package:loreseer/engine/mention_parser.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   final exportedAt = DateTime(2026, 6, 12);

@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "net.taylorsoftware" "\0"
-            VALUE "FileDescription", "juice" "\0"
+            VALUE "FileDescription", "loreseer" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "juice" "\0"
+            VALUE "InternalName", "loreseer" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 net.taylorsoftware. All rights reserved." "\0"
-            VALUE "OriginalFilename", "juice.exe" "\0"
-            VALUE "ProductName", "juice" "\0"
+            VALUE "OriginalFilename", "loreseer.exe" "\0"
+            VALUE "ProductName", "loreseer" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

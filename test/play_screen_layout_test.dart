@@ -4,14 +4,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/features/assistant_rail.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/features/loop_bar.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/features/assistant_rail.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/features/loop_bar.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -52,7 +52,7 @@ void main() {
       'Next panel is collapsed by default so the journal fills the height',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
@@ -67,7 +67,7 @@ void main() {
   testWidgets('one toggle reveals both the loop bar and the assistant',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
@@ -83,9 +83,9 @@ void main() {
   testWidgets('collapsed Next panel does not call the LLM (no spend)',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -99,7 +99,7 @@ void main() {
   testWidgets('expanding shows a compact panel the journal still dwarfs',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);
@@ -123,7 +123,7 @@ void main() {
   testWidgets('expanded panel has a visible scrollbar and reachable steps',
       (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     await pump(t);

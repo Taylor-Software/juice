@@ -6,15 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/map_builder.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/map_screen.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/map_builder.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/map_screen.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   final data = OracleData(
@@ -26,9 +26,9 @@ void main() {
   Future<ProviderContainer> pumpDungeon(WidgetTester tester,
       {String? mapJson}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      if (mapJson != null) 'juice.map.v1.default': mapJson,
+      if (mapJson != null) 'loreseer.map.v1.default': mapJson,
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -41,9 +41,9 @@ void main() {
   Future<ProviderContainer> pumpHex(WidgetTester tester,
       {String? mapJson}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      if (mapJson != null) 'juice.map.v1.default': mapJson,
+      if (mapJson != null) 'loreseer.map.v1.default': mapJson,
     });
     await tester.pumpWidget(ProviderScope(
         child: MaterialApp(
@@ -395,9 +395,9 @@ void main() {
     // The hex detail card (and so the toggle) is gated behind the hexcrawl
     // opt-in, so enable it on the seeded session.
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+      'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
           '"name":"C1","systems":["juice","hexcrawl"]}]}',
-      'juice.map.v1.default': jsonEncode({
+      'loreseer.map.v1.default': jsonEncode({
         'hexes': [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ],
@@ -429,9 +429,9 @@ void main() {
       'hex detail card anchors the dungeon: Dungeon here → Enter dungeon + '
       'Unlink', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+      'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
           '"name":"C1","systems":["juice","hexcrawl"]}]}',
-      'juice.map.v1.default': jsonEncode({
+      'loreseer.map.v1.default': jsonEncode({
         'hexes': [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ],
@@ -476,16 +476,16 @@ void main() {
   testWidgets('backlink sheet row previews the entry; Open journal navigates',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+      'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
           '"name":"C1","systems":["juice","hexcrawl"]}]}',
-      'juice.map.v1.default': jsonEncode({
+      'loreseer.map.v1.default': jsonEncode({
         'hexes': [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ],
         'currentHexCol': 0,
         'currentHexRow': 0,
       }),
-      'juice.journal.v2.default': '[{"id":"n1",'
+      'loreseer.journal.v2.default': '[{"id":"n1",'
           '"timestamp":"2026-06-12T10:00:00.000Z","title":"Ambush",'
           '"body":"Goblins strike.","kind":"text","tags":[],'
           '"loc":{"hexCol":0,"hexRow":0}}]',
@@ -527,16 +527,16 @@ void main() {
       'hex detail card links a sketch map: pick, open chip shows title, unlink',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+      'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
           '"name":"C1","systems":["juice","hexcrawl"]}]}',
-      'juice.map.v1.default': jsonEncode({
+      'loreseer.map.v1.default': jsonEncode({
         'hexes': [
           {'col': 0, 'row': 0, 'envRow': 3, 'lost': false},
         ],
         'currentHexCol': 0,
         'currentHexRow': 0,
       }),
-      'juice.journal.v2.default': '[{"id":"s1",'
+      'loreseer.journal.v2.default': '[{"id":"s1",'
           '"timestamp":"2026-06-12T09:00:00.000Z","title":"Town map",'
           '"body":"","kind":"sketch","tags":[],'
           '"payload":{"v":1,"sketch":{"v":1,"strokes":[],"w":100,"h":100}}}]',
@@ -584,9 +584,9 @@ void main() {
       'Dungeon-here on a second hex creates a new dungeon; switcher chips '
       'switch the active dungeon', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+      'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
           '"name":"C1","systems":["juice","hexcrawl"]}]}',
-      'juice.map.v1.default': jsonEncode({
+      'loreseer.map.v1.default': jsonEncode({
         'dungeons': [
           {
             'id': 'a',

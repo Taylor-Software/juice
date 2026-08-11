@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/dungeon/faction.dart';
-import 'package:juice_oracle/engine/dungeon/generator.dart';
-import 'package:juice_oracle/engine/dungeon/tables.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/dungeon/faction.dart';
+import 'package:loreseer/engine/dungeon/generator.dart';
+import 'package:loreseer/engine/dungeon/tables.dart';
 
 DungeonTables _tables() => DungeonTables.fromJson(jsonDecode('''
 {"A1":${jsonEncode(List.filled(12, 'Somewhere'))},

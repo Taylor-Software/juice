@@ -3,16 +3,16 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   Future<ProviderContainer> container({String? mapJson}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      if (mapJson != null) 'juice.map.v1.default': mapJson,
+      if (mapJson != null) 'loreseer.map.v1.default': mapJson,
     });
     return ProviderContainer();
   }

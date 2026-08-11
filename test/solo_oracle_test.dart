@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/solo_oracle.dart';
+import 'package:loreseer/engine/solo_oracle.dart';
 
 void main() {
   group('classifyYesNo', () {

@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/gm_chat_screen.dart';
-import 'package:juice_oracle/state/gm_chat.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/gm_chat_screen.dart';
+import 'package:loreseer/state/gm_chat.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
 
 Future<ProviderContainer> pumpChat(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
   });
   final fake = FakeInterpreterService();
@@ -44,9 +44,9 @@ void main() {
 
   testWidgets('gm chat grounds on the pinned (older) scene', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s2","timestamp":"2026-06-12T10:02:00.000","title":"Newer Scene","body":"","kind":"scene"},'
               '{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"Pinned Scene","body":"","kind":"scene"}]',
     });
@@ -88,7 +88,7 @@ void main() {
   testWidgets('a GM error keeps the player turn + shows a snackbar',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final fake = FakeInterpreterService()..gmChatError = StateError('boom');

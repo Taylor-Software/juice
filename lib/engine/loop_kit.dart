@@ -32,7 +32,7 @@ class LoopKit {
 }
 
 /// Stable marker for an exported loop-kit file.
-const kLoopKitKind = 'juice-loop-kit';
+const kLoopKitKind = 'loreseer-loop-kit';
 
 String encodeLoopKit(LoopKit kit) => jsonEncode({
       'kind': kLoopKitKind,

@@ -54,7 +54,7 @@ class CampaignHeader extends ConsumerWidget {
             kAllSystems;
     final usesMythic = systems.contains('mythic');
     final theme = Theme.of(context);
-    final tk = context.juice;
+    final tk = context.lore;
     final light = ref.watch(lightProvider).valueOrNull ?? 0;
     final compact = MediaQuery.sizeOf(context).width < kCompactWidth;
     // While the journal composer has focus on a phone the expanded row yields

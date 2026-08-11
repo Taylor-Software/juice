@@ -1,4 +1,4 @@
-/// Tolerant, lossy parser: a Lonelog `.md` document into juice campaign data.
+/// Tolerant, lossy parser: a Lonelog `.md` document into loreseer campaign data.
 /// Pure — no Flutter, no clock (timestamps derive from [importedAt]). The
 /// inverse of lonelog_export.dart. Unrecognized lines are ignored.
 library;
@@ -22,7 +22,7 @@ class LonelogImport {
   final List<Thread> threads;
   final List<Character> characters;
   final List<Track> tracks;
-  final List<JournalEntry> entries; // newest-first (juice convention)
+  final List<JournalEntry> entries; // newest-first (loreseer convention)
 }
 
 final _sceneRe = RegExp(r'^###\s+S\d+\s+(.*?)\s*$');

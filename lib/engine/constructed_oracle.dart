@@ -468,7 +468,7 @@ GenResult oracleGenResult(ConstructedOracle o, OracleLikelihood l, Dice dice) {
 }
 
 /// Stable marker for an exported oracle pack file.
-const kOraclePackKind = 'juice-oracle-pack';
+const kOraclePackKind = 'loreseer-oracle-pack';
 
 /// Serialize [oracles] to a portable pack JSON string.
 String encodeOraclePack(List<ConstructedOracle> oracles) => jsonEncode({

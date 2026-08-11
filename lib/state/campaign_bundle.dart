@@ -10,7 +10,7 @@ import 'package:archive/archive.dart';
 class CampaignBundle {
   const CampaignBundle({required this.campaignJson, required this.blobs});
 
-  /// The campaign file JSON (same content as a plain `.juice.json` export).
+  /// The campaign file JSON (same content as a plain `.loreseer.json` export).
   final String campaignJson;
 
   /// Referenced blobs, keyed by blob id (the id carries its extension).
@@ -20,7 +20,7 @@ class CampaignBundle {
 const _campaignEntry = 'campaign.json';
 const _blobDir = 'blobs/';
 
-/// Zip the campaign JSON + its blobs into `.juice.zip` bytes.
+/// Zip the campaign JSON + its blobs into `.loreseer.zip` bytes.
 Uint8List encodeCampaignBundle(
     String campaignJson, Map<String, Uint8List> blobs) {
   final archive = Archive()
@@ -31,9 +31,9 @@ Uint8List encodeCampaignBundle(
   return ZipEncoder().encodeBytes(archive);
 }
 
-/// Decode `.juice.zip` bytes into a [CampaignBundle], or null when [bytes] is
+/// Decode `.loreseer.zip` bytes into a [CampaignBundle], or null when [bytes] is
 /// not a campaign zip (no zip magic, undecodable, or missing `campaign.json`) —
-/// callers fall back to treating the bytes as a plain `.juice.json` string.
+/// callers fall back to treating the bytes as a plain `.loreseer.json` string.
 CampaignBundle? decodeCampaignBundle(List<int> bytes) {
   // Zip local-file-header magic: 'PK\x03\x04'.
   if (bytes.length < 4 || bytes[0] != 0x50 || bytes[1] != 0x4B) return null;
@@ -65,7 +65,7 @@ CampaignBundle? decodeCampaignBundle(List<int> bytes) {
 /// (`payload.sketch.pdf`); tolerant of any malformed shape (returns what it can).
 Set<String> referencedBlobIds(Map<String, String> rawByKey) {
   final ids = <String>{};
-  final journalRaw = rawByKey['juice.journal.v2'];
+  final journalRaw = rawByKey['loreseer.journal.v2'];
   if (journalRaw == null) return ids;
   try {
     final list = jsonDecode(journalRaw);

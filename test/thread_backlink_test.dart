@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,10 +17,10 @@ void main() {
     // Seed a thread and two journal entries — one linked, one not.
     const threadId = 'thread-001';
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': sessions,
-      'juice.threads.v1.s1':
+      'loreseer.sessions.v1': sessions,
+      'loreseer.threads.v1.s1':
           jsonEncode([Thread(id: threadId, title: 'The Quest').toJson()]),
-      'juice.journal.v2.s1': jsonEncode([
+      'loreseer.journal.v2.s1': jsonEncode([
         JournalEntry(
                 id: 'j1',
                 timestamp: DateTime(2026),
@@ -49,10 +49,10 @@ void main() {
 
   test('thread with no linked entries returns empty list', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': sessions,
-      'juice.threads.v1.s1': jsonEncode(
+      'loreseer.sessions.v1': sessions,
+      'loreseer.threads.v1.s1': jsonEncode(
           [Thread(id: 'thread-002', title: 'Lonely Thread').toJson()]),
-      'juice.journal.v2.s1': jsonEncode([]),
+      'loreseer.journal.v2.s1': jsonEncode([]),
     });
 
     final c = ProviderContainer();

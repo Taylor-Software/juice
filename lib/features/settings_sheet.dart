@@ -203,20 +203,20 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
               const SizedBox(height: 16),
               // Tome palette, not a raw ColorScheme role: terracotta IS this
               // app's alarm colour (DESIGN.md Warm-Only), and new player-facing
-              // work reads JuiceTokens.
+              // work reads LoreTokens.
               Card(
                 key: const Key('settings-backup-error'),
-                color: context.juice.raised,
+                color: context.lore.raised,
                 child: ListTile(
                   leading: Icon(Icons.warning_amber_outlined,
-                      color: context.juice.terracotta),
+                      color: context.lore.terracotta),
                   title: Text('Automatic backups are failing',
-                      style: TextStyle(color: context.juice.terracottaDeep)),
+                      style: TextStyle(color: context.lore.terracottaDeep)),
                   subtitle: Text(
                     'Export your campaign manually from the campaigns drawer.\n'
                     '$backupError',
                     style:
-                        TextStyle(fontSize: 12, color: context.juice.inkBody),
+                        TextStyle(fontSize: 12, color: context.lore.inkBody),
                   ),
                 ),
               ),
@@ -317,7 +317,7 @@ class _SettingsSheetState extends ConsumerState<_SettingsSheet> {
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(children: [
-            Icon(Icons.check_circle, color: context.juice.sage, size: 18),
+            Icon(Icons.check_circle, color: context.lore.sage, size: 18),
             const SizedBox(width: 8),
             const Text('Ready'),
           ]),

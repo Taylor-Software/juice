@@ -3,11 +3,11 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
-import 'package:juice_oracle/engine/hexcrawl_map.dart';
-import 'package:juice_oracle/engine/map_builder.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
+import 'package:loreseer/engine/hexcrawl_map.dart';
+import 'package:loreseer/engine/map_builder.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   test('HexCell.site round-trips and is omitted from JSON when null', () {

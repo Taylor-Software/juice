@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/spell.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/spell.dart';
 
 /// JSON-shape checks over the merged D&D content assets (5.1 + 5.2). Reads the
 /// asset files straight off disk and parses via the same tolerant factories the

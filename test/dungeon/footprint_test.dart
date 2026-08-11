@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
 
 void main() {
   test('rotate 4 quarter-turns is identity', () {

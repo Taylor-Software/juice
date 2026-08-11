@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/hexcrawl_data.dart';
-import 'package:juice_oracle/features/hexcrawl_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
+import 'package:loreseer/features/hexcrawl_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 HexcrawlData _data() => HexcrawlData(
     jsonDecode(File('assets/hexcrawl_data.json').readAsStringSync())

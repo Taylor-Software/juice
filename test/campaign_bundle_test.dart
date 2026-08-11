@@ -3,11 +3,11 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/sketch.dart';
-import 'package:juice_oracle/state/blob_store.dart';
-import 'package:juice_oracle/state/campaign_bundle.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/sketch.dart';
+import 'package:loreseer/state/blob_store.dart';
+import 'package:loreseer/state/campaign_bundle.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -26,7 +26,7 @@ void main() {
     });
 
     test('plain JSON / junk bytes are not a bundle', () {
-      expect(decodeCampaignBundle(utf8.encode('{"app":"juice-oracle"}')), isNull);
+      expect(decodeCampaignBundle(utf8.encode('{"app":"loreseer"}')), isNull);
       expect(decodeCampaignBundle(const [1, 2]), isNull);
     });
   });
@@ -46,12 +46,12 @@ void main() {
         },
         {'kind': 'note', 'body': 'x'},
       ]);
-      expect(referencedBlobIds({'juice.journal.v2': journal}), {'id-1.png'});
+      expect(referencedBlobIds({'loreseer.journal.v2': journal}), {'id-1.png'});
     });
 
     test('tolerant of missing / malformed journal', () {
       expect(referencedBlobIds(const {}), isEmpty);
-      expect(referencedBlobIds({'juice.journal.v2': 'garbage'}), isEmpty);
+      expect(referencedBlobIds({'loreseer.journal.v2': 'garbage'}), isEmpty);
     });
 
     test('collects both the raster (bg) and the source PDF (pdf) blob ids', () {
@@ -63,7 +63,7 @@ void main() {
           }
         },
       ]);
-      expect(referencedBlobIds({'juice.journal.v2': journal}),
+      expect(referencedBlobIds({'loreseer.journal.v2': journal}),
           {'raster.png', 'src.pdf'});
     });
   });
@@ -76,7 +76,7 @@ void main() {
   test('export bundles a referenced blob; import restores it on a fresh store',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     // Source device: a sketch annotates an image stored in storeA.
@@ -122,7 +122,7 @@ void main() {
   test('gcBlobs deletes unreferenced blobs, keeps referenced (all sessions)',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"s1","sessions":'
+      'loreseer.sessions.v1': '{"active":"s1","sessions":'
           '[{"id":"s1","name":"A"},{"id":"s2","name":"B"}]}',
     });
     final store = InMemoryBlobStore();
@@ -154,7 +154,7 @@ void main() {
 
   test('export with no blobs stays plain json', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer(

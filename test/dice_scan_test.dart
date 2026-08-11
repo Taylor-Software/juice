@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice_scan.dart';
+import 'package:loreseer/engine/dice_scan.dart';
 
 void main() {
   List<String> tokens(String s) => scanDice(s).map((d) => d.notation).toList();

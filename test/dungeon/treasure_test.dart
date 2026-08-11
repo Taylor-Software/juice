@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dungeon/treasure.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dungeon/treasure.dart';
 
 void main() {
   const h8 = {

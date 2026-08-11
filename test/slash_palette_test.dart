@@ -5,15 +5,15 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/generate_sheet.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/generate_sheet.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -24,7 +24,7 @@ OracleData _loadData() {
 }
 
 const _sessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
 };
 
@@ -76,13 +76,13 @@ void main() {
   });
 
   const cardsPrefs = {
-    'juice.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
+    'loreseer.sessions.v1': '{"active":"default","sessions":[{"id":"default",'
         '"name":"C1","systems":["cards"]}]}',
   };
 
   const oraclePrefs = {
     ..._sessionPrefs,
-    'juice.oracles.v1': '[{"id":"o1","name":"Grim","notation":"d6"}]',
+    'loreseer.oracles.v1': '[{"id":"o1","name":"Grim","notation":"d6"}]',
   };
 
   testWidgets('/oracle row hidden with no oracles', (tester) async {
@@ -352,7 +352,7 @@ void main() {
 
   testWidgets('juice-only profile hides the Mythic command', (tester) async {
     await pumpPalette(tester, data, prefs: const {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1","systems":["juice"]}]}',
     });
     await tester.enterText(find.byKey(const Key('journal-composer')), '/fate');

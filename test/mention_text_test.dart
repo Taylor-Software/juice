@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/shared/mention_text.dart';
-import 'package:juice_oracle/shared/theme.dart';
+import 'package:loreseer/shared/mention_text.dart';
+import 'package:loreseer/shared/theme.dart';
 
 Future<void> pumpMentionText(
   WidgetTester tester,

@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/loop_bar.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/loop_bar.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -46,7 +46,7 @@ void main() {
   // inline interpret card's Keep button — all themed-FilledButton hot spots.
   testWidgets('no infinite-width under AppTheme (Next-beat + interpret)',
       (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final fake = FakeInterpreterService();
     await tester.pumpWidget(ProviderScope(
       overrides: [interpreterServiceProvider.overrideWithValue(fake)],
@@ -144,7 +144,7 @@ void main() {
 
   testWidgets('beat-interpret action appears after ask when AI is ready',
       (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     await pump(tester, overrides: [
@@ -171,7 +171,7 @@ void main() {
   testWidgets(
       'interpret renders inline; Keep folds the reading into the '
       'roll\'s own entry', (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     late ProviderContainer container;
@@ -214,7 +214,7 @@ void main() {
   });
 
   testWidgets('interpret Discard hides card and logs nothing', (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     late ProviderContainer container;
@@ -249,7 +249,7 @@ void main() {
   });
 
   testWidgets('Ask again clears a visible interpret card', (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': true});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': true});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     await pump(tester, overrides: [

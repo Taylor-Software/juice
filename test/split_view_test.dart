@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +16,6 @@ void main() {
     await c.read(splitViewProvider.notifier).toggle();
     expect(c.read(splitViewProvider).value, isFalse);
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('juice.splitview.v1'), isFalse);
+    expect(prefs.getBool('loreseer.splitview.v1'), isFalse);
   });
 }

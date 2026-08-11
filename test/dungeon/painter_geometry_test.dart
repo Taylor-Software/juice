@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dungeon/footprint.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/map_screen.dart';
+import 'package:loreseer/engine/dungeon/footprint.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/map_screen.dart';
 
 void main() {
   test('multi-cell footprint hit-tests each of its cells', () {

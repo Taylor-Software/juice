@@ -1,4 +1,4 @@
-import 'package:juice_oracle/state/cloud_key_store.dart';
+import 'package:loreseer/state/cloud_key_store.dart';
 
 class FakeCloudKeyStore implements CloudKeyStore {
   String? _value;

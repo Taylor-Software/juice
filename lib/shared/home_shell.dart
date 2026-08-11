@@ -322,7 +322,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     final file = await ref.read(sessionsProvider.notifier).exportActiveFile();
     final name =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.name ?? 'campaign';
-    final fileName = '${slugify(name)}.juice.${file.ext}';
+    final fileName = '${slugify(name)}.loreseer.${file.ext}';
     try {
       await FilePicker.saveFile(
         dialogTitle: 'Export campaign',
@@ -941,10 +941,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               )
             : null,
         title: sessionName == null
-            ? const Text("Solo Adventurer's Journal")
+            ? const Text('LoreSeer')
             : Column(
                 children: [
-                  const Text("Solo Adventurer's Journal"),
+                  const Text('LoreSeer'),
                   Text(sessionName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1786,7 +1786,7 @@ class CampaignIdentityLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     final spine =
         meta.identityColor != null ? Color(meta.identityColor!) : tk.terracotta;
     return SizedBox(

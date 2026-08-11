@@ -5,16 +5,16 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/scenes_pane.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/scenes_pane.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -51,9 +51,9 @@ void main() {
 
   testWidgets('Generate scene prefills the new-scene dialog', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -78,9 +78,9 @@ void main() {
 
   testWidgets('scene dialog name-roll fills the title field', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())
@@ -118,9 +118,9 @@ void main() {
     String systems = '', // e.g. ',"systems":["juice"]'
   }) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"$systems}]}',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     final c = ProviderContainer(
         overrides: [oracleProvider.overrideWith((ref) async => loadOracle())]);
@@ -178,10 +178,10 @@ void main() {
   testWidgets('an interrupted scene test also rolls and logs a random event',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': '[]',
-      'juice.crawl.v1.default': '{"chaosFactor":9}',
+      'loreseer.journal.v2.default': '[]',
+      'loreseer.crawl.v1.default': '{"chaosFactor":9}',
     });
     // Seed 2 -> first d10 = 4; at chaos 9 (4 <= 9 and even) that is an
     // Interrupted Scene, which must trigger a follow-up random event.

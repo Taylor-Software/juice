@@ -1,4 +1,4 @@
-# Solo Adventurer's Journal
+# LoreSeer
 
 **The guided loop for solo tabletop RPGs.** Set a scene, ask the oracle, read
 the answer in-fiction, and let your campaign write itself — one beat at a time.

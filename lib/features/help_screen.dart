@@ -107,8 +107,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               icon: const Icon(Icons.description_outlined),
               label: const Text('Software licenses'),
               onPressed: () => showLicensePage(
-                  context: context,
-                  applicationName: "Solo Adventurer's Journal"),
+                  context: context, applicationName: 'LoreSeer'),
             ),
           ],
         ],

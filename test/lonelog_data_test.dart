@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/lonelog_data.dart';
+import 'package:loreseer/engine/lonelog_data.dart';
 
 void main() {
   final data = LonelogData(

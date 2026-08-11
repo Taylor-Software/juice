@@ -1304,7 +1304,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     switch (e.kind) {
       case JournalKind.scene:
         final theme = Theme.of(context);
-        final tk = context.juice;
+        final tk = context.lore;
         final num = _sceneNumber(e);
         // Eyebrow: "SCENE 3 · The gatehouse · CHAOS 5" with chaos tinted.
         final eyebrow = tk.uiLabel.copyWith(
@@ -1379,7 +1379,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
         );
       case JournalKind.text:
         final extras = _suffixLines(e, threadTitle);
-        final tk = context.juice;
+        final tk = context.lore;
         // Prose weight: quiet italic narrative, no card — plain notes sit back
         // so result heroes carry the visual weight. The overflow menu stays
         // reachable via a compact trailing button.
@@ -1667,7 +1667,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
     final showRules = _builtinRules.startsWith(tok);
     final matches = matchCommands(registry, parsed.token);
     final theme = Theme.of(context);
-    final tk = context.juice;
+    final tk = context.lore;
     return Material(
       key: const Key('slash-palette'),
       color: theme.colorScheme.surfaceContainerHighest,
@@ -2118,7 +2118,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   /// Subtle "/" affordance that hints the slash-command palette exists. Tapping
   /// it inserts `/` and opens the palette (same state the keyboard `/` drives).
   Widget _slashHint() {
-    final tk = context.juice;
+    final tk = context.lore;
     return Tooltip(
       message: 'Slash commands',
       child: InkWell(
@@ -2716,7 +2716,7 @@ class _JournalScreenState extends ConsumerState<JournalScreen> {
   Widget? _placeChip(JournalEntry e) {
     final loc = e.location;
     if (loc == null) return null;
-    final tk = context.juice;
+    final tk = context.lore;
     return InkWell(
       key: Key('entry-loc-${e.id}'),
       onTap: () => _openLocation(loc),
@@ -3003,7 +3003,7 @@ class _SlashRowState extends State<_SlashRow> {
   @override
   Widget build(BuildContext context) {
     final c = widget.command;
-    final tk = context.juice;
+    final tk = context.lore;
     final hasOdds = c.arg == CommandArg.odds;
     final description = c.arg == CommandArg.notation
         ? (widget.notation.isEmpty
@@ -3080,7 +3080,7 @@ class _SlashIconTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     return Container(
       width: 34,
       height: 34,
@@ -3096,8 +3096,8 @@ class _SlashIconTile extends StatelessWidget {
 }
 
 /// A tokened palette row for a built-in slash command: an icon tile, the
-/// command text in [JuiceTokens.uiLabel], and a muted description. Highlights
-/// in [JuiceTokens.sand] while pressed (parity with the registry row).
+/// command text in [LoreTokens.uiLabel], and a muted description. Highlights
+/// in [LoreTokens.sand] while pressed (parity with the registry row).
 class _BuiltinSlashRow extends StatelessWidget {
   const _BuiltinSlashRow({
     required this.rowKey,
@@ -3115,7 +3115,7 @@ class _BuiltinSlashRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     return ListTile(
       key: rowKey,
       dense: true,
@@ -3134,7 +3134,7 @@ class _AiFootnote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
       child: Text(

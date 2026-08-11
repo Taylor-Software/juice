@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/lonelog_export.dart';
-import 'package:juice_oracle/engine/lonelog_import.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/lonelog_export.dart';
+import 'package:loreseer/engine/lonelog_import.dart';
+import 'package:loreseer/engine/models.dart';
 
 final _t = DateTime(2026, 6, 14);
 

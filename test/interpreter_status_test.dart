@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/state/interpreter.dart';
 
 void main() {
   group('formatDownloadSize', () {

@@ -4,12 +4,12 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/tarot_spreads.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/tarot_spreads.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 OracleData _loadData() =>
@@ -121,7 +121,7 @@ void main() {
   group('DecksNotifier', () {
     test('draw persists deck state; reshuffle resets it', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final oracle = Oracle(data, Dice(Random(1)));
@@ -144,7 +144,7 @@ void main() {
     test('drawSpread persists advanced tarot state; returns positioned cards',
         () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final oracle = Oracle(data, Dice(Random(2)));
@@ -166,7 +166,7 @@ void main() {
 
     test('drawAndLog logs a cards entry; tarot folds in its meaning', () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final oracle = Oracle(data, Dice(Random(1)));
@@ -199,7 +199,7 @@ void main() {
     test('setJokers persists the flag, resets the standard deck, and draws 54',
         () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final oracle = Oracle(data, Dice(Random(4)));
@@ -223,7 +223,7 @@ void main() {
     test('drawSpreadAndLog logs one cards entry with the spread + positions',
         () async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
       });
       final oracle = Oracle(data, Dice(Random(6)));

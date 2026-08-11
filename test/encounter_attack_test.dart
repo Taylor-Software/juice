@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/encounter_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/encounter_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 String _enc(List<Map<String, dynamic>> cs) =>
@@ -44,9 +44,9 @@ void main() {
   Future<ProviderContainer> pump(WidgetTester t, String encJson,
       {Size size = const Size(1000, 1000)}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.encounter.v1.default': encJson,
+      'loreseer.encounter.v1.default': encJson,
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())

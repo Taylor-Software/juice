@@ -185,7 +185,7 @@ abstract class _PersistedList<T> extends AsyncNotifier<List<T>> {
 // -- Journal ----------------------------------------------------------------
 class JournalNotifier extends _PersistedList<JournalEntry> {
   @override
-  String get prefsKey => 'juice.journal.v2';
+  String get prefsKey => 'loreseer.journal.v2';
   @override
   JournalEntry fromJson(Map<String, dynamic> json) =>
       JournalEntry.fromJson(json);
@@ -199,7 +199,7 @@ class JournalNotifier extends _PersistedList<JournalEntry> {
   Future<LocationRef?> _activeLocation() async {
     final sessions = await ref.read(sessionsProvider.future);
     final prefs = await ref.read(prefsProvider.future);
-    final raw = prefs.getString('juice.context.v1.${sessions.active}');
+    final raw = prefs.getString('loreseer.context.v1.${sessions.active}');
     if (raw == null || raw.isEmpty) return null;
     try {
       final j = jsonDecode(raw) as Map<String, dynamic>;
@@ -347,7 +347,7 @@ final allTagsProvider = Provider<List<String>>((ref) {
 // -- Threads --------------------------------------------------------------
 class ThreadNotifier extends _PersistedList<Thread> {
   @override
-  String get prefsKey => 'juice.threads.v1';
+  String get prefsKey => 'loreseer.threads.v1';
   @override
   Thread fromJson(Map<String, dynamic> json) => Thread.fromJson(json);
   @override
@@ -430,7 +430,7 @@ final threadsProvider =
 // -- Characters -----------------------------------------------------------
 class CharacterNotifier extends _PersistedList<Character> {
   @override
-  String get prefsKey => 'juice.characters.v1';
+  String get prefsKey => 'loreseer.characters.v1';
   @override
   Character fromJson(Map<String, dynamic> json) => Character.fromJson(json);
   @override
@@ -605,7 +605,7 @@ final charactersProvider =
 // -- Rumors -----------------------------------------------------------------
 class RumorNotifier extends _PersistedList<Rumor> {
   @override
-  String get prefsKey => 'juice.rumors.v1';
+  String get prefsKey => 'loreseer.rumors.v1';
   @override
   Rumor fromJson(Map<String, dynamic> json) => Rumor.fromJson(json);
   @override
@@ -640,7 +640,7 @@ final rumorsProvider =
 // -- Places (named world locations) -----------------------------------------
 class PlaceNotifier extends _PersistedList<Place> {
   @override
-  String get prefsKey => 'juice.places.v1';
+  String get prefsKey => 'loreseer.places.v1';
   @override
   Place fromJson(Map<String, dynamic> json) => Place.fromJson(json);
   @override
@@ -680,7 +680,7 @@ final placesProvider =
 // -- People (world NPCs the party has met) ----------------------------------
 class NpcNotifier extends _PersistedList<Npc> {
   @override
-  String get prefsKey => 'juice.npcs.v1';
+  String get prefsKey => 'loreseer.npcs.v1';
   @override
   Npc fromJson(Map<String, dynamic> json) => Npc.fromJson(json);
   @override
@@ -721,7 +721,7 @@ final npcsProvider =
 // -- Inventory (Lonelog Resource Tracking addon) ----------------------------
 class InventoryNotifier extends _PersistedList<InvItem> {
   @override
-  String get prefsKey => 'juice.inventory.v1';
+  String get prefsKey => 'loreseer.inventory.v1';
   @override
   InvItem fromJson(Map<String, dynamic> json) => InvItem.fromJson(json);
   @override
@@ -760,7 +760,7 @@ final inventoryProvider =
 // -- Units (Lonelog Wargaming addon) ----------------------------------------
 class UnitNotifier extends _PersistedList<Unit> {
   @override
-  String get prefsKey => 'juice.units.v1';
+  String get prefsKey => 'loreseer.units.v1';
   @override
   Unit fromJson(Map<String, dynamic> json) => Unit.fromJson(json);
   @override
@@ -791,7 +791,7 @@ final unitsProvider =
 // -- Tracks -----------------------------------------------------------------
 class TrackNotifier extends _PersistedList<Track> {
   @override
-  String get prefsKey => 'juice.tracks.v1';
+  String get prefsKey => 'loreseer.tracks.v1';
   @override
   Track fromJson(Map<String, dynamic> json) => Track.fromJson(json);
   @override
@@ -829,7 +829,7 @@ final tracksProvider =
 
 // -- Crawl state (wilderness + dialog marker) -------------------------------
 class CrawlNotifier extends AsyncNotifier<CrawlState> {
-  static const _baseKey = 'juice.crawl.v1';
+  static const _baseKey = 'loreseer.crawl.v1';
 
   late String _scopedKey;
 
@@ -865,7 +865,7 @@ final crawlProvider =
 
 // -- Card-deck oracles (standard 52 + tarot 78), drawn without replacement ---
 class DecksNotifier extends AsyncNotifier<DecksState> {
-  static const _baseKey = 'juice.decks.v1';
+  static const _baseKey = 'loreseer.decks.v1';
 
   late String _scopedKey;
 
@@ -993,7 +993,7 @@ final decksProvider =
 
 // -- Classic-dungeon factions (tracked monster factions per campaign) --------
 class DungeonFactionsNotifier extends AsyncNotifier<FactionRegistry> {
-  static const _baseKey = 'juice.dungeon_factions.v1';
+  static const _baseKey = 'loreseer.dungeon_factions.v1';
 
   late String _scopedKey;
 
@@ -1028,7 +1028,7 @@ final dungeonFactionsProvider =
 
 // -- Light timer (campaign-wide, session-scoped, ungated) -------------------
 class LightNotifier extends AsyncNotifier<int> {
-  static const _baseKey = 'juice.light.v1';
+  static const _baseKey = 'loreseer.light.v1';
   late String _scopedKey;
 
   @override
@@ -1052,7 +1052,7 @@ final lightProvider =
 
 // -- Encounter tracker (initiative order, turns, rounds) ---------------------
 class EncounterNotifier extends AsyncNotifier<EncounterState> {
-  static const _baseKey = 'juice.encounter.v1';
+  static const _baseKey = 'loreseer.encounter.v1';
 
   late String _scopedKey;
 
@@ -1190,7 +1190,7 @@ final encounterProvider =
 
 // -- Map (dungeon graph + revealed hex field) --------------------------------
 class MapNotifier extends AsyncNotifier<MapState> {
-  static const _baseKey = 'juice.map.v1';
+  static const _baseKey = 'loreseer.map.v1';
 
   late String _scopedKey;
 
@@ -1969,7 +1969,7 @@ final mapProvider =
 
 // -- Campaign settings (genre/tone for the interpreter) ----------------------
 class SettingsNotifier extends AsyncNotifier<CampaignSettings> {
-  static const _baseKey = 'juice.settings.v1';
+  static const _baseKey = 'loreseer.settings.v1';
 
   late String _scopedKey;
 
@@ -2017,7 +2017,7 @@ final settingsProvider =
 // -- AI enable (app-global; NOT per-campaign, NOT exported) -----------------
 class AiEnabledNotifier extends _PersistedFlag {
   @override
-  String get prefsKey => 'juice.ai_enabled.v1';
+  String get prefsKey => 'loreseer.ai_enabled.v1';
 
   Future<void> setEnabled(bool value) => _set(value);
 }
@@ -2029,7 +2029,7 @@ final aiEnabledProvider =
 /// part of campaign export — a bestiary is reusable across campaigns (same
 /// posture as [aiEnabledProvider]).
 class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
-  static const _key = 'juice.bestiary.v1';
+  static const _key = 'loreseer.bestiary.v1';
 
   @override
   Future<List<Creature>> build() async {
@@ -2073,7 +2073,7 @@ final bestiaryProvider =
 /// this is NOT session-scoped and NOT exported — tables are reusable across
 /// campaigns and live per-device.
 class CustomTablesNotifier extends AsyncNotifier<List<CustomTable>> {
-  static const _key = 'juice.custom_tables.v1';
+  static const _key = 'loreseer.custom_tables.v1';
 
   @override
   Future<List<CustomTable>> build() async {
@@ -2134,7 +2134,7 @@ final customTablesProvider =
 /// session-scoped, NOT in campaign export — mirrors [customTablesProvider]).
 class ConstructedOraclesNotifier
     extends AsyncNotifier<List<ConstructedOracle>> {
-  static const _key = 'juice.oracles.v1';
+  static const _key = 'loreseer.oracles.v1';
 
   @override
   Future<List<ConstructedOracle>> build() async {
@@ -2203,7 +2203,7 @@ final constructedOraclesProvider =
 /// App-global user-authored ref cards (reusable across campaigns; NOT
 /// session-scoped, NOT in campaign export — mirrors [customTablesProvider]).
 class UserRefCardsNotifier extends AsyncNotifier<List<UserRefCard>> {
-  static const _key = 'juice.userrefcards.v1';
+  static const _key = 'loreseer.userrefcards.v1';
 
   @override
   Future<List<UserRefCard>> build() async {
@@ -2285,7 +2285,7 @@ final kitsProvider = FutureProvider<List<LoopKit>>((ref) async {
 /// [aiEnabledProvider]: the nudge is a per-device first-run affordance.
 class AiNudgeSeenNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.ai_nudge_seen.v1';
+  String get prefsKey => 'loreseer.ai_nudge_seen.v1';
 }
 
 final aiNudgeSeenProvider =
@@ -2294,7 +2294,7 @@ final aiNudgeSeenProvider =
 /// App-global last-export timestamp (milliseconds since epoch, or null).
 /// Stamped on every successful campaign export; per-device, NOT session-scoped.
 class LastExportNotifier extends AsyncNotifier<int?> {
-  static const _key = 'juice.last_export.v1';
+  static const _key = 'loreseer.last_export.v1';
 
   @override
   Future<int?> build() async =>
@@ -2315,7 +2315,7 @@ final lastExportProvider =
 /// Same posture as [aiNudgeSeenProvider] — per-device, NOT session-scoped.
 class WelcomeSeenNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.welcome_seen.v1';
+  String get prefsKey => 'loreseer.welcome_seen.v1';
 }
 
 final welcomeSeenProvider =
@@ -2327,7 +2327,7 @@ final welcomeSeenProvider =
 /// the offer to a single appearance so it never nags.
 class AiOfferSeenNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.ai_offer_seen.v1';
+  String get prefsKey => 'loreseer.ai_offer_seen.v1';
 }
 
 final aiOfferSeenProvider =
@@ -2337,7 +2337,7 @@ final aiOfferSeenProvider =
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class TrackHelpSeenNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.track_help_seen.v1';
+  String get prefsKey => 'loreseer.track_help_seen.v1';
 }
 
 final trackHelpSeenProvider =
@@ -2348,7 +2348,7 @@ final trackHelpSeenProvider =
 /// has been dismissed. Same posture as [trackHelpSeenProvider].
 class ChipHelpSeenNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.chip_help_seen.v1';
+  String get prefsKey => 'loreseer.chip_help_seen.v1';
 }
 
 final chipHelpSeenProvider =
@@ -2357,7 +2357,7 @@ final chipHelpSeenProvider =
 /// App-global reading text scale (multiplies the platform scale). Default 1.0;
 /// per-device like [aiEnabledProvider] — NOT session-scoped, NOT exported.
 class TextScaleNotifier extends AsyncNotifier<double> {
-  static const _key = 'juice.text_scale.v1';
+  static const _key = 'loreseer.text_scale.v1';
 
   @override
   Future<double> build() async =>
@@ -2378,7 +2378,7 @@ final textScaleProvider =
 /// the dice roller. Reusable across campaigns like [customTablesProvider] —
 /// NOT session-scoped, NOT exported. Deduped, capped, insertion-ordered.
 class FavoriteDiceNotifier extends AsyncNotifier<List<String>> {
-  static const _key = 'juice.favorite_dice.v1';
+  static const _key = 'loreseer.favorite_dice.v1';
   static const _cap = 12;
 
   @override
@@ -2416,7 +2416,7 @@ final favoriteDiceProvider =
 /// Same posture as [welcomeSeenProvider] — per-device, NOT session-scoped.
 class RecapSuppressedNotifier extends _SeenFlag {
   @override
-  String get prefsKey => 'juice.recap_suppressed.v1';
+  String get prefsKey => 'loreseer.recap_suppressed.v1';
 }
 
 final recapSuppressedProvider =
@@ -2434,7 +2434,7 @@ final recapSuppressedProvider =
 /// other" cross-talk and the rail's viewport-dependent default.
 class PlayPanelExpandedNotifier extends _PersistedFlag {
   @override
-  String get prefsKey => 'juice.play_panel_expanded.v1';
+  String get prefsKey => 'loreseer.play_panel_expanded.v1';
 
   Future<void> setExpanded(bool value) => _set(value);
 }
@@ -2495,7 +2495,7 @@ final cloudApiKeyProvider =
 
 class CloudInterpretEnabledNotifier extends _PersistedFlag {
   @override
-  String get prefsKey => 'juice.cloud_interpret_enabled.v1';
+  String get prefsKey => 'loreseer.cloud_interpret_enabled.v1';
 
   Future<void> setEnabled(bool value) => _set(value);
 }
@@ -2520,33 +2520,33 @@ final interpretReadyProvider = Provider<bool>((ref) {
 // -- Sessions ---------------------------------------------------------------
 /// Base keys holding per-session data; scoped as '<base>.<sessionId>'.
 const sessionScopedKeys = [
-  'juice.journal.v2',
-  'juice.threads.v1',
-  'juice.characters.v1',
-  'juice.crawl.v1',
-  'juice.encounter.v1',
-  'juice.map.v1',
-  'juice.dungeon_factions.v1',
-  'juice.verdant.v1',
-  'juice.rumors.v1',
-  'juice.places.v1',
-  'juice.npcs.v1',
-  'juice.tracks.v1',
-  'juice.inventory.v1',
-  'juice.units.v1',
-  'juice.settings.v1',
-  'juice.context.v1',
-  'juice.decks.v1',
-  'juice.gmchat.v1',
-  'juice.light.v1',
+  'loreseer.journal.v2',
+  'loreseer.threads.v1',
+  'loreseer.characters.v1',
+  'loreseer.crawl.v1',
+  'loreseer.encounter.v1',
+  'loreseer.map.v1',
+  'loreseer.dungeon_factions.v1',
+  'loreseer.verdant.v1',
+  'loreseer.rumors.v1',
+  'loreseer.places.v1',
+  'loreseer.npcs.v1',
+  'loreseer.tracks.v1',
+  'loreseer.inventory.v1',
+  'loreseer.units.v1',
+  'loreseer.settings.v1',
+  'loreseer.context.v1',
+  'loreseer.decks.v1',
+  'loreseer.gmchat.v1',
+  'loreseer.light.v1',
   // Session-scoped UX caches: registered so campaign delete purges them and
   // export/migration carries them (audit F3 — they were orphaned before).
-  'juice.suggestDismissed',
-  'juice.recap',
+  'loreseer.suggestDismissed',
+  'loreseer.recap',
 ];
 
 class SessionsNotifier extends AsyncNotifier<SessionsState> {
-  static const _key = 'juice.sessions.v1';
+  static const _key = 'loreseer.sessions.v1';
 
   @override
   Future<SessionsState> build() async {
@@ -2604,7 +2604,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     );
     if (genre.isNotEmpty || tone.isNotEmpty) {
       final prefs = await ref.read(prefsProvider.future);
-      await prefs.setString('juice.settings.v1.${meta.id}',
+      await prefs.setString('loreseer.settings.v1.${meta.id}',
           jsonEncode(CampaignSettings(genre: genre, tone: tone).toJson()));
     }
     await _save(
@@ -2634,9 +2634,9 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       dndEdition: src.dndEdition,
     );
     final prefs = await ref.read(prefsProvider.future);
-    final settings = prefs.getString('juice.settings.v1.$sourceId');
+    final settings = prefs.getString('loreseer.settings.v1.$sourceId');
     if (settings != null && settings.isNotEmpty) {
-      await prefs.setString('juice.settings.v1.$id', settings);
+      await prefs.setString('loreseer.settings.v1.$id', settings);
     }
     await _save(
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
@@ -2704,18 +2704,18 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     );
   }
 
-  /// Export the active session as a file: a `.juice.zip` bundle when it
+  /// Export the active session as a file: a `.loreseer.zip` bundle when it
   /// references blob images (so annotations travel with it), else a plain
-  /// `.juice.json` string. Returns the bytes + the file extension to use.
+  /// `.loreseer.json` string. Returns the bytes + the file extension to use.
   Future<({List<int> bytes, String ext})> exportActiveFile() async {
     final json = await exportActive();
     final plain = (bytes: utf8.encode(json), ext: 'json');
     if (!ref.read(blobStoreAvailableProvider)) return plain;
     final s = state.valueOrNull ?? await future;
     final prefs = await ref.read(prefsProvider.future);
-    final journalRaw = prefs.getString('juice.journal.v2.${s.active}');
+    final journalRaw = prefs.getString('loreseer.journal.v2.${s.active}');
     final ids = referencedBlobIds(
-        {if (journalRaw != null) 'juice.journal.v2': journalRaw});
+        {if (journalRaw != null) 'loreseer.journal.v2': journalRaw});
     if (ids.isEmpty) return plain;
     final store = ref.read(blobStoreProvider);
     final blobs = <String, Uint8List>{};
@@ -2769,8 +2769,8 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
         SessionsState(active: meta.id, sessions: [...s.sessions, meta]));
   }
 
-  /// Import campaign file [bytes]: a `.juice.zip` bundle (extracts its blobs into
-  /// the blob store, then imports the JSON) or a plain `.juice.json` string.
+  /// Import campaign file [bytes]: a `.loreseer.zip` bundle (extracts its blobs into
+  /// the blob store, then imports the JSON) or a plain `.loreseer.json` string.
   /// Throws [FormatException] on invalid files.
   Future<void> importCampaignData(List<int> bytes) async {
     final bundle = decodeCampaignBundle(bytes);
@@ -2801,9 +2801,9 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await ref.read(prefsProvider.future);
     final referenced = <String>{};
     for (final meta in s.sessions) {
-      final j = prefs.getString('juice.journal.v2.${meta.id}');
+      final j = prefs.getString('loreseer.journal.v2.${meta.id}');
       if (j != null) {
-        referenced.addAll(referencedBlobIds({'juice.journal.v2': j}));
+        referenced.addAll(referencedBlobIds({'loreseer.journal.v2': j}));
       }
     }
     var removed = 0;
@@ -2834,14 +2834,14 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     );
     final prefs = await ref.read(prefsProvider.future);
     final rawByKey = <String, String>{
-      'juice.journal.v2':
+      'loreseer.journal.v2':
           jsonEncode(doc.entries.map((e) => e.toJson()).toList()),
-      'juice.threads.v1':
+      'loreseer.threads.v1':
           jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
-      'juice.characters.v1':
+      'loreseer.characters.v1':
           jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
-      'juice.tracks.v1': jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
-      'juice.settings.v1': jsonEncode(
+      'loreseer.tracks.v1': jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
+      'loreseer.settings.v1': jsonEncode(
           CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
     };
     for (final e in rawByKey.entries) {
@@ -2868,7 +2868,7 @@ final sessionsProvider = AsyncNotifierProvider<SessionsNotifier, SessionsState>(
 
 // -- Enabled rulesets (global, not session-scoped) ---------------------------
 class RulesetsNotifier extends AsyncNotifier<Set<String>> {
-  static const _key = 'juice.rulesets.v1';
+  static const _key = 'loreseer.rulesets.v1';
 
   @override
   Future<Set<String>> build() async {
@@ -2936,7 +2936,7 @@ final systemQuickRefProvider = Provider<QuickRefCard?>(
 // -- Split view (global layout preference, not session-scoped) ---------------
 class SplitViewNotifier extends _PersistedFlag {
   @override
-  String get prefsKey => 'juice.splitview.v1';
+  String get prefsKey => 'loreseer.splitview.v1';
 
   // Default ON: the shell only splits at >=1000px (canSplit), so this is
   // inert on phones/tablets and gives desktop a two-pane layout by default.
@@ -2951,7 +2951,7 @@ final splitViewProvider =
 
 // -- Tool MRU (global, not session-scoped) ----------------------------------
 class ToolMruNotifier extends AsyncNotifier<List<String>> {
-  static const _key = 'juice.tools.mru.v1';
+  static const _key = 'loreseer.tools.mru.v1';
   static const _cap = 6;
 
   @override
@@ -3149,7 +3149,7 @@ final helpTopicProvider = StateProvider<String?>((ref) => null);
 
 // -- Dismissed suggestions (session-scoped) -----------------------------------
 class DismissedSuggestionsNotifier extends AsyncNotifier<Set<String>> {
-  static const _baseKey = 'juice.suggestDismissed';
+  static const _baseKey = 'loreseer.suggestDismissed';
 
   late String _scopedKey;
 
@@ -3192,7 +3192,7 @@ final dismissedSuggestionsProvider =
 
 // -- Recap cache (session-scoped) ---------------------------------------------
 class RecapCacheNotifier extends AsyncNotifier<RecapCache> {
-  static const _baseKey = 'juice.recap';
+  static const _baseKey = 'loreseer.recap';
 
   late String _scopedKey;
 

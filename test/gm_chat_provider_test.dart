@@ -1,15 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/gm_chat.dart';
-import 'package:juice_oracle/state/gm_chat.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/gm_chat.dart';
+import 'package:loreseer/state/gm_chat.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   test('appendTurn accumulates + persists; clear empties; key is scoped',
       () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
     });
     final c = ProviderContainer();
@@ -36,6 +36,6 @@ void main() {
   });
 
   test('gmchat key is exported with the campaign', () {
-    expect(sessionScopedKeys, contains('juice.gmchat.v1'));
+    expect(sessionScopedKeys, contains('loreseer.gmchat.v1'));
   });
 }

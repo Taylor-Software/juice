@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Structural self-check of the bundled starter pack (the emitted JSON is

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/combat.dart';
+import 'package:loreseer/engine/combat.dart';
 
 void main() {
   group('resolveHit', () {

@@ -20,15 +20,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/launcher_screen.dart';
-import 'package:juice_oracle/features/session_resume_screen.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/launcher_screen.dart';
+import 'package:loreseer/features/session_resume_screen.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import '../test/fake_interpreter.dart';
 
@@ -47,7 +47,7 @@ Future<ProviderContainer> _pumpLauncher(
   Map<String, Object> prefs = const {},
 }) async {
   SharedPreferences.setMockInitialValues({
-    'juice.ai_enabled.v1': true,
+    'loreseer.ai_enabled.v1': true,
     ...prefs,
   });
   final fake = FakeInterpreterService(
@@ -91,10 +91,10 @@ void main() {
   testWidgets('Continue on a campaign WITH entries shows Session Resume',
       (tester) async {
     await _pumpLauncher(tester, prefs: {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$sid","sessions":[{"id":"$sid","name":"C1"}]}',
-      'juice.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
-      'juice.threads.v1.$sid': threadJson,
+      'loreseer.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
+      'loreseer.threads.v1.$sid': threadJson,
     });
 
     // Sanity: launcher is up; resume screen is not.
@@ -118,7 +118,7 @@ void main() {
   testWidgets('Continue on a campaign with ZERO entries lands directly',
       (tester) async {
     await _pumpLauncher(tester, prefs: {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$sid","sessions":[{"id":"$sid","name":"C1"}]}',
     });
 
@@ -137,10 +137,10 @@ void main() {
     // Two campaigns; "default" is active+empty, "other" has prior state. Tapping
     // the "other" row drives _switch (switchTo + resume hop).
     await _pumpLauncher(tester, prefs: {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$sid","sessions":[{"id":"$sid","name":"C1"},{"id":"other","name":"C2"}]}',
-      'juice.journal.v2.other': '[$lastEntryJson,$sceneJson]',
-      'juice.threads.v1.other': threadJson,
+      'loreseer.journal.v2.other': '[$lastEntryJson,$sceneJson]',
+      'loreseer.threads.v1.other': threadJson,
     });
 
     await tester.tap(find.byKey(const Key('launcher-campaign-other')));

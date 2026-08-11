@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -25,11 +25,11 @@ const _sid = 'default';
 
 // Prefs with a character 'Mara' (id c1) and an open thread 'The Vow' (t9).
 Map<String, Object> _prefsWithEntities() => {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
-      'juice.characters.v1.$_sid':
+      'loreseer.characters.v1.$_sid':
           '[{"id":"c1","name":"Mara","note":"","stats":[],"tracks":[],"tags":[]}]',
-      'juice.threads.v1.$_sid': '[{"id":"t9","title":"The Vow","open":true}]',
+      'loreseer.threads.v1.$_sid': '[{"id":"t9","title":"The Vow","open":true}]',
     };
 
 Future<void> pumpComposer(WidgetTester tester, OracleData data,
@@ -124,8 +124,8 @@ void main() {
       (tester) async {
     await pumpComposer(tester, data, prefs: {
       ..._prefsWithEntities(),
-      'juice.npcs.v1.$_sid': '[{"id":"n1","name":"Bram","role":"Innkeeper"}]',
-      'juice.places.v1.$_sid': '[{"id":"p1","name":"Harbor"}]',
+      'loreseer.npcs.v1.$_sid': '[{"id":"n1","name":"Bram","role":"Innkeeper"}]',
+      'loreseer.places.v1.$_sid': '[{"id":"p1","name":"Harbor"}]',
     });
 
     await tester.enterText(find.byKey(const Key('journal-composer')), '@bram');

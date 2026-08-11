@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_sheet.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/custom_sheet.dart';
+import 'package:loreseer/engine/models.dart';
 
 /// Character carries one nullable field per sheet system, and each one has to
 /// be threaded through the constructor, copyWith, toJson, fromJson, and (when

@@ -1,4 +1,4 @@
-/// Serializes a juice encounter as a Lonelog Combat-addon `[COMBAT]` block for
+/// Serializes a loreseer encounter as a Lonelog Combat-addon `[COMBAT]` block for
 /// the journal (so it renders highlighted when the lonelog system is on).
 /// Pure — no Flutter. Combatants render as `[F:]` foe tags (HP + statuses),
 /// with the outcome on a `=>` line.

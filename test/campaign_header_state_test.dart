@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,9 +37,9 @@ void main() {
 
   test('setDefaultOracle persists and preserves genre/tone', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.settings.v1.default':
+      'loreseer.settings.v1.default':
           '{"genre":"noir","tone":"grim","defaultOracle":"juice"}',
     });
     final c = ProviderContainer();
@@ -54,9 +54,9 @@ void main() {
 
   test('setHeaderCollapsed persists and preserves genre/tone', () async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.settings.v1.default':
+      'loreseer.settings.v1.default':
           '{"genre":"space","tone":"terse","defaultOracle":"juice"}',
     });
     final c = ProviderContainer();

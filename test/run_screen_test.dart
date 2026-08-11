@@ -4,18 +4,18 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/run_screen.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart'
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/run_screen.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart'
     show interpreterServiceProvider, InterpreterStatus, InterpreterPhase;
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/spell.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/spell.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 
@@ -37,15 +37,15 @@ Map<String, Object> _prefs({
   String? rumorsJson,
 }) =>
     {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
-      if (journalJson != null) 'juice.journal.v2.$_sid': journalJson,
-      if (charsJson != null) 'juice.characters.v1.$_sid': charsJson,
-      if (encounterJson != null) 'juice.encounter.v1.$_sid': encounterJson,
-      if (crawlJson != null) 'juice.crawl.v1.$_sid': crawlJson,
-      if (contextJson != null) 'juice.context.v1.$_sid': contextJson,
-      if (threadsJson != null) 'juice.threads.v1.$_sid': threadsJson,
-      if (rumorsJson != null) 'juice.rumors.v1.$_sid': rumorsJson,
+      if (journalJson != null) 'loreseer.journal.v2.$_sid': journalJson,
+      if (charsJson != null) 'loreseer.characters.v1.$_sid': charsJson,
+      if (encounterJson != null) 'loreseer.encounter.v1.$_sid': encounterJson,
+      if (crawlJson != null) 'loreseer.crawl.v1.$_sid': crawlJson,
+      if (contextJson != null) 'loreseer.context.v1.$_sid': contextJson,
+      if (threadsJson != null) 'loreseer.threads.v1.$_sid': threadsJson,
+      if (rumorsJson != null) 'loreseer.rumors.v1.$_sid': rumorsJson,
     };
 
 Future<ProviderContainer> _pump(
@@ -57,7 +57,7 @@ Future<ProviderContainer> _pump(
 }) async {
   SharedPreferences.setMockInitialValues({
     ...prefs,
-    if (aiReady) 'juice.ai_enabled.v1': true,
+    if (aiReady) 'loreseer.ai_enabled.v1': true,
   });
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;

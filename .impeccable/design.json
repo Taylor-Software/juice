@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-07-24T00:00:00Z",
-  "title": "Design System: Solo Adventurer's Journal",
+  "title": "Design System: LoreSeer",
   "extensions": {
     "colorMeta": {
       "terracotta": {
@@ -577,7 +577,7 @@
   ],
   "narrative": {
     "northStar": "The Lamplit Tome",
-    "overview": "This is a book that happens to roll dice. The whole system is organized around the fiction that the player is writing in a warm, worn campaign journal by lamplight — cream paper, terracotta ink, a serif that only the story speaks in. Everything the app does mechanically (rolling, tracking, generating) is marginalia in that book's margins: real, useful, deliberately quieter than the prose it serves. When a surface has to choose between looking capable and looking like a page, it looks like a page.\n\nThe palette is entirely warm — there is no cool gray anywhere in the system. Depth comes from paper stacking on paper (cream → card → raised), separated by hairlines rather than shadow. The single accent, Lamplight Terracotta, behaves like rubrication in a manuscript: it is not a brand color sprinkled for identity, it is reserved for the two things that matter — the action the player is about to take, and the answer the oracle just gave. When the oracle answers, the qualifier after the comma tilts into italic terracotta, and the card it sits in is the only surface in the entire application permitted to cast a shadow. That restraint is what makes the moment land.\n\nThe system currently runs on two color layers: the shipped JuiceTokens tome palette, and an underlying Material 3 ColorScheme seeded from a deep amber (#B8540E) that still governs older tool chrome, dialogs, and system widgets. Tome is the destination. The M3 layer is legacy debt, not a second design language — new work reads JuiceTokens, and touching an old surface is an opportunity to migrate it. The system is also fully dual-brightness: every tome token has a dark counterpart, and the dark theme is not an inversion but a second warm world (#241C17 lamp-dimmed brown, never black).",
+    "overview": "This is a book that happens to roll dice. The whole system is organized around the fiction that the player is writing in a warm, worn campaign journal by lamplight — cream paper, terracotta ink, a serif that only the story speaks in. Everything the app does mechanically (rolling, tracking, generating) is marginalia in that book's margins: real, useful, deliberately quieter than the prose it serves. When a surface has to choose between looking capable and looking like a page, it looks like a page.\n\nThe palette is entirely warm — there is no cool gray anywhere in the system. Depth comes from paper stacking on paper (cream → card → raised), separated by hairlines rather than shadow. The single accent, Lamplight Terracotta, behaves like rubrication in a manuscript: it is not a brand color sprinkled for identity, it is reserved for the two things that matter — the action the player is about to take, and the answer the oracle just gave. When the oracle answers, the qualifier after the comma tilts into italic terracotta, and the card it sits in is the only surface in the entire application permitted to cast a shadow. That restraint is what makes the moment land.\n\nThe system currently runs on two color layers: the shipped LoreTokens tome palette, and an underlying Material 3 ColorScheme seeded from a deep amber (#B8540E) that still governs older tool chrome, dialogs, and system widgets. Tome is the destination. The M3 layer is legacy debt, not a second design language — new work reads LoreTokens, and touching an old surface is an opportunity to migrate it. The system is also fully dual-brightness: every tome token has a dark counterpart, and the dark theme is not an inversion but a second warm world (#241C17 lamp-dimmed brown, never black).",
     "keyCharacteristics": [
       "Warm-only palette; zero cool grays, zero blues.",
       "Serif for fiction, sans for machinery — a hard, load-bearing split.",
@@ -594,7 +594,7 @@
       },
       {
         "name": "The Migration Rule",
-        "body": "New player-facing work reads JuiceTokens via context.juice, never a raw ColorScheme role. A surface still on M3 is a to-do, not a precedent. Audit test: test/design_system_test.dart pins the count of colorScheme. uses in lib/ at its 2026-07-24 measurement (131). The number may go down — lower the ceiling when you migrate a surface — and never up.",
+        "body": "New player-facing work reads LoreTokens via context.lore, never a raw ColorScheme role. A surface still on M3 is a to-do, not a precedent. Audit test: test/design_system_test.dart pins the count of colorScheme. uses in lib/ at its 2026-07-24 measurement (131). The number may go down — lower the ceiling when you migrate a surface — and never up.",
         "section": "colors"
       },
       {
@@ -664,7 +664,7 @@
       }
     ],
     "dos": [
-      "Do read colors through context.juice (JuiceTokens) on any player-facing surface, and migrate a raw ColorScheme surface when you touch it.",
+      "Do read colors through context.lore (LoreTokens) on any player-facing surface, and migrate a raw ColorScheme surface when you touch it.",
       "Do keep the serif/sans split absolute: fiction in Newsreader, machinery in Hanken Grotesk.",
       "Do separate surfaces with a hairline (#EFE0D6 / #3D3229) or a tonal step, not a shadow.",
       "Do default to a 12px radius and reserve 18px for hero surfaces.",
@@ -685,7 +685,7 @@
       "Don't let it read as a SaaS dashboard (cool grays, blue accents, KPI card grids), a dice-roller utility (neon numerals, dark gamer chrome, glassmorphism), or default Material 3 (untouched seed colors, Roboto, stock elevation ramps). Those three are the confirmed anti-references.",
       "Don't put a FilledButton under loose or unbounded width constraints without overriding minimumSize — the 48px full-width theme throws \"forces an infinite width\" inside a Wrap or beside a flex sibling.",
       "Don't branch layout on a height threshold in the journal body; one tree at every height, floored at 360px.",
-      "Don't hard-code a hex where a token exists, and don't add a token that duplicates one already in JuiceTokens.",
+      "Don't hard-code a hex where a token exists, and don't add a token that duplicates one already in LoreTokens.",
       "Don't remove a focus indicator, and don't rely on hover to communicate anything — desktop keyboard traversal is a real path and touch has no hover.",
       "Don't spend colorScheme.error on 'unavailable', 'finished', or 'empty'. Those are Faint Ink. Red means something went wrong.",
       "Don't restore the paper-grain texture. The original UX-refresh handoff specified a CustomPainter dot field (1px dots, ~5% brown, 15px grid) under the cream background. It was never built, and the tome reads as paper without it. This is a deliberate omission, not an unfinished task.",

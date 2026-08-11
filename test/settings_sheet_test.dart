@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/settings_sheet.dart';
-import 'package:juice_oracle/state/auto_backup.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/settings_sheet.dart';
+import 'package:loreseer/state/auto_backup.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_cloud_key_store.dart';
@@ -14,7 +14,7 @@ Future<FakeInterpreterService> pump(WidgetTester tester,
     {required InterpreterStatus status,
     bool enabled = false,
     FakeCloudKeyStore? cloudStore}) async {
-  SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': enabled});
+  SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': enabled});
   final fake = FakeInterpreterService(initial: status);
   await tester.pumpWidget(ProviderScope(
     overrides: [
@@ -60,7 +60,7 @@ void main() {
     await tester.tap(find.byKey(const Key('settings-ai-toggle')));
     await tester.pumpAndSettle();
     final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getBool('juice.ai_enabled.v1'), isTrue);
+    expect(prefs.getBool('loreseer.ai_enabled.v1'), isTrue);
   });
 
   testWidgets('enabled + needsDownload shows Download -> warmUp',
@@ -196,7 +196,7 @@ void main() {
   testWidgets('changing reading size offers a reset that restores 100%',
       (tester) async {
     SharedPreferences.setMockInitialValues(
-        {'juice.ai_enabled.v1': false, 'juice.text_scale.v1': 1.3});
+        {'loreseer.ai_enabled.v1': false, 'loreseer.text_scale.v1': 1.3});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.needsDownload));
     late ProviderContainer container;
@@ -254,7 +254,7 @@ void main() {
   });
 
   testWidgets('a backup failure surfaces as a warning card', (tester) async {
-    SharedPreferences.setMockInitialValues({'juice.ai_enabled.v1': false});
+    SharedPreferences.setMockInitialValues({'loreseer.ai_enabled.v1': false});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.needsDownload));
     await tester.pumpWidget(ProviderScope(

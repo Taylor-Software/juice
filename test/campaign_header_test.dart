@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/shared/play_context_hud.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/shared/play_context_hud.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -27,7 +27,7 @@ OracleData _loadData() {
 
 const _sid = 'default';
 const _sessionPrefs = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
 };
 
@@ -42,12 +42,12 @@ Map<String, Object> _prefs({
 }) {
   return {
     ..._sessionPrefs,
-    if (journalJson != null) 'juice.journal.v2.$_sid': journalJson,
-    if (threadsJson != null) 'juice.threads.v1.$_sid': threadsJson,
-    if (charsJson != null) 'juice.characters.v1.$_sid': charsJson,
-    if (crawlJson != null) 'juice.crawl.v1.$_sid': crawlJson,
-    if (settingsJson != null) 'juice.settings.v1.$_sid': settingsJson,
-    if (contextJson != null) 'juice.context.v1.$_sid': contextJson,
+    if (journalJson != null) 'loreseer.journal.v2.$_sid': journalJson,
+    if (threadsJson != null) 'loreseer.threads.v1.$_sid': threadsJson,
+    if (charsJson != null) 'loreseer.characters.v1.$_sid': charsJson,
+    if (crawlJson != null) 'loreseer.crawl.v1.$_sid': crawlJson,
+    if (settingsJson != null) 'loreseer.settings.v1.$_sid': settingsJson,
+    if (contextJson != null) 'loreseer.context.v1.$_sid': contextJson,
   };
 }
 
@@ -183,9 +183,9 @@ void main() {
     // A Juice-only campaign: chaos is a Mythic concept, so the dial hides
     // even though crawl state carries a chaosFactor.
     await _pump(tester, data, {
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1","systems":["juice"]}]}',
-      'juice.crawl.v1.$_sid': _crawlJson,
+      'loreseer.crawl.v1.$_sid': _crawlJson,
     });
     expect(find.textContaining('Chaos'), findsNothing);
   });
@@ -253,8 +253,8 @@ void main() {
       (tester) async {
     await _pump(tester, data, {
       ..._prefs(journalJson: '[]'),
-      'juice.oracles.v1': '[{"id":"o1","name":"Grim Fate","notation":"d6"}]',
-      'juice.settings.v1.$_sid': '{"defaultOracle":"co:o1"}',
+      'loreseer.oracles.v1': '[{"id":"o1","name":"Grim Fate","notation":"d6"}]',
+      'loreseer.settings.v1.$_sid': '{"defaultOracle":"co:o1"}',
     });
     final container =
         ProviderScope.containerOf(tester.element(find.byType(CampaignHeader)));
@@ -278,7 +278,7 @@ void main() {
       (tester) async {
     await _pump(tester, data, {
       ..._prefs(journalJson: '[]'),
-      'juice.settings.v1.$_sid': '{"defaultOracle":"icons"}',
+      'loreseer.settings.v1.$_sid': '{"defaultOracle":"icons"}',
     });
     await tester.tap(find.byKey(const Key('hdr-quick-roll')));
     await tester.pumpAndSettle();
@@ -395,7 +395,7 @@ void main() {
         journalJson: '[$_sceneJson]',
         settingsJson: '{"defaultOracle":"tarot"}',
       ),
-      'juice.sessions.v1': '{"active":"$_sid","sessions":[{"id":"$_sid",'
+      'loreseer.sessions.v1': '{"active":"$_sid","sessions":[{"id":"$_sid",'
           '"name":"C1","systems":["cards"]}]}',
     };
     await _pump(tester, data, prefs);

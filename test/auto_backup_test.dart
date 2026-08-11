@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/state/auto_backup.dart';
+import 'package:loreseer/state/auto_backup.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,7 @@ void main() {
   test('writer creates the backups dir and writes the file', () async {
     final w = AutoBackupWriter(Directory('${tmp.path}/backups'));
     final path = await w.write('sid1', [1, 2, 3], 'json');
-    expect(path, endsWith('sid1.juice.json'));
+    expect(path, endsWith('sid1.loreseer.json'));
     expect(await File(path).readAsBytes(), [1, 2, 3]);
   });
 

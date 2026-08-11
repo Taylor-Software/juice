@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/track_home_pane.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/track_home_pane.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A scene journal entry (newest-first; the dashboard's NOW card falls back to
@@ -22,7 +22,7 @@ Future<ProviderContainer> _pump(
   required Map<String, Object> prefs,
 }) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1': _baseSession,
+    'loreseer.sessions.v1': _baseSession,
     ...prefs,
   });
   final c = ProviderContainer();
@@ -44,15 +44,15 @@ void main() {
     final c = await _pump(tester, prefs: {
       // Dismiss the orientation card so the summary cards aren't pushed
       // off-screen by the extra leading card.
-      'juice.track_help_seen.v1': true,
-      'juice.journal.v2.default': '[$_sceneJson]',
-      'juice.threads.v1.default':
+      'loreseer.track_help_seen.v1': true,
+      'loreseer.journal.v2.default': '[$_sceneJson]',
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","open":true,"progress":3},'
               '{"id":"t2","title":"Closed quest","open":false}]',
-      'juice.characters.v1.default': '[{"id":"c1","name":"Ash","stats":[],'
+      'loreseer.characters.v1.default': '[{"id":"c1","name":"Ash","stats":[],'
           '"tracks":[{"label":"HP","current":4,"max":5}],"tags":[]}]',
       // Idle encounter: no combatants.
-      'juice.encounter.v1.default': '{"combatants":[],"turnIndex":0,"round":1}',
+      'loreseer.encounter.v1.default': '{"combatants":[],"turnIndex":0,"round":1}',
     });
 
     // NOW card shows the active scene title.
@@ -89,7 +89,7 @@ void main() {
   testWidgets('tapping the THREADS card navigates to the threads subtab',
       (tester) async {
     final c = await _pump(tester, prefs: {
-      'juice.threads.v1.default':
+      'loreseer.threads.v1.default':
           '[{"id":"t1","title":"Find the Relic","open":true}]',
     });
 
@@ -109,7 +109,7 @@ void main() {
   testWidgets('tapping the PARTY card navigates to the Sheet verb',
       (tester) async {
     final c = await _pump(tester, prefs: {
-      'juice.characters.v1.default':
+      'loreseer.characters.v1.default':
           '[{"id":"c1","name":"Ash","stats":[],"tracks":[],"tags":[]}]',
     });
 
@@ -124,7 +124,7 @@ void main() {
   testWidgets('a live encounter renders the emphasized round state',
       (tester) async {
     await _pump(tester, prefs: {
-      'juice.encounter.v1.default':
+      'loreseer.encounter.v1.default':
           '{"combatants":[{"id":"k1","name":"Goblin","characterId":null,'
               '"initiative":12,"track":{"label":"HP","current":3,"max":5},'
               '"tags":[],"defeated":false}],"turnIndex":0,"round":2}',
@@ -140,7 +140,7 @@ void main() {
   testWidgets('empty state is defensive (no scene / threads / party)',
       (tester) async {
     // Dismiss the orientation card so all summary cards fit the viewport.
-    await _pump(tester, prefs: const {'juice.track_help_seen.v1': true});
+    await _pump(tester, prefs: const {'loreseer.track_help_seen.v1': true});
     expect(find.text('No scene yet'), findsOneWidget);
     // Every card still renders.
     expect(find.byKey(const Key('track-home-now')), findsOneWidget);
@@ -165,7 +165,7 @@ void main() {
 
   testWidgets('orientation card hidden once seen', (tester) async {
     final c = await _pump(tester, prefs: const {
-      'juice.track_help_seen.v1': true,
+      'loreseer.track_help_seen.v1': true,
     });
     expect(find.byKey(const Key('track-help-card')), findsNothing);
     c.dispose();

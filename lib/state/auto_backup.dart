@@ -7,7 +7,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'providers.dart';
 
-/// Rolling on-disk backup writer: `backups/<sessionId>.juice.<ext>` under the
+/// Rolling on-disk backup writer: `backups/<sessionId>.loreseer.<ext>` under the
 /// app-support directory, keeping two rotations (`.1`, `.2`). Pure file
 /// mechanics — injectable directory for tests.
 class AutoBackupWriter {
@@ -16,7 +16,7 @@ class AutoBackupWriter {
 
   Future<String> write(String sessionId, List<int> bytes, String ext) async {
     await dir.create(recursive: true);
-    final base = '${dir.path}/$sessionId.juice.$ext';
+    final base = '${dir.path}/$sessionId.loreseer.$ext';
     final f = File(base);
     if (await f.exists()) {
       final r1 = File('$base.1');

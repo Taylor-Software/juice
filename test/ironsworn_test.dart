@@ -2,9 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/ironsworn.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/ironsworn.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -62,7 +62,7 @@ void main() {
   });
 
   group('Rulesets provider', () {
-    test('defaults empty, setRuleset persists globally (key juice.rulesets.v1)',
+    test('defaults empty, setRuleset persists globally (key loreseer.rulesets.v1)',
         () async {
       SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
@@ -71,7 +71,7 @@ void main() {
       await container.read(rulesetsProvider.notifier).setRuleset('starforged', true);
       expect(await container.read(rulesetsProvider.future), {'starforged'});
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.rulesets.v1'), contains('starforged'));
+      expect(prefs.getString('loreseer.rulesets.v1'), contains('starforged'));
       await container.read(rulesetsProvider.notifier).setRuleset('starforged', false);
       expect(await container.read(rulesetsProvider.future), isEmpty);
     });

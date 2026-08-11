@@ -12,8 +12,8 @@ const double kCompactWidth = 600;
 /// Applied to narrative surfaces (journal, result cards, resume). The rest of
 /// the app keeps the M3 ColorScheme; read these via Theme.of(context).extension.
 @immutable
-class JuiceTokens extends ThemeExtension<JuiceTokens> {
-  const JuiceTokens({
+class LoreTokens extends ThemeExtension<LoreTokens> {
+  const LoreTokens({
     required this.cream,
     required this.sand,
     required this.card,
@@ -72,7 +72,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     letterSpacing: 0.10,
   );
 
-  static const JuiceTokens light = JuiceTokens(
+  static const LoreTokens light = LoreTokens(
     cream: Color(0xFFFBF1EB),
     sand: Color(0xFFF6E2D7),
     card: Color(0xFFFBE9E0),
@@ -104,7 +104,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     aiNudgeGradient: [Color(0xFFFCEDE3), Color(0xFFF7E0D2)],
   );
 
-  static const JuiceTokens dark = JuiceTokens(
+  static const LoreTokens dark = LoreTokens(
     cream: Color(0xFF241C17),
     sand: Color(0xFF2E2620),
     card: Color(0xFF2E2620),
@@ -133,7 +133,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
   );
 
   @override
-  JuiceTokens copyWith({
+  LoreTokens copyWith({
     Color? cream,
     Color? sand,
     Color? card,
@@ -158,7 +158,7 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
     List<Color>? resultHeroGradient,
     List<Color>? aiNudgeGradient,
   }) {
-    return JuiceTokens(
+    return LoreTokens(
       cream: cream ?? this.cream,
       sand: sand ?? this.sand,
       card: card ?? this.card,
@@ -186,10 +186,10 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
   }
 
   @override
-  JuiceTokens lerp(ThemeExtension<JuiceTokens>? other, double t) {
-    if (other is! JuiceTokens) return this;
+  LoreTokens lerp(ThemeExtension<LoreTokens>? other, double t) {
+    if (other is! LoreTokens) return this;
     Color c(Color a, Color b) => Color.lerp(a, b, t)!;
-    return JuiceTokens(
+    return LoreTokens(
       cream: c(cream, other.cream),
       sand: c(sand, other.sand),
       card: c(card, other.card),
@@ -218,8 +218,8 @@ class JuiceTokens extends ThemeExtension<JuiceTokens> {
   }
 }
 
-/// Sugar: `context.juice` -> the active JuiceTokens (falls back to light).
-extension JuiceTokensContext on BuildContext {
-  JuiceTokens get juice =>
-      Theme.of(this).extension<JuiceTokens>() ?? JuiceTokens.light;
+/// Sugar: `context.lore` -> the active LoreTokens (falls back to light).
+extension LoreTokensContext on BuildContext {
+  LoreTokens get lore =>
+      Theme.of(this).extension<LoreTokens>() ?? LoreTokens.light;
 }

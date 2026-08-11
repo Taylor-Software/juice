@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/party_emulator.dart';
-import 'package:juice_oracle/features/sidekick_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/party_emulator.dart';
+import 'package:loreseer/features/sidekick_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -57,12 +57,12 @@ void main() {
     bool aiEnabled = true,
   }) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.characters.v1.default': chars,
-      if (journal != null) 'juice.journal.v2.default': journal,
-      if (settings != null) 'juice.settings.v1.default': settings,
-      'juice.ai_enabled.v1': aiEnabled,
+      'loreseer.characters.v1.default': chars,
+      if (journal != null) 'loreseer.journal.v2.default': journal,
+      if (settings != null) 'loreseer.settings.v1.default': settings,
+      'loreseer.ai_enabled.v1': aiEnabled,
     });
     final fake = FakeInterpreterService(
         initial: interp ?? const InterpreterStatus(InterpreterPhase.ready));

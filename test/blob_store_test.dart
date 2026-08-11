@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/blob_store.dart';
-import 'package:juice_oracle/state/blob_store_io.dart';
+import 'package:loreseer/state/blob_store.dart';
+import 'package:loreseer/state/blob_store_io.dart';
 
 void main() {
   group('blobId', () {

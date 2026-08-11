@@ -5,14 +5,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/session_resume_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/session_resume_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -118,12 +118,12 @@ void main() {
 
     Future<ProviderContainer> pump(WidgetTester tester) async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"$sid","sessions":[{"id":"$sid","name":"Campaign 1"}]}',
-        'juice.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
-        'juice.threads.v1.$sid': threadJson,
-        'juice.crawl.v1.$sid': crawlJson,
-        'juice.context.v1.$sid': '{"activeSceneId":"e1"}',
+        'loreseer.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
+        'loreseer.threads.v1.$sid': threadJson,
+        'loreseer.crawl.v1.$sid': crawlJson,
+        'loreseer.context.v1.$sid': '{"activeSceneId":"e1"}',
       });
       final oracle = Oracle(data, Dice(Random(1)));
       tester.view.physicalSize = const Size(900, 2400);
@@ -189,10 +189,10 @@ void main() {
 
     testWidgets('Continue pops the resume screen and lands', (tester) async {
       SharedPreferences.setMockInitialValues({
-        'juice.sessions.v1':
+        'loreseer.sessions.v1':
             '{"active":"$sid","sessions":[{"id":"$sid","name":"Campaign 1"}]}',
-        'juice.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
-        'juice.crawl.v1.$sid': crawlJson,
+        'loreseer.journal.v2.$sid': '[$lastEntryJson,$sceneJson]',
+        'loreseer.crawl.v1.$sid': crawlJson,
       });
       final oracle = Oracle(data, Dice(Random(1)));
       tester.view.physicalSize = const Size(900, 2400);

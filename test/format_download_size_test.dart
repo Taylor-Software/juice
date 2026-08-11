@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/state/interpreter.dart';
+import 'package:loreseer/state/interpreter.dart';
 
 void main() {
   test('formatDownloadSize: MB under 1 GB, decimal GB above', () {

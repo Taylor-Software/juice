@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/features/tracks_pane.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/features/tracks_pane.dart';
+import 'package:loreseer/state/providers.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -26,11 +26,11 @@ void main() {
 
   testWidgets('filling a clock to its max logs a journal entry', (t) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.tracks.v1.default':
+      'loreseer.tracks.v1.default':
           '[{"id":"k1","name":"Pursuit","filled":1,"max":2}]',
-      'juice.journal.v2.default': '[]',
+      'loreseer.journal.v2.default': '[]',
     });
     final c = ProviderContainer();
     addTearDown(c.dispose);

@@ -2,9 +2,9 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/custom_table.dart';
-import 'package:juice_oracle/engine/loop_kit.dart';
-import 'package:juice_oracle/engine/quick_ref.dart';
+import 'package:loreseer/engine/custom_table.dart';
+import 'package:loreseer/engine/loop_kit.dart';
+import 'package:loreseer/engine/quick_ref.dart';
 
 void main() {
   group('LoopKit encode/decode', () {

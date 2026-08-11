@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/entity_suggestions.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/entity_suggestions.dart';
+import 'package:loreseer/engine/models.dart';
 
 JournalEntry _e(String id, String body,
         {JournalKind kind = JournalKind.text,

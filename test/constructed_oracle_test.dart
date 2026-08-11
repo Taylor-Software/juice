@@ -2,9 +2,9 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/constructed_oracle.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/constructed_oracle.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

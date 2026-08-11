@@ -6,10 +6,10 @@ import '../engine/gm_chat.dart';
 import 'providers.dart';
 
 /// Per-campaign multi-turn GM conversation, session-scoped exactly like
-/// DecksNotifier (key `juice.gmchat.v1.<sessionId>`, in sessionScopedKeys so it
+/// DecksNotifier (key `loreseer.gmchat.v1.<sessionId>`, in sessionScopedKeys so it
 /// exports with the campaign).
 class GmChatNotifier extends AsyncNotifier<GmChatState> {
-  static const _baseKey = 'juice.gmchat.v1';
+  static const _baseKey = 'loreseer.gmchat.v1';
   late String _scopedKey;
 
   @override

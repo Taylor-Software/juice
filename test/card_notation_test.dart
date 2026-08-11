@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/card_notation.dart';
+import 'package:loreseer/engine/card_notation.dart';
 
 void main() {
   test('standard playing cards', () {

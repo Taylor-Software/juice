@@ -104,7 +104,7 @@ class VerdantJourney {
 }
 
 class VerdantNotifier extends AsyncNotifier<VerdantJourney> {
-  static const _baseKey = 'juice.verdant.v1';
+  static const _baseKey = 'loreseer.verdant.v1';
   late String _scopedKey;
 
   @override

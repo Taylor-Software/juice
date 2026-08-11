@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/sheet_rolls.dart';
+import 'package:loreseer/engine/sheet_rolls.dart';
 
 // The banding these functions perform used to live inline in each sheet
 // widget alongside a bare Random(), so none of it could be asserted. These

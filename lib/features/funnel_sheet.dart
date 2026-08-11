@@ -85,7 +85,7 @@ class FunnelSheetView extends ConsumerWidget {
     }
 
     final dead = !p.alive;
-    final faint = context.juice.inkFaint;
+    final faint = context.lore.inkFaint;
     final titleStyle = p.graduated
         ? TextStyle(color: faint)
         : dead

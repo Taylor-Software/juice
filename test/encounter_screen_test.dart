@@ -5,14 +5,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/shared/theme.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/shared/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/encounter_screen.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/encounter_screen.dart';
+import 'package:loreseer/state/providers.dart';
 
 Map<String, dynamic> _c(
   String id,
@@ -46,11 +46,11 @@ void main() {
     String? threadsJson,
   }) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      if (charactersJson != null) 'juice.characters.v1.default': charactersJson,
-      if (encounterJson != null) 'juice.encounter.v1.default': encounterJson,
-      if (threadsJson != null) 'juice.threads.v1.default': threadsJson,
+      if (charactersJson != null) 'loreseer.characters.v1.default': charactersJson,
+      if (encounterJson != null) 'loreseer.encounter.v1.default': encounterJson,
+      if (threadsJson != null) 'loreseer.threads.v1.default': threadsJson,
     });
     await tester.pumpWidget(const ProviderScope(
         child: MaterialApp(home: Scaffold(body: EncounterScreen()))));
@@ -391,9 +391,9 @@ void main() {
   testWidgets('Generate monster prefills the ad-hoc combatant name',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.encounter.v1.default': '{"combatants":[],"round":1}',
+      'loreseer.encounter.v1.default': '{"combatants":[],"round":1}',
     });
     final oracle = Oracle(OracleData(
         jsonDecode(File('assets/oracle_data.json').readAsStringSync())

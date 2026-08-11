@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/shared/campaign_preview_pane.dart';
+import 'package:loreseer/shared/campaign_preview_pane.dart';
 
 void main() {
   testWidgets('renders verb headers and an on row', (tester) async {

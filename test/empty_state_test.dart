@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/shared/empty_state.dart';
-import 'package:juice_oracle/shared/theme.dart';
+import 'package:loreseer/shared/empty_state.dart';
+import 'package:loreseer/shared/theme.dart';
 
 void main() {
   testWidgets('renders title, body, and fires the primary action', (t) async {

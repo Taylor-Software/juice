@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/shared/home_shell.dart';
 
 void main() {
   test('ArgosaSheet round-trips toJson/maybeFromJson', () {

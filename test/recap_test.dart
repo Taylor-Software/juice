@@ -5,13 +5,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -25,9 +25,9 @@ const _sid = 'default';
 // Five entries (newest first, id "5") — enough history to clear the recap
 // offer's min-entries threshold. Oldest (id "1") is "The alarm sounded".
 const _history = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
-  'juice.journal.v2.$_sid':
+  'loreseer.journal.v2.$_sid':
       '[{"id":"5","timestamp":"2026-06-12T10:04:00.000","title":"","body":"The door was barred.","kind":"text"},'
           '{"id":"4","timestamp":"2026-06-12T10:03:00.000","title":"","body":"Guards closed in.","kind":"text"},'
           '{"id":"3","timestamp":"2026-06-12T10:02:00.000","title":"","body":"Down the long hall.","kind":"text"},'
@@ -37,9 +37,9 @@ const _history = {
 
 // Two entries — below the recap offer threshold (nothing worth recapping yet).
 const _fewEntries = {
-  'juice.sessions.v1':
+  'loreseer.sessions.v1':
       '{"active":"$_sid","sessions":[{"id":"$_sid","name":"C1"}]}',
-  'juice.journal.v2.$_sid':
+  'loreseer.journal.v2.$_sid':
       '[{"id":"2","timestamp":"2026-06-12T10:01:00.000","title":"","body":"We fled the keep.","kind":"text"},'
           '{"id":"1","timestamp":"2026-06-12T10:00:00.000","title":"","body":"The alarm sounded.","kind":"text"}]',
 };
@@ -52,7 +52,7 @@ Future<FakeInterpreterService> pumpRecap(
   String? queued,
 }) async {
   SharedPreferences.setMockInitialValues(
-      {...(prefs ?? _history), 'juice.ai_enabled.v1': true});
+      {...(prefs ?? _history), 'loreseer.ai_enabled.v1': true});
   final fake = FakeInterpreterService(initial: InterpreterStatus(phase));
   if (queued != null) fake.queuedSummary.add(queued);
   final oracle = Oracle(data, Dice(Random(1)));
@@ -126,7 +126,7 @@ void main() {
     // Re-pump with the persisted last-seen pointing at the newest entry id.
     await pumpRecap(tester, data, prefs: {
       ..._history,
-      'juice.recap.$_sid': '{"lastSeenId":"5"}',
+      'loreseer.recap.$_sid': '{"lastSeenId":"5"}',
     });
     expect(find.byKey(const Key('recap-banner')), findsNothing);
   });
@@ -149,7 +149,7 @@ void main() {
     // Re-pump with the same unseen history: the suppress flag keeps it hidden.
     await pumpRecap(tester, data, prefs: {
       ..._history,
-      'juice.recap_suppressed.v1': true,
+      'loreseer.recap_suppressed.v1': true,
     });
     expect(find.byKey(const Key('recap-banner')), findsNothing);
   });

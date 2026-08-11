@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/features/map_snapshot.dart';
+import 'package:loreseer/features/map_snapshot.dart';
 
 void main() {
   testWidgets('captureBoundaryPng returns PNG bytes for a painted boundary',

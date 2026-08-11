@@ -2,8 +2,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/sketch.dart';
-import 'package:juice_oracle/features/sketch_editor.dart';
+import 'package:loreseer/engine/sketch.dart';
+import 'package:loreseer/features/sketch_editor.dart';
 
 Future<ui.Image> _redImage() async {
   final recorder = ui.PictureRecorder();

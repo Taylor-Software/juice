@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/engine/models.dart';
 
 /// Guards the real shipped asset data against the Dart parser: the bespoke
 /// Ironsworn sheet's picker (lib/features/ironsworn_sheet.dart) reads exactly

@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/campaign_io.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/campaign_io.dart';
+import 'package:loreseer/state/providers.dart';
 
 Map<String, dynamic> _c(String id, int init,
         {bool defeated = false, String? characterId}) =>
@@ -27,9 +27,9 @@ String _enc(List<Map<String, dynamic>> combatants,
 
 ProviderContainer _container({String? encounterJson}) {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    if (encounterJson != null) 'juice.encounter.v1.default': encounterJson,
+    if (encounterJson != null) 'loreseer.encounter.v1.default': encounterJson,
   });
   return ProviderContainer();
 }
@@ -249,7 +249,7 @@ void main() {
       final s = await fresh.read(encounterProvider.future);
       expect(s.combatants.single.name, 'A');
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.encounter.v1.default'),
+      expect(prefs.getString('loreseer.encounter.v1.default'),
           contains('"initiative":13'));
     });
 
@@ -262,7 +262,7 @@ void main() {
       expect(s.combatants, isEmpty);
       expect(s.round, 1);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.encounter.v1.default'),
+      expect(prefs.getString('loreseer.encounter.v1.default'),
           contains('"round":1'));
     });
 
@@ -291,13 +291,13 @@ void main() {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.encounter.v1': _enc([_c('a', 20)], round: 2)},
+        rawByKey: {'loreseer.encounter.v1': _enc([_c('a', 20)], round: 2)},
       );
       final parsed = parseCampaign(out);
-      expect(parsed.rawByKey['juice.encounter.v1'], contains('"round":2'));
+      expect(parsed.rawByKey['loreseer.encounter.v1'], contains('"round":2'));
       expect(
-        () => parseCampaign('{"app":"juice-oracle","schemaVersion":2,'
-            '"name":"x","data":{"juice.encounter.v1":[1,2]}}'),
+        () => parseCampaign('{"app":"loreseer","schemaVersion":2,'
+            '"name":"x","data":{"loreseer.encounter.v1":[1,2]}}'),
         throwsFormatException,
       );
     });

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:juice_oracle/shared/tool_search_sheet.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/tool_registry.dart';
-import 'package:juice_oracle/engine/models.dart';
+import 'package:loreseer/shared/tool_search_sheet.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/tool_registry.dart';
+import 'package:loreseer/engine/models.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));

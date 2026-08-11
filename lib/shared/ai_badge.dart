@@ -31,7 +31,7 @@ class AiBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tk = context.juice;
+    final tk = context.lore;
     final glyph = Icon(Icons.auto_awesome, size: size, color: tk.terracotta);
     if (label == null) return glyph;
     Widget text = Text(

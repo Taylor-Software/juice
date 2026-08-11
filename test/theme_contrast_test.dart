@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/shared/theme.dart';
+import 'package:loreseer/shared/theme.dart';
 
 double _luminance(Color c) => c.computeLuminance();
 

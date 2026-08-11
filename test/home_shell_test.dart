@@ -5,17 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/emulator_data.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/engine/verdant_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/features/sheet_tab.dart';
-import 'package:juice_oracle/shared/destination.dart';
-import 'package:juice_oracle/shared/home_shell.dart';
-import 'package:juice_oracle/shared/shell_route.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/engine/verdant_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/features/sheet_tab.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/home_shell.dart';
+import 'package:loreseer/shared/shell_route.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -257,7 +257,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues(
-        {'flutter.juice.splitview.v1': true});
+        {'flutter.loreseer.splitview.v1': true});
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
@@ -277,7 +277,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     SharedPreferences.setMockInitialValues(
-        {'flutter.juice.splitview.v1': false}); // split explicitly off
+        {'flutter.loreseer.splitview.v1': false}); // split explicitly off
     await tester.pumpWidget(ProviderScope(
         overrides: [_verdantOverride, _emulatorOverride],
         child: MaterialApp(home: HomeShell(oracle: _oracle()))));
@@ -413,7 +413,7 @@ void main() {
   testWidgets('campaign list rows render the identity spine + icon',
       (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1': '{"active":"default","sessions":['
+      'loreseer.sessions.v1': '{"active":"default","sessions":['
           '{"id":"default","name":"Indigo Run",'
           '"identityColor":${0xFF4A5A8A},"identityIcon":"castle"}]}',
     });

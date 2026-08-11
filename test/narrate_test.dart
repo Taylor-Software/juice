@@ -5,14 +5,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/oracle.dart';
-import 'package:juice_oracle/engine/oracle_data.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/play_context.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/oracle.dart';
+import 'package:loreseer/engine/oracle_data.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/play_context.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -21,12 +21,12 @@ Future<(ProviderContainer, FakeInterpreterService)> pumpJournal(
     WidgetTester tester,
     {bool aiEnabled = true}) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.journal.v2.default':
+    'loreseer.journal.v2.default':
         '[{"id":"1","timestamp":"2026-06-12T10:00:00.000","title":"Scene",'
             '"body":"At the gate.","kind":"scene"}]',
-    if (aiEnabled) 'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'loreseer.ai_enabled.v1': true,
   });
   final fake = FakeInterpreterService(
       initial: const InterpreterStatus(InterpreterPhase.ready));
@@ -87,12 +87,12 @@ void main() {
 
   testWidgets('narrate grounds on the pinned (older) scene', (tester) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default':
+      'loreseer.journal.v2.default':
           '[{"id":"s2","timestamp":"2026-06-12T10:02:00.000","title":"Newer Scene","body":"","kind":"scene"},'
               '{"id":"s1","timestamp":"2026-06-12T10:00:00.000","title":"Pinned Scene","body":"","kind":"scene"}]',
-      'juice.ai_enabled.v1': true,
+      'loreseer.ai_enabled.v1': true,
     });
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));

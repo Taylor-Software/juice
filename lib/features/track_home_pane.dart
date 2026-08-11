@@ -69,7 +69,7 @@ class TrackHomePane extends ConsumerWidget {
   /// A dismissible "what each Track subtab is for" card, shown once per device
   /// until dismissed (persisted via [trackHelpSeenProvider]).
   Widget _helpCard(BuildContext context, WidgetRef ref) {
-    final tk = context.juice;
+    final tk = context.lore;
     const radius = BorderRadius.all(Radius.circular(14));
     const lines = <(String, String)>[
       ('Tasks', 'tally-tracked goals'),
@@ -140,7 +140,7 @@ class TrackHomePane extends ConsumerWidget {
   // -- Cards ---------------------------------------------------------------
 
   Widget _nowCard(BuildContext context, WidgetRef ref, JournalEntry? scene) {
-    final tk = context.juice;
+    final tk = context.lore;
     final title = (scene != null && scene.title.trim().isNotEmpty)
         ? scene.title.trim()
         : 'No scene yet';
@@ -180,7 +180,7 @@ class TrackHomePane extends ConsumerWidget {
 
   Widget _threadsCard(
       BuildContext context, WidgetRef ref, List<Thread> threads) {
-    final tk = context.juice;
+    final tk = context.lore;
     final open = threads.where((t) => t.open).toList();
     final shown = open.isNotEmpty ? open : threads;
     return _card(
@@ -259,7 +259,7 @@ class TrackHomePane extends ConsumerWidget {
   }
 
   Widget _tracksCard(BuildContext context, WidgetRef ref, List<Track> tracks) {
-    final tk = context.juice;
+    final tk = context.lore;
     return _card(
       context,
       cardKey: const Key('track-home-tracks'),
@@ -322,7 +322,7 @@ class TrackHomePane extends ConsumerWidget {
 
   Widget _partyCard(
       BuildContext context, WidgetRef ref, List<Character> chars) {
-    final tk = context.juice;
+    final tk = context.lore;
     // Party = PCs + companions (the people you direct), NPCs excluded.
     final party = chars
         .where((c) =>
@@ -350,7 +350,7 @@ class TrackHomePane extends ConsumerWidget {
   }
 
   Widget _partyChip(BuildContext context, Character c) {
-    final tk = context.juice;
+    final tk = context.lore;
     final hp = _hpOf(c);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -385,7 +385,7 @@ class TrackHomePane extends ConsumerWidget {
 
   Widget _encounterCard(BuildContext context, WidgetRef ref,
       EncounterState encounter, bool live) {
-    final tk = context.juice;
+    final tk = context.lore;
     final alive = encounter.combatants.where((c) => !c.defeated).length;
     return _card(
       context,
@@ -424,7 +424,7 @@ class TrackHomePane extends ConsumerWidget {
     String? headline,
     bool emphasized = false,
   }) {
-    final tk = context.juice;
+    final tk = context.lore;
     const radius = BorderRadius.all(Radius.circular(14));
     final bg = emphasized ? const Color(0xFFFFF6F0) : tk.card;
     final border = emphasized ? tk.borderHero : tk.hairline;

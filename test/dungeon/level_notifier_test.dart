@@ -4,11 +4,11 @@ import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/dungeon/generator.dart';
-import 'package:juice_oracle/engine/dungeon/tables.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/dungeon/generator.dart';
+import 'package:loreseer/engine/dungeon/tables.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

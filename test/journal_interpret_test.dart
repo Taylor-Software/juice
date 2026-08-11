@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/oracle_interpreter.dart';
-import 'package:juice_oracle/features/journal_screen.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/oracle_interpreter.dart';
+import 'package:loreseer/features/journal_screen.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 
 import 'fake_interpreter.dart';
 
@@ -20,10 +20,10 @@ void main() {
       String journal = journalJson,
       bool aiEnabled = true}) async {
     SharedPreferences.setMockInitialValues({
-      'juice.sessions.v1':
+      'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-      'juice.journal.v2.default': journal,
-      'juice.ai_enabled.v1': aiEnabled,
+      'loreseer.journal.v2.default': journal,
+      'loreseer.ai_enabled.v1': aiEnabled,
     });
     final fake = FakeInterpreterService(
         initial: initial ?? const InterpreterStatus(InterpreterPhase.ready));

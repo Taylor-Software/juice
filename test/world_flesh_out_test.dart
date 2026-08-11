@@ -4,12 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/people_pane.dart';
-import 'package:juice_oracle/features/places_pane.dart';
-import 'package:juice_oracle/features/rumors_pane.dart';
-import 'package:juice_oracle/state/interpreter.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/people_pane.dart';
+import 'package:loreseer/features/places_pane.dart';
+import 'package:loreseer/features/rumors_pane.dart';
+import 'package:loreseer/state/interpreter.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fake_interpreter.dart';
@@ -20,9 +20,9 @@ FakeInterpreterService _fake() => FakeInterpreterService(
 Future<ProviderContainer> _container(FakeInterpreterService fake,
     {bool aiEnabled = true}) async {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    if (aiEnabled) 'juice.ai_enabled.v1': true,
+    if (aiEnabled) 'loreseer.ai_enabled.v1': true,
   });
   final c = ProviderContainer(overrides: [
     interpreterServiceProvider.overrideWithValue(fake),

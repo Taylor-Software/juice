@@ -5,17 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/map_builder.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/state/campaign_io.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/map_builder.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/state/campaign_io.dart';
+import 'package:loreseer/state/providers.dart';
 
 ProviderContainer _container({String? mapJson}) {
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    if (mapJson != null) 'juice.map.v1.default': mapJson,
+    if (mapJson != null) 'loreseer.map.v1.default': mapJson,
   });
   return ProviderContainer();
 }
@@ -499,7 +499,7 @@ void main() {
       expect(s.rooms.single.title, 'A');
       expect(s.hexes.single.envRow, 4);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('juice.map.v1.default'), contains('"title":"A"'));
+      expect(prefs.getString('loreseer.map.v1.default'), contains('"title":"A"'));
     });
   });
 
@@ -523,14 +523,14 @@ void main() {
       final out = encodeCampaign(
         name: 'C1',
         savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'juice.map.v1': jsonEncode(s.toJson())},
+        rawByKey: {'loreseer.map.v1': jsonEncode(s.toJson())},
       );
       final parsed = parseCampaign(out);
-      expect(parsed.rawByKey['juice.map.v1'], contains('"title":"Entry"'));
-      expect(parsed.rawByKey['juice.map.v1'], contains('"envRow":6'));
+      expect(parsed.rawByKey['loreseer.map.v1'], contains('"title":"Entry"'));
+      expect(parsed.rawByKey['loreseer.map.v1'], contains('"envRow":6'));
       expect(
-        () => parseCampaign('{"app":"juice-oracle","schemaVersion":2,'
-            '"name":"x","data":{"juice.map.v1":[1,2]}}'),
+        () => parseCampaign('{"app":"loreseer","schemaVersion":2,'
+            '"name":"x","data":{"loreseer.map.v1":[1,2]}}'),
         throwsFormatException,
       );
     });

@@ -4,12 +4,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:juice_oracle/engine/dice.dart';
-import 'package:juice_oracle/engine/models.dart';
-import 'package:juice_oracle/features/cairn_sheet.dart';
-import 'package:juice_oracle/features/ose_sheet.dart';
-import 'package:juice_oracle/shared/theme.dart';
-import 'package:juice_oracle/state/providers.dart';
+import 'package:loreseer/engine/dice.dart';
+import 'package:loreseer/engine/models.dart';
+import 'package:loreseer/features/cairn_sheet.dart';
+import 'package:loreseer/features/ose_sheet.dart';
+import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// A Dice that returns a scripted sequence, so a sheet's roll button has a
@@ -38,9 +38,9 @@ Future<void> _pumpCairn(WidgetTester tester, Dice dice) async {
   const sheet = CairnSheet(
       background: 'Hunter', str: 14, dex: 12, wil: 10, maxHp: 6, currentHp: 3);
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.characters.v1.default': jsonEncode([
+    'loreseer.characters.v1.default': jsonEncode([
       {
         'id': 'c1',
         'name': 'Wren',
@@ -68,9 +68,9 @@ Future<void> _pumpCairn(WidgetTester tester, Dice dice) async {
 Future<void> _pumpOse(WidgetTester tester, Dice dice) async {
   const sheet = OseSheet(className: 'Fighter', saves: {'death': 12});
   SharedPreferences.setMockInitialValues({
-    'juice.sessions.v1':
+    'loreseer.sessions.v1':
         '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
-    'juice.characters.v1.default': jsonEncode([
+    'loreseer.characters.v1.default': jsonEncode([
       {
         'id': 'c1',
         'name': 'Bram',
