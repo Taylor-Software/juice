@@ -17,6 +17,7 @@ import 'package:loreseer/features/nimble_sheet.dart';
 import 'package:loreseer/features/ose_sheet.dart';
 import 'package:loreseer/features/shadowdark_sheet.dart';
 import 'package:loreseer/features/starforged_sheet.dart';
+import 'package:loreseer/features/tracker_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// One [Character] per premade system, seeded with the minimal sheet each
@@ -67,4 +68,30 @@ void main() {
           reason: '${entry.key} sheet is missing magicSection');
     });
   }
+
+  // 16th case: the generic/custom-less sheet (`CharactersPaneState._buildSheet`,
+  // reached by a plain roster character with no premade `.dnd`/`.ironsworn`/etc
+  // field — likely the MOST common case in a solo app). This isn't a standalone
+  // `XxxSheetView` widget, so it's pumped via the real `CharactersPane` list ->
+  // tap -> sheet flow instead of the direct-widget map above.
+  testWidgets('generic sheet (no premade system) renders magicSection',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'loreseer.sessions.v1':
+          '{"active":"c1","sessions":[{"id":"c1","name":"Test"}]}',
+      'loreseer.characters.v1.c1':
+          '[{"id":"c1","name":"Ash","note":"","stats":[],"tracks":[],"tags":[]}]',
+    });
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: const MaterialApp(home: Scaffold(body: CharactersPane())),
+    ));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ash'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('magic-enable')), findsOneWidget,
+        reason: 'generic sheet is missing magicSection');
+  });
 }

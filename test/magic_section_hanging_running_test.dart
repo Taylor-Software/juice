@@ -165,4 +165,43 @@ void main() {
     expect(lib.running.where((r) => r.id == 'r1'), isEmpty);
     expect(find.textContaining('Glow'), findsNothing);
   });
+
+  testWidgets('ending a running spell shows an undo snackbar; Undo restores it',
+      (tester) async {
+    SharedPreferences.setMockInitialValues(baseFixture(running: [
+      {
+        'id': 'r2',
+        'characterId': 'pg-1',
+        'spellName': 'Glow',
+        'incantation': 'Light the way',
+        'cost': 1,
+        'timing': 1,
+        'at': '2026-01-01T00:00:00.000Z',
+      }
+    ]));
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await pumpSection(tester, container);
+
+    await tester.tap(find.byKey(const Key('running-end-r2')));
+    await tester.pumpAndSettle();
+
+    expect(
+        container.read(magicProvider).value!.running.where((r) => r.id == 'r2'),
+        isEmpty);
+    expect(find.text('Running spell ended'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+
+    final restored = container
+        .read(magicProvider)
+        .value!
+        .running
+        .where((r) => r.id == 'r2')
+        .single;
+    expect(restored.spellName, 'Glow');
+    expect(find.textContaining('Glow'), findsOneWidget);
+  });
 }

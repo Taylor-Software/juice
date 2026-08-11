@@ -6,6 +6,7 @@ import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 
 import '../engine/models.dart';
 import '../shared/design_tokens.dart';
+import '../shared/undo_snackbar.dart';
 import '../state/magic_controller.dart';
 import '../state/providers.dart';
 
@@ -754,7 +755,17 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
               max: pgChar.availableMana,
               caption: 'Spell Level ${pg.kRoman[pgChar.spellLevel]}',
               onChanged: (v) => ctrl.setMana(pgChar.id, v),
-              onRest: () => ctrl.rest(pgChar.id),
+              onRest: () async {
+                final result = await ctrl.rest(pgChar.id);
+                if (context.mounted) {
+                  showUndoSnackbar(
+                    context,
+                    'Mana refilled',
+                    () => ctrl.undoRest(
+                        pgChar.id, result.before, result.recordId),
+                  );
+                }
+              },
             ),
           ),
           IconButton(
@@ -781,7 +792,22 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
           castLevelCap: pgChar.gatedCasting ? pgChar.spellLevel : null,
           school: pgChar.school,
           enforceSchool: pgChar.enforceSchool,
-          onCast: (s, trigger) => ctrl.cast(s, trigger: trigger),
+          onCast: (s, trigger) async {
+            final result = await ctrl.cast(s, trigger: trigger);
+            // A Triggered cast can silently defuse an already-hanging spell
+            // (the Spell-Level-cap overflow path in MagicController.cast) —
+            // surface that so it isn't a surprise. Informational only; not
+            // undoable here (that would need the cast's own refund/record
+            // ids too, a bigger surface than this fix covers).
+            if (result.defused.isNotEmpty && context.mounted) {
+              final names = result.defused.map((h) => h.spellName).join(', ');
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                  content: Text('Cast ${s.name} — defused $names'),
+                ));
+            }
+          },
           onEdit: (s) => Navigator.of(context).push(MaterialPageRoute<void>(
             builder: (_) => pg.SpellBuilderScreen(
               characterId: pgChar.id,
@@ -793,7 +819,13 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
               onSave: ctrl.upsertSpell,
             ),
           )),
-          onDelete: (s) => ctrl.deleteSpell(s.id),
+          onDelete: (s) async {
+            await ctrl.deleteSpell(s.id);
+            if (context.mounted) {
+              showUndoSnackbar(
+                  context, 'Spell removed', () => ctrl.upsertSpell(s));
+            }
+          },
           onToggleFavorite: ctrl.toggleFavorite,
           onDuplicate: ctrl.duplicateSpell,
         ),
@@ -803,15 +835,33 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
         pg.HangingList(
           hanging: myHanging,
           cap: pgChar.spellLevel,
-          onFired: (h) => ctrl.dismissHanging(h.id),
-          onDefused: (h) => ctrl.dismissHanging(h.id),
+          onFired: (h) async {
+            await ctrl.dismissHanging(h.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Hanging spell resolved',
+                  () => ctrl.restoreHanging([h]));
+            }
+          },
+          onDefused: (h) async {
+            await ctrl.dismissHanging(h.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Hanging spell resolved',
+                  () => ctrl.restoreHanging([h]));
+            }
+          },
         ),
       ],
       if (myRunning.isNotEmpty) ...[
         const SizedBox(height: 8),
         pg.RunningList(
           running: myRunning,
-          onEnded: (r) => ctrl.endRunning(r.id),
+          onEnded: (r) async {
+            await ctrl.endRunning(r.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Running spell ended',
+                  () => ctrl.restoreRunning([r]));
+            }
+          },
         ),
       ],
       const SizedBox(height: 4),
@@ -1075,6 +1125,12 @@ class _CasterSettingsDialogState extends ConsumerState<_CasterSettingsDialog> {
               school: () => _school,
               gatedCasting: _gatedCasting,
               enforceSchool: _enforceSchool,
+              // Re-clamp: lowering Base Mana or Spell Level shrinks the pool
+              // (baseMana * spellLevel), and a stale currentMana above the
+              // new ceiling would otherwise persist until something else
+              // (e.g. setMana) happened to clamp it.
+              currentMana:
+                  widget.pgChar.currentMana.clamp(0, _baseMana * _spellLevel),
             ));
             if (context.mounted) Navigator.pop(context);
           },

@@ -169,6 +169,71 @@ void main() {
     expect(updated.enforceSchool, isTrue);
   });
 
+  testWidgets(
+      'lowering Base Mana re-clamps a currentMana that would otherwise '
+      'exceed the shrunken pool', (tester) async {
+    // baseMana:8, spellLevel:1 -> pool 8, currentMana starts at 8 (full).
+    SharedPreferences.setMockInitialValues({
+      'loreseer.sessions.v1':
+          '{"active":"c1","sessions":[{"id":"c1","name":"Test"}]}',
+      'loreseer.characters.v1.c1': jsonEncode([
+        {
+          'id': 'ch1',
+          'name': 'Ash',
+          'stats': [],
+          'tracks': [],
+          'tags': [],
+          'polarityId': 'pg-1',
+        }
+      ]),
+      'loreseer.magic.v1.c1': jsonEncode({
+        'characters': [
+          {'id': 'pg-1', 'name': 'Ash', 'baseMana': 8, 'currentMana': 8}
+        ],
+        'spells': [],
+      }),
+    });
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final char = (await container.read(charactersProvider.future)).single;
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        home: Scaffold(
+          body: Consumer(builder: (context, ref, __) {
+            final live =
+                ref.watch(charactersProvider).valueOrNull?.firstOrNull ?? char;
+            return SingleChildScrollView(
+                child: magicSection(context, ref, live));
+          }),
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('magic-settings')));
+    await tester.pumpAndSettle();
+
+    // Base Mana 8 -> 4 (four taps of -).
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(find.byKey(const Key('magic-settings-basemana-minus')));
+      await tester.pump();
+    }
+    expect(
+        tester
+            .widget<Text>(find.byKey(const Key('magic-settings-basemana')))
+            .data,
+        '4');
+
+    await tester.tap(find.byKey(const Key('magic-settings-save')));
+    await tester.pumpAndSettle();
+
+    final updated = _pgChar(container);
+    expect(updated.baseMana, 4);
+    expect(updated.spellLevel, 1);
+    expect(updated.currentMana, lessThanOrEqualTo(4));
+  });
+
   testWidgets('Cancel discards edits', (tester) async {
     final c = await _pumpLinked(tester);
 
