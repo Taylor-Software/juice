@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
@@ -44,6 +45,7 @@ import 'campaign_bundle.dart';
 import 'campaign_io.dart';
 import 'cloud_key_store.dart';
 import 'interpreter.dart';
+import 'magic_controller.dart';
 
 /// Loads the data asset and builds the engine once. (The rootBundle load
 /// lives here, not in the engine — lib/engine/ stays Flutter-free.)
@@ -569,6 +571,35 @@ class CharacterNotifier extends _PersistedList<Character> {
     final c = list.where((e) => e.id == id).firstOrNull;
     if (c == null) return;
     await replace(c.copyWith(conditions: conditions));
+  }
+
+  /// Enables Polarity Grammar casting on [id]: creates its linked pg.Character
+  /// (Base Mana 4 / Spell Level 1 — a starting pool sized for exactly one
+  /// minimal 4-mana spell, per the quickstart's "cheapest possible spell")
+  /// and stamps [Character.polarityId]. No-op if already enabled.
+  Future<void> enableMagic(String id) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null || c.polarityId != null) return;
+    final pgId = _newId();
+    // Ensure MagicController.build() has run (it sets up the persistence
+    // store) before mutating — reading .notifier alone can race build().
+    await ref.read(magicProvider.future);
+    await ref.read(magicProvider.notifier).upsertCharacter(
+          pg.Character(id: pgId, name: c.name, baseMana: 4, currentMana: 4),
+        );
+    await replace(c.copyWith(polarityId: pgId));
+  }
+
+  /// Disables casting on [id]: removes its pg.Character (and their spells
+  /// and history) from the campaign's Library and clears the link.
+  Future<void> disableMagic(String id) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null || c.polarityId == null) return;
+    await ref.read(magicProvider.future);
+    await ref.read(magicProvider.notifier).deleteCharacter(c.polarityId!);
+    await replace(c.copyWith(clearPolarityId: true));
   }
 
   /// Broadcast a single effect to many characters in one persist: an HP
