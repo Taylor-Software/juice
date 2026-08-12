@@ -595,8 +595,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/polarity_grammar"
-      ref: b1704876ce64156d1896e5836073c8aabc4dbe88
-      resolved-ref: b1704876ce64156d1896e5836073c8aabc4dbe88
+      ref: "6646f1fa5590b623f0011b660eb9fde9abbd4a47"
+      resolved-ref: "6646f1fa5590b623f0011b660eb9fde9abbd4a47"
       url: "https://github.com/Taylor-Software/practical-magic.git"
     source: git
     version: "0.1.0"
