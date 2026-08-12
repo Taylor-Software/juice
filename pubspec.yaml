@@ -25,7 +25,7 @@ dependencies:
     git:
       url: https://github.com/Taylor-Software/practical-magic.git
       path: packages/polarity_grammar
-      ref: 6646f1fa5590b623f0011b660eb9fde9abbd4a47
+      ref: c870afbcb67002e852f558fb7ec58c89b20afab1
 
 dev_dependencies:
   flutter_test:
