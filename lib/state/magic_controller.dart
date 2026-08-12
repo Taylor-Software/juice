@@ -118,6 +118,39 @@ class MagicController extends AsyncNotifier<pg.Library> {
         _lib.copyWith(spells: _lib.spells.where((s) => s.id != id).toList()));
   }
 
+  /// Removes every spell in [ids] in one commit — the import undo path.
+  Future<void> deleteSpells(Iterable<String> ids) async {
+    final drop = ids.toSet();
+    await _commit(_lib.copyWith(
+        spells: _lib.spells.where((s) => !drop.contains(s.id)).toList()));
+  }
+
+  /// Merge-imports the spells from a Practical Magic export (either shape;
+  /// all characters' spells flattened) into [targetPgCharacterId]'s
+  /// spellbook: fresh ids, appended — never replaces, so importing the same
+  /// export twice duplicates. Mana/history/hanging/running in the export are
+  /// ignored. Returns the added spells (count + undo). Throws
+  /// [FormatException] / [pg.SchemaTooNewException] like [pg.decodeShare],
+  /// and [StateError] when the target caster is missing.
+  Future<List<pg.Spell>> importSpells(
+      String targetPgCharacterId, String raw) async {
+    if (_byId(targetPgCharacterId) == null) {
+      throw StateError('No caster with id $targetPgCharacterId');
+    }
+    final d = pg.decodeShare(raw);
+    final now = DateTime.now();
+    final added = <pg.Spell>[
+      for (final s in d.spells)
+        s.copyWith(
+          id: _freshId('spell', now),
+          characterId: targetPgCharacterId,
+          editedAt: now,
+        ),
+    ];
+    await _commit(_lib.copyWith(spells: [..._lib.spells, ...added]));
+    return added;
+  }
+
   Future<void> toggleFavorite(pg.Spell s) =>
       upsertSpell(s.copyWith(favorite: !s.favorite, editedAt: DateTime.now()));
 
