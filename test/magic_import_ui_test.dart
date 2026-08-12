@@ -116,4 +116,60 @@ void main() {
     // Still open.
     expect(find.byKey(const Key('magic-import-field')), findsOneWidget);
   });
+
+  testWidgets('too-new export shows the schema error inline and stays open',
+      (tester) async {
+    await _pump(tester);
+
+    await tester.scrollUntilVisible(find.byKey(const Key('magic-import')), 200);
+    await tester.tap(find.byKey(const Key('magic-import')));
+    await tester.pumpAndSettle();
+
+    final tooNew = jsonEncode({
+      'practicalmagicCharacter': 1,
+      'schemaVersion': pg.kSchemaVersion + 1,
+      'character': const pg.Character(
+              id: 'ext-1', name: 'Vex', baseMana: 6, currentMana: 6)
+          .toJson(),
+      'spells': <dynamic>[],
+    });
+    await tester.enterText(find.byKey(const Key('magic-import-field')), tooNew);
+    await tester.tap(find.byKey(const Key('magic-import-confirm')));
+    await tester.pumpAndSettle();
+
+    // The SchemaTooNewException catch arm renders its toString inline.
+    expect(find.byKey(const Key('magic-import-error')), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.byKey(const Key('magic-import-error'))).data,
+      '${const pg.SchemaTooNewException(pg.kSchemaVersion + 1, pg.kSchemaVersion)}',
+    );
+    // Still open.
+    expect(find.byKey(const Key('magic-import-field')), findsOneWidget);
+  });
+
+  testWidgets('an export with no spells pops with a plain no-undo snackbar',
+      (tester) async {
+    await _pump(tester);
+
+    await tester.scrollUntilVisible(find.byKey(const Key('magic-import')), 200);
+    await tester.tap(find.byKey(const Key('magic-import')));
+    await tester.pumpAndSettle();
+
+    final empty = jsonEncode({
+      'practicalmagicCharacter': 1,
+      'schemaVersion': pg.kSchemaVersion,
+      'character': const pg.Character(
+              id: 'ext-1', name: 'Vex', baseMana: 6, currentMana: 6)
+          .toJson(),
+      'spells': <dynamic>[],
+    });
+    await tester.enterText(find.byKey(const Key('magic-import-field')), empty);
+    await tester.tap(find.byKey(const Key('magic-import-confirm')));
+    await tester.pumpAndSettle();
+
+    // Dialog closed, plain snackbar (no Undo action), nothing imported.
+    expect(find.byKey(const Key('magic-import-field')), findsNothing);
+    expect(find.text('No spells in that export'), findsOneWidget);
+    expect(find.text('Undo'), findsNothing);
+  });
 }

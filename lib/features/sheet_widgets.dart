@@ -916,7 +916,6 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
             icon: const Icon(Icons.download_outlined),
             label: const Text('Import spells'),
             onPressed: () async {
-              final ctrl = ref.read(magicProvider.notifier);
               final added = await _showImportSpells(context, ref, pgChar.id);
               // Snackbar on the sheet's context, AFTER the dialog popped —
               // the log-and-pop rule: the surviving ref/context is the
@@ -933,7 +932,13 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
                 context,
                 'Imported ${added.length} '
                 'spell${added.length == 1 ? '' : 's'}',
-                () => ctrl.deleteSpells([for (final s in added) s.id]),
+                // Read the notifier at undo time, not capture time: if the
+                // campaign switched while the snackbar was up, the ids
+                // simply aren't in the new library and the delete no-ops,
+                // instead of poking the previous session's controller.
+                () => ref
+                    .read(magicProvider.notifier)
+                    .deleteSpells([for (final s in added) s.id]),
               );
             },
           ),
@@ -974,63 +979,91 @@ Future<void> _confirmDisableMagic(
 /// keep the dialog open.
 Future<List<pg.Spell>?> _showImportSpells(
     BuildContext context, WidgetRef ref, String pgCharacterId) {
-  final input = TextEditingController();
-  String? error;
   return showDialog<List<pg.Spell>>(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('Import spells'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Paste an export from the Practical Magic app.'),
+    builder: (context) => _ImportSpellsDialog(pgCharacterId: pgCharacterId),
+  );
+}
+
+/// A real StatefulWidget (not a StatefulBuilder) so the text controller can
+/// be disposed when the ROUTE unmounts — disposing right after the
+/// showDialog future resolves fires during the exit transition, while the
+/// TextField is still attached (mirrors _CasterSettingsDialog).
+class _ImportSpellsDialog extends ConsumerStatefulWidget {
+  const _ImportSpellsDialog({required this.pgCharacterId});
+
+  final String pgCharacterId;
+
+  @override
+  ConsumerState<_ImportSpellsDialog> createState() =>
+      _ImportSpellsDialogState();
+}
+
+class _ImportSpellsDialogState extends ConsumerState<_ImportSpellsDialog> {
+  final _input = TextEditingController();
+  String? _error;
+
+  @override
+  void dispose() {
+    _input.dispose();
+    super.dispose();
+  }
+
+  Future<void> _import() async {
+    try {
+      final added = await ref
+          .read(magicProvider.notifier)
+          .importSpells(widget.pgCharacterId, _input.text);
+      if (mounted) Navigator.pop(context, added);
+    } on pg.SchemaTooNewException catch (e) {
+      setState(() => _error = '$e');
+    } on FormatException catch (e) {
+      setState(() => _error = e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Import spells'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Paste an export from the Practical Magic app.'),
+          const SizedBox(height: 8),
+          TextField(
+            key: const Key('magic-import-field'),
+            controller: _input,
+            maxLines: 6,
+            decoration: const InputDecoration(hintText: '{ … }'),
+          ),
+          if (_error != null) ...[
             const SizedBox(height: 8),
-            TextField(
-              key: const Key('magic-import-field'),
-              controller: input,
-              maxLines: 6,
-              decoration: const InputDecoration(hintText: '{ … }'),
+            Text(
+              _error!,
+              key: const Key('magic-import-error'),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: context.lore.terracottaDeep),
             ),
-            if (error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                error!,
-                key: const Key('magic-import-error'),
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: context.lore.terracottaDeep),
-              ),
-            ],
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const Key('magic-import-confirm'),
-            onPressed: () async {
-              try {
-                final added = await ref
-                    .read(magicProvider.notifier)
-                    .importSpells(pgCharacterId, input.text);
-                if (context.mounted) Navigator.pop(context, added);
-              } on pg.SchemaTooNewException catch (e) {
-                setState(() => error = '$e');
-              } on FormatException catch (e) {
-                setState(() => error = e.message);
-              }
-            },
-            child: const Text('Import'),
-          ),
         ],
       ),
-    ),
-  );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('magic-import-confirm'),
+          onPressed: _import,
+          child: const Text('Import'),
+        ),
+      ],
+    );
+  }
 }
 
 /// Opens the caster-settings dialog for [pgChar] — the only place Base Mana,
