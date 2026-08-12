@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loreseer/features/sheet_widgets.dart';
+import 'package:loreseer/shared/theme.dart';
 import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -34,6 +35,10 @@ Future<ProviderContainer> _pumpLinked(WidgetTester tester) async {
   await tester.pumpWidget(UncontrolledProviderScope(
     container: container,
     child: MaterialApp(
+      // The REAL AppTheme: its full-width FilledButton minimumSize crashed
+      // the pushed SpellBuilderScreen's footer once (loose-constraints
+      // gotcha) — a bare MaterialApp here let that ship.
+      theme: AppTheme.light(),
       home: Scaffold(
         body: Consumer(builder: (context, ref, __) {
           final live =
