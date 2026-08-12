@@ -911,6 +911,32 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
               builder: (_) => const pg.UserGuideScreen(),
             )),
           ),
+          TextButton.icon(
+            key: const Key('magic-import'),
+            icon: const Icon(Icons.download_outlined),
+            label: const Text('Import spells'),
+            onPressed: () async {
+              final ctrl = ref.read(magicProvider.notifier);
+              final added = await _showImportSpells(context, ref, pgChar.id);
+              // Snackbar on the sheet's context, AFTER the dialog popped —
+              // the log-and-pop rule: the surviving ref/context is the
+              // caller's, never the dialog's.
+              if (added == null || !context.mounted) return;
+              if (added.isEmpty) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(const SnackBar(
+                      content: Text('No spells in that export')));
+                return;
+              }
+              showUndoSnackbar(
+                context,
+                'Imported ${added.length} '
+                'spell${added.length == 1 ? '' : 's'}',
+                () => ctrl.deleteSpells([for (final s in added) s.id]),
+              );
+            },
+          ),
         ],
       ),
     ],
@@ -941,6 +967,70 @@ Future<void> _confirmDisableMagic(
   );
   if (ok != true) return;
   await ref.read(charactersProvider.notifier).disableMagic(c.id);
+}
+
+/// Paste-JSON import dialog. Returns the spells added (empty list when the
+/// export held none), or null on cancel. Parse errors render inline and
+/// keep the dialog open.
+Future<List<pg.Spell>?> _showImportSpells(
+    BuildContext context, WidgetRef ref, String pgCharacterId) {
+  final input = TextEditingController();
+  String? error;
+  return showDialog<List<pg.Spell>>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: const Text('Import spells'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Paste an export from the Practical Magic app.'),
+            const SizedBox(height: 8),
+            TextField(
+              key: const Key('magic-import-field'),
+              controller: input,
+              maxLines: 6,
+              decoration: const InputDecoration(hintText: '{ … }'),
+            ),
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                error!,
+                key: const Key('magic-import-error'),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: const Key('magic-import-confirm'),
+            onPressed: () async {
+              try {
+                final added = await ref
+                    .read(magicProvider.notifier)
+                    .importSpells(pgCharacterId, input.text);
+                if (context.mounted) Navigator.pop(context, added);
+              } on pg.SchemaTooNewException catch (e) {
+                setState(() => error = '$e');
+              } on FormatException catch (e) {
+                setState(() => error = e.message);
+              }
+            },
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Opens the caster-settings dialog for [pgChar] — the only place Base Mana,
