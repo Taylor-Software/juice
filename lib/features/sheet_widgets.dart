@@ -653,7 +653,7 @@ Widget conditionsSection(
     );
 
 /// A "Magic" section for the open sheets, mirroring [conditionsSection]:
-/// an enable button when [c] hasn't opted into Polarity Grammar casting, or
+/// an enable button when [c] hasn't opted into Practical Magic casting, or
 /// the live mana bar (+ Task 8's spellbook) once it has.
 Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
   if (c.polarityId == null) {
@@ -664,7 +664,7 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
         FilledButton.icon(
           key: const Key('magic-enable'),
           icon: const Icon(Icons.auto_fix_high_outlined),
-          label: const Text('Enable Polarity Grammar casting'),
+          label: const Text('Enable Practical Magic casting'),
           onPressed: () =>
               ref.read(charactersProvider.notifier).enableMagic(c.id),
         ),
@@ -943,7 +943,7 @@ Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
   );
 }
 
-/// Confirms + disables Polarity Grammar casting on [c] — this deletes the
+/// Confirms + disables Practical Magic casting on [c] — this deletes the
 /// character's spellbook and cast history, so it asks first (mirrors the
 /// map screen's "Reset dungeon?" confirm-then-act dialog).
 Future<void> _confirmDisableMagic(
@@ -1001,7 +1001,7 @@ Future<List<pg.Spell>?> _showImportSpells(
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: Theme.of(context).colorScheme.error),
+                    ?.copyWith(color: context.lore.terracottaDeep),
               ),
             ],
           ],
