@@ -1699,6 +1699,7 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           ),
         const SizedBox(height: 8),
         conditionsSection(context, ref, c, 'sheet'),
+        magicSection(context, ref, c),
         section('Notes'),
         DebouncedTextField(
           key: const Key('sheet-notes'),

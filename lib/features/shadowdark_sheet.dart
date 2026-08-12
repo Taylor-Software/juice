@@ -178,6 +178,7 @@ class ShadowdarkSheetView extends ConsumerWidget {
           ),
         ]),
         conditionsSection(context, ref, character, 'sd'),
+        magicSection(context, ref, character),
         sheetSection(context, 'Talents'),
         _freeform(ref, 'sd-talents', 'Talents (rolled boons)', s.talentsText,
             (v) => _save(ref, s.copyWith(talentsText: v))),

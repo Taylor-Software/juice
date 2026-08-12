@@ -591,6 +591,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  polarity_grammar:
+    dependency: "direct main"
+    description:
+      path: "packages/polarity_grammar"
+      ref: b1704876ce64156d1896e5836073c8aabc4dbe88
+      resolved-ref: b1704876ce64156d1896e5836073c8aabc4dbe88
+      url: "https://github.com/Taylor-Software/practical-magic.git"
+    source: git
+    version: "0.1.0"
   posix:
     dependency: transitive
     description:

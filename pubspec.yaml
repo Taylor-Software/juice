@@ -21,6 +21,11 @@ dependencies:
   anthropic_sdk_dart: ^5.0.0
   flutter_secure_storage: ^10.3.1
   http: ^1.0.3
+  polarity_grammar:
+    git:
+      url: https://github.com/Taylor-Software/practical-magic.git
+      path: packages/polarity_grammar
+      ref: b1704876ce64156d1896e5836073c8aabc4dbe88
 
 dev_dependencies:
   flutter_test:

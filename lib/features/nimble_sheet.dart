@@ -100,6 +100,7 @@ class NimbleSheetView extends ConsumerWidget {
             onSet: (v) => _save(ref, s.copyWith(gearSlotsUsed: v))),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'nimble'),
+        magicSection(context, ref, character),
         const SizedBox(height: 12),
         DebouncedTextField(
           key: const Key('nimble-talents'),

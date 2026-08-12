@@ -278,6 +278,7 @@ class Character {
     this.role = CharacterRole.pc,
     this.conditions = const [],
     this.coins = 0,
+    this.polarityId,
   });
   final String id;
   final String name;
@@ -288,6 +289,11 @@ class Character {
 
   /// Currency count for the basic sheet. Omitted from JSON when 0.
   final int coins;
+
+  /// Links to a `pg.Character.id` in the campaign's Polarity Grammar
+  /// [Library] when this character has opted into magic casting; null
+  /// otherwise. See `lib/state/magic_controller.dart`.
+  final String? polarityId;
 
   /// Party-emulator state; null until the Party tool writes it.
   final CharacterEmulation? emulation;
@@ -436,6 +442,8 @@ class Character {
     CharacterRole? role,
     List<String>? conditions,
     int? coins,
+    String? polarityId,
+    bool clearPolarityId = false,
   }) =>
       Character(
         id: id,
@@ -464,6 +472,7 @@ class Character {
         role: role ?? this.role,
         conditions: conditions ?? this.conditions,
         coins: coins ?? this.coins,
+        polarityId: clearPolarityId ? null : (polarityId ?? this.polarityId),
       );
 
   /// Applies an HP [delta] (negative = damage) to whichever HP pool this
@@ -552,6 +561,7 @@ class Character {
         if (role != CharacterRole.pc) 'role': role.name,
         if (conditions.isNotEmpty) 'conditions': conditions,
         if (coins != 0) 'coins': coins,
+        if (polarityId != null) 'polarityId': polarityId,
       };
 
   factory Character.fromJson(Map<String, dynamic> j) => Character(
@@ -589,5 +599,6 @@ class Character {
             .whereType<String>()
             .toList(),
         coins: (j['coins'] as int?) ?? 0,
+        polarityId: j['polarityId'] as String?,
       );
 }

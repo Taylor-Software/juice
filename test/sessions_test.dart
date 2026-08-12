@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:loreseer/engine/models.dart';
 import 'package:loreseer/shared/home_shell.dart' show campaignSubtitle;
+import 'package:loreseer/state/magic_controller.dart';
 import 'package:loreseer/state/providers.dart';
 
 void main() {
@@ -130,7 +131,8 @@ void main() {
       expect(s.sessions.single.name, 'Campaign 1');
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('loreseer.threads.v1'), isNull);
-      expect(prefs.getString('loreseer.threads.v1.default'), contains('Old vow'));
+      expect(
+          prefs.getString('loreseer.threads.v1.default'), contains('Old vow'));
     });
 
     test('fresh install creates the default session with no key shuffling',
@@ -181,6 +183,35 @@ void main() {
       final data = (jsonDecode(file) as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
       expect(data, contains('loreseer.journal.v2'));
+    });
+
+    test('remove purges quarantine sub-keys left behind by a quarantined store',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await container.read(sessionsProvider.future);
+      final notifier = container.read(sessionsProvider.notifier);
+
+      await notifier.create('Quarantine Test');
+      final s = await container.read(sessionsProvider.future);
+      final newId = s.active;
+
+      final prefs = await SharedPreferences.getInstance();
+      // Seed corrupt magic data, then force a real quarantine via load().
+      await prefs.setString('loreseer.magic.v1.$newId', 'not json');
+      final store = JuiceMagicStore(prefs, newId);
+      await store.load();
+      expect(
+        prefs.getString('loreseer.magic.v1.$newId.quarantine.0'),
+        'not json',
+      );
+
+      await notifier.remove(newId);
+      expect(prefs.getString('loreseer.magic.v1.$newId'), isNull);
+      expect(prefs.getString('loreseer.magic.v1.$newId.quarantine.0'), isNull);
+      expect(prefs.getString('loreseer.magic.v1.$newId.quarantine.1'), isNull);
+      expect(prefs.getString('loreseer.magic.v1.$newId.quarantine.2'), isNull);
     });
 
     test('cannot remove the last session', () async {

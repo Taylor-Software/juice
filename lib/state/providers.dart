@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../engine/dice.dart';
@@ -44,6 +45,7 @@ import 'campaign_bundle.dart';
 import 'campaign_io.dart';
 import 'cloud_key_store.dart';
 import 'interpreter.dart';
+import 'magic_controller.dart';
 
 /// Loads the data asset and builds the engine once. (The rootBundle load
 /// lives here, not in the engine — lib/engine/ stays Flutter-free.)
@@ -571,6 +573,35 @@ class CharacterNotifier extends _PersistedList<Character> {
     await replace(c.copyWith(conditions: conditions));
   }
 
+  /// Enables Polarity Grammar casting on [id]: creates its linked pg.Character
+  /// (Base Mana 4 / Spell Level 1 — a starting pool sized for exactly one
+  /// minimal 4-mana spell, per the quickstart's "cheapest possible spell")
+  /// and stamps [Character.polarityId]. No-op if already enabled.
+  Future<void> enableMagic(String id) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null || c.polarityId != null) return;
+    final pgId = _newId();
+    // Ensure MagicController.build() has run (it sets up the persistence
+    // store) before mutating — reading .notifier alone can race build().
+    await ref.read(magicProvider.future);
+    await ref.read(magicProvider.notifier).upsertCharacter(
+          pg.Character(id: pgId, name: c.name, baseMana: 4, currentMana: 4),
+        );
+    await replace(c.copyWith(polarityId: pgId));
+  }
+
+  /// Disables casting on [id]: removes its pg.Character (and their spells
+  /// and history) from the campaign's Library and clears the link.
+  Future<void> disableMagic(String id) async {
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c == null || c.polarityId == null) return;
+    await ref.read(magicProvider.future);
+    await ref.read(magicProvider.notifier).deleteCharacter(c.polarityId!);
+    await replace(c.copyWith(clearPolarityId: true));
+  }
+
   /// Broadcast a single effect to many characters in one persist: an HP
   /// [hpDelta] (negative = damage, via [Character.withHpDelta]) and/or a set of
   /// [addConditions] merged into each target's conditions. Characters not in
@@ -593,8 +624,18 @@ class CharacterNotifier extends _PersistedList<Character> {
     ]);
   }
 
+  /// Removes character [id]. If the character had Polarity Grammar casting
+  /// enabled, also cascades the delete to its linked pg.Character (and their
+  /// spells/history) in the campaign's magic Library — otherwise that data
+  /// would be orphaned forever (never reachable via any polarityId).
   Future<void> remove(String id) async {
-    await _persist((await _ready).where((c) => c.id != id).toList());
+    final list = await _ready;
+    final c = list.where((e) => e.id == id).firstOrNull;
+    if (c?.polarityId != null) {
+      await ref.read(magicProvider.future);
+      await ref.read(magicProvider.notifier).deleteCharacter(c!.polarityId!);
+    }
+    await _persist(list.where((c) => c.id != id).toList());
   }
 }
 
@@ -2537,6 +2578,7 @@ const sessionScopedKeys = [
   'loreseer.settings.v1',
   'loreseer.context.v1',
   'loreseer.decks.v1',
+  'loreseer.magic.v1',
   'loreseer.gmchat.v1',
   'loreseer.light.v1',
   // Session-scoped UX caches: registered so campaign delete purges them and
@@ -2681,6 +2723,15 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final prefs = await ref.read(prefsProvider.future);
     for (final base in sessionScopedKeys) {
       await prefs.remove('$base.$id');
+      // A few stores (e.g. JuiceMagicStore, via pg.TextLibraryStore) also
+      // write up-to-kQuarantineKeep sub-keys beyond the exact
+      // '<base>.<sessionId>' shape when they quarantine corrupt data. Sweep
+      // those too — a harmless no-op for every other store, which never
+      // writes them, and future-proofs any store that later adopts the same
+      // quarantine pattern.
+      for (var i = 0; i < 3; i++) {
+        await prefs.remove('$base.$id.quarantine.$i');
+      }
     }
     final remaining = s.sessions.where((m) => m.id != id).toList();
     final active = s.active == id ? remaining.first.id : s.active;
@@ -2840,7 +2891,8 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
           jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
       'loreseer.characters.v1':
           jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
-      'loreseer.tracks.v1': jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
+      'loreseer.tracks.v1':
+          jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
       'loreseer.settings.v1': jsonEncode(
           CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
     };

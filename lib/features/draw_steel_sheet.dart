@@ -141,6 +141,7 @@ class DrawSteelSheetView extends ConsumerWidget {
         // ── Conditions ───────────────────────────────────────────────────────
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'draw-steel'),
+        magicSection(context, ref, character),
 
         // ── Skills + Notes ───────────────────────────────────────────────────
         const SizedBox(height: 12),

@@ -118,6 +118,7 @@ class ArgosaSheetView extends ConsumerWidget {
             onSet: (v) => _save(ref, s.copyWith(rescues: v))),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'argosa'),
+        magicSection(context, ref, character),
         const SizedBox(height: 12),
         DebouncedTextField(
           key: const Key('argosa-skills'),

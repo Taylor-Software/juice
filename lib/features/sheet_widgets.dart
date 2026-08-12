@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 
 import '../engine/models.dart';
+import '../shared/design_tokens.dart';
+import '../shared/undo_snackbar.dart';
+import '../state/magic_controller.dart';
 import '../state/providers.dart';
 
 /// Shared building blocks for the bespoke system sheets (Ironsworn, Starforged).
@@ -647,6 +651,495 @@ Widget conditionsSection(
         ),
       ],
     );
+
+/// A "Magic" section for the open sheets, mirroring [conditionsSection]:
+/// an enable button when [c] hasn't opted into Polarity Grammar casting, or
+/// the live mana bar (+ Task 8's spellbook) once it has.
+Widget magicSection(BuildContext context, WidgetRef ref, Character c) {
+  if (c.polarityId == null) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        FilledButton.icon(
+          key: const Key('magic-enable'),
+          icon: const Icon(Icons.auto_fix_high_outlined),
+          label: const Text('Enable Polarity Grammar casting'),
+          onPressed: () =>
+              ref.read(charactersProvider.notifier).enableMagic(c.id),
+        ),
+      ],
+    );
+  }
+  final libAsync = ref.watch(magicProvider);
+
+  if (libAsync.isLoading && !libAsync.hasValue) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        const SizedBox(
+          key: Key('magic-loading'),
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ],
+    );
+  }
+
+  if (libAsync.hasError) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        Text(
+          'Could not load magic data: ${libAsync.error}',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.error),
+        ),
+        const SizedBox(height: 4),
+        TextButton.icon(
+          key: const Key('magic-retry'),
+          icon: const Icon(Icons.refresh),
+          label: const Text('Retry'),
+          onPressed: () => ref.invalidate(magicProvider),
+        ),
+      ],
+    );
+  }
+
+  final lib = libAsync.value!;
+  final pgChar = lib.characters.where((x) => x.id == c.polarityId).firstOrNull;
+  if (pgChar == null) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sheetSection(context, 'Magic'),
+        Text(
+          "This character's magic data is missing — casting was likely "
+          'disabled or the link is broken.',
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: context.lore.inkFaint),
+        ),
+        const SizedBox(height: 8),
+        FilledButton.icon(
+          key: const Key('magic-disable'),
+          icon: const Icon(Icons.link_off),
+          label: const Text('Clear broken link'),
+          onPressed: () =>
+              ref.read(charactersProvider.notifier).disableMagic(c.id),
+        ),
+      ],
+    );
+  }
+  final ctrl = ref.read(magicProvider.notifier);
+  final myHanging =
+      lib.hanging.where((h) => h.characterId == pgChar.id).toList();
+  final myRunning =
+      lib.running.where((r) => r.characterId == pgChar.id).toList();
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      sheetSection(context, 'Magic'),
+      Row(
+        children: [
+          Expanded(
+            child: pg.ManaBar(
+              key: const Key('magic-mana-bar'),
+              current: pgChar.currentMana,
+              max: pgChar.availableMana,
+              caption: 'Spell Level ${pg.kRoman[pgChar.spellLevel]}',
+              onChanged: (v) => ctrl.setMana(pgChar.id, v),
+              onRest: () async {
+                final result = await ctrl.rest(pgChar.id);
+                if (context.mounted) {
+                  showUndoSnackbar(
+                    context,
+                    'Mana refilled',
+                    () => ctrl.undoRest(
+                        pgChar.id, result.before, result.recordId),
+                  );
+                }
+              },
+            ),
+          ),
+          IconButton(
+            key: const Key('magic-settings'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Caster settings',
+            onPressed: () => _showCasterSettings(context, ref, pgChar),
+          ),
+          IconButton(
+            key: const Key('magic-disable'),
+            icon: const Icon(Icons.link_off),
+            tooltip: 'Disable magic casting',
+            onPressed: () => _confirmDisableMagic(context, ref, c),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      SizedBox(
+        height: 320,
+        child: pg.SpellbookList(
+          spells: lib.spellsFor(pgChar.id),
+          currentMana: pgChar.currentMana,
+          spellLevel: pgChar.spellLevel,
+          castLevelCap: pgChar.gatedCasting ? pgChar.spellLevel : null,
+          school: pgChar.school,
+          enforceSchool: pgChar.enforceSchool,
+          onCast: (s, trigger) async {
+            final result = await ctrl.cast(s, trigger: trigger);
+            // A Triggered cast can silently defuse an already-hanging spell
+            // (the Spell-Level-cap overflow path in MagicController.cast) —
+            // surface that so it isn't a surprise. Informational only; not
+            // undoable here (that would need the cast's own refund/record
+            // ids too, a bigger surface than this fix covers).
+            if (result.defused.isNotEmpty && context.mounted) {
+              final names = result.defused.map((h) => h.spellName).join(', ');
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(
+                  content: Text('Cast ${s.name} — defused $names'),
+                ));
+            }
+          },
+          onEdit: (s) => Navigator.of(context).push(MaterialPageRoute<void>(
+            builder: (_) => pg.SpellBuilderScreen(
+              characterId: pgChar.id,
+              spellLevel: pgChar.spellLevel,
+              currentMana: pgChar.currentMana,
+              school: pgChar.school,
+              enforceSchool: pgChar.enforceSchool,
+              existing: s,
+              onSave: ctrl.upsertSpell,
+            ),
+          )),
+          onDelete: (s) async {
+            await ctrl.deleteSpell(s.id);
+            if (context.mounted) {
+              showUndoSnackbar(
+                  context, 'Spell removed', () => ctrl.upsertSpell(s));
+            }
+          },
+          onToggleFavorite: ctrl.toggleFavorite,
+          onDuplicate: ctrl.duplicateSpell,
+        ),
+      ),
+      if (myHanging.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        pg.HangingList(
+          hanging: myHanging,
+          cap: pgChar.spellLevel,
+          onFired: (h) async {
+            await ctrl.dismissHanging(h.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Hanging spell resolved',
+                  () => ctrl.restoreHanging([h]));
+            }
+          },
+          onDefused: (h) async {
+            await ctrl.dismissHanging(h.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Hanging spell resolved',
+                  () => ctrl.restoreHanging([h]));
+            }
+          },
+        ),
+      ],
+      if (myRunning.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        pg.RunningList(
+          running: myRunning,
+          onEnded: (r) async {
+            await ctrl.endRunning(r.id);
+            if (context.mounted) {
+              showUndoSnackbar(context, 'Running spell ended',
+                  () => ctrl.restoreRunning([r]));
+            }
+          },
+        ),
+      ],
+      const SizedBox(height: 4),
+      Wrap(
+        spacing: 8,
+        children: [
+          TextButton.icon(
+            key: const Key('magic-build'),
+            icon: const Icon(Icons.add),
+            label: const Text('Build spell'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => pg.SpellBuilderScreen(
+                characterId: pgChar.id,
+                spellLevel: pgChar.spellLevel,
+                currentMana: pgChar.currentMana,
+                school: pgChar.school,
+                enforceSchool: pgChar.enforceSchool,
+                onSave: ctrl.upsertSpell,
+              ),
+            )),
+          ),
+          TextButton.icon(
+            key: const Key('magic-reference'),
+            icon: const Icon(Icons.menu_book_outlined),
+            label: const Text('Card reference'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const pg.CardReferenceScreen(),
+            )),
+          ),
+          if (pg.gameSystemById(pgChar.systemId) != null)
+            TextButton.icon(
+              key: const Key('magic-convert'),
+              icon: const Icon(Icons.calculate_outlined),
+              label: const Text('Conversion'),
+              onPressed: () =>
+                  Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => pg.ConversionCalculator(
+                  system: pg.gameSystemById(pgChar.systemId)!,
+                ),
+              )),
+            ),
+          TextButton.icon(
+            key: const Key('magic-guide'),
+            icon: const Icon(Icons.help_outline),
+            label: const Text('User guide'),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+              builder: (_) => const pg.UserGuideScreen(),
+            )),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+/// Confirms + disables Polarity Grammar casting on [c] — this deletes the
+/// character's spellbook and cast history, so it asks first (mirrors the
+/// map screen's "Reset dungeon?" confirm-then-act dialog).
+Future<void> _confirmDisableMagic(
+    BuildContext context, WidgetRef ref, Character c) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Disable magic casting?'),
+      content: Text("This removes ${c.name}'s spellbook and mana history."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Disable'),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  await ref.read(charactersProvider.notifier).disableMagic(c.id);
+}
+
+/// Opens the caster-settings dialog for [pgChar] — the only place Base Mana,
+/// Spell Level, the linked game system, School, and the two casting-strictness
+/// flags can be edited after `enableMagic` hardcodes them at creation. Setting
+/// a game system here is what unlocks the `magic-convert` Conversion
+/// Calculator button, which is otherwise permanently unreachable.
+Future<void> _showCasterSettings(
+    BuildContext context, WidgetRef ref, pg.Character pgChar) {
+  return showDialog<void>(
+    context: context,
+    builder: (context) => _CasterSettingsDialog(pgChar: pgChar),
+  );
+}
+
+class _CasterSettingsDialog extends ConsumerStatefulWidget {
+  const _CasterSettingsDialog({required this.pgChar});
+
+  final pg.Character pgChar;
+
+  @override
+  ConsumerState<_CasterSettingsDialog> createState() =>
+      _CasterSettingsDialogState();
+}
+
+class _CasterSettingsDialogState extends ConsumerState<_CasterSettingsDialog> {
+  late int _baseMana;
+  late int _spellLevel;
+  late String? _systemId;
+  late pg.School? _school;
+  late bool _gatedCasting;
+  late bool _enforceSchool;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.pgChar;
+    _baseMana = c.baseMana;
+    _spellLevel = c.spellLevel;
+    _systemId = c.systemId;
+    _school = c.school;
+    _gatedCasting = c.gatedCasting;
+    _enforceSchool = c.enforceSchool;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Caster settings'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(child: Text('Base Mana')),
+                IconButton(
+                  key: const Key('magic-settings-basemana-minus'),
+                  icon: const Icon(Icons.remove),
+                  onPressed: () =>
+                      setState(() => _baseMana = (_baseMana - 1).clamp(1, 999)),
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$_baseMana',
+                    key: const Key('magic-settings-basemana'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('magic-settings-basemana-plus'),
+                  icon: const Icon(Icons.add),
+                  onPressed: () =>
+                      setState(() => _baseMana = (_baseMana + 1).clamp(1, 999)),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text('Spell Level')),
+                IconButton(
+                  key: const Key('magic-settings-spelllevel-minus'),
+                  icon: const Icon(Icons.remove),
+                  onPressed: () => setState(
+                      () => _spellLevel = (_spellLevel - 1).clamp(1, 6)),
+                ),
+                SizedBox(
+                  width: 32,
+                  child: Text(
+                    '$_spellLevel',
+                    key: const Key('magic-settings-spelllevel'),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  key: const Key('magic-settings-spelllevel-plus'),
+                  icon: const Icon(Icons.add),
+                  onPressed: () => setState(
+                      () => _spellLevel = (_spellLevel + 1).clamp(1, 6)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Expanded(child: Text('Game system')),
+                DropdownButton<String?>(
+                  key: const Key('magic-settings-system'),
+                  value: _systemId,
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    for (final s in pg.kGameSystems)
+                      DropdownMenuItem<String?>(
+                        value: s.id,
+                        child: Text(s.name),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _systemId = v),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const Expanded(child: Text('School')),
+                DropdownButton<pg.School?>(
+                  key: const Key('magic-settings-school'),
+                  value: _school,
+                  items: [
+                    const DropdownMenuItem<pg.School?>(
+                      value: null,
+                      child: Text('Unrestricted'),
+                    ),
+                    for (final s in pg.School.values)
+                      DropdownMenuItem<pg.School?>(
+                        value: s,
+                        child: Text(s.label),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _school = v),
+                ),
+              ],
+            ),
+            CheckboxListTile(
+              key: const Key('magic-settings-gated'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Gated casting'),
+              subtitle: const Text('Cap castable intensity at the Spell Level'),
+              value: _gatedCasting,
+              onChanged: (v) => setState(() => _gatedCasting = v ?? false),
+            ),
+            CheckboxListTile(
+              key: const Key('magic-settings-enforceschool'),
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Enforce school'),
+              subtitle: const Text('Hard-limit the builder to the School'),
+              value: _enforceSchool,
+              onChanged: (v) => setState(() => _enforceSchool = v ?? false),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: const Key('magic-settings-save'),
+          onPressed: () async {
+            final ctrl = ref.read(magicProvider.notifier);
+            await ctrl.upsertCharacter(widget.pgChar.copyWith(
+              baseMana: _baseMana,
+              spellLevel: _spellLevel,
+              systemId: () => _systemId,
+              school: () => _school,
+              gatedCasting: _gatedCasting,
+              enforceSchool: _enforceSchool,
+              // Re-clamp: lowering Base Mana or Spell Level shrinks the pool
+              // (baseMana * spellLevel), and a stale currentMana above the
+              // new ceiling would otherwise persist until something else
+              // (e.g. setMana) happened to clamp it.
+              currentMana:
+                  widget.pgChar.currentMana.clamp(0, _baseMana * _spellLevel),
+            ));
+            if (context.mounted) Navigator.pop(context);
+          },
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
 
 /// A roll-track row: a label, a +/- bonus stepper, and a roll button. [prefix]
 /// + [index] key the controls (e.g. 'custom-b1' -> 'custom-b1-roll-0'). The

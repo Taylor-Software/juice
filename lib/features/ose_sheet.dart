@@ -165,6 +165,7 @@ class OseSheetView extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         conditionsSection(context, ref, character, 'ose'),
+        magicSection(context, ref, character),
         const SizedBox(height: 12),
         DebouncedTextField(
           key: const Key('ose-notes'),
