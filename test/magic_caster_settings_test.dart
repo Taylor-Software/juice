@@ -9,7 +9,7 @@ import 'package:loreseer/state/providers.dart';
 import 'package:polarity_grammar/polarity_grammar.dart' as pg;
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Pumps `magicSection` for a character already linked to a Polarity Grammar
+/// Pumps `magicSection` for a character already linked to a Practical Magic
 /// caster with `baseMana: 4, spellLevel: 1` and no `systemId`/`school` —
 /// mirrors the hardcoded values `enableMagic` writes at creation, which is
 /// exactly the gap this settings dialog closes.

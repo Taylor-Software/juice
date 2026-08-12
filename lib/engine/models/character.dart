@@ -290,7 +290,7 @@ class Character {
   /// Currency count for the basic sheet. Omitted from JSON when 0.
   final int coins;
 
-  /// Links to a `pg.Character.id` in the campaign's Polarity Grammar
+  /// Links to a `pg.Character.id` in the campaign's Practical Magic
   /// [Library] when this character has opted into magic casting; null
   /// otherwise. See `lib/state/magic_controller.dart`.
   final String? polarityId;

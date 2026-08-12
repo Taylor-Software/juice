@@ -573,7 +573,7 @@ class CharacterNotifier extends _PersistedList<Character> {
     await replace(c.copyWith(conditions: conditions));
   }
 
-  /// Enables Polarity Grammar casting on [id]: creates its linked pg.Character
+  /// Enables Practical Magic casting on [id]: creates its linked pg.Character
   /// (Base Mana 4 / Spell Level 1 — a starting pool sized for exactly one
   /// minimal 4-mana spell, per the quickstart's "cheapest possible spell")
   /// and stamps [Character.polarityId]. No-op if already enabled.
@@ -624,7 +624,7 @@ class CharacterNotifier extends _PersistedList<Character> {
     ]);
   }
 
-  /// Removes character [id]. If the character had Polarity Grammar casting
+  /// Removes character [id]. If the character had Practical Magic casting
   /// enabled, also cascades the delete to its linked pg.Character (and their
   /// spells/history) in the campaign's magic Library — otherwise that data
   /// would be orphaned forever (never reachable via any polarityId).
