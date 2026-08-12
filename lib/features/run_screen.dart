@@ -48,44 +48,46 @@ class RunScreen extends ConsumerWidget {
         const capture = _CapturePanel();
         const reference = _ReferencePanel();
         if (wide) {
+          // Reference + Rules sit full-width under both columns: they are
+          // lookup surfaces, consulted after the live panels.
           return const SingleChildScrollView(
             padding: EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(children: [
-                    initiative,
-                    SizedBox(height: 12),
-                    quickref,
-                    SizedBox(height: 12),
-                    party,
-                  ]),
-                ),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Column(children: [
-                    scene,
-                    SizedBox(height: 12),
-                    threads,
-                    SizedBox(height: 12),
-                    dice,
-                    SizedBox(height: 12),
-                    capture,
-                    SizedBox(height: 12),
-                    reference,
-                  ]),
-                ),
-              ],
-            ),
+            child: Column(children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(children: [
+                      initiative,
+                      SizedBox(height: 12),
+                      party,
+                    ]),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(children: [
+                      scene,
+                      SizedBox(height: 12),
+                      threads,
+                      SizedBox(height: 12),
+                      dice,
+                      SizedBox(height: 12),
+                      capture,
+                    ]),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              reference,
+              SizedBox(height: 12),
+              quickref,
+            ]),
           );
         }
         return ListView(
           padding: const EdgeInsets.all(12),
           children: const [
             initiative,
-            SizedBox(height: 12),
-            quickref,
             SizedBox(height: 12),
             party,
             SizedBox(height: 12),
@@ -98,6 +100,8 @@ class RunScreen extends ConsumerWidget {
             capture,
             SizedBox(height: 12),
             reference,
+            SizedBox(height: 12),
+            quickref,
           ],
         );
       },
@@ -127,6 +131,36 @@ class _Panel extends StatelessWidget {
             child,
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Panel chrome for the lookup surfaces (Reference, Rules): same card, but the
+/// body folds away so a 320px viewer doesn't sit open under the live panels.
+class _FoldingPanel extends StatelessWidget {
+  const _FoldingPanel({
+    required this.k,
+    required this.title,
+    required this.child,
+  });
+  final Key k;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      key: k,
+      child: ExpansionTile(
+        title: Text(title, style: theme.textTheme.titleSmall),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+        childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+        shape: const Border(),
+        collapsedShape: const Border(),
+        children: [child],
       ),
     );
   }
@@ -737,7 +771,7 @@ class _QuickRefPanel extends StatelessWidget {
   const _QuickRefPanel();
   @override
   Widget build(BuildContext context) {
-    return const _Panel(
+    return const _FoldingPanel(
       k: Key('run-panel-quickref'),
       title: 'Rules',
       child: SizedBox(height: 320, child: QuickRefView(useProvider: true)),
@@ -749,7 +783,7 @@ class _ReferencePanel extends StatelessWidget {
   const _ReferencePanel();
   @override
   Widget build(BuildContext context) {
-    return const _Panel(
+    return const _FoldingPanel(
       k: Key('run-panel-reference'),
       title: 'Reference',
       child: SizedBox(height: 320, child: ReferenceView()),
