@@ -12,6 +12,7 @@ typedef NewCampaignResult = ({
   String seedSystem,
   LoopKit? kit,
   String defaultOracle,
+  String partyTool,
 });
 
 // Helper: open the dialog and return a reference to the future result.

@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
+import '../engine/campaign_surfaces.dart';
 import '../engine/constructed_oracle.dart';
 import '../engine/custom_table.dart';
 import '../engine/funnel.dart';
@@ -313,6 +314,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     await ref
         .read(settingsProvider.notifier)
         .setDefaultOracle(result.defaultOracle);
+    if (result.partyTool != 'emulator') {
+      final active = ref.read(sessionsProvider).valueOrNull?.active;
+      if (active != null) {
+        await ref
+            .read(sessionsProvider.notifier)
+            .setPartyTool(active, result.partyTool);
+      }
+    }
     ref.read(shellRouteProvider.notifier).land();
     if (result.start == 'funnel') {
       await ref.read(charactersProvider.notifier).addFunnel(result.seedSystem);
@@ -1247,6 +1256,7 @@ typedef NewCampaignResult = ({
   String seedSystem,
   LoopKit? kit,
   String defaultOracle,
+  String partyTool,
 });
 
 class NewCampaignDialog extends StatefulWidget {
@@ -1279,6 +1289,10 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
   // Step 2 (start)
   String _start = 'roster'; // 'roster' | 'funnel' | 'kit'
   LoopKit? _selectedKit;
+
+  // Party-tool paradigm ('emulator' | 'behavior' | 'sidekick'), only shown
+  // (and only meaningful) while the 'party' addon is on.
+  String _partyTool = 'emulator';
 
   @override
   void dispose() {
@@ -1330,13 +1344,14 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
     };
     Navigator.of(context).pop((
       name: _nameCtrl.text,
-      systems: systemsForSubmit,
+      systems: normalizeExclusive(systemsForSubmit),
       genre: _genreCtrl.text.trim(),
       tone: _toneCtrl.text.trim(),
       start: _start,
       seedSystem: _seedSystem,
       kit: _start == 'kit' ? _selectedKit : null,
       defaultOracle: _oracle,
+      partyTool: _partyTool,
     ));
   }
 
@@ -1536,7 +1551,8 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
           ],
           const SizedBox(height: 4),
           Wrap(spacing: 6, runSpacing: 6, children: [
-            for (final id in addonIds.where((i) => kSystemCategory[i] == cat))
+            for (final id in addonIds.where((i) =>
+                kSystemCategory[i] == cat && !kExclusiveSystemIds.contains(i)))
               FilterChip(
                 key: Key('cat-$id'),
                 label: Text(kSystemShortName[id] ?? id),
@@ -1550,6 +1566,51 @@ class _NewCampaignDialogState extends State<NewCampaignDialog> {
                 }),
               ),
           ]),
+          if (cat == SystemCategory.exploration) ...[
+            const SizedBox(height: 6),
+            const Text('Hexcrawl flavor (pick one)',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 6, runSpacing: 6, children: [
+              ChoiceChip(
+                key: const Key('hexflavor-none'),
+                label: const Text('None'),
+                selected:
+                    !kExclusiveGroups['hex-flavor']!.any(_addons.contains),
+                onSelected: (_) => setState(
+                    () => _addons.removeAll(kExclusiveGroups['hex-flavor']!)),
+              ),
+              for (final id in kExclusiveGroups['hex-flavor']!)
+                ChoiceChip(
+                  key: Key('cat-$id'),
+                  label: Text(kSystemShortName[id] ?? id),
+                  selected: _addons.contains(id),
+                  onSelected: (_) => setState(() {
+                    _addons.removeAll(kExclusiveGroups['hex-flavor']!);
+                    _addons.add(id);
+                  }),
+                ),
+            ]),
+          ],
+          if (cat == SystemCategory.tools && _addons.contains('party')) ...[
+            const SizedBox(height: 6),
+            const Text('Party tool (pick one)',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 6, runSpacing: 6, children: [
+              for (final t in const [
+                ('emulator', 'Emulator'),
+                ('behavior', 'Behavior'),
+                ('sidekick', 'Sidekick'),
+              ])
+                ChoiceChip(
+                  key: Key('party-tool-${t.$1}'),
+                  label: Text(t.$2),
+                  selected: _partyTool == t.$1,
+                  onSelected: (_) => setState(() => _partyTool = t.$1),
+                ),
+            ]),
+          ],
           const SizedBox(height: 10),
         ],
         const Text('Default oracle',
