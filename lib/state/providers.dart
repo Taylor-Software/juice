@@ -80,16 +80,14 @@ final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
 });
 
 /// Loads the bundled starter tables as read-only catalog entries. STRICT on
-/// purpose (bundled asset, build-verified); rows get stable `starter-<n>`
-/// ids so widget keys and dedup survive reloads. Replaces the old one-tap
-/// import — starters now appear in the catalog directly.
+/// purpose (bundled asset, build-verified). The asset itself owns stable,
+/// unique `starter-*` semantic ids (verified by test/starter_tables_test.dart)
+/// — no re-id here, since an index-based id renumbers every entry below an
+/// insertion. Replaces the old one-tap import — starters now appear in the
+/// catalog directly.
 final starterTablesProvider = FutureProvider<List<CustomTable>>((ref) async {
   final raw = await rootBundle.loadString('assets/starter_tables.json');
-  final tables = decodeTablePack(raw);
-  return [
-    for (final (i, t) in tables.indexed)
-      CustomTable.fromJson({...t.toJson(), 'id': 'starter-$i'}),
-  ];
+  return decodeTablePack(raw);
 });
 
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();

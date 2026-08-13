@@ -18,7 +18,7 @@ final _oracle = Oracle(OracleData(
 
 const _starterFixture = [
   CustomTable(
-    id: 'starter-0',
+    id: 'starter-rumor',
     name: 'Rumors',
     category: 'Hooks & Rumors',
     rows: [CustomRow('A stranger asks after you by name')],
@@ -63,9 +63,8 @@ void main() {
       'Generators section lists flavor generators; tapping Word Oracle logs '
       'a gen-story entry', (tester) async {
     final c = await pumpWithContainer(tester);
-    // The header's PageStorageKey isn't a plain ValueKey, so tap it by text
-    // (mirrors how the built-in oracle table groups are expanded in tests).
-    await tester.tap(find.text('Generators'));
+    // PageStorageKey extends ValueKey, so it's findable by key like any other.
+    await tester.tap(find.byKey(const PageStorageKey('tables-generators')));
     await tester.pumpAndSettle();
     final row = find.byKey(const Key('gen-roll-gen-word-oracle'));
     expect(row, findsOneWidget);
@@ -83,9 +82,9 @@ void main() {
     expect(find.text('Starter tables'), findsOneWidget);
     await tester.tap(find.text('Starter tables'));
     await tester.pumpAndSettle();
-    final row = find.byKey(const Key('starter-roll-starter-0'));
+    final row = find.byKey(const Key('starter-roll-starter-rumor'));
     expect(row, findsOneWidget);
-    expect(find.byKey(const Key('my-table-edit-starter-0')), findsNothing);
+    expect(find.byKey(const Key('my-table-edit-starter-rumor')), findsNothing);
     await tester.tap(row);
     await tester.pumpAndSettle();
     final entries = await c.read(journalProvider.future);
@@ -99,7 +98,7 @@ void main() {
     await pumpWithContainer(tester);
     await tester.enterText(find.byKey(const Key('tables-search')), 'rumor');
     await tester.pumpAndSettle();
-    expect(find.byKey(const Key('starter-roll-starter-0')), findsOneWidget);
+    expect(find.byKey(const Key('starter-roll-starter-rumor')), findsOneWidget);
     expect(find.byKey(const Key('gen-roll-gen-word-oracle')), findsNothing);
   });
 
@@ -109,7 +108,7 @@ void main() {
     await tester.enterText(find.byKey(const Key('tables-search')), 'word');
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('gen-roll-gen-word-oracle')), findsOneWidget);
-    expect(find.byKey(const Key('starter-roll-starter-0')), findsNothing);
+    expect(find.byKey(const Key('starter-roll-starter-rumor')), findsNothing);
   });
 
   testWidgets('tables-starter-pack is gone even with an empty user library',
@@ -124,7 +123,7 @@ void main() {
     const seed = '[{"id":"t1","name":"Rumors","rows":["x"],'
         '"src":"Starter set"}]';
     await pumpWithContainer(tester, customTablesJson: seed);
-    expect(find.byKey(const Key('starter-roll-starter-0')), findsNothing);
+    expect(find.byKey(const Key('starter-roll-starter-rumor')), findsNothing);
     expect(find.byKey(const Key('my-table-t1')), findsOneWidget);
   });
 }

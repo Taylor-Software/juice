@@ -18,13 +18,13 @@ void main() {
     final cat = buildCatalog(
       generators: flavorGenerators,
       starters: [
-        t('starter-0', 'Rumors', cat: 'Hooks', src: kStarterTableSource)
+        t('starter-rumor', 'Rumors', cat: 'Hooks', src: kStarterTableSource)
       ],
       userTables: [t('u1', 'My monsters', cat: 'Foes')],
     );
     expect(cat.where((e) => e.kind == CatalogKind.generator).length,
         flavorGenerators.length);
-    final starter = cat.singleWhere((e) => e.id == 'starter-0');
+    final starter = cat.singleWhere((e) => e.id == 'starter-rumor');
     expect(starter.editable, isFalse);
     expect(starter.kind, CatalogKind.table);
     final mine = cat.singleWhere((e) => e.id == 'u1');
@@ -37,7 +37,7 @@ void main() {
   test('a bundled starter hides when the user already imported it', () {
     final cat = buildCatalog(
       generators: const [],
-      starters: [t('starter-0', 'Rumors', src: kStarterTableSource)],
+      starters: [t('starter-rumor', 'Rumors', src: kStarterTableSource)],
       userTables: [t('u9', 'Rumors', src: kStarterTableSource)],
     );
     expect(cat.where((e) => e.name == 'Rumors').length, 1);

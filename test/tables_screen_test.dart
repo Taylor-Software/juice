@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:loreseer/engine/custom_table.dart';
 import 'package:loreseer/engine/oracle.dart';
 import 'package:loreseer/engine/oracle_data.dart';
 import 'package:loreseer/features/tables_screen.dart';
@@ -29,6 +30,9 @@ Future<void> pump(WidgetTester tester, {String? customTablesJson}) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(ProviderScope(
+    overrides: [
+      starterTablesProvider.overrideWith((ref) async => const <CustomTable>[]),
+    ],
     child: MaterialApp(
       theme: AppTheme.light(),
       home: Scaffold(body: TablesScreen(oracle: _oracle)),
@@ -51,7 +55,10 @@ Future<ProviderContainer> pumpWithContainer(WidgetTester tester,
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final c = ProviderContainer(overrides: overrides);
+  final c = ProviderContainer(overrides: [
+    starterTablesProvider.overrideWith((ref) async => const <CustomTable>[]),
+    ...overrides,
+  ]);
   addTearDown(c.dispose);
   await c.read(sessionsProvider.future);
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -84,7 +91,9 @@ void main() {
     await tester.pumpAndSettle();
     // Header + the catalog's own "Settlement" generator row (search now
     // surfaces matching generators too).
-    expect(find.text('Settlement'), findsNWidgets(2));
+    expect(find.byKey(const Key('gen-roll-gen-settlement')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tables-group-search-Settlement')),
+        findsOneWidget);
     expect(find.text('Settlement Name'), findsOneWidget); // a matching tile
     expect(find.text('Quest'), findsNothing); // non-matching group gone
     expect(find.text('NPC Need'), findsNothing); // non-matching tile gone

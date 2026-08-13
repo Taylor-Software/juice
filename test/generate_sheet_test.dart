@@ -371,7 +371,7 @@ void main() {
       oracleProvider.overrideWith((ref) async => _oracle()),
       starterTablesProvider.overrideWith((ref) async => const [
             CustomTable(
-              id: 'starter-0',
+              id: 'starter-rumor',
               name: 'Rumors',
               rows: [CustomRow('A stranger asks after you by name')],
             ),
@@ -383,7 +383,7 @@ void main() {
     await _pumpSheet(tester, c);
 
     expect(find.text('Starter Tables'), findsOneWidget);
-    final chip = find.byKey(const Key('starter-chip-starter-0'));
+    final chip = find.byKey(const Key('starter-chip-starter-rumor'));
     expect(chip, findsOneWidget);
     await tester.tap(chip);
     await tester.pumpAndSettle();
@@ -406,7 +406,7 @@ void main() {
       oracleProvider.overrideWith((ref) async => _oracle()),
       starterTablesProvider.overrideWith((ref) async => const [
             CustomTable(
-              id: 'starter-0',
+              id: 'starter-rumor',
               name: 'Rumors',
               rows: [CustomRow('A stranger asks after you by name')],
             ),
@@ -418,7 +418,7 @@ void main() {
     await c.read(customTablesProvider.future);
     await _pumpSheet(tester, c);
 
-    expect(find.byKey(const Key('starter-chip-starter-0')), findsNothing);
+    expect(find.byKey(const Key('starter-chip-starter-rumor')), findsNothing);
     expect(find.byKey(const Key('table-roll-t1')), findsOneWidget);
   });
 }
