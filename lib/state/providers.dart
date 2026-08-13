@@ -34,6 +34,7 @@ import '../engine/oracle_data.dart';
 import '../engine/custom_sheet.dart';
 import '../engine/constructed_oracle.dart';
 import '../engine/custom_table.dart';
+import '../engine/character_library.dart';
 import '../engine/system_primer.dart';
 import '../engine/quick_ref.dart';
 import '../engine/spell.dart';
@@ -112,6 +113,16 @@ List<T> decodePersistedList<T>(
   } catch (_) {
     return <T>[];
   }
+}
+
+/// Tolerant read of ANY session's roster straight from prefs — the character
+/// library's "Copy from campaign" picker needs rosters of campaigns that are
+/// not active (the active one comes from [charactersProvider]).
+List<Character> sessionCharactersFromPrefs(
+    SharedPreferences prefs, String sessionId) {
+  final raw = prefs.getString('loreseer.characters.v1.$sessionId');
+  if (raw == null || raw.isEmpty) return const [];
+  return decodePersistedList(raw, Character.fromJson);
 }
 
 /// App-global boolean flag behind one SharedPreferences key.
@@ -512,6 +523,14 @@ class CharacterNotifier extends _PersistedList<Character> {
           seedSystem: seedSystem, seedVariant: seedVariant, peasants: seed),
     );
     await _persist([ch, ...await _ready]);
+    return id;
+  }
+
+  /// Copies a library entry into this campaign's roster (fresh id, role reset
+  /// to pc, star + magic link cleared) and returns the new character's id.
+  Future<String> addFromLibrary(Character libraryEntry) async {
+    final id = _newId();
+    await _persist([campaignCopy(libraryEntry, id), ...await _ready]);
     return id;
   }
 
@@ -2109,6 +2128,54 @@ class BestiaryNotifier extends AsyncNotifier<List<Creature>> {
 final bestiaryProvider =
     AsyncNotifierProvider<BestiaryNotifier, List<Creature>>(
         BestiaryNotifier.new);
+
+/// App-global character library — a library of COPIES so heroes are reusable
+/// across campaigns. Like [bestiaryProvider]: NOT session-scoped, NOT
+/// exported. Copies in/out go through the pure helpers in
+/// `lib/engine/character_library.dart` (fresh id, magic link dropped).
+class CharacterLibraryNotifier extends AsyncNotifier<List<Character>> {
+  static const _key = 'loreseer.charlibrary.v1';
+
+  @override
+  Future<List<Character>> build() async {
+    final raw = (await ref.read(prefsProvider.future)).getString(_key);
+    if (raw == null || raw.isEmpty) return const [];
+    return decodePersistedList(raw, Character.fromJson);
+  }
+
+  Future<List<Character>> get _ready async => state.valueOrNull ?? await future;
+
+  Future<void> _save(List<Character> list) async {
+    await (await ref.read(prefsProvider.future))
+        .setString(_key, jsonEncode(list.map((c) => c.toJson()).toList()));
+    state = AsyncData(list);
+  }
+
+  Future<void> add(Character c) async {
+    await _save([...await _ready, c]);
+  }
+
+  Future<void> remove(String id) async {
+    await _save((await _ready).where((c) => c.id != id).toList());
+  }
+
+  Future<void> rename(String id, String name) async {
+    await _save([
+      for (final c in await _ready) c.id == id ? c.copyWith(name: name) : c,
+    ]);
+  }
+
+  /// Re-inserts [c] at [index] (clamped) — the delete-undo restore.
+  Future<void> insertAt(int index, Character c) async {
+    final list = [...await _ready];
+    list.insert(index.clamp(0, list.length), c);
+    await _save(list);
+  }
+}
+
+final characterLibraryProvider =
+    AsyncNotifierProvider<CharacterLibraryNotifier, List<Character>>(
+        CharacterLibraryNotifier.new);
 
 /// App-global store of user-authored random tables. Like [bestiaryProvider],
 /// this is NOT session-scoped and NOT exported — tables are reusable across

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../engine/character_library.dart';
 import '../engine/dice.dart';
 import '../engine/mention_parser.dart';
 import '../engine/models.dart';
@@ -602,7 +603,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     final systems =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    if (!systems.contains('ironsworn') &&
+    // Read once, before any early return or dialog opens: a `ref.watch`
+    // inside the dialog's own Builder wouldn't rebuild it (the dialog route
+    // sits outside this widget's element subtree, so a provider update only
+    // marks THIS state dirty, not the already-mounted dialog) — a snapshot is
+    // correct here since the library can't change while the picker is open.
+    // Hoisted above the guard below so a non-empty library still opens the
+    // picker even with no sheet-type system enabled (From-library must stay
+    // reachable in e.g. a ruleset-none campaign).
+    final lib = await ref.read(characterLibraryProvider.future);
+    if (!context.mounted) return;
+    if (lib.isEmpty &&
+        !systems.contains('ironsworn') &&
         !systems.contains('dnd') &&
         !systems.contains('shadowdark') &&
         !systems.contains('nimble') &&
@@ -756,6 +768,14 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                   child: Text('Choose a sheet type.'),
                 ),
                 const SizedBox(height: 4),
+                if (lib.isNotEmpty)
+                  ListTile(
+                    key: const Key('new-from-library'),
+                    title: const Text('From library'),
+                    subtitle: const Text(
+                        'Copy a saved character into this campaign.'),
+                    onTap: () => Navigator.pop(context, 'from-library'),
+                  ),
                 for (final o in options)
                   ListTile(
                     key: Key(o.key),
@@ -797,6 +817,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     if (!context.mounted) return;
     if (choice == 'generic') {
       await _addCharacter(context);
+    } else if (choice == 'from-library') {
+      await _addFromLibrary(context);
     } else if (choice == 'ironsworn') {
       await _newIronsworn();
     } else if (choice == 'starforged') {
@@ -830,6 +852,42 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     } else if (choice == 'funnel') {
       await _newFunnel(context);
     }
+  }
+
+  Future<void> _addFromLibrary(BuildContext context) async {
+    final lib =
+        ref.read(characterLibraryProvider).valueOrNull ?? const <Character>[];
+    final picked = await showDialog<Character>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('From library'),
+        children: [
+          for (final c in lib)
+            SimpleDialogOption(
+              key: Key('library-pick-${c.id}'),
+              onPressed: () => Navigator.pop(context, c),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(c.name),
+                  Text(sheetRoleBadge(c),
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+          SimpleDialogOption(
+            key: const Key('library-pick-cancel'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+    if (picked == null) return;
+    final id =
+        await ref.read(charactersProvider.notifier).addFromLibrary(picked);
+    if (mounted) setState(() => _editingId = id);
   }
 
   Future<void> _newIronsworn() async {
@@ -1047,6 +1105,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
           ),
       ],
     );
+  }
+
+  /// Saves a copy of [c] into the app-global character library (fresh id,
+  /// magic link dropped — see [libraryCopy]). Shared by the lead-more and
+  /// compact-more menus.
+  Future<void> _saveToLibrary(BuildContext context, Character c) async {
+    await ref
+        .read(characterLibraryProvider.notifier)
+        .add(libraryCopy(c, DateTime.now().microsecondsSinceEpoch.toString()));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('${c.name} saved to library')));
   }
 
   /// The role re-tag menu, shared by both variants. Key `role-` must stay
@@ -1305,6 +1375,8 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                         ref
                             .read(charactersProvider.notifier)
                             .toggleStarred(c.id);
+                      case 'save-library':
+                        _saveToLibrary(context, c);
                       case 'delete':
                         final list = ref.read(charactersProvider).valueOrNull ??
                             const <Character>[];
@@ -1322,6 +1394,10 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
                     PopupMenuItem<String>(
                       value: 'star',
                       child: Text(c.starred ? 'Unstar' : 'Star'),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'save-library',
+                      child: Text('Save to library'),
                     ),
                     const PopupMenuItem<String>(
                       value: 'delete',
@@ -1383,10 +1459,37 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
               children: [
                 _roleMenu(c),
                 _starButton(c),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () =>
-                      ref.read(charactersProvider.notifier).remove(c.id),
+                PopupMenuButton<String>(
+                  key: Key('compact-more-${c.id}'),
+                  tooltip: 'More',
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (v) {
+                    switch (v) {
+                      case 'save-library':
+                        _saveToLibrary(context, c);
+                      case 'delete':
+                        final list = ref.read(charactersProvider).valueOrNull ??
+                            const <Character>[];
+                        final idx = list.indexWhere((x) => x.id == c.id);
+                        ref.read(charactersProvider.notifier).remove(c.id);
+                        showUndoSnackbar(
+                            context,
+                            '${c.name} deleted',
+                            () => ref
+                                .read(charactersProvider.notifier)
+                                .restoreAt(idx < 0 ? 0 : idx, c));
+                    }
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem<String>(
+                      value: 'save-library',
+                      child: Text('Save to library'),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Text('Delete'),
+                    ),
+                  ],
                 ),
               ],
             ),

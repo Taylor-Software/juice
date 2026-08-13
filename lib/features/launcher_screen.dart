@@ -19,6 +19,7 @@ import '../shared/shell_route.dart';
 import '../state/play_context.dart';
 import '../state/providers.dart';
 import 'ai_offer_dialog.dart';
+import 'character_library_screen.dart';
 import 'enter_campaign.dart';
 
 /// Startup campaign menu: Continue / switch / New / Import. Shown while
@@ -344,6 +345,15 @@ class LauncherScreen extends ConsumerWidget {
                     leading: const Icon(Icons.file_download_outlined),
                     title: const Text('Import from file'),
                     onTap: () => _import(context, ref),
+                  ),
+                  ListTile(
+                    key: const Key('launcher-library'),
+                    leading: const Icon(Icons.people_outline),
+                    title: const Text('Character library'),
+                    subtitle: const Text('Reusable heroes, shared across '
+                        'campaigns'),
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const CharacterLibraryScreen())),
                   ),
                 ],
               ],
