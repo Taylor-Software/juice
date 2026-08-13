@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/custom_table.dart';
 import '../engine/dice.dart';
 import '../engine/generator_registry.dart';
+import '../engine/inspiration_catalog.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/oracle_data.dart';
@@ -127,6 +128,13 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
     final theme = Theme.of(context);
     final tables =
         ref.watch(customTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final starters =
+        ref.watch(starterTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final starterEntries = buildCatalog(
+      generators: const [],
+      starters: starters,
+      userTables: tables,
+    ).where((e) => e.kind == CatalogKind.table && !e.editable).toList();
     final bySection = <GenSection, List<GeneratorDef>>{};
     for (final g in flavorGenerators) {
       bySection.putIfAbsent(g.section, () => []).add(g);
@@ -248,6 +256,34 @@ class _GenerateSheetState extends ConsumerState<GenerateSheet> {
                 ),
               ],
             ),
+            if (starterEntries.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 6),
+                child:
+                    Text('Starter Tables', style: theme.textTheme.labelMedium),
+              ),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final e in starterEntries)
+                    ActionChip(
+                      key: Key('starter-chip-${e.id}'),
+                      label: Text(e.name),
+                      onPressed: () async {
+                        final r = rollCustomTable(e.table!, Dice());
+                        final id = await ref
+                            .read(journalProvider.notifier)
+                            .addResult(r.title, r.asText,
+                                sourceTool: 'custom-table',
+                                payload: r.toPayload());
+                        if (!context.mounted) return;
+                        Navigator.of(context).pop(id);
+                      },
+                    ),
+                ],
+              ),
+            ],
             Padding(
               padding: const EdgeInsets.only(top: 8, bottom: 6),
               child:
