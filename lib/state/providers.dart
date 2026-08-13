@@ -115,6 +115,16 @@ List<T> decodePersistedList<T>(
   }
 }
 
+/// Tolerant read of ANY session's roster straight from prefs — the character
+/// library's "Copy from campaign" picker needs rosters of campaigns that are
+/// not active (the active one comes from [charactersProvider]).
+List<Character> sessionCharactersFromPrefs(
+    SharedPreferences prefs, String sessionId) {
+  final raw = prefs.getString('loreseer.characters.v1.$sessionId');
+  if (raw == null || raw.isEmpty) return const [];
+  return decodePersistedList(raw, Character.fromJson);
+}
+
 /// App-global boolean flag behind one SharedPreferences key.
 ///
 /// Deliberately NOT session-scoped and NOT exported: these are per-device
@@ -513,6 +523,14 @@ class CharacterNotifier extends _PersistedList<Character> {
           seedSystem: seedSystem, seedVariant: seedVariant, peasants: seed),
     );
     await _persist([ch, ...await _ready]);
+    return id;
+  }
+
+  /// Copies a library entry into this campaign's roster (fresh id, role reset
+  /// to pc, star + magic link cleared) and returns the new character's id.
+  Future<String> addFromLibrary(Character libraryEntry) async {
+    final id = _newId();
+    await _persist([campaignCopy(libraryEntry, id), ...await _ready]);
     return id;
   }
 
