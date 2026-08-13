@@ -26,10 +26,15 @@ const _basePrefs = {
   'loreseer.journal.v2.default': '[]',
 };
 
+// Every container below overrides starterTablesProvider to an empty list
+// (unless a test is specifically exercising Starter Tables) — the real
+// bundled asset holds ~20 tables, and rendering them inline would push
+// lower chips (e.g. gen-New Quest) out of the test viewport.
 Future<ProviderContainer> _makeContainer() async {
   SharedPreferences.setMockInitialValues({..._basePrefs});
   final c = ProviderContainer(overrides: [
     oracleProvider.overrideWith((ref) async => _oracle()),
+    starterTablesProvider.overrideWith((ref) async => const []),
   ]);
   addTearDown(c.dispose);
   await c.read(oracleProvider.future);
@@ -71,13 +76,15 @@ Future<void> _pumpHost(WidgetTester tester, ProviderContainer c) async {
 }
 
 void main() {
-  testWidgets('a flavor chip logs, pops the sheet, and offers Inspire on the '
+  testWidgets(
+      'a flavor chip logs, pops the sheet, and offers Inspire on the '
       'entry it just wrote', (tester) async {
     SharedPreferences.setMockInitialValues({..._basePrefs});
     final fake = FakeInterpreterService(
         initial: const InterpreterStatus(InterpreterPhase.ready));
     final c = ProviderContainer(overrides: [
       oracleProvider.overrideWith((ref) async => _oracle()),
+      starterTablesProvider.overrideWith((ref) async => const []),
       interpretReadyProvider.overrideWithValue(true),
       interpreterServiceProvider.overrideWithValue(fake),
     ]);
@@ -110,7 +117,8 @@ void main() {
     // Still ONE entry — the reading folded into the roll it came from.
     final journal = c.read(journalProvider).valueOrNull ?? const [];
     expect(journal, hasLength(1));
-    expect(journal.single.body, contains('— Oracle reading (literal): fallback'));
+    expect(
+        journal.single.body, contains('— Oracle reading (literal): fallback'));
   });
 
   testWidgets('no Inspire action on the snackbar when interpret is not ready',
@@ -118,6 +126,7 @@ void main() {
     SharedPreferences.setMockInitialValues({..._basePrefs});
     final c = ProviderContainer(overrides: [
       oracleProvider.overrideWith((ref) async => _oracle()),
+      starterTablesProvider.overrideWith((ref) async => const []),
       interpretReadyProvider.overrideWithValue(false),
     ]);
     addTearDown(c.dispose);
@@ -278,6 +287,7 @@ void main() {
     });
     final c = ProviderContainer(overrides: [
       oracleProvider.overrideWith((ref) async => _oracle()),
+      starterTablesProvider.overrideWith((ref) async => const []),
     ]);
     addTearDown(c.dispose);
     await c.read(oracleProvider.future);
@@ -349,5 +359,66 @@ void main() {
     await tester.pumpAndSettle();
     final entries = await c.read(journalProvider.future);
     expect(entries.single.sourceTool, 'custom-table');
+  });
+
+  // --- Starter Tables (bundled read-only tables) ----------------------------
+
+  testWidgets(
+      'Starter Tables section shows a starter chip; tapping it logs a '
+      'custom-table entry', (tester) async {
+    SharedPreferences.setMockInitialValues({..._basePrefs});
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+      starterTablesProvider.overrideWith((ref) async => const [
+            CustomTable(
+              id: 'starter-rumor',
+              name: 'Rumors',
+              rows: [CustomRow('A stranger asks after you by name')],
+            ),
+          ]),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await c.read(sessionsProvider.future);
+    await _pumpSheet(tester, c);
+
+    expect(find.text('Starter Tables'), findsOneWidget);
+    final chip = find.byKey(const Key('starter-chip-starter-rumor'));
+    expect(chip, findsOneWidget);
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+
+    final entries = await c.read(journalProvider.future);
+    expect(entries.length, 1);
+    expect(entries.first.sourceTool, 'custom-table');
+    expect(entries.first.title, 'Rumors');
+  });
+
+  testWidgets(
+      'a user table sourced from the starter pack hides the bundled '
+      'duplicate chip', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      ..._basePrefs,
+      'loreseer.custom_tables.v1':
+          '[{"id":"t1","name":"Rumors","rows":["x"],"src":"Starter set"}]',
+    });
+    final c = ProviderContainer(overrides: [
+      oracleProvider.overrideWith((ref) async => _oracle()),
+      starterTablesProvider.overrideWith((ref) async => const [
+            CustomTable(
+              id: 'starter-rumor',
+              name: 'Rumors',
+              rows: [CustomRow('A stranger asks after you by name')],
+            ),
+          ]),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(oracleProvider.future);
+    await c.read(sessionsProvider.future);
+    await c.read(customTablesProvider.future);
+    await _pumpSheet(tester, c);
+
+    expect(find.byKey(const Key('starter-chip-starter-rumor')), findsNothing);
+    expect(find.byKey(const Key('table-roll-t1')), findsOneWidget);
   });
 }

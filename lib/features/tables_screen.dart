@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../engine/custom_table.dart';
 import '../engine/dice.dart';
+import '../engine/generator_registry.dart';
+import '../engine/inspiration_catalog.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
 import '../engine/table_groups.dart';
@@ -45,6 +46,25 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final q = _query.trim().toLowerCase();
     final customTables =
         ref.watch(customTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final starters =
+        ref.watch(starterTablesProvider).valueOrNull ?? const <CustomTable>[];
+    final catalog = buildCatalog(
+        generators: flavorGenerators,
+        starters: starters,
+        userTables: customTables);
+    final gens = [
+      for (final e in catalog)
+        if (e.kind == CatalogKind.generator &&
+            (q.isEmpty || matchesCatalogQuery(e, q)))
+          e,
+    ];
+    final starterEntries = [
+      for (final e in catalog)
+        if (e.kind == CatalogKind.table &&
+            !e.editable &&
+            (q.isEmpty || matchesCatalogQuery(e, q)))
+          e,
+    ];
     return Column(
       children: [
         Padding(
@@ -105,6 +125,58 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
               if (_visibleMyTables(customTables, q) case final mine
                   when q.isEmpty || mine.isNotEmpty)
                 _myTablesSection(customTables, mine),
+              if (starterEntries.isNotEmpty)
+                ExpansionTile(
+                  key: q.isEmpty
+                      ? const PageStorageKey('tables-starters')
+                      : const ValueKey('tables-starters-search'),
+                  initiallyExpanded: q.isNotEmpty,
+                  title: Text('Starter tables',
+                      style: theme.textTheme.titleMedium),
+                  subtitle: const Text(
+                      'A general-play core set: NPCs, places, hooks, rumors…'),
+                  childrenPadding: const EdgeInsets.only(bottom: 4),
+                  children: [
+                    for (final e in starterEntries)
+                      Card(
+                        child: ListTile(
+                          key: Key('starter-roll-${e.id}'),
+                          title: Text(e.name),
+                          subtitle: switch ([
+                            if (e.genre.trim().isNotEmpty) e.genre.trim(),
+                            if (e.category.trim().isNotEmpty) e.category.trim(),
+                          ].join(' · ')) {
+                            '' => null,
+                            final meta => Text(meta),
+                          },
+                          trailing: const Icon(Icons.casino_outlined),
+                          onTap: () => _rollCustomTable(e.table!),
+                        ),
+                      ),
+                  ],
+                ),
+              if (gens.isNotEmpty)
+                ExpansionTile(
+                  key: q.isEmpty
+                      ? const PageStorageKey('tables-generators')
+                      : const ValueKey('tables-generators-search'),
+                  initiallyExpanded: q.isNotEmpty,
+                  title: Text('Generators', style: theme.textTheme.titleMedium),
+                  subtitle: const Text('One-tap story, NPC, and detail rolls'),
+                  childrenPadding: const EdgeInsets.only(bottom: 4),
+                  children: [
+                    for (final e in gens)
+                      Card(
+                        child: ListTile(
+                          key: Key('gen-roll-${e.id}'),
+                          title: Text(e.name),
+                          subtitle: Text(e.category),
+                          trailing: const Icon(Icons.casino_outlined),
+                          onTap: () => _rollGenerator(e),
+                        ),
+                      ),
+                  ],
+                ),
               for (final group in groups)
                 if (_matching(group, q) case final matches
                     when matches.isNotEmpty)
@@ -136,6 +208,19 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
     final id = await ref.read(journalProvider.notifier).addResult(
         r.title, r.asText,
         sourceTool: 'custom-table', payload: r.toPayload());
+    if (!mounted) return;
+    showLoggedSnackBar(context, ref, id);
+  }
+
+  /// Roll a catalog generator and log it under its section's gen-* tag —
+  /// identical provenance to the same generator rolled from the composer's
+  /// GenerateSheet.
+  Future<void> _rollGenerator(CatalogEntry e) async {
+    final g = e.gen!;
+    final r = g.run(widget.oracle);
+    final id = await ref.read(journalProvider.notifier).addResult(
+        r.title, r.asText,
+        sourceTool: sourceToolFor(g.section), payload: r.toPayload());
     if (!mounted) return;
     showLoggedSnackBar(context, ref, id);
   }
@@ -234,30 +319,7 @@ class _TablesScreenState extends ConsumerState<TablesScreen> {
             onTap: () => showCustomTableDialog(context, ref, null),
           ),
         ),
-        // One-tap import of the bundled starter set (original authored
-        // tables); hidden once any starter-sourced table is in the library.
-        if (!all.any((t) => t.source == kStarterTableSource))
-          Card(
-            child: ListTile(
-              key: const Key('tables-starter-pack'),
-              leading: const Icon(Icons.auto_awesome_outlined),
-              title: const Text('Add starter tables'),
-              subtitle: const Text(
-                  'A general-play core set: NPCs, places, hooks, rumors…'),
-              onTap: _importStarterPack,
-            ),
-          ),
       ],
-    );
-  }
-
-  Future<void> _importStarterPack() async {
-    final raw = await rootBundle.loadString('assets/starter_tables.json');
-    final tables = decodeTablePack(raw);
-    await ref.read(customTablesProvider.notifier).addAll(tables);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Added ${tables.length} starter tables')),
     );
   }
 

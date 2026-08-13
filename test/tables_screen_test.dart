@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:loreseer/engine/custom_table.dart';
 import 'package:loreseer/engine/oracle.dart';
 import 'package:loreseer/engine/oracle_data.dart';
 import 'package:loreseer/features/tables_screen.dart';
@@ -29,6 +30,9 @@ Future<void> pump(WidgetTester tester, {String? customTablesJson}) async {
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
   await tester.pumpWidget(ProviderScope(
+    overrides: [
+      starterTablesProvider.overrideWith((ref) async => const <CustomTable>[]),
+    ],
     child: MaterialApp(
       theme: AppTheme.light(),
       home: Scaffold(body: TablesScreen(oracle: _oracle)),
@@ -51,7 +55,10 @@ Future<ProviderContainer> pumpWithContainer(WidgetTester tester,
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-  final c = ProviderContainer(overrides: overrides);
+  final c = ProviderContainer(overrides: [
+    starterTablesProvider.overrideWith((ref) async => const <CustomTable>[]),
+    ...overrides,
+  ]);
   addTearDown(c.dispose);
   await c.read(sessionsProvider.future);
   await tester.pumpWidget(UncontrolledProviderScope(
@@ -71,7 +78,7 @@ void main() {
     // Top-of-list groups are built; 'General' (pinned last) is off-screen and
     // lazily unbuilt — its placement is covered by table_groups_test.
     // ('Quest' and later groups sit below the lazy-list fold now that the
-    // My Tables section carries the starter-pack card.)
+    // My Tables / Starter tables / Generators sections lead the list.)
     expect(find.text('Challenge'), findsOneWidget);
     expect(find.text('NPC'), findsOneWidget);
   });
@@ -82,7 +89,11 @@ void main() {
     await tester.enterText(
         find.byKey(const Key('tables-search')), 'settlement');
     await tester.pumpAndSettle();
-    expect(find.text('Settlement'), findsOneWidget); // header still there
+    // Header + the catalog's own "Settlement" generator row (search now
+    // surfaces matching generators too).
+    expect(find.byKey(const Key('gen-roll-gen-settlement')), findsOneWidget);
+    expect(find.byKey(const ValueKey('tables-group-search-Settlement')),
+        findsOneWidget);
     expect(find.text('Settlement Name'), findsOneWidget); // a matching tile
     expect(find.text('Quest'), findsNothing); // non-matching group gone
     expect(find.text('NPC Need'), findsNothing); // non-matching tile gone
@@ -180,8 +191,8 @@ void main() {
     await pumpWithContainer(tester, customTablesJson: seed);
 
     // Two categories → headers show, in taxonomy order.
-    expect(find.byKey(const Key('tables-cat-Characters & NPCs')),
-        findsOneWidget);
+    expect(
+        find.byKey(const Key('tables-cat-Characters & NPCs')), findsOneWidget);
     expect(find.byKey(const Key('tables-cat-Locations & Settings')),
         findsOneWidget);
     // Row subtitle carries the genre.
@@ -195,18 +206,6 @@ void main() {
     await tester.tap(find.byKey(const Key('tables-genre-all')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('my-table-t1')), findsOneWidget);
-  });
-
-  testWidgets(
-      'starter-pack import chip shows for a fresh library and hides once a '
-      'starter-sourced table exists', (tester) async {
-    await pumpWithContainer(tester);
-    expect(find.byKey(const Key('tables-starter-pack')), findsOneWidget);
-
-    const seeded = '[{"id":"t1","name":"Rumors","rows":["x"],'
-        '"src":"Starter set"}]';
-    await pumpWithContainer(tester, customTablesJson: seeded);
-    expect(find.byKey(const Key('tables-starter-pack')), findsNothing);
   });
 
   testWidgets('editor saves genre/category/source onto the table',
@@ -227,8 +226,7 @@ void main() {
     await tester.tap(find.byKey(const Key('table-save')));
     await tester.pumpAndSettle();
 
-    final saved =
-        (await c.read(customTablesProvider.future)).single;
+    final saved = (await c.read(customTablesProvider.future)).single;
     expect(saved.name, 'Patrons');
     expect(saved.genre, 'Fantasy');
     expect(saved.category, 'Characters & NPCs');
@@ -245,7 +243,8 @@ void main() {
     await tester.tap(find.text('Quest Objective'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Add to journal'), findsOneWidget); // rolled
-    expect(find.byKey(const Key('table-inspire-quest_objective')), findsNothing);
+    expect(
+        find.byKey(const Key('table-inspire-quest_objective')), findsNothing);
   });
 
   testWidgets(
@@ -315,8 +314,8 @@ void main() {
     await tester.tap(find.text('Quest Objective'));
     await tester.pumpAndSettle();
     // Three trailing icon buttons (inspire + log + roll) must fit the row.
-    expect(find.byKey(const Key('table-inspire-quest_objective')),
-        findsOneWidget);
+    expect(
+        find.byKey(const Key('table-inspire-quest_objective')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
