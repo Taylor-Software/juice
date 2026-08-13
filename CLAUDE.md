@@ -19,6 +19,19 @@ Working rules for this repo:
 
 ## Project notes
 
+- **Unified inspiration catalog (2026-08-13, PR 3 of the streamline epic)** —
+  one browsable catalog over three sources: flavor generators + bundled
+  starter tables + My Tables. Pure `lib/engine/inspiration_catalog.dart`
+  (`CatalogEntry`/`CatalogKind`, `buildCatalog` — dedups a bundled starter
+  when the user library holds a same-name `kStarterTableSource` copy,
+  `matchesCatalogQuery`, `groupCatalogByCategory`) +
+  `starterTablesProvider` (STRICT asset load, stable `starter-<n>` ids).
+  Ask → Tables gained 'Starter tables' (`starter-roll-<id>`) + 'Generators'
+  (`gen-roll-<id>`) sections with unified search; the one-tap
+  `tables-starter-pack` import tile is RETIRED (starters render directly).
+  GenerateSheet gained `starter-chip-<id>` chips. Provenance unchanged:
+  generators log `gen-*`, tables log `'custom-table'`. See
+  `docs/superpowers/specs/2026-08-12-streamline-library-exclusive-capabilities-design.md`.
 - **Single-select capabilities (2026-08-12, PR 2 of the streamline epic)** —
   overlapping tools are radio choices, not stacking toggles. Pure
   `kExclusiveGroups` (`{'hex-flavor': [verdant, hexcrawl]}`) +
