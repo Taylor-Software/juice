@@ -1487,6 +1487,18 @@ Working rules for this repo:
   launcher-pumping test MUST override `interpreterServiceProvider` with the fake
   and set `juice.ai_offer_seen.v1: true` (unless testing the offer itself).
 
+- **Character library (2026-08-12)** — app-global library of character COPIES
+  (`characterLibraryProvider`, `loreseer.charlibrary.v1`, NOT session-scoped/
+  exported — bestiary posture). Pure copy helpers in
+  `lib/engine/character_library.dart`: `libraryCopy` (fresh id, `polarityId`
+  dropped), `campaignCopy` (also role→pc, star cleared). Launcher
+  `launcher-library` → `CharacterLibraryScreen` (rename/delete-undo +
+  two-step `library-copy-from-campaign` picker via
+  `sessionCharactersFromPrefs`); roster `new-from-library` picker →
+  `CharacterNotifier.addFromLibrary`; `save-library` on the lead-more +
+  `compact-more-<id>` menus (compact delete gained undo). See
+  `docs/superpowers/specs/2026-08-12-streamline-library-exclusive-capabilities-design.md`.
+
 ## Workflow system
 
 The Claude Code harness (commands, subagents, hooks, permissions) is documented in
