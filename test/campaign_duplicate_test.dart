@@ -10,7 +10,8 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1': '{"active":"src","sessions":[{"id":"src",'
           '"name":"Ironlands","systems":["ironsworn","juice"],'
-          '"genre":"grim fantasy","dndEdition":"5.1"}]}',
+          '"genre":"grim fantasy","dndEdition":"5.1",'
+          '"partyTool":"sidekick"}]}',
       'loreseer.settings.v1.src':
           '{"genre":"grim fantasy","tone":"bleak","defaultOracle":"mythic"}',
       'loreseer.journal.v2.src': '[{"id":"e1","timestamp":'
@@ -32,6 +33,7 @@ void main() {
     expect(dup.systems, ['ironsworn', 'juice']);
     expect(dup.genre, 'grim fantasy');
     expect(dup.dndEdition, '5.1');
+    expect(dup.partyTool, 'sidekick');
 
     final prefs = await SharedPreferences.getInstance();
     // Settings blob copied…

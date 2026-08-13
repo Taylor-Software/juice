@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:loreseer/engine/dungeon/faction.dart';
 import 'package:loreseer/engine/dungeon/footprint.dart';
 import 'package:loreseer/engine/dungeon/tables.dart';
+import 'package:loreseer/engine/hexcrawl_data.dart';
 import 'package:loreseer/engine/models.dart';
 import 'package:loreseer/engine/oracle.dart';
 import 'package:loreseer/engine/oracle_data.dart';
@@ -22,9 +23,12 @@ void main() {
   final dungeonTables = DungeonTables.fromJson(
       jsonDecode(File('assets/dungeon_data.json').readAsStringSync())
           as Map<String, dynamic>);
+  final hexcrawlData = HexcrawlData(
+      jsonDecode(File('assets/hexcrawl_data.json').readAsStringSync())
+          as Map<String, dynamic>);
 
   Future<ProviderContainer> pump(WidgetTester tester,
-      {bool classic = true}) async {
+      {bool classic = true, bool hexcrawl = false}) async {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1': jsonEncode({
         'active': 'default',
@@ -32,7 +36,11 @@ void main() {
           {
             'id': 'default',
             'name': 'C1',
-            if (classic) 'systems': ['juice', 'classic-dungeon'],
+            'systems': [
+              'juice',
+              if (classic) 'classic-dungeon',
+              if (hexcrawl) 'hexcrawl',
+            ],
           }
         ],
       }),
@@ -40,6 +48,7 @@ void main() {
     await tester.pumpWidget(ProviderScope(
         overrides: [
           dungeonDataProvider.overrideWith((ref) async => dungeonTables),
+          hexcrawlDataProvider.overrideWith((ref) async => hexcrawlData),
         ],
         child: MaterialApp(
             home: Scaffold(body: DungeonMapPane(oracle: Oracle(data))))));
@@ -176,5 +185,27 @@ void main() {
     final reg = container.read(dungeonFactionsProvider).requireValue;
     expect(reg.factions, isEmpty);
     expect(container.read(mapProvider).requireValue.rooms, isEmpty);
+  });
+
+  testWidgets(
+      'classic dungeon owns generation: hexcrawl room/dungeon controls '
+      'fold away when both systems are enabled', (tester) async {
+    await pump(tester, classic: true, hexcrawl: true);
+    await tester.tap(find.byKey(const Key('map-tools-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('hexcrawl-new-room')), findsNothing);
+    expect(find.byKey(const Key('hexcrawl-generate-dungeon')), findsNothing);
+    // Classic still owns dungeon generation.
+    expect(find.byKey(const Key('classic-enter')), findsOneWidget);
+  });
+
+  testWidgets(
+      'hexcrawl-only (classic off): hexcrawl room/dungeon controls remain',
+      (tester) async {
+    await pump(tester, classic: false, hexcrawl: true);
+    await tester.tap(find.byKey(const Key('map-tools-toggle')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('hexcrawl-new-room')), findsOneWidget);
+    expect(find.byKey(const Key('hexcrawl-generate-dungeon')), findsOneWidget);
   });
 }

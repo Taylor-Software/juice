@@ -131,6 +131,8 @@ void main() {
 
     final hex = find.byKey(const Key('cat-hexcrawl'));
     expect(hex, findsOneWidget);
-    expect(t.widget<FilterChip>(hex).selected, isFalse);
+    // 'hexcrawl' is an exclusive hex-flavor group member; it now renders as a
+    // ChoiceChip (radio) rather than an additive FilterChip.
+    expect(t.widget<ChoiceChip>(hex).selected, isFalse);
   });
 }

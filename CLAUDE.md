@@ -19,6 +19,21 @@ Working rules for this repo:
 
 ## Project notes
 
+- **Single-select capabilities (2026-08-12, PR 2 of the streamline epic)** —
+  overlapping tools are radio choices, not stacking toggles. Pure
+  `kExclusiveGroups` (`{'hex-flavor': [verdant, hexcrawl]}`) +
+  `normalizeExclusive` + `kExclusiveSystemIds` in `campaign_surfaces.dart`;
+  the wizard + `_EditSystemsDialog` render group members as ChoiceChips
+  (keys unchanged, `hexflavor-none`/`edit-hexflavor-none` for None) and
+  normalization runs on wizard create + edit-dialog save ONLY (gates stay
+  tolerant of legacy both-on sets). `SessionMeta.partyTool`
+  ('emulator'|'behavior'|'sidekick', JSON omitted at default;
+  `enabledPartyTool`, `setPartyTool`, `partyToolProvider`) picks the ONE
+  party surface `PartyToolsPane` renders (SegmentedButton retired; the
+  wizard's `party-tool-<id>` row + the edit dialog's `edit-party-tool-<id>`
+  row switch it). The Dungeon pane shows one generator at a time
+  (`_hexcrawlDungeonControls` hidden while classic-dungeon is on). See
+  `docs/superpowers/specs/2026-08-12-streamline-library-exclusive-capabilities-design.md`.
 - **QoL sweep (2026-07-12, PRs #287–#299)** — thirteen player-experience
   features, each with a spec in `docs/superpowers/specs/2026-07-12-*`:
   mobile chrome density + HUD light-chip de-noising (`kCompactWidth` 600,

@@ -101,6 +101,14 @@ class LauncherScreen extends ConsumerWidget {
     await ref
         .read(settingsProvider.notifier)
         .setDefaultOracle(result.defaultOracle);
+    if (result.partyTool != 'emulator') {
+      final active = ref.read(sessionsProvider).valueOrNull?.active;
+      if (active != null) {
+        await ref
+            .read(sessionsProvider.notifier)
+            .setPartyTool(active, result.partyTool);
+      }
+    }
     // First real campaign replaces the untouched first-run placeholder.
     if (wasPristine) {
       await ref.read(sessionsProvider.notifier).remove('default');

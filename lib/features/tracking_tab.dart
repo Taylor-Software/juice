@@ -39,8 +39,10 @@ class TrackingTab extends ConsumerWidget {
         const SubtabDef('encounter', 'Encounter'),
         if (rumors) const SubtabDef('rumors', 'Rumors'),
         const SubtabDef('tracks', 'Tracks'),
-        // Emulator + Behavior + Sidekick consolidated into one Party subtab
-        // (internal switch); legacy routes resolve via the aliases.
+        // One party paradigm renders per SessionMeta.partyTool (Emulator /
+        // Behavior / Sidekick are mutually exclusive, not stacked). The
+        // aliases only keep legacy routes ('emulator'/'sidekick'/'behavior')
+        // resolving to this subtab.
         if (partyTools)
           const SubtabDef('party', 'Party',
               aliases: ['emulator', 'sidekick', 'behavior']),

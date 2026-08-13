@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loreseer/engine/emulator_data.dart';
 import 'package:loreseer/features/tracking_tab.dart';
 import 'package:loreseer/shared/theme.dart';
+import 'package:loreseer/state/interpreter.dart';
 import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'fake_interpreter.dart';
 
 final _emulatorData = EmulatorData(
     jsonDecode(File('assets/emulator_data.json').readAsStringSync())
@@ -70,7 +73,7 @@ void main() {
     expect(find.widgetWithText(Tab, 'Party'), findsOneWidget);
   });
 
-  testWidgets('Party subtab hosts Emulator/Behavior/Sidekick behind a switch',
+  testWidgets('Party subtab hosts the campaign\'s chosen party tool',
       (tester) async {
     tester.view.physicalSize = const Size(1400, 1600);
     tester.view.devicePixelRatio = 1.0;
@@ -79,9 +82,13 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
-              '"systems":["party"]}]}',
+              '"systems":["party"],"partyTool":"sidekick"}]}',
     });
-    final c = ProviderContainer(overrides: [_emulatorOverride]);
+    final c = ProviderContainer(overrides: [
+      _emulatorOverride,
+      interpreterServiceProvider.overrideWithValue(FakeInterpreterService(
+          initial: const InterpreterStatus(InterpreterPhase.ready))),
+    ]);
     addTearDown(c.dispose);
     await c.read(sessionsProvider.future);
     await tester.pumpWidget(UncontrolledProviderScope(
@@ -93,13 +100,9 @@ void main() {
     // Open the one Party subtab.
     await tester.tap(find.widgetWithText(Tab, 'Party'));
     await tester.pumpAndSettle();
-    // The internal switch + all three surfaces are reachable.
-    expect(find.byKey(const Key('party-tools-switch')), findsOneWidget);
-    // Emulator is the default surface.
-    expect(find.byKey(const Key('pe-pet-actions')), findsOneWidget);
-    // Switch to Sidekick.
-    await tester.tap(find.text('Sidekick'));
-    await tester.pumpAndSettle();
+    // No switch anymore — the campaign's chosen paradigm (sidekick) renders
+    // directly; the emulator surface is absent.
+    expect(find.byKey(const Key('party-tools-switch')), findsNothing);
     expect(find.byKey(const Key('pe-pet-actions')), findsNothing);
   });
 

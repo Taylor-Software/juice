@@ -590,7 +590,10 @@ class DungeonMapPaneState extends ConsumerState<DungeonMapPane> {
                   .goTo(Destination.map, subtab: 'world');
             },
           ),
-        if (_hexcrawlOn()) _hexcrawlDungeonControls(context),
+        // One dungeon generator at a time: when the classic (Roll 4 Ruin)
+        // crawler owns this pane, the hexcrawl toolkit's room/dungeon
+        // generation folds away instead of stacking a second generator.
+        if (_hexcrawlOn() && !_classicOn()) _hexcrawlDungeonControls(context),
         IconButton(
           key: const Key('dungeon-journal'),
           icon: const Icon(Icons.bookmark_add_outlined),
