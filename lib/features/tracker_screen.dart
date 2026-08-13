@@ -603,7 +603,18 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
     final systems =
         ref.read(sessionsProvider).valueOrNull?.activeMeta.enabledSystems ??
             kAllSystems;
-    if (!systems.contains('ironsworn') &&
+    // Read once, before any early return or dialog opens: a `ref.watch`
+    // inside the dialog's own Builder wouldn't rebuild it (the dialog route
+    // sits outside this widget's element subtree, so a provider update only
+    // marks THIS state dirty, not the already-mounted dialog) — a snapshot is
+    // correct here since the library can't change while the picker is open.
+    // Hoisted above the guard below so a non-empty library still opens the
+    // picker even with no sheet-type system enabled (From-library must stay
+    // reachable in e.g. a ruleset-none campaign).
+    final lib = await ref.read(characterLibraryProvider.future);
+    if (!context.mounted) return;
+    if (lib.isEmpty &&
+        !systems.contains('ironsworn') &&
         !systems.contains('dnd') &&
         !systems.contains('shadowdark') &&
         !systems.contains('nimble') &&
@@ -619,13 +630,6 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
       await _addCharacter(context);
       return;
     }
-    // Read once, before the dialog opens: a `ref.watch` inside the dialog's
-    // own Builder wouldn't rebuild it (the dialog route sits outside this
-    // widget's element subtree, so a provider update only marks THIS state
-    // dirty, not the already-mounted dialog) — a snapshot is correct here
-    // since the library can't change while the picker is open.
-    final lib = await ref.read(characterLibraryProvider.future);
-    if (!context.mounted) return;
     // Sheet types are listed as equal-weight, scrollable rows (not action-bar
     // buttons): action bars don't scroll, so with several systems enabled the
     // later options (D&D, Shadowdark) could overflow/clip in a small window.
@@ -862,8 +866,21 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
             SimpleDialogOption(
               key: Key('library-pick-${c.id}'),
               onPressed: () => Navigator.pop(context, c),
-              child: Text(c.name),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(c.name),
+                  Text(sheetRoleBadge(c),
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
             ),
+          SimpleDialogOption(
+            key: const Key('library-pick-cancel'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );
@@ -1093,10 +1110,11 @@ class CharactersPaneState extends ConsumerState<CharactersPane> {
   /// Saves a copy of [c] into the app-global character library (fresh id,
   /// magic link dropped — see [libraryCopy]). Shared by the lead-more and
   /// compact-more menus.
-  void _saveToLibrary(BuildContext context, Character c) {
-    ref
+  Future<void> _saveToLibrary(BuildContext context, Character c) async {
+    await ref
         .read(characterLibraryProvider.notifier)
         .add(libraryCopy(c, DateTime.now().microsecondsSinceEpoch.toString()));
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text('${c.name} saved to library')));
   }

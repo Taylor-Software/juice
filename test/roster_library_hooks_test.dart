@@ -14,7 +14,7 @@ void main() {
 
   Future<ProviderContainer> pump(
     WidgetTester tester, {
-    String library = '{}',
+    String library = '[]',
     String chars = '[]',
     String? activeCharacterId,
   }) async {
@@ -59,10 +59,32 @@ void main() {
 
   testWidgets('From library is absent when the library is empty',
       (tester) async {
-    await pump(tester, library: '{}');
+    await pump(tester, library: '[]');
     await tester.tap(find.byKey(const Key('add-character')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('new-from-library')), findsNothing);
+  });
+
+  testWidgets(
+      'no sheet-type system enabled + non-empty library: Add still opens the '
+      'picker dialog with From-library reachable', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'loreseer.sessions.v1': '{"active":"default","sessions":['
+          '{"id":"default","name":"C1","systems":[]}]}',
+      'loreseer.characters.v1.default': '[]',
+      'loreseer.charlibrary.v1': libOne,
+    });
+    await tester.pumpWidget(ProviderScope(
+        child: MaterialApp(
+            theme: AppTheme.light(),
+            home: const Scaffold(body: CharactersPane()))));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('add-character')));
+    await tester.pumpAndSettle();
+    // The old early-return would have skipped straight to the generic
+    // creator dialog, never showing this picker at all.
+    expect(find.text('New character'), findsOneWidget);
+    expect(find.byKey(const Key('new-from-library')), findsOneWidget);
   });
 
   testWidgets(

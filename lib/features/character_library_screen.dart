@@ -31,9 +31,15 @@ class CharacterLibraryScreen extends ConsumerWidget {
             ListTile(
               key: Key('library-char-${c.id}'),
               title: Text(c.name),
-              subtitle: c.note.isEmpty
-                  ? null
-                  : Text(c.note, maxLines: 1, overflow: TextOverflow.ellipsis),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(sheetRoleBadge(c)),
+                  if (c.note.isNotEmpty)
+                    Text(c.note, maxLines: 1, overflow: TextOverflow.ellipsis),
+                ],
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -67,13 +73,13 @@ class CharacterLibraryScreen extends ConsumerWidget {
   void _delete(BuildContext context, WidgetRef ref, Character c,
       List<Character> entries) {
     final idx = entries.indexWhere((x) => x.id == c.id);
-    ref.read(characterLibraryProvider.notifier).remove(c.id);
-    showUndoSnackbar(
-        context,
-        '${c.name} deleted',
-        () => ref
-            .read(characterLibraryProvider.notifier)
-            .insertAt(idx < 0 ? 0 : idx, c));
+    // Captured before the snackbar shows: the snackbar's undo callback fires
+    // later, and a popped/rebuilt ConsumerWidget's `ref` may already be dead
+    // by then.
+    final notifier = ref.read(characterLibraryProvider.notifier);
+    notifier.remove(c.id);
+    showUndoSnackbar(context, '${c.name} deleted',
+        () => notifier.insertAt(idx < 0 ? 0 : idx, c));
   }
 
   Future<void> _rename(BuildContext context, WidgetRef ref, Character c) async {
@@ -114,6 +120,11 @@ class CharacterLibraryScreen extends ConsumerWidget {
               onPressed: () => Navigator.pop(context, s.id),
               child: Text(s.name),
             ),
+          SimpleDialogOption(
+            key: const Key('library-src-cancel'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );
@@ -134,8 +145,21 @@ class CharacterLibraryScreen extends ConsumerWidget {
             SimpleDialogOption(
               key: Key('library-src-char-${c.id}'),
               onPressed: () => Navigator.pop(context, c),
-              child: Text(c.name),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(c.name),
+                  Text(sheetRoleBadge(c),
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
             ),
+          SimpleDialogOption(
+            key: const Key('library-src-char-cancel'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
         ],
       ),
     );

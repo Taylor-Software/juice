@@ -23,3 +23,39 @@ Character campaignCopy(Character c, String newId) {
     ..remove('starred');
   return Character.fromJson(j);
 }
+
+/// Human sheet-system label for library rows/pickers, by non-null sheet
+/// field. Sundered Isles shares [Character.starforged], so it reads plain
+/// 'Starforged' here too. 'Generic' when no sheet field is set.
+String sheetLabel(Character c) {
+  if (c.ironsworn != null) return 'Ironsworn';
+  if (c.starforged != null) return 'Starforged';
+  if (c.dnd != null) return 'D&D 5e';
+  if (c.shadowdark != null) return 'Shadowdark';
+  if (c.nimble != null) return 'Nimble';
+  if (c.drawSteel != null) return 'Draw Steel';
+  if (c.argosa != null) return 'Tales of Argosa';
+  if (c.cairn != null) return 'Cairn';
+  if (c.knave != null) return 'Knave';
+  if (c.embark != null) return 'Embark';
+  if (c.ose != null) return 'OSE';
+  if (c.kalArath != null) return 'Kal-Arath';
+  if (c.custom != null) return 'Custom';
+  if (c.dcc != null) return 'DCC';
+  if (c.funnel != null) return '0-Level Funnel';
+  return 'Generic';
+}
+
+String _roleLabel(CharacterRole r) => switch (r) {
+      CharacterRole.pc => 'PC',
+      CharacterRole.companion => 'Companion',
+      CharacterRole.npc => 'NPC',
+    };
+
+/// Row/picker badge text: [sheetLabel] plus the role, omitted for the
+/// default `pc` (e.g. "D&D 5e" or "Cairn · Companion").
+String sheetRoleBadge(Character c) {
+  final label = sheetLabel(c);
+  if (c.role == CharacterRole.pc) return label;
+  return '$label · ${_roleLabel(c.role)}';
+}
