@@ -79,6 +79,19 @@ final dungeonDataProvider = FutureProvider<DungeonTables>((ref) async {
   return DungeonTables.fromJson(jsonDecode(raw) as Map<String, dynamic>);
 });
 
+/// Loads the bundled starter tables as read-only catalog entries. STRICT on
+/// purpose (bundled asset, build-verified); rows get stable `starter-<n>`
+/// ids so widget keys and dedup survive reloads. Replaces the old one-tap
+/// import — starters now appear in the catalog directly.
+final starterTablesProvider = FutureProvider<List<CustomTable>>((ref) async {
+  final raw = await rootBundle.loadString('assets/starter_tables.json');
+  final tables = decodeTablePack(raw);
+  return [
+    for (final (i, t) in tables.indexed)
+      CustomTable.fromJson({...t.toJson(), 'id': 'starter-$i'}),
+  ];
+});
+
 String _newId() => DateTime.now().microsecondsSinceEpoch.toString();
 
 /// Tolerant decode for USER-persisted JSON (never bundled assets): corrupt
