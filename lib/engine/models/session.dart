@@ -297,7 +297,8 @@ class SessionMeta {
       this.identityColor,
       this.identityIcon,
       this.genre,
-      this.dndEdition});
+      this.dndEdition,
+      this.partyTool});
   final String id;
   final String name;
 
@@ -319,8 +320,15 @@ class SessionMeta {
   /// ('5.2'). Filters edition-tagged content so one edition shows at a time.
   final String? dndEdition;
 
+  /// Which party-tools paradigm the Track subtab shows ('emulator' | 'behavior' |
+  /// 'sidekick'); null → emulator.
+  final String? partyTool;
+
   /// Resolved set: the declared systems, or every system when unset.
   Set<String> get enabledSystems => systems?.toSet() ?? kAllSystems;
+
+  /// Resolved party tool; null → 'emulator'.
+  String get enabledPartyTool => partyTool ?? 'emulator';
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -330,6 +338,7 @@ class SessionMeta {
         if (identityIcon != null) 'identityIcon': identityIcon,
         if (genre != null) 'genre': genre,
         if (dndEdition != null) 'dndEdition': dndEdition,
+        if (partyTool != null) 'partyTool': partyTool,
       };
 
   // id is immutable — not overridable via copyWith.
@@ -340,6 +349,7 @@ class SessionMeta {
     String? identityIcon,
     String? genre,
     String? dndEdition,
+    String? partyTool,
   }) =>
       SessionMeta(
         id: id,
@@ -349,6 +359,7 @@ class SessionMeta {
         identityIcon: identityIcon ?? this.identityIcon,
         genre: genre ?? this.genre,
         dndEdition: dndEdition ?? this.dndEdition,
+        partyTool: partyTool ?? this.partyTool,
       );
 
   factory SessionMeta.fromJson(Map<String, dynamic> j) => SessionMeta(
@@ -359,6 +370,7 @@ class SessionMeta {
         identityIcon: j['identityIcon'] as String?,
         genre: j['genre'] as String?,
         dndEdition: j['dndEdition'] as String?,
+        partyTool: j['partyTool'] as String?,
       );
 }
 

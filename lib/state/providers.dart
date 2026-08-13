@@ -2784,6 +2784,18 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     await _save(SessionsState(active: s.active, sessions: updated));
   }
 
+  /// Set which party-tools paradigm session [id] shows
+  /// ('emulator' | 'behavior' | 'sidekick').
+  Future<void> setPartyTool(String id, String tool) async {
+    final s = state.valueOrNull;
+    if (s == null) return;
+    final updated = [
+      for (final m in s.sessions)
+        if (m.id == id) m.copyWith(partyTool: tool) else m,
+    ];
+    await _save(SessionsState(active: s.active, sessions: updated));
+  }
+
   Future<void> remove(String id) async {
     final s = state.valueOrNull;
     if (s == null || s.sessions.length <= 1) return; // keep at least one
@@ -3187,6 +3199,11 @@ final systemSpellsProvider =
 /// Active campaign's D&D SRD edition preference ("5.1" | "5.2"); null → latest.
 final dndEditionProvider = Provider<String>((ref) =>
     ref.watch(sessionsProvider).valueOrNull?.activeMeta.dndEdition ?? '5.2');
+
+/// Active campaign's party-tools paradigm; default 'emulator'.
+final partyToolProvider = Provider<String>((ref) =>
+    ref.watch(sessionsProvider).valueOrNull?.activeMeta.enabledPartyTool ??
+    'emulator');
 
 /// All monsters across enabled systems: bundled creature files + Ironsworn
 /// npc_collections (adapted) + the user bestiary. De-duped by id. Edition-tagged

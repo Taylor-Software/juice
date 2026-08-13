@@ -84,3 +84,30 @@ List<VerbSurfaces> surfacesFor(Set<String> systems) {
       ]),
   ];
 }
+
+/// Capability groups where enabling more than one member stacks overlapping
+/// UI for the same job. The dialogs render each group as a radio row, and
+/// [normalizeExclusive] resolves a both-on legacy set by keeping the FIRST
+/// member listed here. Gates elsewhere stay tolerant of both-on sets.
+const Map<String, List<String>> kExclusiveGroups = {
+  'hex-flavor': ['verdant', 'hexcrawl'],
+};
+
+/// Every system id that belongs to some exclusive group — the dialogs skip
+/// these in their plain checkbox/filter loops.
+final Set<String> kExclusiveSystemIds =
+    kExclusiveGroups.values.expand((m) => m).toSet();
+
+/// Keeps at most one member per exclusive group (the first listed), leaving
+/// everything else untouched.
+Set<String> normalizeExclusive(Set<String> systems) {
+  final out = {...systems};
+  for (final members in kExclusiveGroups.values) {
+    final present = members.where(out.contains).toList();
+    if (present.length > 1) {
+      out.removeAll(present);
+      out.add(present.first);
+    }
+  }
+  return out;
+}
