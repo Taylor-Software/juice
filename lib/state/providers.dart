@@ -2741,6 +2741,7 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       identityIcon: src.identityIcon,
       genre: src.genre,
       dndEdition: src.dndEdition,
+      partyTool: src.partyTool,
     );
     final prefs = await ref.read(prefsProvider.future);
     final settings = prefs.getString('loreseer.settings.v1.$sourceId');
