@@ -126,22 +126,37 @@ class GemmaInterpreterService implements InterpreterService {
     }
   }
 
+  /// Backends to try, in order, on [platform].
+  ///
+  /// Apple platforms never get the GPU backend, because a native crash kills
+  /// the process before [_loadModel]'s catch runs — the step-down ladder
+  /// cannot recover from one, so the only safe move is to not attempt the
+  /// accelerator at all. Two device crashes, same class:
+  ///
+  /// - iOS: LiteRT-LM's Metal accelerator null-derefs loading E4B on iPhone
+  ///   (SIGSEGV at 0x0 in AGX buffer setup — crash log 2026-07-11, iPhone 15
+  ///   Pro Max; upstream flutter_gemma #218).
+  /// - macOS: with `backend=gpu`, LiteRT's `ReplaceMagicNumbersIfAny` reads a
+  ///   garbage config count (`num_configs=4294967300`, i.e. 4 + 2^32) and
+  ///   walks off the array, SIGSEGV'ing inside its own logger on a null
+  ///   `char*` (crash log 2026-08-12). The CPU/XNNPACK path loads the same
+  ///   file fine.
+  @visibleForTesting
+  static List<PreferredBackend> backendsFor(TargetPlatform platform) =>
+      switch (platform) {
+        TargetPlatform.iOS || TargetPlatform.macOS => const [
+            PreferredBackend.cpu
+          ],
+        _ => const [PreferredBackend.gpu, PreferredBackend.cpu],
+      };
+
   /// Try a roomy context first (E4B handles far more than the retired web
   /// model's 1280; 4096 gives the loosened recall caps + few-shot prompts real
-  /// headroom); some artifacts cap the KV cache, so step down, and from the
-  /// GPU backend to CPU.
-  ///
-  /// iOS never gets the GPU backend: LiteRT-LM's Metal accelerator null-derefs
-  /// loading E4B on iPhone (SIGSEGV at 0x0 in AGX buffer setup — device crash
-  /// log 2026-07-11, iPhone 15 Pro Max; same class as upstream flutter_gemma
-  /// #218). A native crash kills the process before this catch runs, so the
-  /// step-down ladder cannot recover from it — the only safe move is to not
-  /// attempt Metal at all.
+  /// headroom); some artifacts cap the KV cache, so step down, and (where the
+  /// GPU is attempted at all) from the GPU backend to CPU.
   Future<InferenceModel> _loadModel() async {
     Object? firstError;
-    final backends = defaultTargetPlatform == TargetPlatform.iOS
-        ? const [PreferredBackend.cpu]
-        : const [PreferredBackend.gpu, PreferredBackend.cpu];
+    final backends = backendsFor(defaultTargetPlatform);
     for (final maxTokens in const [4096, 2048, 1280]) {
       for (final backend in backends) {
         try {
@@ -181,8 +196,7 @@ class GemmaInterpreterService implements InterpreterService {
   /// One prompt → raw model text, the shared generation discipline for
   /// every seam: fresh chat + inter-token watchdog.
   Future<String> _generate(String prompt,
-      {String? systemInstruction,
-      double temperature = _kCreativeTemp}) async {
+      {String? systemInstruction, double temperature = _kCreativeTemp}) async {
     final model = _model;
     if (model == null) throw StateError('Interpreter not ready');
     final chat = await _createChat(model,
@@ -234,8 +248,8 @@ class GemmaInterpreterService implements InterpreterService {
 
   @override
   Future<RankResult> rankSuggestions(RankSuggestionsSeed seed) async {
-    return parseRankResult(await _generate(buildRankPrompt(seed),
-        temperature: _kPreciseTemp));
+    return parseRankResult(
+        await _generate(buildRankPrompt(seed), temperature: _kPreciseTemp));
   }
 
   @override
