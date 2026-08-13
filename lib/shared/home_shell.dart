@@ -79,8 +79,23 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     if (!kIsWeb) {
       _lifecycle = AppLifecycleListener(
         onPause: () => ref.read(interpreterServiceProvider).dispose(),
+        // The mirror of onPause (paused -> hidden): reload what it freed,
+        // otherwise the AI affordances stay hidden for the rest of the run.
+        onRestart: _restoreInterpreter,
       );
+      _restoreInterpreter();
     }
+  }
+
+  /// Recognize an already-downloaded model. The service boots at
+  /// `needsDownload` and only `refresh()` consults the disk, so without this
+  /// every launch claims the model is missing — and the resulting "Download
+  /// model" tap drops straight into warmUp's load path with no consent step.
+  Future<void> _restoreInterpreter() async {
+    // Read the flag first: AI off must not construct the interpreter at all.
+    if (!await ref.read(aiEnabledProvider.future)) return;
+    if (!mounted) return;
+    await ref.read(interpreterServiceProvider).refresh();
   }
 
   @override
