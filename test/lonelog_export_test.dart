@@ -50,7 +50,10 @@ void main() {
     final out = _export(
       name: 'Camp: Alpha',
       threads: [
-        Thread(id: 't1', title: 'Rescue | [the] prisoner', stage: ThreadStage.active),
+        Thread(
+            id: 't1',
+            title: 'Rescue | [the] prisoner',
+            stage: ThreadStage.active),
       ],
       characters: [const Character(id: 'c1', name: 'Vance|ally')],
     );
@@ -98,7 +101,9 @@ void main() {
 
   test('a plain thread (progress 0) emits only its [Thread:] line', () {
     final out = _export(
-      threads: [Thread(id: 't1', title: 'Side quest', stage: ThreadStage.active)],
+      threads: [
+        Thread(id: 't1', title: 'Side quest', stage: ThreadStage.active)
+      ],
     );
     expect(out, contains('[Thread:Side quest|Open]'));
     expect(out, isNot(contains('[Track:')));
@@ -133,7 +138,9 @@ void main() {
 
   test('text beat renders prose; threadId and tags render as trailers', () {
     final out = _export(
-      threads: [Thread(id: 't1', title: 'Rescue Jonah', stage: ThreadStage.active)],
+      threads: [
+        Thread(id: 't1', title: 'Rescue Jonah', stage: ThreadStage.active)
+      ],
       entries: [
         _entry(JournalKind.text, 'note', 'The door creaks open.',
             threadId: 't1', tags: ['quiet', 'night']),
