@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loreseer/engine/models.dart';
 import 'package:loreseer/features/encounter_screen.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -62,5 +64,34 @@ void main() {
     seed([]);
     await pump(tester);
     expect(find.byKey(const Key('run-init-empty')), findsOneWidget);
+  });
+
+  testWidgets('run-init-open-full navigates to Track/Encounter',
+      (tester) async {
+    seed([
+      {
+        'id': 'g1',
+        'name': 'Goblin',
+        'initiative': 12,
+        'track': {'current': 4, 'max': 7},
+      },
+    ]);
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child:
+          const MaterialApp(home: Scaffold(body: EncounterPane(compact: true))),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(container.read(shellRouteProvider).destination,
+        isNot(Destination.track));
+
+    await tester.tap(find.byKey(const Key('run-init-open-full')));
+    await tester.pumpAndSettle();
+
+    expect(container.read(shellRouteProvider).destination, Destination.track);
+    expect(container.read(shellRouteProvider).subtab, 'encounter');
   });
 }

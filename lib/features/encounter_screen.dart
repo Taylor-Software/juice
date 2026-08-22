@@ -22,7 +22,7 @@ class EncounterScreen extends StatelessWidget {
 }
 
 /// The one combat surface. Full mode (default) is the Track → Encounter
-/// manager; [compact] renders the Run dashboard glance (Task 2).
+/// manager; [compact] renders the Run dashboard glance.
 ///
 /// Initiative tracker: combatants from character sheets (live first-track
 /// link) or ad-hoc, turn pointer + round counter, statuses/defeated, and an
@@ -36,8 +36,6 @@ class EncounterPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(encounterProvider);
-    final chars =
-        ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
@@ -49,7 +47,13 @@ class EncounterPane extends ConsumerWidget {
                 Expanded(
                   child: s.combatants.isEmpty
                       ? _empty(context)
-                      : _list(context, ref, s, chars),
+                      : _list(
+                          context,
+                          ref,
+                          s,
+                          ref.watch(charactersProvider).valueOrNull ??
+                              const <Character>[],
+                        ),
                 ),
                 _addButtons(context, ref),
               ],
