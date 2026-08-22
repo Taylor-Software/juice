@@ -90,14 +90,14 @@ void main() {
     expect(route.subtab, 'scenes');
   });
 
-  testWidgets('shows Develop a rumor and routes to Rumors', (tester) async {
+  testWidgets('shows Develop a rumor and routes to Threads', (tester) async {
     final c = await pumpSection(tester);
     expect(find.text('Develop a rumor'), findsOneWidget);
     await tester.tap(find.text('Develop a rumor'));
     await tester.pumpAndSettle();
     final route = c.read(shellRouteProvider);
     expect(route.destination, Destination.track);
-    expect(route.subtab, 'rumors');
+    expect(route.subtab, 'threads');
   });
 
   testWidgets('develop-rumor and seed-npc are always present (no mode gate)',
@@ -107,7 +107,8 @@ void main() {
     expect(find.text('Add an NPC'), findsOneWidget);
   });
 
-  testWidgets('ask-the-Oracle box opens the multi-turn GM chat', (tester) async {
+  testWidgets('ask-the-Oracle box opens the multi-turn GM chat',
+      (tester) async {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
