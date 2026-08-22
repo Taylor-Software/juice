@@ -76,4 +76,26 @@ void main() {
     expect(threads.single.stage, ThreadStage.rumor);
     expect(threads.single.title, 'Heard in the tavern');
   });
+
+  testWidgets('progress clock fill logs a journal entry once', (tester) async {
+    seed([
+      Thread(id: 't1', title: 'Siege clock', progress: 2, progressMax: 3),
+    ]);
+    await pump(tester);
+
+    final container =
+        ProviderScope.containerOf(tester.element(find.byType(ThreadsPane)));
+
+    await tester.tap(find.byKey(const Key('thread-prog-inc-t1')));
+    await tester.pumpAndSettle();
+
+    var journal = await container.read(journalProvider.future);
+    expect(journal.where((e) => e.title.contains('Clock filled')).length, 1);
+
+    // A further tap at max must not duplicate the closure.
+    await tester.tap(find.byKey(const Key('thread-prog-inc-t1')));
+    await tester.pumpAndSettle();
+    journal = await container.read(journalProvider.future);
+    expect(journal.where((e) => e.title.contains('Clock filled')).length, 1);
+  });
 }

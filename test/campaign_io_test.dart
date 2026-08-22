@@ -185,6 +185,28 @@ void main() {
       expect(parsed.rawByKey, contains('loreseer.threads.v1'));
     });
 
+    test('legacy rumors/tracks keys are dropped on import', () {
+      // Pre-merge files may carry the retired standalone Rumor/Track stores
+      // (superseded by the unified Thread) — they must parse without
+      // throwing and simply not survive into rawByKey.
+      final legacy = jsonEncode({
+        'app': 'loreseer',
+        'schemaVersion': 3,
+        'name': 'Old campaign',
+        'data': {
+          'loreseer.rumors.v1': [
+            {'id': 'r1', 'title': 'A whisper'},
+          ],
+          'loreseer.tracks.v1': [
+            {'id': 'tr1', 'name': 'Doom clock', 'filled': 2, 'max': 6},
+          ],
+        },
+      });
+      final parsed = parseCampaign(legacy);
+      expect(parsed.rawByKey.containsKey('loreseer.rumors.v1'), isFalse);
+      expect(parsed.rawByKey.containsKey('loreseer.tracks.v1'), isFalse);
+    });
+
     test('character sheets round-trip through campaign files', () {
       const sheet = '[{"id":"c1","name":"Ash","note":"ranger",'
           '"stats":[{"label":"Iron","value":"+2"}],'

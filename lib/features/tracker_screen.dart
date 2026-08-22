@@ -249,9 +249,8 @@ class _ThreadsPaneState extends ConsumerState<ThreadsPane> {
                                         minWidth: 32, minHeight: 32),
                                     icon: const Icon(Icons.add, size: 18),
                                     tooltip: 'More progress',
-                                    onPressed: () => ref
-                                        .read(threadsProvider.notifier)
-                                        .setProgress(t.id, t.progress + 1),
+                                    onPressed: () =>
+                                        _incrementProgress(context, ref, t),
                                   ),
                                   const SizedBox(width: 4),
                                   Text('${t.progress}/${t.progressMax}',
@@ -355,6 +354,35 @@ class _ThreadsPaneState extends ConsumerState<ThreadsPane> {
     );
   }
 
+  /// Ticks a thread's progress clock up one; when that crossing completes it
+  /// (reaches progressMax), logs a journal entry so the fill isn't a silent
+  /// dead dial — the fill→fire→journal closure ported from the retired
+  /// standalone Tracks pane. Fires exactly once, on the crossing: a further
+  /// tap while already at max does not requalify (guarded by [before]).
+  Future<void> _incrementProgress(
+      BuildContext context, WidgetRef ref, Thread t) async {
+    final before = t.progress;
+    final notifier = ref.read(threadsProvider.notifier);
+    await notifier.setProgress(t.id, t.progress + 1);
+    if (before >= t.progressMax) return;
+    final updated = (await ref.read(threadsProvider.future))
+        .where((th) => th.id == t.id)
+        .firstOrNull;
+    if (updated == null ||
+        updated.progressMax <= 0 ||
+        updated.progress < updated.progressMax) {
+      return;
+    }
+    await ref.read(journalProvider.notifier).add(
+          'Clock filled: ${updated.title}',
+          '${updated.title} reached ${updated.progressMax}/${updated.progressMax}.',
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Clock filled: ${updated.title}')));
+    }
+  }
+
   /// Ported from the retired Tasks subtab: name → tally-preset picker →
   /// a thread carrying that tally (a "task").
   Future<void> _newTask(BuildContext context, WidgetRef ref) async {
@@ -455,10 +483,10 @@ class _ThreadsPaneState extends ConsumerState<ThreadsPane> {
       context: context,
       builder: (_) => _EditDialog(
         heading: existing != null
-            ? 'Edit Thread'
+            ? 'Edit thread'
             : stage == ThreadStage.rumor
                 ? 'New rumor'
-                : 'New Thread',
+                : 'New thread',
         labelA: 'Title',
         labelB: 'Note (optional)',
         initialA: existing?.title ?? '',
