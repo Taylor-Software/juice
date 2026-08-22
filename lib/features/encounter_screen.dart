@@ -10,11 +10,25 @@ import '../state/providers.dart';
 import 'inspire.dart';
 import 'quick_ref_view.dart';
 
+/// Track → Encounter mount. All rendering lives in [EncounterPane].
+class EncounterScreen extends StatelessWidget {
+  const EncounterScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const EncounterPane();
+}
+
+/// The one combat surface. Full mode (default) is the Track → Encounter
+/// manager; [compact] renders the Run dashboard glance (Task 2).
+///
 /// Initiative tracker: combatants from character sheets (live first-track
 /// link) or ad-hoc, turn pointer + round counter, statuses/defeated, and an
 /// end-of-encounter summary into the journal.
-class EncounterScreen extends ConsumerWidget {
-  const EncounterScreen({super.key});
+class EncounterPane extends ConsumerWidget {
+  const EncounterPane({super.key, this.compact = false});
+
+  /// Compact = read-and-act glance: rows + next turn + roll-all only.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
