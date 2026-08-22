@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:loreseer/engine/models.dart';
 import 'package:loreseer/features/encounter_screen.dart';
 import 'package:loreseer/shared/destination.dart';
 import 'package:loreseer/shared/shell_route.dart';
