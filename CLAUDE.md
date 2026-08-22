@@ -19,6 +19,15 @@ Working rules for this repo:
 
 ## Project notes
 
+- **Combat merge (2026-08-22, consolidation epic sub-project 2)** — ONE
+  combat widget: `EncounterPane({compact})` in `encounter_screen.dart`
+  renders both the full Track → Encounter manager (`EncounterScreen` is now
+  a thin mount) and the Run dashboard glance (`_InitiativeSlot` wraps
+  `EncounterPane(compact: true)`; the old `_InitiativePanel` is deleted).
+  Compact keeps the historical `run-init-*` keys + a `run-init-open-full`
+  jump to Track → Encounter and shows no manager affordances. Pure widget
+  merge — no model/persistence change. See
+  `docs/superpowers/specs/2026-08-22-combat-merge-design.md`.
 - **Tracking merge (2026-08-22, consolidation epic sub-project 1)** —
   Threads, Tracks, and Rumors are ONE entity: `Thread` carries `ThreadStage
   {rumor, active, done}` (JSON `stage`, omitted at active; legacy
