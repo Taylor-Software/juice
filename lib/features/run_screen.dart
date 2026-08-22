@@ -43,7 +43,7 @@ class RunScreen extends ConsumerWidget {
         const quickref = _QuickRefPanel();
         const party = _PartyPanel();
         const scene = _ScenePanel();
-        const threads = _ThreadsRumorsPanel();
+        const threads = _ThreadsPanel();
         const dice = _DiceOraclePanel();
         const capture = _CapturePanel();
         const reference = _ReferencePanel();
@@ -493,20 +493,17 @@ class _ScenePanel extends ConsumerWidget {
   }
 }
 
-/// Read-only glance at the live plot: open threads (+ unresolved rumors in GM
-/// mode). Tapping a row jumps to the matching Track subtab.
-class _ThreadsRumorsPanel extends ConsumerWidget {
-  const _ThreadsRumorsPanel();
+/// Read-only glance at the live plot: active threads plus unconfirmed
+/// rumors. Tapping a row jumps to the matching Track subtab.
+class _ThreadsPanel extends ConsumerWidget {
+  const _ThreadsPanel();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final threads = (ref.watch(threadsProvider).valueOrNull ?? const <Thread>[])
-        .where((t) => t.open)
-        .toList();
-    final rumors = (ref.watch(rumorsProvider).valueOrNull ?? const <Rumor>[])
-        .where((r) => !r.resolved)
-        .toList();
+    final all = ref.watch(threadsProvider).valueOrNull ?? const <Thread>[];
+    final threads = all.where((t) => t.stage == ThreadStage.active).toList();
+    final rumors = all.where((t) => t.stage == ThreadStage.rumor).toList();
     final nav = ref.read(shellRouteProvider.notifier);
 
     if (threads.isEmpty && rumors.isEmpty) {
@@ -548,10 +545,10 @@ class _ThreadsRumorsPanel extends ConsumerWidget {
             for (final r in rumors.take(5))
               InkWell(
                 key: Key('run-rumor-${r.id}'),
-                onTap: () => nav.goTo(Destination.track, subtab: 'rumors'),
+                onTap: () => nav.goTo(Destination.track, subtab: 'threads'),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Text(r.text, style: theme.textTheme.bodySmall),
+                  child: Text(r.title, style: theme.textTheme.bodySmall),
                 ),
               ),
           ],

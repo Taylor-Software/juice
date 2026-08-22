@@ -34,7 +34,6 @@ Map<String, Object> _prefs({
   String? crawlJson,
   String? contextJson,
   String? threadsJson,
-  String? rumorsJson,
 }) =>
     {
       'loreseer.sessions.v1':
@@ -45,7 +44,6 @@ Map<String, Object> _prefs({
       if (crawlJson != null) 'loreseer.crawl.v1.$_sid': crawlJson,
       if (contextJson != null) 'loreseer.context.v1.$_sid': contextJson,
       if (threadsJson != null) 'loreseer.threads.v1.$_sid': threadsJson,
-      if (rumorsJson != null) 'loreseer.rumors.v1.$_sid': rumorsJson,
     };
 
 Future<ProviderContainer> _pump(
@@ -260,19 +258,28 @@ void main() {
     expect(sceneN.dy, greaterThan(initN.dy));
   });
 
-  testWidgets('threads panel: shows open threads and unresolved rumors; routes',
+  testWidgets(
+      'threads panel: shows active threads and rumor-stage threads; routes',
       (tester) async {
-    const threads =
-        '[{"id":"t1","title":"Find the Relic","open":true,"pinned":false,"progress":3,"progressMax":8}]';
-    const rumors = '[{"id":"r1","text":"The mayor lies","resolved":false}]';
-    final c = await _pump(
-        tester, data, _prefs(threadsJson: threads, rumorsJson: rumors));
+    const threads = '['
+        '{"id":"t1","title":"Find the Relic","stage":"active","pinned":false,"progress":3,"progressMax":8},'
+        '{"id":"r1","title":"The mayor lies","stage":"rumor"}'
+        ']';
+    final c = await _pump(tester, data, _prefs(threadsJson: threads));
     expect(find.byKey(const Key('run-thread-t1')), findsOneWidget);
     expect(find.text('Find the Relic'), findsOneWidget);
-    // Rumors show without any mode gate (solo-only).
+    // Rumor-stage threads render under the RUMORS header.
     expect(find.byKey(const Key('run-rumor-r1')), findsOneWidget);
+    expect(find.text('The mayor lies'), findsOneWidget);
+    expect(find.text('RUMORS'), findsOneWidget);
     // Tap a thread → routes to Track/threads.
     await tester.tap(find.byKey(const Key('run-thread-t1')));
+    await tester.pumpAndSettle();
+    expect(c.read(shellRouteProvider).destination, Destination.track);
+    expect(c.read(shellRouteProvider).subtab, 'threads');
+
+    // Tap a rumor → also routes to Track/threads (unified subtab).
+    await tester.tap(find.byKey(const Key('run-rumor-r1')));
     await tester.pumpAndSettle();
     expect(c.read(shellRouteProvider).destination, Destination.track);
     expect(c.read(shellRouteProvider).subtab, 'threads');
