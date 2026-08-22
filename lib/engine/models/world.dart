@@ -81,42 +81,6 @@ class InvItem {
       );
 }
 
-/// A rumor: something heard but not yet confirmed. Distinct from a thread —
-/// a rumor resolves true or false, a thread progresses.
-class Rumor {
-  const Rumor({
-    required this.id,
-    required this.text,
-    this.resolved = false,
-    this.note = '',
-  });
-  final String id;
-  final String text;
-  final bool resolved;
-  final String note;
-
-  Rumor copyWith({String? text, bool? resolved, String? note}) => Rumor(
-        id: id,
-        text: text ?? this.text,
-        resolved: resolved ?? this.resolved,
-        note: note ?? this.note,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'text': text,
-        if (resolved) 'resolved': true,
-        if (note.isNotEmpty) 'note': note,
-      };
-
-  factory Rumor.fromJson(Map<String, dynamic> j) => Rumor(
-        id: j['id'] as String,
-        text: j['text'] as String,
-        resolved: (j['resolved'] as bool?) ?? false,
-        note: (j['note'] as String?) ?? '',
-      );
-}
-
 /// Kind of a tracked [Place] (a named world location, distinct from the map's
 /// coordinate cells — a Place may pin to one via [Place.location] but need not).
 enum PlaceKind { settlement, dungeon, wilderness, landmark, other }
@@ -130,7 +94,7 @@ PlaceKind _placeKindFromName(String? n) => switch (n) {
     };
 
 /// A named place in the world the party knows about — the Places tracker's
-/// entity (session-scoped, like [Thread]/[Rumor]). Optionally pinned to a map
+/// entity (session-scoped, like [Thread]). Optionally pinned to a map
 /// cell via [location] so journal entries logged there back-link to it.
 class Place {
   const Place({
@@ -286,47 +250,6 @@ class Npc {
             .map(NpcRelation.maybeFromJson)
             .whereType<NpcRelation>()
             .toList(),
-      );
-}
-
-/// A generic filled/max progress track — the system-agnostic clock behind
-/// the Tracks pane.
-class Track {
-  const Track({
-    required this.id,
-    required this.name,
-    this.filled = 0,
-    this.max = 10,
-    this.note = '',
-  });
-  final String id;
-  final String name;
-  final int filled;
-  final int max;
-  final String note;
-
-  Track copyWith({String? name, int? filled, int? max, String? note}) => Track(
-        id: id,
-        name: name ?? this.name,
-        filled: filled ?? this.filled,
-        max: max ?? this.max,
-        note: note ?? this.note,
-      );
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'filled': filled,
-        'max': max,
-        if (note.isNotEmpty) 'note': note,
-      };
-
-  factory Track.fromJson(Map<String, dynamic> j) => Track(
-        id: j['id'] as String,
-        name: j['name'] as String,
-        filled: (j['filled'] as int?) ?? 0,
-        max: (j['max'] as int?) ?? 10,
-        note: (j['note'] as String?) ?? '',
       );
 }
 

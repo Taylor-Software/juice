@@ -19,6 +19,18 @@ Working rules for this repo:
 
 ## Project notes
 
+- **Tracking merge (2026-08-22, consolidation epic sub-project 1)** —
+  Threads, Tracks, and Rumors are ONE entity: `Thread` carries `ThreadStage
+  {rumor, active, done}` (JSON `stage`, omitted at active; legacy
+  `open:false` reads as done; `open` is now a derived getter). `Rumor`/
+  `Track` models, `rumorsProvider`/`tracksProvider`, `RumorsPane`/
+  `TracksPane`, and the `loreseer.rumors.v1`/`loreseer.tracks.v1` keys are
+  DELETED (fresh start, no data migration). Unified `ThreadsPane`: stage
+  filter chips, `rumor-new`, `thread-confirm-<id>` promotion; legacy
+  `rumors`/`tracks` subtab routes alias to `threads`. Lonelog
+  `[Track:name n/m]` now maps to clock threads (export emits it from
+  `progress > 0`, import merges by title). See
+  `docs/superpowers/specs/2026-08-22-tracking-merge-design.md`.
 - **Unified inspiration catalog (2026-08-13, PR 3 of the streamline epic)** —
   one browsable catalog over three sources: flavor generators + bundled
   starter tables + My Tables. Pure `lib/engine/inspiration_catalog.dart`

@@ -168,42 +168,6 @@ void main() {
       expect(decoded['data'], contains('loreseer.journal.v2'));
     });
 
-    test('rumors round-trip through campaign files', () {
-      const rumors = '[{"id":"r1","text":"North gate","resolved":true}]';
-      final out = encodeCampaign(
-        name: 'C1',
-        savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'loreseer.rumors.v1': rumors},
-      );
-      final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('loreseer.rumors.v1'));
-      final back = (jsonDecode(parsed.rawByKey['loreseer.rumors.v1']!) as List)
-          .cast<Map<String, dynamic>>()
-          .map(Rumor.fromJson)
-          .single;
-      expect(back.text, 'North gate');
-      expect(back.resolved, isTrue);
-    });
-
-    test('tracks round-trip through campaign files', () {
-      const tracks =
-          '[{"id":"tr1","name":"Find the heir","filled":3,"max":10}]';
-      final out = encodeCampaign(
-        name: 'C1',
-        savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'loreseer.tracks.v1': tracks},
-      );
-      final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('loreseer.tracks.v1'));
-      final back = (jsonDecode(parsed.rawByKey['loreseer.tracks.v1']!) as List)
-          .cast<Map<String, dynamic>>()
-          .map(Track.fromJson)
-          .single;
-      expect(back.name, 'Find the heir');
-      expect(back.filled, 3);
-      expect(back.max, 10);
-    });
-
     test('v2 file without rumors key imports fine', () {
       final v2 = jsonEncode({
         'app': 'loreseer',
