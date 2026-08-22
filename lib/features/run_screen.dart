@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../engine/dice_notation.dart';
 import '../engine/models.dart';
 import '../engine/oracle.dart';
+import 'encounter_screen.dart';
 import 'inspire.dart';
 import 'quick_ref_view.dart';
 import 'reference_view.dart';
-import 'sheet_widgets.dart';
 import '../shared/destination.dart';
 import '../shared/shell_route.dart';
 import '../state/play_context.dart';
@@ -39,7 +39,7 @@ class RunScreen extends ConsumerWidget {
       key: const Key('run-screen'),
       builder: (context, c) {
         final wide = c.maxWidth >= kRunWideBreakpoint;
-        const initiative = _InitiativePanel();
+        const initiative = _InitiativeSlot();
         const quickref = _QuickRefPanel();
         const party = _PartyPanel();
         const scene = _ScenePanel();
@@ -166,108 +166,19 @@ class _FoldingPanel extends StatelessWidget {
   }
 }
 
-class _InitiativePanel extends ConsumerWidget {
-  const _InitiativePanel();
+/// Initiative slot: Run-side chrome around the shared [EncounterPane]
+/// glance. The pane owns rendering; this owns the panel card + title.
+class _InitiativeSlot extends ConsumerWidget {
+  const _InitiativeSlot();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final enc =
         ref.watch(encounterProvider).valueOrNull ?? const EncounterState();
-    final notifier = ref.read(encounterProvider.notifier);
-    final rows = <Widget>[];
-    for (var i = 0; i < enc.combatants.length; i++) {
-      final c = enc.combatants[i];
-      final current = i == enc.turnIndex;
-      rows.add(InkWell(
-        key: Key('run-init-row-${c.id}'),
-        onTap: (c.statBlock != null && !c.statBlock!.isEmpty)
-            ? () => _showStatBlock(context, c)
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(children: [
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: current
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              child:
-                  Text('${c.initiative}', style: theme.textTheme.labelMedium),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(c.name,
-                  style: c.defeated
-                      ? const TextStyle(decoration: TextDecoration.lineThrough)
-                      : (current
-                          ? TextStyle(color: theme.colorScheme.primary)
-                          : null)),
-            ),
-            if (c.track != null)
-              Text('${c.track!.current}/${c.track!.max}',
-                  style: theme.textTheme.bodySmall),
-          ]),
-        ),
-      ));
-    }
-
     return _Panel(
       k: const Key('run-panel-initiative'),
       title: 'Initiative · Round ${enc.round}',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (enc.combatants.isEmpty)
-            Text('No encounter yet.',
-                key: const Key('run-init-empty'), style: _dimStyle(context))
-          else
-            ...rows,
-          const SizedBox(height: 8),
-          Row(children: [
-            Flexible(
-              child: FilledButton.tonal(
-                key: const Key('run-init-next'),
-                onPressed:
-                    enc.combatants.isEmpty ? null : () => notifier.nextTurn(),
-                child: const Text('Next turn'),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: OutlinedButton(
-                key: const Key('run-init-roll-all'),
-                onPressed: enc.combatants.isEmpty
-                    ? null
-                    : () => notifier.rollInitiativeForAll(),
-                child: const Text('Roll all init'),
-              ),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  void _showStatBlock(BuildContext context, Combatant c) {
-    showDialog<void>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(c.name),
-        content: SingleChildScrollView(
-          child: StatBlockView(
-            block: c.statBlock!,
-            curHp: c.track?.current,
-            maxHp: c.track?.max,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      child: const EncounterPane(compact: true),
     );
   }
 }

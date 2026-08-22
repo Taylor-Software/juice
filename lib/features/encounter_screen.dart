@@ -5,34 +5,166 @@ import '../engine/combat.dart';
 import '../engine/dice_notation.dart';
 import '../engine/lonelog_combat.dart';
 import '../engine/models.dart';
+import '../shared/destination.dart';
+import '../shared/shell_route.dart';
 import '../shared/tag_dialog.dart';
 import '../state/providers.dart';
 import 'inspire.dart';
 import 'quick_ref_view.dart';
+import 'sheet_widgets.dart';
 
+/// Track → Encounter mount. All rendering lives in [EncounterPane].
+class EncounterScreen extends StatelessWidget {
+  const EncounterScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const EncounterPane();
+}
+
+/// The one combat surface. Full mode (default) is the Track → Encounter
+/// manager; [compact] renders the Run dashboard glance.
+///
 /// Initiative tracker: combatants from character sheets (live first-track
 /// link) or ad-hoc, turn pointer + round counter, statuses/defeated, and an
 /// end-of-encounter summary into the journal.
-class EncounterScreen extends ConsumerWidget {
-  const EncounterScreen({super.key});
+class EncounterPane extends ConsumerWidget {
+  const EncounterPane({super.key, this.compact = false});
+
+  /// Compact = read-and-act glance: rows + next turn + roll-all only.
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(encounterProvider);
-    final chars =
-        ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
     return async.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('Error: $e')),
-      data: (s) => Column(
-        children: [
-          _header(context, ref, s),
-          Expanded(
-            child: s.combatants.isEmpty
-                ? _empty(context)
-                : _list(context, ref, s, chars),
+      data: (s) => compact
+          ? _compact(context, ref, s)
+          : Column(
+              children: [
+                _header(context, ref, s),
+                Expanded(
+                  child: s.combatants.isEmpty
+                      ? _empty(context)
+                      : _list(
+                          context,
+                          ref,
+                          s,
+                          ref.watch(charactersProvider).valueOrNull ??
+                              const <Character>[],
+                        ),
+                ),
+                _addButtons(context, ref),
+              ],
+            ),
+    );
+  }
+
+  /// Run-dashboard glance: rows + next-turn/roll-all + open-full link.
+  /// Emits the historical run-init-* keys so Run tests and muscle memory
+  /// survive the merge. No Card surface — the host panel supplies chrome.
+  Widget _compact(BuildContext context, WidgetRef ref, EncounterState s) {
+    final theme = Theme.of(context);
+    final notifier = ref.read(encounterProvider.notifier);
+    final rows = <Widget>[];
+    for (var i = 0; i < s.combatants.length; i++) {
+      final c = s.combatants[i];
+      final current = i == s.turnIndex;
+      rows.add(InkWell(
+        key: Key('run-init-row-${c.id}'),
+        onTap: (c.statBlock != null && !c.statBlock!.isEmpty)
+            ? () => _showCompactStatBlock(context, c)
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: current
+                  ? theme.colorScheme.primaryContainer
+                  : theme.colorScheme.surfaceContainerHighest,
+              child:
+                  Text('${c.initiative}', style: theme.textTheme.labelMedium),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(c.name,
+                  style: c.defeated
+                      ? const TextStyle(decoration: TextDecoration.lineThrough)
+                      : (current
+                          ? TextStyle(color: theme.colorScheme.primary)
+                          : null)),
+            ),
+            if (c.track != null)
+              Text('${c.track!.current}/${c.track!.max}',
+                  style: theme.textTheme.bodySmall),
+          ]),
+        ),
+      ));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (s.combatants.isEmpty)
+          Text('No encounter yet.',
+              key: const Key('run-init-empty'),
+              style: TextStyle(color: Theme.of(context).colorScheme.outline))
+        else
+          ...rows,
+        const SizedBox(height: 8),
+        Row(children: [
+          Flexible(
+            child: FilledButton.tonal(
+              key: const Key('run-init-next'),
+              onPressed:
+                  s.combatants.isEmpty ? null : () => notifier.nextTurn(),
+              child: const Text('Next turn'),
+            ),
           ),
-          _addButtons(context, ref),
+          const SizedBox(width: 8),
+          Flexible(
+            child: OutlinedButton(
+              key: const Key('run-init-roll-all'),
+              onPressed: s.combatants.isEmpty
+                  ? null
+                  : () => notifier.rollInitiativeForAll(),
+              child: const Text('Roll all init'),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: TextButton(
+              key: const Key('run-init-open-full'),
+              onPressed: () => ref
+                  .read(shellRouteProvider.notifier)
+                  .goTo(Destination.track, subtab: 'encounter'),
+              child: const Text('Open encounter'),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  void _showCompactStatBlock(BuildContext context, Combatant c) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(c.name),
+        content: SingleChildScrollView(
+          child: StatBlockView(
+            block: c.statBlock!,
+            curHp: c.track?.current,
+            maxHp: c.track?.max,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
         ],
       ),
     );
