@@ -377,16 +377,19 @@ class ThreadNotifier extends _PersistedList<Thread> {
   @override
   Map<String, dynamic> toJsonMap(Thread item) => item.toJson();
 
-  Future<void> add(String title) async {
+  Future<void> add(String title,
+      {ThreadStage stage = ThreadStage.active}) async {
     await _persist([
-      Thread(id: _newId(), title: title),
+      Thread(id: _newId(), title: title, stage: stage),
       ...await _ready,
     ]);
   }
 
-  Future<String> addReturningId(String title) async {
+  Future<String> addReturningId(String title,
+      {ThreadStage stage = ThreadStage.active}) async {
     final id = _newId();
-    await _persist([Thread(id: id, title: title), ...await _ready]);
+    await _persist(
+        [Thread(id: id, title: title, stage: stage), ...await _ready]);
     return id;
   }
 
@@ -415,6 +418,13 @@ class ThreadNotifier extends _PersistedList<Thread> {
       for (final t in await _ready)
         if (t.id == id) t.copyWith(pinned: !t.pinned) else t,
     ]);
+  }
+
+  /// Moves thread [id] to [stage] (rumor confirmation, completion, reopen).
+  Future<void> setStage(String id, ThreadStage stage) async {
+    final thread = (await _ready).where((t) => t.id == id).firstOrNull;
+    if (thread == null) return;
+    await replace(thread.copyWith(stage: stage));
   }
 
   /// Sets the numeric progress clock for thread [id], clamped to
