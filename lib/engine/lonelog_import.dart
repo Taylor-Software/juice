@@ -159,7 +159,7 @@ void _parseTag(String line, List<Thread> threads, List<Character> characters,
     threads.add(Thread(
       id: 'll-thread-${threads.length}',
       title: th.group(1)!.trim(),
-      open: th.group(2) == 'Open',
+      stage: th.group(2) == 'Open' ? ThreadStage.active : ThreadStage.done,
     ));
     return;
   }

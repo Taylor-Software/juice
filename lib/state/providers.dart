@@ -400,7 +400,13 @@ class ThreadNotifier extends _PersistedList<Thread> {
   Future<void> toggleOpen(String id) async {
     await _persist([
       for (final t in await _ready)
-        if (t.id == id) t.copyWith(open: !t.open) else t,
+        if (t.id == id)
+          t.copyWith(
+              stage: t.stage == ThreadStage.done
+                  ? ThreadStage.active
+                  : ThreadStage.done)
+        else
+          t,
     ]);
   }
 
