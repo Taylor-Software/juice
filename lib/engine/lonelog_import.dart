@@ -13,7 +13,6 @@ class LonelogImport {
     required this.tone,
     required this.threads,
     required this.characters,
-    required this.tracks,
     required this.entries,
   });
   final String campaignName;
@@ -21,7 +20,6 @@ class LonelogImport {
   final String tone;
   final List<Thread> threads;
   final List<Character> characters;
-  final List<Track> tracks;
   final List<JournalEntry> entries; // newest-first (loreseer convention)
 }
 
@@ -64,7 +62,6 @@ LonelogImport parseLonelog(String md, {required DateTime importedAt}) {
 
   final threads = <Thread>[];
   final characters = <Character>[];
-  final tracks = <Track>[];
   final entries = <JournalEntry>[];
   final beat = <String>[];
   var inState = false;
@@ -99,7 +96,7 @@ LonelogImport parseLonelog(String md, {required DateTime importedAt}) {
       continue;
     }
     if (inState) {
-      _parseTag(line, threads, characters, tracks);
+      _parseTag(line, threads, characters);
       i++;
       continue;
     }
@@ -147,30 +144,36 @@ LonelogImport parseLonelog(String md, {required DateTime importedAt}) {
     tone: tone,
     threads: threads,
     characters: characters,
-    tracks: tracks,
     entries: entries.reversed.toList(), // newest-first
   );
 }
 
-void _parseTag(String line, List<Thread> threads, List<Character> characters,
-    List<Track> tracks) {
+void _parseTag(String line, List<Thread> threads, List<Character> characters) {
   final th = _threadRe.firstMatch(line);
   if (th != null) {
     threads.add(Thread(
       id: 'll-thread-${threads.length}',
       title: th.group(1)!.trim(),
-      open: th.group(2) == 'Open',
+      stage: th.group(2) == 'Open' ? ThreadStage.active : ThreadStage.done,
     ));
     return;
   }
   final tr = _trackRe.firstMatch(line);
   if (tr != null) {
-    tracks.add(Track(
-      id: 'll-track-${tracks.length}',
-      name: tr.group(1)!.trim(),
-      filled: int.parse(tr.group(2)!),
-      max: int.parse(tr.group(3)!),
-    ));
+    final name = tr.group(1)!.trim();
+    final filled = int.parse(tr.group(2)!);
+    final max = int.parse(tr.group(3)!);
+    final i = threads.indexWhere((t) => t.title == name);
+    if (i >= 0) {
+      threads[i] = threads[i].copyWith(progress: filled, progressMax: max);
+    } else {
+      threads.add(Thread(
+        id: 'll-track-${threads.length}',
+        title: name,
+        progress: filled,
+        progressMax: max,
+      ));
+    }
     return;
   }
   final n = _npcRe.firstMatch(line);

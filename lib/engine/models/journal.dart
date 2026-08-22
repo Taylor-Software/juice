@@ -187,13 +187,31 @@ class JournalEntry {
       );
 }
 
+/// Lifecycle stage of a tracked thread. A rumor is an unconfirmed lead
+/// (the old Rumor entity); active is a live storyline or clock (the old
+/// Thread/Track); done is finished either way.
+enum ThreadStage { rumor, active, done }
+
+ThreadStage _threadStageFromJson(Map<String, dynamic> j) {
+  switch (j['stage']) {
+    case 'rumor':
+      return ThreadStage.rumor;
+    case 'done':
+      return ThreadStage.done;
+    case 'active':
+      return ThreadStage.active;
+  }
+  // Legacy shape: an explicit open:false was a closed thread.
+  return (j['open'] as bool?) == false ? ThreadStage.done : ThreadStage.active;
+}
+
 /// Persisted thread (Mythic-style "thread"/vow the player tracks).
 class Thread {
   Thread({
     required this.id,
     required this.title,
     this.note = '',
-    this.open = true,
+    this.stage = ThreadStage.active,
     this.pinned = false,
     int progress = 0,
     int progressMax = 10,
@@ -203,7 +221,10 @@ class Thread {
   final String id;
   final String title;
   final String note;
-  final bool open;
+  final ThreadStage stage;
+
+  /// Derived: true while the thread is not finished (rumor or active).
+  bool get open => stage != ThreadStage.done;
   final bool pinned;
 
   /// Numeric progress clock (n/[progressMax]); always clamped into 0..max.
@@ -219,7 +240,7 @@ class Thread {
   Thread copyWith({
     String? title,
     String? note,
-    bool? open,
+    ThreadStage? stage,
     bool? pinned,
     int? progress,
     int? progressMax,
@@ -230,7 +251,7 @@ class Thread {
         id: id,
         title: title ?? this.title,
         note: note ?? this.note,
-        open: open ?? this.open,
+        stage: stage ?? this.stage,
         pinned: pinned ?? this.pinned,
         progress: progress ?? this.progress,
         progressMax: progressMax ?? this.progressMax,
@@ -241,7 +262,7 @@ class Thread {
         'id': id,
         'title': title,
         'note': note,
-        'open': open,
+        if (stage != ThreadStage.active) 'stage': stage.name,
         if (pinned) 'pinned': true,
         if (progress > 0) 'progress': progress,
         if (progressMax != 10) 'progressMax': progressMax,
@@ -252,7 +273,7 @@ class Thread {
         id: j['id'] as String,
         title: j['title'] as String,
         note: (j['note'] as String?) ?? '',
-        open: (j['open'] as bool?) ?? true,
+        stage: _threadStageFromJson(j),
         pinned: (j['pinned'] as bool?) ?? false,
         progress: (j['progress'] as int?) ?? 0,
         progressMax: (j['progressMax'] as int?) ?? 10,

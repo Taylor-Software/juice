@@ -13,7 +13,6 @@ String campaignToLonelog({
   String tone = '',
   required List<Thread> threads,
   required List<Character> characters,
-  required List<Track> tracks,
   required List<JournalEntry> entriesNewestFirst,
   required Map<String, String> threadTitles,
   required DateTime exportedAt,
@@ -37,8 +36,8 @@ String campaignToLonelog({
     final name = _tag(c.name);
     buf.writeln(tags.isEmpty ? '[N:$name]' : '[N:$name|$tags]');
   }
-  for (final k in tracks) {
-    buf.writeln('[Track:${_tag(k.name)} ${k.filled}/${k.max}]');
+  for (final t in threads.where((t) => t.progress > 0)) {
+    buf.writeln('[Track:${_tag(t.title)} ${t.progress}/${t.progressMax}]');
   }
   buf
     ..writeln('[/STATE]')

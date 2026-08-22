@@ -8,11 +8,9 @@ import 'battle_pane.dart';
 import 'encounter_screen.dart';
 import 'party_tools_pane.dart';
 import 'resources_pane.dart';
-import 'rumors_pane.dart';
 import 'scenes_pane.dart';
 import 'track_home_pane.dart';
 import 'tracker_screen.dart';
-import 'tracks_pane.dart';
 import 'world_pane.dart';
 
 class TrackingTab extends ConsumerWidget {
@@ -23,22 +21,21 @@ class TrackingTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lonelog = systems.contains('lonelog');
     final party = systems.contains('party');
-    const rumors = true;
     final partyTools = party;
     return SubtabHost(
       destination: Destination.track,
       scrollable: true,
       // Consolidated (was 11+ same-weight tabs): a task IS a thread with a
       // tally, so Tasks routes into Threads; People + Places share the World
-      // pane. Legacy subtab keys keep working via SubtabDef aliases.
+      // pane; Rumors + Tracks are threads with a stage, so they route into
+      // Threads too. Legacy subtab keys keep working via SubtabDef aliases.
       tabs: [
         const SubtabDef('home', 'Home'),
         const SubtabDef('scenes', 'Scenes'),
-        const SubtabDef('threads', 'Threads', aliases: ['tasks']),
+        const SubtabDef('threads', 'Threads',
+            aliases: ['tasks', 'rumors', 'tracks']),
         const SubtabDef('world', 'World', aliases: ['people', 'places']),
         const SubtabDef('encounter', 'Encounter'),
-        if (rumors) const SubtabDef('rumors', 'Rumors'),
-        const SubtabDef('tracks', 'Tracks'),
         // One party paradigm renders per SessionMeta.partyTool (Emulator /
         // Behavior / Sidekick are mutually exclusive, not stacked). The
         // aliases only keep legacy routes ('emulator'/'sidekick'/'behavior')
@@ -55,8 +52,6 @@ class TrackingTab extends ConsumerWidget {
         const ThreadsPane(),
         const WorldPane(),
         const EncounterScreen(),
-        if (rumors) const RumorsPane(),
-        const TracksPane(),
         if (partyTools) const PartyToolsPane(),
         if (lonelog) const ResourcesPane(),
         if (lonelog) const BattlePane(),

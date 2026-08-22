@@ -70,7 +70,7 @@ void main() {
       final scene = entry('s1', 'The Vault', '', kind: JournalKind.scene);
       final threads = [
         Thread(id: 't1', title: 'Find the Relic'),
-        Thread(id: 't2', title: 'Escape the keep', open: false),
+        Thread(id: 't2', title: 'Escape the keep', stage: ThreadStage.done),
       ];
       // Storage is newest-first; recap should read most-recent few.
       final entries = [

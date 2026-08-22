@@ -101,10 +101,6 @@ CampaignImport parseCampaign(String raw) {
         EncounterState.fromJson(value as Map<String, dynamic>);
       } else if (key == 'loreseer.map.v1') {
         MapState.fromJson(value as Map<String, dynamic>);
-      } else if (key == 'loreseer.rumors.v1') {
-        (value as List)
-            .map((e) => Rumor.fromJson(e as Map<String, dynamic>))
-            .toList();
       } else if (key == 'loreseer.places.v1') {
         (value as List)
             .map((e) => Place.fromJson(e as Map<String, dynamic>))
@@ -112,10 +108,6 @@ CampaignImport parseCampaign(String raw) {
       } else if (key == 'loreseer.npcs.v1') {
         (value as List)
             .map((e) => Npc.fromJson(e as Map<String, dynamic>))
-            .toList();
-      } else if (key == 'loreseer.tracks.v1') {
-        (value as List)
-            .map((e) => Track.fromJson(e as Map<String, dynamic>))
             .toList();
       } else if (key == 'loreseer.inventory.v1') {
         (value as List)

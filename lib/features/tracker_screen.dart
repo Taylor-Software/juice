@@ -72,11 +72,19 @@ Future<void> _showThreadEntries(
   );
 }
 
-class ThreadsPane extends ConsumerWidget {
+class ThreadsPane extends ConsumerStatefulWidget {
   const ThreadsPane({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ThreadsPane> createState() => _ThreadsPaneState();
+}
+
+class _ThreadsPaneState extends ConsumerState<ThreadsPane> {
+  /// Stage filter chip selection; null = All. View-only, not persisted.
+  ThreadStage? _filter;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final journal =
         ref.watch(journalProvider).valueOrNull ?? const <JournalEntry>[];
@@ -86,10 +94,13 @@ class ThreadsPane extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error: $e')),
         data: (threads) {
-          if (threads.isEmpty) {
-            return const _Empty(
-                'No threads yet. Track quests, vows, mysteries.');
-          }
+          // The header (New rumor / New task) + filter chips must stay
+          // reachable even with zero threads, so there is no whole-pane
+          // early return any more — an empty `shown` list renders a
+          // centered message in the list area instead.
+          final shown = _filter == null
+              ? threads
+              : threads.where((t) => t.stage == _filter).toList();
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -98,6 +109,19 @@ class ThreadsPane extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
+                    // Rumor create sits alongside task create: a rumor is an
+                    // unconfirmed lead (stage rumor), a task an active thread
+                    // with a tally.
+                    FilledButton.tonalIcon(
+                      key: const Key('rumor-new'),
+                      style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 40)),
+                      icon: const Icon(Icons.hearing_outlined),
+                      label: const Text('New rumor'),
+                      onPressed: () => _editThread(context, ref, null,
+                          stage: ThreadStage.rumor),
+                    ),
+                    const SizedBox(width: 8),
                     // Tasks live here now (a task IS a thread with a tally;
                     // the standalone Tasks subtab was folded in).
                     FilledButton.tonalIcon(
@@ -113,155 +137,212 @@ class ThreadsPane extends ConsumerWidget {
                   ],
                 ),
               ),
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(12),
-                  itemCount: threads.length,
-                  itemBuilder: (context, i) {
-                    final t = threads[i];
-                    final tk = context.lore;
-                    return Card(
-                      child: ListTile(
-                        isThreeLine: true,
-                        leading: Checkbox(
-                          value: !t.open,
-                          onChanged: (_) => ref
-                              .read(threadsProvider.notifier)
-                              .toggleOpen(t.id),
-                        ),
-                        title: Text(
-                          t.title,
-                          style: t.open
-                              ? null
-                              : TextStyle(
-                                  decoration: TextDecoration.lineThrough,
-                                  color: theme.colorScheme.onSurfaceVariant),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (t.note.isNotEmpty) Text(t.note),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                IconButton(
-                                  key: Key('thread-prog-dec-${t.id}'),
-                                  visualDensity: VisualDensity.compact,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                      minWidth: 32, minHeight: 32),
-                                  icon: const Icon(Icons.remove, size: 18),
-                                  tooltip: 'Less progress',
-                                  onPressed: () => ref
-                                      .read(threadsProvider.notifier)
-                                      .setProgress(t.id, t.progress - 1),
-                                ),
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(3),
-                                    child: LinearProgressIndicator(
-                                      value: t.progressMax <= 0
-                                          ? 0.0
-                                          : (t.progress / t.progressMax)
-                                              .clamp(0.0, 1.0),
-                                      minHeight: 5,
-                                      backgroundColor: tk.hairline,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          tk.terracotta),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  key: Key('thread-prog-inc-${t.id}'),
-                                  visualDensity: VisualDensity.compact,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(
-                                      minWidth: 32, minHeight: 32),
-                                  icon: const Icon(Icons.add, size: 18),
-                                  tooltip: 'More progress',
-                                  onPressed: () => ref
-                                      .read(threadsProvider.notifier)
-                                      .setProgress(t.id, t.progress + 1),
-                                ),
-                                const SizedBox(width: 4),
-                                Text('${t.progress}/${t.progressMax}',
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: tk.inkMuted)),
-                              ],
-                            ),
-                            ThreadTallyRow(t),
-                            Builder(builder: (ctx) {
-                              final linked = journal
-                                  .where((e) => e.threadId == t.id)
-                                  .toList();
-                              if (linked.isEmpty) {
-                                return const SizedBox.shrink();
-                              }
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: ActionChip(
-                                  key: Key('thread-entries-${t.id}'),
-                                  avatar: const Icon(Icons.link, size: 14),
-                                  label: Text(
-                                      '${linked.length} entr${linked.length == 1 ? 'y' : 'ies'}'),
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () =>
-                                      _showThreadEntries(ctx, t, linked),
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (ref.watch(aiReadyProvider))
-                              IconButton(
-                                key: Key('flesh-out-thread-${t.id}'),
-                                visualDensity: VisualDensity.compact,
-                                icon: const AiBadge(),
-                                tooltip: 'Flesh out (AI)',
-                                onPressed: () =>
-                                    _fleshOutThread(context, ref, t),
-                              ),
-                            IconButton(
-                              key: Key('pin-thread-${t.id}'),
-                              visualDensity: VisualDensity.compact,
-                              icon: Icon(t.pinned
-                                  ? Icons.push_pin
-                                  : Icons.push_pin_outlined),
-                              tooltip: t.pinned ? 'Unpin' : 'Pin',
-                              onPressed: () => ref
-                                  .read(threadsProvider.notifier)
-                                  .togglePinned(t.id),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline),
-                              onPressed: () {
-                                final list =
-                                    ref.read(threadsProvider).valueOrNull ??
-                                        const <Thread>[];
-                                final idx =
-                                    list.indexWhere((x) => x.id == t.id);
-                                ref.read(threadsProvider.notifier).remove(t.id);
-                                showUndoSnackbar(
-                                    context,
-                                    'Thread deleted',
-                                    () => ref
-                                        .read(threadsProvider.notifier)
-                                        .restoreAt(idx < 0 ? 0 : idx, t));
-                              },
-                            ),
-                          ],
-                        ),
-                        onTap: () => _editThread(context, ref, t),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final (label, stage) in [
+                      ('All', null),
+                      ('Rumors', ThreadStage.rumor),
+                      ('Active', ThreadStage.active),
+                      ('Done', ThreadStage.done),
+                    ])
+                      ChoiceChip(
+                        key: Key('thread-stage-${stage?.name ?? 'all'}'),
+                        label: Text(label),
+                        selected: _filter == stage,
+                        onSelected: (_) => setState(() => _filter = stage),
                       ),
-                    );
-                  },
+                  ],
                 ),
               ),
+              if (shown.isEmpty)
+                Expanded(
+                  child: Center(
+                    child: Text(threads.isEmpty
+                        ? 'No threads yet. Track quests, vows, mysteries.'
+                        : 'Nothing at this stage.'),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: shown.length,
+                    itemBuilder: (context, i) {
+                      final t = shown[i];
+                      final tk = context.lore;
+                      return Card(
+                        child: ListTile(
+                          isThreeLine: true,
+                          leading: Checkbox(
+                            value: !t.open,
+                            onChanged: (_) => ref
+                                .read(threadsProvider.notifier)
+                                .toggleOpen(t.id),
+                          ),
+                          title: Row(
+                            children: [
+                              if (t.stage == ThreadStage.rumor) ...[
+                                Text('RUMOR',
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w800,
+                                        color: tk.inkMuted)),
+                                const SizedBox(width: 6),
+                              ],
+                              Expanded(
+                                child: Text(
+                                  t.title,
+                                  style: t.open
+                                      ? null
+                                      : TextStyle(
+                                          decoration:
+                                              TextDecoration.lineThrough,
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant),
+                                ),
+                              ),
+                            ],
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (t.note.isNotEmpty) Text(t.note),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  IconButton(
+                                    key: Key('thread-prog-dec-${t.id}'),
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    icon: const Icon(Icons.remove, size: 18),
+                                    tooltip: 'Less progress',
+                                    onPressed: () => ref
+                                        .read(threadsProvider.notifier)
+                                        .setProgress(t.id, t.progress - 1),
+                                  ),
+                                  Expanded(
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: LinearProgressIndicator(
+                                        value: t.progressMax <= 0
+                                            ? 0.0
+                                            : (t.progress / t.progressMax)
+                                                .clamp(0.0, 1.0),
+                                        minHeight: 5,
+                                        backgroundColor: tk.hairline,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                tk.terracotta),
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    key: Key('thread-prog-inc-${t.id}'),
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                        minWidth: 32, minHeight: 32),
+                                    icon: const Icon(Icons.add, size: 18),
+                                    tooltip: 'More progress',
+                                    onPressed: () =>
+                                        _incrementProgress(context, ref, t),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text('${t.progress}/${t.progressMax}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: tk.inkMuted)),
+                                ],
+                              ),
+                              ThreadTallyRow(t),
+                              Builder(builder: (ctx) {
+                                final linked = journal
+                                    .where((e) => e.threadId == t.id)
+                                    .toList();
+                                if (linked.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: ActionChip(
+                                    key: Key('thread-entries-${t.id}'),
+                                    avatar: const Icon(Icons.link, size: 14),
+                                    label: Text(
+                                        '${linked.length} entr${linked.length == 1 ? 'y' : 'ies'}'),
+                                    visualDensity: VisualDensity.compact,
+                                    onPressed: () =>
+                                        _showThreadEntries(ctx, t, linked),
+                                  ),
+                                );
+                              }),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (t.stage == ThreadStage.rumor)
+                                IconButton(
+                                  key: Key('thread-confirm-${t.id}'),
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(Icons.check_circle_outline),
+                                  tooltip: 'Confirm — promote to active',
+                                  onPressed: () => ref
+                                      .read(threadsProvider.notifier)
+                                      .setStage(t.id, ThreadStage.active),
+                                ),
+                              if (ref.watch(aiReadyProvider))
+                                IconButton(
+                                  key: Key('flesh-out-thread-${t.id}'),
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const AiBadge(),
+                                  tooltip: 'Flesh out (AI)',
+                                  onPressed: () =>
+                                      _fleshOutThread(context, ref, t),
+                                ),
+                              IconButton(
+                                key: Key('pin-thread-${t.id}'),
+                                visualDensity: VisualDensity.compact,
+                                icon: Icon(t.pinned
+                                    ? Icons.push_pin
+                                    : Icons.push_pin_outlined),
+                                tooltip: t.pinned ? 'Unpin' : 'Pin',
+                                onPressed: () => ref
+                                    .read(threadsProvider.notifier)
+                                    .togglePinned(t.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () {
+                                  final list =
+                                      ref.read(threadsProvider).valueOrNull ??
+                                          const <Thread>[];
+                                  final idx =
+                                      list.indexWhere((x) => x.id == t.id);
+                                  ref
+                                      .read(threadsProvider.notifier)
+                                      .remove(t.id);
+                                  showUndoSnackbar(
+                                      context,
+                                      'Thread deleted',
+                                      () => ref
+                                          .read(threadsProvider.notifier)
+                                          .restoreAt(idx < 0 ? 0 : idx, t));
+                                },
+                              ),
+                            ],
+                          ),
+                          onTap: () => _editThread(context, ref, t),
+                        ),
+                      );
+                    },
+                  ),
+                ),
             ],
           );
         },
@@ -271,6 +352,35 @@ class ThreadsPane extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
     );
+  }
+
+  /// Ticks a thread's progress clock up one; when that crossing completes it
+  /// (reaches progressMax), logs a journal entry so the fill isn't a silent
+  /// dead dial — the fill→fire→journal closure ported from the retired
+  /// standalone Tracks pane. Fires exactly once, on the crossing: a further
+  /// tap while already at max does not requalify (guarded by [before]).
+  Future<void> _incrementProgress(
+      BuildContext context, WidgetRef ref, Thread t) async {
+    final before = t.progress;
+    final notifier = ref.read(threadsProvider.notifier);
+    await notifier.setProgress(t.id, t.progress + 1);
+    if (before >= t.progressMax) return;
+    final updated = (await ref.read(threadsProvider.future))
+        .where((th) => th.id == t.id)
+        .firstOrNull;
+    if (updated == null ||
+        updated.progressMax <= 0 ||
+        updated.progress < updated.progressMax) {
+      return;
+    }
+    await ref.read(journalProvider.notifier).add(
+          'Clock filled: ${updated.title}',
+          '${updated.title} reached ${updated.progressMax}/${updated.progressMax}.',
+        );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Clock filled: ${updated.title}')));
+    }
   }
 
   /// Ported from the retired Tasks subtab: name → tally-preset picker →
@@ -335,7 +445,9 @@ class ThreadsPane extends ConsumerWidget {
   Future<void> _fleshOutThread(
       BuildContext context, WidgetRef ref, Thread t) async {
     final seed = buildFleshOutSeed(ref,
-        entityKind: 'story thread', name: t.title, existingDetail: t.note);
+        entityKind: t.stage == ThreadStage.rumor ? 'rumor' : 'story thread',
+        name: t.title,
+        existingDetail: t.note);
     final String detail;
     try {
       detail = await ref.read(interpreterServiceProvider).fleshOut(seed);
@@ -365,11 +477,16 @@ class ThreadsPane extends ConsumerWidget {
   }
 
   Future<void> _editThread(
-      BuildContext context, WidgetRef ref, Thread? existing) async {
+      BuildContext context, WidgetRef ref, Thread? existing,
+      {ThreadStage stage = ThreadStage.active}) async {
     final result = await showDialog<({String title, String note})>(
       context: context,
       builder: (_) => _EditDialog(
-        heading: existing == null ? 'New Thread' : 'Edit Thread',
+        heading: existing != null
+            ? 'Edit thread'
+            : stage == ThreadStage.rumor
+                ? 'New rumor'
+                : 'New thread',
         labelA: 'Title',
         labelB: 'Note (optional)',
         initialA: existing?.title ?? '',
@@ -379,10 +496,13 @@ class ThreadsPane extends ConsumerWidget {
     if (result == null || result.title.trim().isEmpty) return;
     final notifier = ref.read(threadsProvider.notifier);
     if (existing == null) {
-      await notifier.add(result.title.trim());
-      // apply note if provided
+      final id =
+          await notifier.addReturningId(result.title.trim(), stage: stage);
       if (result.note.trim().isNotEmpty) {
-        final added = ref.read(threadsProvider).valueOrNull?.first;
+        final added =
+            (ref.read(threadsProvider).valueOrNull ?? const <Thread>[])
+                .where((t) => t.id == id)
+                .firstOrNull;
         if (added != null) {
           await notifier.replace(added.copyWith(note: result.note.trim()));
         }
@@ -2207,27 +2327,6 @@ class _EditDialogState extends State<_EditDialog> {
           child: const Text('Save'),
         ),
       ],
-    );
-  }
-}
-
-class _Empty extends StatelessWidget {
-  const _Empty(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-        ),
-      ),
     );
   }
 }

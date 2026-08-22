@@ -147,7 +147,7 @@ class _AssistantSectionState extends ConsumerState<AssistantSection> {
       case 'make-move':
         route.goTo(Destination.sheet, subtab: 'moves');
       case 'develop-rumor':
-        route.goTo(Destination.track, subtab: 'rumors');
+        route.goTo(Destination.track, subtab: 'threads');
       case 'seed-npc':
         route.goTo(Destination.sheet);
     }

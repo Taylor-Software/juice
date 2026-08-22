@@ -1,8 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:loreseer/features/tracks_pane.dart';
 import 'package:loreseer/state/providers.dart';
 
 void _seed(Map<String, String> scoped) {
@@ -56,33 +54,5 @@ void main() {
     await c.read(dismissedSuggestionsProvider.notifier).undismiss('char:Kara');
     expect(c.read(dismissedSuggestionsProvider).value,
         isNot(contains('char:Kara')));
-  });
-
-  testWidgets('track delete shows an Undo snackbar that restores the track',
-      (t) async {
-    _seed({
-      'loreseer.tracks.v1.default': '[{"id":"tk","name":"Doom clock"}]',
-    });
-    final c = ProviderContainer();
-    addTearDown(c.dispose);
-    await c.read(tracksProvider.future);
-    await t.pumpWidget(UncontrolledProviderScope(
-      container: c,
-      child: const MaterialApp(home: Scaffold(body: TracksPane())),
-    ));
-    await t.pumpAndSettle();
-
-    // Delete via the row's popup menu.
-    await t.tap(find.byType(PopupMenuButton<String>).first);
-    await t.pumpAndSettle();
-    await t.tap(find.text('Delete'));
-    await t.pumpAndSettle();
-    expect(c.read(tracksProvider).value, isEmpty);
-    expect(find.text('Track deleted'), findsOneWidget);
-
-    // Undo brings it back.
-    await t.tap(find.text('Undo'));
-    await t.pumpAndSettle();
-    expect(c.read(tracksProvider).value!.single.name, 'Doom clock');
   });
 }

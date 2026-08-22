@@ -1,13 +1,15 @@
-// Flesh-out coverage on the world trackers: People, Places, and Rumors cards
-// carry an aiReady-gated AI button that generates detail, reviews it in the
-// shared Append/Cancel dialog, and appends to the entity's note.
+// Flesh-out coverage on the world trackers: People and Places cards carry an
+// aiReady-gated AI button that generates detail, reviews it in the shared
+// Append/Cancel dialog, and appends to the entity's note. Rumors are now
+// rumor-stage Threads, fleshed out via ThreadsPane's own flesh-out button
+// (see the tracking-merge consolidation — RumorsPane is retired).
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:loreseer/engine/models.dart';
 import 'package:loreseer/features/people_pane.dart';
 import 'package:loreseer/features/places_pane.dart';
-import 'package:loreseer/features/rumors_pane.dart';
+import 'package:loreseer/features/tracker_screen.dart';
 import 'package:loreseer/state/interpreter.dart';
 import 'package:loreseer/state/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,21 +101,33 @@ void main() {
     expect(place.note, 'Burned once.\n\nFleshed-out detail.');
   });
 
-  testWidgets('Rumors: flesh-out appends detail to the rumor note', (t) async {
+  testWidgets(
+      'Rumors: flesh-out appends detail to a rumor-stage thread\'s note',
+      (t) async {
     final fake = _fake();
-    final c = await _container(fake);
-    await c.read(rumorsProvider.notifier).add('The mine is haunted.');
-    await _pump(t, c, const RumorsPane());
+    SharedPreferences.setMockInitialValues({
+      'loreseer.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+      'loreseer.ai_enabled.v1': true,
+      'loreseer.threads.v1.default':
+          '[{"id":"r1","title":"The mine is haunted.","stage":"rumor"}]',
+    });
+    final c = ProviderContainer(overrides: [
+      interpreterServiceProvider.overrideWithValue(fake),
+    ]);
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await _pump(t, c, const ThreadsPane());
 
-    final rumor = c.read(rumorsProvider).value!.single;
-    await t.tap(find.byKey(Key('flesh-out-rumor-${rumor.id}')));
+    await t.tap(find.byKey(const Key('flesh-out-thread-r1')));
     await t.pumpAndSettle();
-    await t.tap(find.byKey(const Key('flesh-out-append')));
+    await t.tap(find.text('Save'));
     await t.pumpAndSettle();
 
     expect(fake.lastFleshOutSeed?.entityKind, 'rumor');
     expect(fake.lastFleshOutSeed?.name, 'The mine is haunted.');
-    expect(c.read(rumorsProvider).value!.single.note, 'Fleshed-out detail.');
+    final thread = c.read(threadsProvider).value!.single;
+    expect(thread.note, 'Fleshed-out detail.');
   });
 
   testWidgets('AI off hides every world-tracker flesh-out button', (t) async {

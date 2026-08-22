@@ -168,42 +168,6 @@ void main() {
       expect(decoded['data'], contains('loreseer.journal.v2'));
     });
 
-    test('rumors round-trip through campaign files', () {
-      const rumors = '[{"id":"r1","text":"North gate","resolved":true}]';
-      final out = encodeCampaign(
-        name: 'C1',
-        savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'loreseer.rumors.v1': rumors},
-      );
-      final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('loreseer.rumors.v1'));
-      final back = (jsonDecode(parsed.rawByKey['loreseer.rumors.v1']!) as List)
-          .cast<Map<String, dynamic>>()
-          .map(Rumor.fromJson)
-          .single;
-      expect(back.text, 'North gate');
-      expect(back.resolved, isTrue);
-    });
-
-    test('tracks round-trip through campaign files', () {
-      const tracks =
-          '[{"id":"tr1","name":"Find the heir","filled":3,"max":10}]';
-      final out = encodeCampaign(
-        name: 'C1',
-        savedAt: DateTime(2026, 6, 11),
-        rawByKey: {'loreseer.tracks.v1': tracks},
-      );
-      final parsed = parseCampaign(out);
-      expect(parsed.rawByKey, contains('loreseer.tracks.v1'));
-      final back = (jsonDecode(parsed.rawByKey['loreseer.tracks.v1']!) as List)
-          .cast<Map<String, dynamic>>()
-          .map(Track.fromJson)
-          .single;
-      expect(back.name, 'Find the heir');
-      expect(back.filled, 3);
-      expect(back.max, 10);
-    });
-
     test('v2 file without rumors key imports fine', () {
       final v2 = jsonEncode({
         'app': 'loreseer',
@@ -219,6 +183,28 @@ void main() {
       final parsed = parseCampaign(v2);
       expect(parsed.rawByKey.containsKey('loreseer.rumors.v1'), isFalse);
       expect(parsed.rawByKey, contains('loreseer.threads.v1'));
+    });
+
+    test('legacy rumors/tracks keys are dropped on import', () {
+      // Pre-merge files may carry the retired standalone Rumor/Track stores
+      // (superseded by the unified Thread) — they must parse without
+      // throwing and simply not survive into rawByKey.
+      final legacy = jsonEncode({
+        'app': 'loreseer',
+        'schemaVersion': 3,
+        'name': 'Old campaign',
+        'data': {
+          'loreseer.rumors.v1': [
+            {'id': 'r1', 'title': 'A whisper'},
+          ],
+          'loreseer.tracks.v1': [
+            {'id': 'tr1', 'name': 'Doom clock', 'filled': 2, 'max': 6},
+          ],
+        },
+      });
+      final parsed = parseCampaign(legacy);
+      expect(parsed.rawByKey.containsKey('loreseer.rumors.v1'), isFalse);
+      expect(parsed.rawByKey.containsKey('loreseer.tracks.v1'), isFalse);
     });
 
     test('character sheets round-trip through campaign files', () {

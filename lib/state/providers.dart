@@ -377,16 +377,19 @@ class ThreadNotifier extends _PersistedList<Thread> {
   @override
   Map<String, dynamic> toJsonMap(Thread item) => item.toJson();
 
-  Future<void> add(String title) async {
+  Future<void> add(String title,
+      {ThreadStage stage = ThreadStage.active}) async {
     await _persist([
-      Thread(id: _newId(), title: title),
+      Thread(id: _newId(), title: title, stage: stage),
       ...await _ready,
     ]);
   }
 
-  Future<String> addReturningId(String title) async {
+  Future<String> addReturningId(String title,
+      {ThreadStage stage = ThreadStage.active}) async {
     final id = _newId();
-    await _persist([Thread(id: id, title: title), ...await _ready]);
+    await _persist(
+        [Thread(id: id, title: title, stage: stage), ...await _ready]);
     return id;
   }
 
@@ -400,7 +403,13 @@ class ThreadNotifier extends _PersistedList<Thread> {
   Future<void> toggleOpen(String id) async {
     await _persist([
       for (final t in await _ready)
-        if (t.id == id) t.copyWith(open: !t.open) else t,
+        if (t.id == id)
+          t.copyWith(
+              stage: t.stage == ThreadStage.done
+                  ? ThreadStage.active
+                  : ThreadStage.done)
+        else
+          t,
     ]);
   }
 
@@ -409,6 +418,13 @@ class ThreadNotifier extends _PersistedList<Thread> {
       for (final t in await _ready)
         if (t.id == id) t.copyWith(pinned: !t.pinned) else t,
     ]);
+  }
+
+  /// Moves thread [id] to [stage] (rumor confirmation, completion, reopen).
+  Future<void> setStage(String id, ThreadStage stage) async {
+    final thread = (await _ready).where((t) => t.id == id).firstOrNull;
+    if (thread == null) return;
+    await replace(thread.copyWith(stage: stage));
   }
 
   /// Sets the numeric progress clock for thread [id], clamped to
@@ -673,41 +689,6 @@ final charactersProvider =
     AsyncNotifierProvider<CharacterNotifier, List<Character>>(
         CharacterNotifier.new);
 
-// -- Rumors -----------------------------------------------------------------
-class RumorNotifier extends _PersistedList<Rumor> {
-  @override
-  String get prefsKey => 'loreseer.rumors.v1';
-  @override
-  Rumor fromJson(Map<String, dynamic> json) => Rumor.fromJson(json);
-  @override
-  Map<String, dynamic> toJsonMap(Rumor item) => item.toJson();
-
-  Future<void> add(String text) async {
-    await _persist([Rumor(id: _newId(), text: text), ...await _ready]);
-  }
-
-  Future<void> replace(Rumor rumor) async {
-    await _persist([
-      for (final r in await _ready)
-        if (r.id == rumor.id) rumor else r,
-    ]);
-  }
-
-  Future<void> toggleResolved(String id) async {
-    await _persist([
-      for (final r in await _ready)
-        if (r.id == id) r.copyWith(resolved: !r.resolved) else r,
-    ]);
-  }
-
-  Future<void> remove(String id) async {
-    await _persist((await _ready).where((r) => r.id != id).toList());
-  }
-}
-
-final rumorsProvider =
-    AsyncNotifierProvider<RumorNotifier, List<Rumor>>(RumorNotifier.new);
-
 // -- Places (named world locations) -----------------------------------------
 class PlaceNotifier extends _PersistedList<Place> {
   @override
@@ -858,45 +839,6 @@ class UnitNotifier extends _PersistedList<Unit> {
 
 final unitsProvider =
     AsyncNotifierProvider<UnitNotifier, List<Unit>>(UnitNotifier.new);
-
-// -- Tracks -----------------------------------------------------------------
-class TrackNotifier extends _PersistedList<Track> {
-  @override
-  String get prefsKey => 'loreseer.tracks.v1';
-  @override
-  Track fromJson(Map<String, dynamic> json) => Track.fromJson(json);
-  @override
-  Map<String, dynamic> toJsonMap(Track item) => item.toJson();
-
-  Future<void> add(String name, {int max = 10}) async {
-    await _persist(
-        [Track(id: _newId(), name: name, max: max), ...await _ready]);
-  }
-
-  Future<void> adjust(String id, int delta) async {
-    await _persist([
-      for (final t in await _ready)
-        if (t.id == id)
-          t.copyWith(filled: (t.filled + delta).clamp(0, t.max))
-        else
-          t,
-    ]);
-  }
-
-  Future<void> rename(String id, String name) async {
-    await _persist([
-      for (final t in await _ready)
-        if (t.id == id) t.copyWith(name: name) else t,
-    ]);
-  }
-
-  Future<void> remove(String id) async {
-    await _persist((await _ready).where((t) => t.id != id).toList());
-  }
-}
-
-final tracksProvider =
-    AsyncNotifierProvider<TrackNotifier, List<Track>>(TrackNotifier.new);
 
 // -- Crawl state (wilderness + dialog marker) -------------------------------
 class CrawlNotifier extends AsyncNotifier<CrawlState> {
@@ -2647,10 +2589,8 @@ const sessionScopedKeys = [
   'loreseer.map.v1',
   'loreseer.dungeon_factions.v1',
   'loreseer.verdant.v1',
-  'loreseer.rumors.v1',
   'loreseer.places.v1',
   'loreseer.npcs.v1',
-  'loreseer.tracks.v1',
   'loreseer.inventory.v1',
   'loreseer.units.v1',
   'loreseer.settings.v1',
@@ -2875,7 +2815,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final journal = await ref.read(journalProvider.future);
     final threads = await ref.read(threadsProvider.future);
     final characters = await ref.read(charactersProvider.future);
-    final tracks = await ref.read(tracksProvider.future);
     final settings = await ref.read(settingsProvider.future);
     return campaignToLonelog(
       campaignName: s.activeMeta.name,
@@ -2883,7 +2822,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       tone: settings.tone,
       threads: threads,
       characters: characters,
-      tracks: tracks,
       entriesNewestFirst: journal,
       threadTitles: {for (final t in threads) t.id: t.title},
       exportedAt: DateTime.now(),
@@ -2982,8 +2920,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
           jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
       'loreseer.characters.v1':
           jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
-      'loreseer.tracks.v1':
-          jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
       'loreseer.settings.v1': jsonEncode(
           CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
     };
