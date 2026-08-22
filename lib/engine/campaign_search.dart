@@ -9,15 +9,7 @@ import 'models.dart';
 enum SearchDestination { journal, track, sheet }
 
 /// Which entity type produced a hit.
-enum SearchResultKind {
-  journalEntry,
-  thread,
-  rumor,
-  track,
-  character,
-  place,
-  npc
-}
+enum SearchResultKind { journalEntry, thread, character, place, npc }
 
 /// A single search hit with the display text, a snippet, and where to navigate.
 class CampaignSearchResult {
@@ -47,14 +39,13 @@ class CampaignSearchResult {
 }
 
 /// Case-insensitive, multi-term AND search over all provided entity lists.
-/// Blank [query] returns every entity. Order: journal entries first, then
-/// threads, rumors, tracks, characters — preserves input order within each kind.
+/// Blank [query] returns every entity. Order: journal entries first,
+/// then threads, characters, places, NPCs — preserves input order within
+/// each kind.
 List<CampaignSearchResult> searchCampaign(
   String query, {
   List<JournalEntry> entries = const [],
   List<Thread> threads = const [],
-  List<Rumor> rumors = const [],
-  List<Track> tracks = const [],
   List<Character> characters = const [],
   List<Place> places = const [],
   List<Npc> npcs = const [],
@@ -93,32 +84,6 @@ List<CampaignSearchResult> searchCampaign(
         snippet: t.note.length > 80 ? '${t.note.substring(0, 80)}…' : t.note,
         destination: SearchDestination.track,
         subtab: 'threads',
-      ));
-    }
-  }
-
-  for (final r in rumors) {
-    if (matches('${r.text}\n${r.note}')) {
-      results.add(CampaignSearchResult(
-        kind: SearchResultKind.rumor,
-        id: r.id,
-        title: r.text.length > 60 ? '${r.text.substring(0, 60)}…' : r.text,
-        snippet: r.note,
-        destination: SearchDestination.track,
-        subtab: 'rumors',
-      ));
-    }
-  }
-
-  for (final t in tracks) {
-    if (matches('${t.name}\n${t.note}')) {
-      results.add(CampaignSearchResult(
-        kind: SearchResultKind.track,
-        id: t.id,
-        title: t.name,
-        snippet: t.note.length > 80 ? '${t.note.substring(0, 80)}…' : t.note,
-        destination: SearchDestination.track,
-        subtab: 'tracks',
       ));
     }
   }

@@ -16,9 +16,9 @@ Future<void> showCampaignSearchSheet(BuildContext context) =>
       builder: (_) => const CampaignSearchSheet(),
     );
 
-/// Modal search sheet that queries journal entries, threads, rumors, tracks,
-/// and characters in one pass. Results group by entity type; tapping navigates
-/// via [shellRouteProvider].
+/// Modal search sheet that queries journal entries, threads, characters,
+/// places, and NPCs in one pass. Results group by entity type; tapping
+/// navigates via [shellRouteProvider].
 class CampaignSearchSheet extends ConsumerStatefulWidget {
   const CampaignSearchSheet({super.key});
 
@@ -53,8 +53,6 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
   Widget build(BuildContext context) {
     final entries = ref.watch(journalProvider).valueOrNull ?? const [];
     final threads = ref.watch(threadsProvider).valueOrNull ?? const [];
-    final rumors = ref.watch(rumorsProvider).valueOrNull ?? const [];
-    final tracks = ref.watch(tracksProvider).valueOrNull ?? const [];
     final characters = ref.watch(charactersProvider).valueOrNull ?? const [];
     final places = ref.watch(placesProvider).valueOrNull ?? const [];
     final npcs = ref.watch(npcsProvider).valueOrNull ?? const [];
@@ -63,8 +61,6 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
       _query,
       entries: entries,
       threads: threads,
-      rumors: rumors,
-      tracks: tracks,
       characters: characters,
       places: places,
       npcs: npcs,
@@ -105,7 +101,7 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
                 isDense: true,
               ),
               onChanged: (v) {
-                // Debounced: searchCampaign re-scans all five entity lists
+                // Debounced: searchCampaign re-scans all entity lists
                 // in build(), so don't rebuild on every keystroke.
                 _debounce?.cancel();
                 _debounce = Timer(const Duration(milliseconds: 250), () {
@@ -162,8 +158,6 @@ class _CampaignSearchSheetState extends ConsumerState<CampaignSearchSheet> {
 String _kindLabel(SearchResultKind kind) => switch (kind) {
       SearchResultKind.journalEntry => 'Journal',
       SearchResultKind.thread => 'Threads',
-      SearchResultKind.rumor => 'Rumors',
-      SearchResultKind.track => 'Progress Tracks',
       SearchResultKind.character => 'Characters',
       SearchResultKind.place => 'Places',
       SearchResultKind.npc => 'People',
@@ -172,8 +166,6 @@ String _kindLabel(SearchResultKind kind) => switch (kind) {
 IconData _kindIcon(SearchResultKind kind) => switch (kind) {
       SearchResultKind.journalEntry => Icons.book_outlined,
       SearchResultKind.thread => Icons.label_outline,
-      SearchResultKind.rumor => Icons.chat_bubble_outline,
-      SearchResultKind.track => Icons.track_changes,
       SearchResultKind.character => Icons.person_outline,
       SearchResultKind.place => Icons.place_outlined,
       SearchResultKind.npc => Icons.groups_outlined,
