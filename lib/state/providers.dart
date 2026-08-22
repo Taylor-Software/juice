@@ -2891,7 +2891,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
     final journal = await ref.read(journalProvider.future);
     final threads = await ref.read(threadsProvider.future);
     final characters = await ref.read(charactersProvider.future);
-    final tracks = await ref.read(tracksProvider.future);
     final settings = await ref.read(settingsProvider.future);
     return campaignToLonelog(
       campaignName: s.activeMeta.name,
@@ -2899,7 +2898,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
       tone: settings.tone,
       threads: threads,
       characters: characters,
-      tracks: tracks,
       entriesNewestFirst: journal,
       threadTitles: {for (final t in threads) t.id: t.title},
       exportedAt: DateTime.now(),
@@ -2998,8 +2996,6 @@ class SessionsNotifier extends AsyncNotifier<SessionsState> {
           jsonEncode(doc.threads.map((t) => t.toJson()).toList()),
       'loreseer.characters.v1':
           jsonEncode(doc.characters.map((c) => c.toJson()).toList()),
-      'loreseer.tracks.v1':
-          jsonEncode(doc.tracks.map((t) => t.toJson()).toList()),
       'loreseer.settings.v1': jsonEncode(
           CampaignSettings(genre: doc.genre, tone: doc.tone).toJson()),
     };

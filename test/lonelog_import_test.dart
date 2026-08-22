@@ -15,13 +15,12 @@ void main() {
     expect(b.campaignName, 'Imported Lonelog');
   });
 
-  test('parses the STATE block into threads, characters, tracks', () {
+  test('parses the STATE block into threads and characters', () {
     const md = '---\ntitle: "C"\n---\n\n[STATE]\n'
         '[Thread:Slay the wyrm|Open]\n'
         '[Thread:Find the heir|Closed]\n'
         '[N:Vance|gruff, ally]\n'
         '[N:Mute]\n'
-        '[Track:Ritual 3/6]\n'
         '[/STATE]\n';
     final imp = parseLonelog(md, importedAt: _t);
     expect(imp.threads.map((t) => t.title), ['Slay the wyrm', 'Find the heir']);
@@ -31,9 +30,27 @@ void main() {
     expect(imp.characters[0].tags, ['gruff', 'ally']);
     expect(imp.characters[1].name, 'Mute');
     expect(imp.characters[1].tags, isEmpty);
-    expect(imp.tracks.single.name, 'Ritual');
-    expect(imp.tracks.single.filled, 3);
-    expect(imp.tracks.single.max, 6);
+  });
+
+  test('a lone [Track:] line imports as a thread with the clock set', () {
+    const md = '[STATE]\n[Track:Supplies 2/6]\n[/STATE]\n';
+    final imp = parseLonelog(md, importedAt: _t);
+    expect(imp.threads.single.title, 'Supplies');
+    expect(imp.threads.single.progress, 2);
+    expect(imp.threads.single.progressMax, 6);
+  });
+
+  test('a [Track:] with a matching [Thread:] title merges onto one thread', () {
+    const md = '[STATE]\n'
+        '[Thread:Main quest|Open]\n'
+        '[Track:Main quest 3/6]\n'
+        '[/STATE]\n';
+    final imp = parseLonelog(md, importedAt: _t);
+    expect(imp.threads.length, 1);
+    expect(imp.threads.single.title, 'Main quest');
+    expect(imp.threads.single.open, isTrue);
+    expect(imp.threads.single.progress, 3);
+    expect(imp.threads.single.progressMax, 6);
   });
 
   test('the first | is the thread delimiter; a malformed pipe-title is skipped',
@@ -84,13 +101,18 @@ void main() {
     final exported = campaignToLonelog(
       campaignName: 'Round Trip',
       threads: [
-        Thread(id: 'a', title: 'Open quest', open: true),
-        Thread(id: 'b', title: 'Done quest', open: false),
+        Thread(id: 'a', title: 'Open quest', stage: ThreadStage.active),
+        Thread(id: 'b', title: 'Done quest', stage: ThreadStage.done),
+        Thread(
+            id: 'd',
+            title: 'Doom',
+            stage: ThreadStage.active,
+            progress: 2,
+            progressMax: 8),
       ],
       characters: [
         const Character(id: 'c', name: 'Bob', tags: ['friendly'])
       ],
-      tracks: [const Track(id: 'd', name: 'Doom', filled: 2, max: 8)],
       entriesNewestFirst: [
         JournalEntry(
             id: '3',
@@ -116,12 +138,13 @@ void main() {
     );
     final imp = parseLonelog(exported, importedAt: _t);
     expect(imp.campaignName, 'Round Trip');
-    expect(imp.threads.length, 2);
+    expect(imp.threads.length, 3);
     expect(imp.threads.firstWhere((t) => t.title == 'Open quest').open, isTrue);
     expect(
         imp.threads.firstWhere((t) => t.title == 'Done quest').open, isFalse);
-    expect(imp.tracks.single.name, 'Doom');
-    expect(imp.tracks.single.filled, 2);
+    final doom = imp.threads.firstWhere((t) => t.title == 'Doom');
+    expect(doom.progress, 2);
+    expect(doom.progressMax, 8);
     expect(imp.characters.single.name, 'Bob');
     expect(imp.entries.length, 3); // scene + result-as-text + text
     final scenes =

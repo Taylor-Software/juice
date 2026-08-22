@@ -8,7 +8,6 @@ String _export({
   String tone = '',
   List<Thread> threads = const [],
   List<Character> characters = const [],
-  List<Track> tracks = const [],
   List<JournalEntry> entries = const [],
 }) =>
     campaignToLonelog(
@@ -17,7 +16,6 @@ String _export({
       tone: tone,
       threads: threads,
       characters: characters,
-      tracks: tracks,
       entriesNewestFirst: entries,
       threadTitles: {for (final t in threads) t.id: t.title},
       exportedAt: DateTime(2026, 6, 14),
@@ -52,7 +50,7 @@ void main() {
     final out = _export(
       name: 'Camp: Alpha',
       threads: [
-        Thread(id: 't1', title: 'Rescue | [the] prisoner', open: true),
+        Thread(id: 't1', title: 'Rescue | [the] prisoner', stage: ThreadStage.active),
       ],
       characters: [const Character(id: 'c1', name: 'Vance|ally')],
     );
@@ -64,25 +62,46 @@ void main() {
     expect(out, contains('[N:Vance/ally]'));
   });
 
-  test('STATE block lists threads, characters, tracks as tags', () {
+  test('STATE block lists threads and characters as tags', () {
     final out = _export(
       threads: [
-        Thread(id: 't1', title: 'Slay the wyrm', open: true),
-        Thread(id: 't2', title: 'Find the heir', open: false),
+        Thread(id: 't1', title: 'Slay the wyrm', stage: ThreadStage.active),
+        Thread(id: 't2', title: 'Find the heir', stage: ThreadStage.done),
       ],
       characters: [
         const Character(id: 'c1', name: 'Vance', tags: ['gruff', 'ally']),
         const Character(id: 'c2', name: 'Mute'),
       ],
-      tracks: [const Track(id: 'k1', name: 'Ritual', filled: 3, max: 6)],
     );
     expect(out, contains('[STATE]'));
     expect(out, contains('[Thread:Slay the wyrm|Open]'));
     expect(out, contains('[Thread:Find the heir|Closed]'));
     expect(out, contains('[N:Vance|gruff, ally]'));
     expect(out, contains('[N:Mute]'));
-    expect(out, contains('[Track:Ritual 3/6]'));
     expect(out, contains('[/STATE]'));
+  });
+
+  test('a thread with progress emits both [Thread:] and [Track:] lines', () {
+    final out = _export(
+      threads: [
+        Thread(
+            id: 't1',
+            title: 'Main quest',
+            stage: ThreadStage.active,
+            progress: 3,
+            progressMax: 6),
+      ],
+    );
+    expect(out, contains('[Thread:Main quest|Open]'));
+    expect(out, contains('[Track:Main quest 3/6]'));
+  });
+
+  test('a plain thread (progress 0) emits only its [Thread:] line', () {
+    final out = _export(
+      threads: [Thread(id: 't1', title: 'Side quest', stage: ThreadStage.active)],
+    );
+    expect(out, contains('[Thread:Side quest|Open]'));
+    expect(out, isNot(contains('[Track:')));
   });
 
   test('scene numbering increments and renders chaos note', () {
@@ -114,7 +133,7 @@ void main() {
 
   test('text beat renders prose; threadId and tags render as trailers', () {
     final out = _export(
-      threads: [Thread(id: 't1', title: 'Rescue Jonah', open: true)],
+      threads: [Thread(id: 't1', title: 'Rescue Jonah', stage: ThreadStage.active)],
       entries: [
         _entry(JournalKind.text, 'note', 'The door creaks open.',
             threadId: 't1', tags: ['quiet', 'night']),
