@@ -5,7 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:loreseer/engine/emulator_data.dart';
+import 'package:loreseer/features/tracker_screen.dart';
 import 'package:loreseer/features/tracking_tab.dart';
+import 'package:loreseer/shared/destination.dart';
+import 'package:loreseer/shared/shell_route.dart';
 import 'package:loreseer/shared/theme.dart';
 import 'package:loreseer/state/interpreter.dart';
 import 'package:loreseer/state/providers.dart';
@@ -22,8 +25,7 @@ final _emulatorOverride =
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('Track shows the core subtabs including Rumors always',
-      (t) async {
+  testWidgets('Track shows the core subtabs', (t) async {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
@@ -41,18 +43,48 @@ void main() {
     for (final label in [
       'Scenes',
       'Threads',
-      'Rumors',
-      'Tracks',
       'Encounter',
     ]) {
       expect(find.widgetWithText(Tab, label), findsOneWidget);
     }
+    // Rumors/Tracks tabs are retired; Threads absorbs them via aliases.
+    expect(find.widgetWithText(Tab, 'Rumors'), findsNothing);
+    expect(find.widgetWithText(Tab, 'Tracks'), findsNothing);
     // NPCs (CharactersPane) moved to the Sheet verb; party subtabs are gated.
     expect(find.widgetWithText(Tab, 'NPCs'), findsNothing);
     expect(find.widgetWithText(Tab, 'Party'), findsNothing);
   });
 
-  testWidgets('Rumors always shown regardless of mode', (tester) async {
+  testWidgets('legacy rumors/tracks routes land on Threads', (t) async {
+    SharedPreferences.setMockInitialValues({
+      'loreseer.sessions.v1':
+          '{"active":"default","sessions":[{"id":"default","name":"C1"}]}',
+    });
+    final c = ProviderContainer();
+    addTearDown(c.dispose);
+    await c.read(sessionsProvider.future);
+    await t.pumpWidget(UncontrolledProviderScope(
+      container: c,
+      child: MaterialApp(
+          theme: AppTheme.light(),
+          home: const Scaffold(body: TrackingTab(systems: {}))),
+    ));
+    await t.pumpAndSettle();
+
+    c
+        .read(shellRouteProvider.notifier)
+        .goTo(Destination.track, subtab: 'rumors');
+    await t.pumpAndSettle();
+    expect(find.byType(ThreadsPane), findsOneWidget);
+
+    c
+        .read(shellRouteProvider.notifier)
+        .goTo(Destination.track, subtab: 'tracks');
+    await t.pumpAndSettle();
+    expect(find.byType(ThreadsPane), findsOneWidget);
+  });
+
+  testWidgets('Party tools shown when party system is enabled', (tester) async {
     SharedPreferences.setMockInitialValues({
       'loreseer.sessions.v1':
           '{"active":"default","sessions":[{"id":"default","name":"C1",'
@@ -67,8 +99,6 @@ void main() {
             theme: AppTheme.light(),
             home: const Scaffold(body: TrackingTab(systems: {'party'})))));
     await tester.pumpAndSettle();
-    // Rumors always present (no mode gate).
-    expect(find.text('Rumors'), findsOneWidget);
     // Party tools present when party system is enabled.
     expect(find.widgetWithText(Tab, 'Party'), findsOneWidget);
   });
@@ -122,7 +152,6 @@ void main() {
             home: const Scaffold(body: TrackingTab(systems: {'party'})))));
     await tester.pumpAndSettle();
     // Party tools present because party system is enabled (mode doesn't gate).
-    expect(find.text('Rumors'), findsOneWidget);
     expect(find.widgetWithText(Tab, 'Party'), findsOneWidget);
   });
 }
