@@ -52,7 +52,8 @@ void main() {
       'loreseer.characters.v1.default': '[{"id":"c1","name":"Ash","stats":[],'
           '"tracks":[{"label":"HP","current":4,"max":5}],"tags":[]}]',
       // Idle encounter: no combatants.
-      'loreseer.encounter.v1.default': '{"combatants":[],"turnIndex":0,"round":1}',
+      'loreseer.encounter.v1.default':
+          '{"combatants":[],"turnIndex":0,"round":1}',
     });
 
     // NOW card shows the active scene title.
@@ -145,7 +146,6 @@ void main() {
     // Every card still renders.
     expect(find.byKey(const Key('track-home-now')), findsOneWidget);
     expect(find.byKey(const Key('track-home-threads')), findsOneWidget);
-    expect(find.byKey(const Key('track-home-tracks')), findsOneWidget);
     expect(find.byKey(const Key('track-home-party')), findsOneWidget);
     expect(find.byKey(const Key('track-home-encounter')), findsOneWidget);
   });

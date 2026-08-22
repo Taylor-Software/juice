@@ -9,7 +9,7 @@ import '../state/play_context.dart';
 import '../state/providers.dart';
 
 /// Track → Home: a "Where am I?" dashboard. Summary cards for the campaign's
-/// live state (scene / threads / tracks / party / encounter) that double as
+/// live state (scene / threads / party / encounter) that double as
 /// navigation into the matching subtab (or the Sheet verb for the roster).
 ///
 /// Every card is defensive against empty/loading provider states — it shows a
@@ -26,7 +26,6 @@ class TrackHomePane extends ConsumerWidget {
     final scene = activeSceneEntry(journal, activeSceneId);
 
     final threads = ref.watch(threadsProvider).valueOrNull ?? const <Thread>[];
-    final tracks = ref.watch(tracksProvider).valueOrNull ?? const <Track>[];
     final chars =
         ref.watch(charactersProvider).valueOrNull ?? const <Character>[];
     final encounter =
@@ -37,7 +36,6 @@ class TrackHomePane extends ConsumerWidget {
     final otherCards = [
       _nowCard(context, ref, scene),
       _threadsCard(context, ref, threads),
-      _tracksCard(context, ref, tracks),
       _partyCard(context, ref, chars),
     ];
 
@@ -72,12 +70,10 @@ class TrackHomePane extends ConsumerWidget {
     final tk = context.lore;
     const radius = BorderRadius.all(Radius.circular(14));
     const lines = <(String, String)>[
-      ('Tasks', 'tally-tracked goals'),
       ('Scenes', 'story beats'),
-      ('Threads', 'open storylines'),
+      ('Threads', 'rumors, storylines, tasks, clocks'),
       ('Encounter', 'combat'),
-      ('Rumors', 'leads'),
-      ('Tracks', 'clocks'),
+      ('World', 'people and places'),
     ];
     return Material(
       key: const Key('track-help-card'),
@@ -126,7 +122,9 @@ class TrackHomePane extends ConsumerWidget {
                         text: '$label ',
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      TextSpan(text: '— $desc', style: TextStyle(color: tk.inkMuted)),
+                      TextSpan(
+                          text: '— $desc',
+                          style: TextStyle(color: tk.inkMuted)),
                     ],
                   ),
                 ),
@@ -252,68 +250,6 @@ class TrackHomePane extends ConsumerWidget {
                         ),
                       ],
                     ),
-                  ),
-              ],
-            ),
-    );
-  }
-
-  Widget _tracksCard(BuildContext context, WidgetRef ref, List<Track> tracks) {
-    final tk = context.lore;
-    return _card(
-      context,
-      cardKey: const Key('track-home-tracks'),
-      eyebrow: 'TRACKS',
-      headline: tracks.isEmpty ? 'None yet' : '${tracks.length}',
-      onTap: () => ref
-          .read(shellRouteProvider.notifier)
-          .goTo(Destination.track, subtab: 'tracks'),
-      child: tracks.isEmpty
-          ? Text('Clocks for tension and time.',
-              style: TextStyle(color: tk.inkMuted))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (final t in tracks.take(3))
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                t.name,
-                                style: TextStyle(color: tk.inkBody),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            Text('${t.filled} / ${t.max}',
-                                style: tk.uiLabel.copyWith(
-                                    fontSize: 12, color: tk.inkMuted)),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: t.max == 0 ? 0 : (t.filled / t.max),
-                            minHeight: 5,
-                            backgroundColor: tk.hairline,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(tk.terracotta),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (tracks.length > 3)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text('+${tracks.length - 3} more',
-                        style: TextStyle(color: tk.inkMuted, fontSize: 12)),
                   ),
               ],
             ),
