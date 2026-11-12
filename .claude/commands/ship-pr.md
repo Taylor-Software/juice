@@ -1,79 +1,50 @@
 ---
-description: Ship the staged work as one squash-merged PR — commit + push + PR + merge + cleanup. The 10-step branch-PR-merge dance run automatically.
+description: Ship the staged work as one squash-merged PR — commit + push + PR + merge + cleanup, run automatically.
 ---
 
-The user wants to ship the current work as a complete pull request — the full mechanical dance from "I have changes" to "merged on the default branch and local cleaned up."
+Ship the current work as one PR, from "I have changes" to "squash-merged on the default branch, local cleaned up". `$ARGUMENTS` is the PR title and commit subject; if empty, stop: "Pass a title: `/ship-pr fix(ui): …`".
 
-> **Environment note:** the `gh` steps below assume a local session where `gh` is authed. In a remote / web session `gh` is unavailable — use the GitHub MCP tools (`mcp__github__create_pull_request`, `mcp__github__merge_pull_request`, `mcp__github__pull_request_read`) for the PR open / merge / verify steps instead. The git steps (stage, commit, rebase, push) are the same in both.
+Locally use `gh`. In a remote/web session `gh` is unavailable: use the GitHub MCP tools (`create_pull_request`, `merge_pull_request`, `pull_request_read`) for the PR steps. The git steps are the same.
 
-## Preconditions you check before doing anything
+## Preconditions — stop if any fails
 
-1. **Detect the default branch** — repos differ (`main` vs `master`), so never hardcode it:
-   ```bash
-   DEFAULT=$(git remote show origin | sed -n 's/.*HEAD branch: //p')
-   ```
-   Every reference to `$DEFAULT` below means this detected branch.
-2. **You're not on `$DEFAULT`** — `git branch --show-current` must be a feature / fix / docs / chore branch. If on the default branch, error out: "Won't ship from the default branch; create a branch first."
-3. **The branch tracks `origin/<same-branch>` OR is brand-new** — either is fine; brand-new means you'll push with `-u`.
-4. **There's something to ship** — if `git status --short` is empty AND `git log origin/$DEFAULT..HEAD` is empty, error out: "Nothing to ship."
+- `DEFAULT=$(git remote show origin | sed -n 's/.*HEAD branch: //p')`. Never hardcode `main`/`master`.
+- Not on `$DEFAULT` ("Won't ship from the default branch; create a branch first.").
+- Something to ship: `git status --short` or `git log origin/$DEFAULT..HEAD` is non-empty ("Nothing to ship.").
 
-## What `$ARGUMENTS` contains
+## Steps
 
-The argument string is the PR title (and the commit subject). Required. If empty, error: "Pass a title: `/ship-pr fix(ui): …`"
-
-## What to do
-
-1. **Stage everything**: `git add -A`. (The user has already done their own staging if they cared; staging the rest is the right default at ship time.)
-2. **Verify analyze + tests pass.** Run `flutter analyze` and `flutter test` (full suite). If either fails, abort: don't commit, surface the failure, ask the user how to proceed. The user's policy is "tests + analyze clean before ship."
-3. **Compose the commit body.** Use the diff (`git diff --cached --stat` + the actual diff hunks for any non-trivial changes) and recent commit history (`git log --oneline -5`) as input. Body should be 1-3 short paragraphs explaining what changed and why, NOT what the diff already shows. Match the user's existing commit style — see recent commits with `git log --format='%B' -5` for tone. Always end with the `Co-Authored-By: Claude <noreply@anthropic.com>` line.
-4. **Commit** via HEREDOC so newlines are preserved:
-   ```bash
-   git commit -m "$(cat <<'EOF'
-   <title from $ARGUMENTS>
-
-   <body you composed>
-
-   Co-Authored-By: Claude <noreply@anthropic.com>
-   EOF
-   )"
-   ```
-5. **Pull + rebase before push.** `git fetch origin "$DEFAULT"` and `git rebase "origin/$DEFAULT"`. If conflicts, abort and surface them: "rebase conflict on `<file>`, resolve and re-run /ship-pr."
-6. **Push the branch.** `git push -u origin <branch>` if it doesn't track yet, otherwise plain `git push`. Tail the last 3 lines of output.
-7. **Open the PR.** Use `gh pr create` with `--title` matching `$ARGUMENTS` and `--body` from a HEREDOC. Body template:
+1. **Bump the build number.** `pubspec.yaml` `version: X.Y.Z+N` → `N+1` (the build the app shows in its settings/about version row).
+2. **Stage by explicit path**, never `git add -A`: a local `flutter build ios` mutates tracked `ios/` files. Leave out build output, `.env`, credentials and unrelated `ios/` churn.
+3. **Gate** (the analyze and test commands `CLAUDE.md` names as the gate, else `flutter analyze` and `flutter test`) must pass. On failure: don't commit; show it and ask how to proceed.
+4. **Review gate.** Spawn a subagent: "Follow `.claude/commands/flutter-review.md` in ship-pr mode (staged diff). Return its full output." Read its last non-blank line:
+   - `✅ PASS` → print any ADVISORY lines under "ℹ️ Advisory (non-blocking):", continue.
+   - `🚫 BLOCK` → abort without committing; print the BLOCK findings and "flutter-review blocked ship — fix the above findings and re-run /ship-pr."
+   - Anything else → abort: "flutter-review returned no clear verdict; re-run /ship-pr."
+5. **Commit** (HEREDOC). Subject = `$ARGUMENTS`. Body: 1–3 short paragraphs on *why*, matching the tone of `git log --format='%B' -5`. End with `Co-Authored-By: Claude <noreply@anthropic.com>`.
+6. **Rebase.** `git fetch origin "$DEFAULT" && git rebase "origin/$DEFAULT"`. On conflict, stop: "rebase conflict on `<file>`, resolve and re-run /ship-pr."
+7. **Push.** `git push -u origin <branch>` (plain `git push` if it already tracks).
+8. **Open the PR.** Title = `$ARGUMENTS`. Body:
    ```markdown
    ## Summary
-   <2-4 bullet recap, derived from the commit body>
+   <2-4 bullets from the commit body>
 
    ## Test plan
-   - [x] flutter analyze clean
-   - [x] flutter test passes
-   - [ ] <one or two manual smoke checks if the change is UI-visible>
+   - [x] analyze clean
+   - [x] tests pass
+   - [ ] <manual smoke check, if UI-visible>
 
    🤖 Generated with [Claude Code](https://claude.com/claude-code)
    ```
-   Capture the PR URL from the output.
-8. **Squash-merge with admin.** `gh pr merge <num> --squash --delete-branch --admin`. The command may print one warning that the default branch `is already used by worktree` — that's expected (the merge happens on the remote anyway, and the local default-branch worktree is held by another session). Ignore that line; the next command compensates.
-9. **Verify merge** with `gh pr view <num> --json state` — must show `MERGED`.
-10. **Force-delete the remote branch** if it still exists: `git push origin --delete <branch>`. The squash-merge with `--delete-branch` usually handles this but the worktree-lock warning sometimes leaves it behind.
-11. **Reset locally** to a fresh `working` branch off the default branch:
-    ```bash
-    git checkout -B working "origin/$DEFAULT"
-    git fetch --prune origin
-    git branch -D <feature-branch>
-    ```
-12. **Report.** One short line: `Merged via #<num>: <title>`. No essay.
+   On HTTP 504, retry once.
+9. **Merge.** `gh pr merge <num> --squash --delete-branch --admin` (`--admin` is authorized for solo work). If it is already merged, skip to 10. A warning that the default branch "is already used by worktree" is expected; ignore it. On merge conflicts, stop: "PR #<num> has merge conflicts, resolve on the branch and re-run."
+10. **Verify** `gh pr view <num> --json state` reads `MERGED`. Delete the remote branch if it survived: `git push origin --delete <branch>`.
+11. **Reset locally.** `git checkout -B working "origin/$DEFAULT" && git fetch --prune origin && git branch -D <branch>`.
+12. **Report** one line: `Merged via #<num>: <title>`.
 
-## Edge cases
+## Never
 
-- **Pre-commit hook fails on commit (step 4):** investigate the underlying issue and fix, then re-stage and re-run `git commit`. NEVER use `--no-verify`. NEVER use `--amend` after a hook failure (the commit didn't happen — amend would modify the previous commit).
-- **PR creation fails with `HTTP 504` (step 7):** retry once with the same body. If retry fails, surface the error to the user.
-- **gh pr merge fails because PR has merge conflicts:** abort, surface "PR #<num> has merge conflicts, resolve on the branch and re-run."
-- **The PR was already merged manually before you got to step 8:** check `gh pr view <num> --json state` first. If MERGED, skip the merge step and proceed with cleanup.
-
-## What you don't do
-
-- Don't run `/audit` or duplicate the analyze + test work it already does — just inline `flutter analyze` and `flutter test`.
-- Don't open the user's editor to write the commit message — compose it yourself from the diff.
-- Don't push to the default branch directly. Don't bypass `--squash`. Don't skip `--admin` (the user has authorized it for solo work).
-- Don't sleep / poll for merge state. `gh pr view` is synchronous.
-- Don't use `git push --no-verify` or `git commit --no-verify`. If hooks fail, fix the cause.
+- `--no-verify` on commit or push. If a hook fails, fix the cause and re-commit; never `--amend` after a failed commit (it didn't happen).
+- Push to `$DEFAULT` directly, or merge without `--squash`.
+- Run `/audit` as well: step 3 is the gate.
+- Sleep or poll for merge state.
