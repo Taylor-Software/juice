@@ -6,8 +6,10 @@ The user wants a full project audit run.
 
 ## What to do
 
-1. **Run `flutter analyze`** in the project root. Capture the output.
-2. **Run `flutter test`** in the project root. Capture the output (it can be large; use a tmp file if needed).
+Use the analyze and test commands `CLAUDE.md` names as the gate (e.g. a tag exclusion, or `melos run` in a monorepo); if it names none, `flutter analyze` and `flutter test`.
+
+1. **Run the analyze command** in the project root. Capture the output.
+2. **Run the test command** in the project root. Capture the output (it can be large; use a tmp file if needed).
 3. **Summarize:**
    - **Analyze:** count of errors / warnings / infos. List every error and warning with file:line. Infos can be summarized as "N infos (mostly prefer_single_quotes)" without enumeration.
    - **Tests:** total passed / failed / skipped. List every failing test with the failure message. If all passed, say so in one line.
