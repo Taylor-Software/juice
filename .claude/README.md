@@ -23,7 +23,7 @@ All six are shared-canonical (identical in `deep_iq_v2`):
 |---|---|
 | `/prime` | Read-only: loads `CLAUDE.md` + canonical docs (`README.md`, `ROADMAP.md`, `docs/`), reports project state. Start here. |
 | `/audit` | `flutter analyze` + `flutter test`, compressed to counts + failures. ~1-2K token cost regardless of suite size. |
-| `/checkpoint` | Verify → document → cleanup → commit → push → PR, in strict phases. |
+| `/checkpoint` | Clean (`dart fix`) → verify → document → memory → commit → push → PR, in strict phases. Cleanup runs before verify so the gate covers `dart fix` output. |
 | `/ship-pr <title>` | Full branch→commit→rebase→push→PR→squash-merge→cleanup. Works local (`gh`) or remote (GitHub MCP). |
 | `/clean-branches` | Delete local branches whose squash-merge already landed on the default branch. Content-aware + safe. |
 | `/code-analysis` | Fans out 4 **Haiku** scan agents (packages/patterns/perf/dead-code), synthesizes on the session model. |

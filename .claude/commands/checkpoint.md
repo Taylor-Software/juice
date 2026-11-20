@@ -2,65 +2,14 @@
 description: Full project checkpoint — verify, document, clean, commit, push, PR.
 ---
 
-Execute these phases in strict order. Stop and report if any phase fails.
+Run these phases in order. Stop and report if one fails.
 
-## Phase 1: Verify
+1. **Clean.** `dart fix --apply`, then review its diff: some fixes produce code that does not compile, so revert any hunk that is wrong. This runs before Verify so the gate covers it.
+2. **Verify.** `git status`, `git diff --stat`, then the gate (the analyze and test commands `CLAUDE.md` names as the gate, else `flutter analyze` and `flutter test`). Fix failures before going on. Note the passing-test count.
+3. **Document.** From the diff and `git log --oneline -5`: what was added, changed or fixed; key decisions and trade-offs; bugs found and resolved.
+4. **Update memory.** In the project's memory directory, update milestone status, test count, current branch and key decisions; remove stale entries. Keep `MEMORY.md` under 200 lines, one line per entry, each under 150 characters.
+5. **Commit.** Stage named files, never `git add -A`, and never `.env`, credentials or large binaries. Conventional-commit subject (`fix:`, `feat:`, `chore:`…); body says why in 1–2 sentences; end with `Co-Authored-By: Claude <noreply@anthropic.com>`. Use a HEREDOC.
+6. **Push.** `git push origin <branch>`, with `-u` if it has no upstream.
+7. **PR.** On the default branch, the push is enough. On a feature branch, `gh pr create` with a title under 70 characters, `## Summary` and `## Test plan`, and the footer `Generated with [Claude Code](https://claude.com/claude-code)`.
 
-1. `git status` — note modified/untracked files.
-2. `git diff --stat` — scope of changes.
-3. `flutter analyze` — fix issues before proceeding.
-4. `flutter test` — fix failures before proceeding.
-5. Count passing tests from output.
-
-## Phase 2: Document findings
-
-Summarize what changed since last commit. `git log --oneline -5` for recent history, compare against diff:
-- What was added/changed/fixed
-- Key decisions or trade-offs
-- Bugs found and resolved
-
-## Phase 3: Update memory
-
-Read memory index at the project's memory directory. Update memory files to reflect:
-- Phase/milestone completion status
-- Test count
-- Current branch
-- New API discoveries, key decisions, architectural changes
-- Remove stale entries
-
-Keep MEMORY.md index under 200 lines. Each entry one line, under 150 chars.
-
-## Phase 4: Cleanup
-
-1. `dart fix --apply` to auto-fix remaining issues.
-2. `flutter analyze` one final time — zero issues.
-3. Resolve any new issues from dart fix manually.
-
-## Phase 5: Commit
-
-1. `git status` — final state.
-2. `git diff --stat` — confirm scope.
-3. Stage relevant files — prefer named files over `git add -A`. Never stage `.env`, credentials, or large binaries.
-4. Write commit message:
-   - Conventional commit format (fix:, feat:, chore:, etc.)
-   - Summarize "why" in 1-2 sentences
-   - End with `Co-Authored-By: Claude <noreply@anthropic.com>`
-5. Commit using HEREDOC.
-
-## Phase 6: Push
-
-1. `git branch --show-current`
-2. `git status -sb` — check upstream tracking.
-3. `git push origin <branch>` (add `-u` if no upstream).
-
-## Phase 7: PR or Direct
-
-- **On main:** push is sufficient.
-- **On feature branch:** `gh pr create` with short title (<70 chars), body with `## Summary` + `## Test plan`, footer `Generated with [Claude Code](https://claude.com/claude-code)`. Report PR URL.
-
-## Completion report
-
-- Branch and commit hash
-- Test count (passing/total)
-- Files changed
-- PR URL (if created)
+Report: branch and commit hash, tests passing/total, files changed, PR URL if any.
