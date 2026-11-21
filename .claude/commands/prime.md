@@ -4,6 +4,14 @@ description: Read the project's canonical docs and get primed to work — load s
 
 The user is starting a working session and wants you primed on the current state of the project before they hand you a task — so you don't burn context re-reading mid-task.
 
+## First, check the checkout is current
+
+A stale checkout gives stale numbers. Before you read anything:
+
+1. Run `git fetch origin` (skip silently if there is no remote or no network).
+2. Find the default branch (`git symbolic-ref --short refs/remotes/origin/HEAD`) and count the commits `HEAD` is behind it (`git rev-list --count HEAD..origin/<default>`).
+3. If `HEAD` is behind, say so first in the readback: how many commits, and the version or build the checkout holds (from `pubspec.yaml` or the repo's equivalent). Do not pull or switch branches; the user decides.
+
 ## What to read
 
 This command is project-agnostic. Read what exists, in this order; skip silently what doesn't.
@@ -19,7 +27,7 @@ This command is project-agnostic. Read what exists, in this order; skip silently
    - `ROADMAP.md`, `README.md` — if the repo leads with these instead of a `docs/` tree
 3. **Index files, not leaves.** If `docs/` has per-topic subtrees (e.g. `docs/rulesets/`, `docs/action_types/`), read only their `README.md` index. Open individual leaf files later, when a task makes one relevant — never the whole tree up front.
 
-**Don't** re-read the fresh-machine bootstrap (`docs/claude/`) — it's already mirrored in `CLAUDE.md`.
+**Don't** front-load the per-area detail files `CLAUDE.md`'s pointer table names (here, `docs/claude/`) — open the matching one when a task lands in that area.
 
 To discover the doc surface cheaply, prefer one Glob (`docs/**/*.md`) over reading blindly.
 
@@ -30,6 +38,7 @@ Tight readback so the user can confirm you loaded the right context. Under 200 w
 - **Current phase / focus** — which plan phase is active and the next item on it
 - **Open priorities** — top 2-3 items that look like the next logical work
 - **Recent landings** — anything that landed recently, so you don't propose to redo it
+- **Checkout** — current, or N commits behind the default branch (name the build it holds)
 - **Any drift you spotted** — places where the status docs disagree, or reference code that may have moved
 
 End with: **"Ready. What are we working on?"**
